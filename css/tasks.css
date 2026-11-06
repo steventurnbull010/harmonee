@@ -1729,3 +1729,61 @@ body.theme-dark .more-details-summary:hover {
 
 body.theme-dark .more-details-body {
   border-top-color: rgba(255, 255, 255, 0.08);
+
+/* ==========================================================================
+   Up for grabs: drag a chore into a person's column to claim it
+   ========================================================================== */
+.skylight-task-card.is-grabbable {
+  cursor: grab;
+  touch-action: pan-y;               /* normal swipe still scrolls the list */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;       /* no iOS long-press menu */
+}
+
+.skylight-task-grab-handle {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+body.theme-dark .skylight-task-grab-handle {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.skylight-task-check-circle.is-static {
+  cursor: default;
+}
+
+.skylight-task-card.is-drag-source {
+  opacity: 0.35;
+}
+
+.skylight-task-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+  pointer-events: none;
+  transform: scale(1.04) rotate(-1.5deg);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+  cursor: grabbing;
+}
+
+body.is-grab-dragging,
+body.is-grab-dragging * {
+  cursor: grabbing !important;
+}
+
+.skylight-tasks-col.is-drop-target {
+  outline: 3px dashed currentColor;
+  outline-offset: -3px;
+  transform: scale(1.01);
+  transition: transform 0.12s ease;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+}

@@ -17,6 +17,14 @@ function getAssignedMembersList(assignedTo) {
 }
 window.getAssignedMembersList = getAssignedMembersList;
 
+// True when an assignee value names no specific person (empty, or only the
+// shared "Up for grabs" / "Anyone" / "Family" pools).
+function isUnassignedValue(assignedTo) {
+  const pools = ["up for grabs", "anyone", "family"];
+  return getAssignedMembersList(assignedTo).every(m => pools.includes(m));
+}
+window.isUnassignedValue = isUnassignedValue;
+
 // Universal Helper: Categorize task into routine slot (Morning, Afternoon, Evening) or standard Chore
 function getTaskRoutineInfo(task) {
   if (!task) return { order: 3, label: "" };
@@ -107,9 +115,20 @@ function renderSkylightTasksPage() {
       const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
       const assigned = task.assignedTo || "Up for grabs";
 
+      // A daily task's owner for the selected day: its per-day schedule entry
+      // when it has one for this day, otherwise its main assignee.
+      const dailyAssignee = (isDaily && task.assignedDays && task.assignedDays[dayName] !== undefined)
+        ? task.assignedDays[dayName]
+        : task.assignedTo;
+
       if (isGrabPool) {
+        if (isDaily) {
+          // Daily tasks with nobody assigned for this day land here, so a
+          // daily chore never silently drops off the board.
+          return isUnassignedValue(dailyAssignee);
+        }
         // Unassigned or assigned to Anyone / Up for grabs
-        if (!isDaily && (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family")) {
+        if (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family") {
           return task.date ? task.date === selectedDateStr : (task.day === dayName || isSelectedCurrentWeek);
         }
         return false;
@@ -129,10 +148,7 @@ function renderSkylightTasksPage() {
 
       // Member column:
       if (isDaily) {
-        if (task.assignedDays && task.assignedDays[dayName] !== undefined) {
-          return isAssignedToThisMember(task.assignedDays[dayName]);
-        }
-        return isAssignedToThisMember(task.assignedTo);
+        return isAssignedToThisMember(dailyAssignee);
       }
 
       if (isAssignedToThisMember(task.assignedTo)) {
@@ -265,8 +281,21 @@ function renderSkylightTasksPage() {
       const valText = isMoney ? `${curr}${((t.value || 10) / 10).toFixed(2)}` : `${t.value || 10} pts`;
       const timeSubtitle = t.time || (isDaily ? "Daily" : "Today");
 
+      // Up for grabs cards can't be ticked: they must be dragged into a
+      // person's column first, which assigns the chore to them.
+      const isGrabbable = isGrabPool && !isDone;
+      const actionHtml = isGrabPool
+        ? (isDone
+            ? `<span class="skylight-task-check-circle is-static" aria-label="Completed">✓</span>`
+            : `<span class="skylight-task-grab-handle" aria-hidden="true" title="Drag to someone's column to claim">⠿</span>`)
+        : `<button type="button" class="skylight-task-check-circle"
+                  data-task-id="${t.id}" data-day="${dayName}" data-member="${escapeHtml(colMember)}" data-completed="${isDone ? 'true' : 'false'}"
+                  title="${isDone ? 'Undo task' : 'Mark as complete'}">
+            ${isDone ? '✓' : ''}
+          </button>`;
+
       return `
-        <div class="skylight-task-card ${isDone ? 'is-completed' : ''}" 
+        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''}"
              style="background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
              data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}">
           <div class="skylight-task-card-main">
@@ -276,11 +305,7 @@ function renderSkylightTasksPage() {
               <span class="skylight-task-card-sub">${escapeHtml(timeSubtitle)} • ${valText}</span>
             </div>
           </div>
-          <button type="button" class="skylight-task-check-circle" 
-                  data-task-id="${t.id}" data-day="${dayName}" data-member="${escapeHtml(colMember)}" data-completed="${isDone ? 'true' : 'false'}"
-                  title="${isDone ? 'Undo task' : 'Mark as complete'}">
-            ${isDone ? '✓' : ''}
-          </button>
+          ${actionHtml}
         </div>
       `;
     };
@@ -323,7 +348,7 @@ function renderSkylightTasksPage() {
     const initialLetter = isGrabPool ? "⚡" : colMember.charAt(0).toUpperCase();
 
     columnsHtml += `
-      <div class="skylight-tasks-col" style="background: ${pal.lightBg}22; border-color: ${pal.border};">
+      <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="background: ${pal.lightBg}22; border-color: ${pal.border};">
         <div class="tasks-col-header">
           <div class="tasks-col-top-row">
             <div class="tasks-col-profile-info">
@@ -360,6 +385,7 @@ function renderSkylightTasksPage() {
   container.querySelectorAll(".skylight-task-card").forEach(card => {
     card.onclick = (e) => {
       if (e.target.closest(".skylight-task-check-circle")) return;
+      if (grabDragJustEnded) return; // a drag, not a tap
       const tid = card.getAttribute("data-task-id");
       const dName = card.getAttribute("data-day");
       const colMem = card.getAttribute("data-member") || null;
@@ -382,8 +408,178 @@ function renderSkylightTasksPage() {
       }
     };
   });
+
+  wireGrabDragAndDrop(container);
 }
 window.renderSkylightTasksPage = renderSkylightTasksPage;
+
+// ============================================================================
+// UP FOR GRABS: DRAG A CHORE INTO A PERSON'S COLUMN TO CLAIM IT
+// Touch: press and hold a card (so a normal swipe still scrolls the list),
+// then drag. Mouse: just drag. Dropping on a person's column assigns it to
+// them: daily chores for that day only, one-off chores outright.
+// ============================================================================
+const GRAB_HOLD_MS = 280;
+const GRAB_MOVE_CANCEL_PX = 10;
+const GRAB_EDGE_SCROLL_PX = 70;
+let grabDrag = null;
+let grabDragJustEnded = false;
+
+function wireGrabDragAndDrop(container) {
+  container.querySelectorAll(".skylight-task-card.is-grabbable").forEach(card => {
+    // Touch: press-and-hold to pick up
+    card.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const pending = { card, container, startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastY: t.clientY };
+      pending.holdTimer = setTimeout(() => beginGrabDrag(pending, pending.lastX, pending.lastY), GRAB_HOLD_MS);
+      grabDrag = pending;
+    }, { passive: true });
+
+    card.addEventListener("touchmove", (e) => {
+      if (!grabDrag || grabDrag.card !== card) return;
+      const t = e.touches[0];
+      grabDrag.lastX = t.clientX;
+      grabDrag.lastY = t.clientY;
+      if (!grabDrag.active) {
+        // Moved before the hold finished: the user is scrolling, not grabbing
+        if (Math.hypot(t.clientX - grabDrag.startX, t.clientY - grabDrag.startY) > GRAB_MOVE_CANCEL_PX) {
+          clearTimeout(grabDrag.holdTimer);
+          grabDrag = null;
+        }
+        return;
+      }
+      e.preventDefault(); // stop the page scrolling while dragging
+      moveGrabDrag(t.clientX, t.clientY);
+    }, { passive: false });
+
+    const finishTouch = () => {
+      if (!grabDrag || grabDrag.card !== card) return;
+      clearTimeout(grabDrag.holdTimer);
+      if (grabDrag.active) endGrabDrag();
+      else grabDrag = null;
+    };
+    card.addEventListener("touchend", finishTouch);
+    card.addEventListener("touchcancel", finishTouch);
+
+    // Mouse: drag once the pointer moves a few pixels
+    card.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault(); // no text selection while dragging
+      const pending = { card, container, startX: e.clientX, startY: e.clientY };
+      grabDrag = pending;
+      const onMove = (ev) => {
+        if (grabDrag !== pending) return;
+        if (!pending.active) {
+          if (Math.hypot(ev.clientX - pending.startX, ev.clientY - pending.startY) < 6) return;
+          beginGrabDrag(pending, ev.clientX, ev.clientY);
+        }
+        moveGrabDrag(ev.clientX, ev.clientY);
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        if (grabDrag !== pending) return;
+        if (pending.active) endGrabDrag();
+        else grabDrag = null; // plain click: card.onclick opens the quick view
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  });
+}
+
+function beginGrabDrag(state, x, y) {
+  if (grabDrag !== state) return;
+  const rect = state.card.getBoundingClientRect();
+  const ghost = state.card.cloneNode(true);
+  ghost.classList.add("skylight-task-drag-ghost");
+  ghost.style.width = rect.width + "px";
+  ghost.style.left = rect.left + "px";
+  ghost.style.top = rect.top + "px";
+  document.body.appendChild(ghost);
+
+  state.ghost = ghost;
+  state.offsetX = x - rect.left;
+  state.offsetY = y - rect.top;
+  state.active = true;
+  state.taskId = state.card.getAttribute("data-task-id");
+  state.day = state.card.getAttribute("data-day");
+  state.card.classList.add("is-drag-source");
+  document.body.classList.add("is-grab-dragging");
+  if (navigator.vibrate) navigator.vibrate(15);
+  moveGrabDrag(x, y);
+}
+
+function moveGrabDrag(x, y) {
+  const state = grabDrag;
+  if (!state || !state.active) return;
+  state.ghost.style.left = (x - state.offsetX) + "px";
+  state.ghost.style.top = (y - state.offsetY) + "px";
+
+  // Nudge the board sideways when dragging near its edges, so columns that
+  // are off-screen can still be reached
+  const board = state.container;
+  const bRect = board.getBoundingClientRect();
+  if (x < bRect.left + GRAB_EDGE_SCROLL_PX) board.scrollLeft -= 14;
+  else if (x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
+
+  const under = document.elementFromPoint(x, y);
+  const col = under ? under.closest(".skylight-tasks-col") : null;
+  const member = col ? col.getAttribute("data-col-member") : null;
+  const target = (member && member !== "Up for grabs") ? col : null;
+  if (state.targetCol !== target) {
+    if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
+    if (target) target.classList.add("is-drop-target");
+    state.targetCol = target;
+    state.targetMember = target ? member : null;
+  }
+}
+
+function endGrabDrag() {
+  const state = grabDrag;
+  grabDrag = null;
+  if (!state) return;
+  if (state.ghost) state.ghost.remove();
+  state.card.classList.remove("is-drag-source");
+  if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
+  document.body.classList.remove("is-grab-dragging");
+
+  // Swallow the click the browser fires right after a mouse drag
+  grabDragJustEnded = true;
+  setTimeout(() => { grabDragJustEnded = false; }, 60);
+
+  if (state.targetMember) claimGrabTask(state.taskId, state.day, state.targetMember);
+}
+
+// Assign an Up for grabs chore to a family member.
+// Daily chores are claimed for the given day only (they return to Up for
+// grabs on other days); one-off chores become theirs outright.
+function claimGrabTask(taskId, day, member) {
+  const task = (window.currentTasks || []).find(t => t.id === taskId);
+  if (!task) return;
+  const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+
+  let payload;
+  if (isDaily) {
+    task.assignedDays = { ...(task.assignedDays || {}), [day]: member };
+    payload = { assignedDays: task.assignedDays };
+  } else {
+    task.assignedTo = member;
+    payload = { assignedTo: member };
+  }
+
+  saveLocalCache(window.currentTasks || []);
+  if (db) {
+    try {
+      updateDoc(getTaskDocRef(taskId), payload).catch(console.error);
+    } catch (err) {
+      console.error("Failed to save claimed task:", err);
+    }
+  }
+  renderSkylightTasksPage();
+}
+window.claimGrabTask = claimGrabTask;
 
 // --- Task Completion with Sound & Full Celebration Trigger ---
 function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = null) {
@@ -573,6 +769,8 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null) {
     }
   }
 
+  // Up for grabs chores are claimed by dragging, not ticked from the pool.
+  compBtn.style.display = (colMember === "Up for grabs") ? "none" : "";
   compBtn.textContent = isDone ? "Mark as Incomplete" : "Mark as Complete";
   compBtn.onclick = () => {
     overlay.style.display = "none";
