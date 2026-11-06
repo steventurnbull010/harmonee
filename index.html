@@ -13,7 +13,7 @@
   
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
-  <link rel="stylesheet" href="css/tasks.css?v=13">
+  <link rel="stylesheet" href="css/tasks.css?v=14">
   <link rel="stylesheet" href="css/meals.css?v=9">
   <link rel="stylesheet" href="css/calendar.css?v=3">
   <link rel="stylesheet" href="css/lists.css?v=4">
@@ -881,11 +881,12 @@
           <div class="drawer-field-group">
             <div class="drawer-section-label-row">
               <span class="drawer-section-icon">👥</span>
-              <span class="drawer-section-label">Profiles</span>
+              <span class="drawer-section-label">Who's doing it</span>
             </div>
-            <div class="drawer-profiles-pills-row" id="drawer-profiles-row">
+            <div class="drawer-profiles-pills-row" id="drawer-profiles-row" role="group" aria-label="Who's doing it">
               <!-- Steven, Sorcha, Ava, Dara, Up for grabs (+ Add) -->
             </div>
+            <p class="drawer-who-summary" id="drawer-who-summary" aria-live="polite"></p>
           </div>
 
           <!-- Type Switcher: [ Chore ] [ Routine ] -->
@@ -2742,7 +2743,7 @@
   <script src="js/page-intro.js?v=3"></script>
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=5"></script>
-  <script src="js/tasks.js?v=15"></script>
+  <script src="js/tasks.js?v=16"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=8"></script>
   <script type="module" src="js/meals.js?v=19"></script>

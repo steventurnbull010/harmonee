@@ -2316,3 +2316,70 @@ body.theme-dark .task-pop-primary.is-undo {
 body.theme-dark .task-pop-hint {
   background: rgba(255, 255, 255, 0.06);
 }
+
+/* ==========================================================================
+   "Who's doing it" picker: picked people are filled in their colour with a
+   tick; everyone else is an empty grey circle. Same filled-vs-empty idea as
+   the rota pills, plus a sentence underneath that says it in words.
+   ========================================================================== */
+.drawer-profiles-pills-row { gap: 16px; transition: opacity 0.2s ease; }
+.drawer-profile-pill { gap: 8px; min-width: 56px; }
+.drawer-profile-pill:focus-visible .drawer-profile-avatar { outline: 2px solid var(--profile-color); outline-offset: 3px; }
+
+.drawer-profile-avatar {
+  position: relative;
+  width: 48px; height: 48px;
+  background: transparent;
+  color: #94a3b8;
+  border: 2px dashed #cbd5e1;
+  box-shadow: none;
+  font-size: 1.1rem;
+}
+.drawer-profile-pill:hover .drawer-profile-avatar { border-color: var(--profile-color); color: var(--profile-color); }
+
+.drawer-profile-pill.active .drawer-profile-avatar {
+  background: var(--profile-color);
+  color: #fff;
+  border: 2px solid var(--profile-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--profile-color) 22%, transparent);
+  transform: none;
+}
+
+.drawer-profile-check {
+  position: absolute;
+  right: -4px; bottom: -4px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--profile-color);
+  display: none;
+  align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
+}
+.drawer-profile-pill.active .drawer-profile-check { display: flex; }
+
+.drawer-profile-name { font-size: 0.8rem; font-weight: 500; color: #94a3b8; }
+.drawer-profile-pill.active .drawer-profile-name { color: var(--text-primary); font-weight: 700; }
+
+/* Rota on: the rota decides, so the row fades back */
+.drawer-profiles-pills-row.is-overridden { opacity: 0.4; pointer-events: none; }
+
+.drawer-who-summary {
+  margin: 8px 0 0;
+  padding: 8px 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.drawer-who-summary:empty { display: none; }
+.drawer-who-summary.is-grab { background: rgba(239, 68, 68, 0.08); color: #b91c1c; }
+
+body.theme-dark .drawer-profile-avatar { border-color: #475569; color: #64748b; }
+body.theme-dark .drawer-profile-pill.active .drawer-profile-avatar { color: #fff; border-color: var(--profile-color); }
+body.theme-dark .drawer-profile-check { background: #0f172a; }
+body.theme-dark .drawer-profile-name { color: #64748b; }
+body.theme-dark .drawer-profile-pill.active .drawer-profile-name { color: #f8fafc; }
+body.theme-dark .drawer-who-summary { background: rgba(255, 255, 255, 0.06); }
+body.theme-dark .drawer-who-summary.is-grab { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }

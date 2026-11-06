@@ -988,6 +988,7 @@ function renderDrawerRota() {
   toggle.checked = drawerRotaEnabled;
   wrap.style.display = drawerRotaEnabled ? "" : "none";
   if (sub) sub.textContent = drawerRotaEnabled ? "Pick who does it each day" : "Same people every day";
+  updateDrawerWhoSummary();
   if (!drawerRotaEnabled) { wrap.innerHTML = ""; return; }
 
   const people = [...(window.familyMembers || []), null];
@@ -1159,8 +1160,8 @@ function renderDrawerProfilesRow() {
     const initial = isGrab ? "⚡" : p.charAt(0).toUpperCase();
     const isActive = drawerSelectedProfiles.some(sp => sp.toLowerCase() === p.toLowerCase());
     return `
-      <button type="button" class="drawer-profile-pill ${isActive ? 'active' : ''}" data-profile="${escapeHtml(p)}" style="--profile-color: ${pal.primary}; color: ${pal.primary};">
-        <span class="drawer-profile-avatar" style="background: ${pal.primary};">${escapeHtml(initial)}</span>
+      <button type="button" class="drawer-profile-pill ${isActive ? 'active' : ''}" data-profile="${escapeHtml(p)}" aria-pressed="${isActive}" style="--profile-color: ${pal.primary};">
+        <span class="drawer-profile-avatar">${escapeHtml(initial)}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span>
         <span class="drawer-profile-name">${escapeHtml(p)}</span>
       </button>
     `;
@@ -1186,6 +1187,31 @@ function renderDrawerProfilesRow() {
       renderDrawerProfilesRow();
     };
   });
+  updateDrawerWhoSummary();
+}
+
+// One plain line under the people saying who's on it, so it's obvious at a
+// glance. With the rota on, the rota decides, so the row steps back.
+function updateDrawerWhoSummary() {
+  const el = document.getElementById("drawer-who-summary");
+  const row = document.getElementById("drawer-profiles-row");
+  if (!el) return;
+  const rotaOn = drawerRotaEnabled && drawerSchedule === "daily";
+  if (row) row.classList.toggle("is-overridden", rotaOn);
+  el.classList.toggle("is-grab", false);
+  if (rotaOn) {
+    el.textContent = "Changes each day. Pick who does it in the rota below.";
+    return;
+  }
+  const people = drawerSelectedProfiles.filter(p => p !== "Up for grabs");
+  if (!people.length) {
+    el.classList.add("is-grab");
+    el.textContent = "Up for grabs: anyone can claim it.";
+  } else if (people.length === 1) {
+    el.textContent = `${people[0]} is doing it.`;
+  } else {
+    el.textContent = `${formatAssigneeNames(people)} each do it.`;
+  }
 }
 
 function syncDrawerTypeUI() {
@@ -1206,6 +1232,7 @@ function syncDrawerTypeUI() {
   document.querySelectorAll("#drawer-schedule-pills [data-schedule]").forEach(b => {
     b.classList.toggle("active", b.getAttribute("data-schedule") === drawerSchedule);
   });
+  updateDrawerWhoSummary();
   if (choreFields) choreFields.style.display = drawerSchedule === "once" ? "block" : "none";
   if (routineFields) routineFields.style.display = drawerSchedule === "daily" ? "block" : "none";
 
