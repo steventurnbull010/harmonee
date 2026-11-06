@@ -5640,7 +5640,7 @@ function setupEventListeners() {
       const text = pill.getAttribute("data-example");
       if (text && aiPromptInput) {
         aiPromptInput.value = text;
-        aiPromptInput.focus();
+        if (!(window.isTouchScreen && window.isTouchScreen())) aiPromptInput.focus();
       }
     });
   });
@@ -6137,7 +6137,7 @@ Example output format:
       }
       if (aiPromptInput) {
         aiPromptInput.value = "";
-        aiPromptInput.focus();
+        if (!(window.isTouchScreen && window.isTouchScreen())) aiPromptInput.focus();
       }
     });
   }

@@ -224,3 +224,12 @@ function boardCacheKey(base) {
   return id === "turnbull" ? base : `${base}__${id}`;
 }
 window.boardCacheKey = boardCacheKey;
+
+
+// Touch screen without a mouse (tablets, phones): typing means the
+// on-screen keyboard, which can cover half the screen, so we don't open it
+// unless someone taps a text box.
+function isTouchScreen() {
+  try { return window.matchMedia("(hover: none) and (pointer: coarse)").matches; } catch (e) { return false; }
+}
+window.isTouchScreen = isTouchScreen;

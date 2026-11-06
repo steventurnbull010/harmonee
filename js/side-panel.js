@@ -31,6 +31,9 @@ const SIDE_PANEL_SLIDE_MS = 300; // keep in step with css/side-panel.css
 // keyboard), which is what made these panels feel jerkier than Tasks.
 function focusAfterPanelOpens(el, then) {
   if (!el) return;
+  // On tablets and phones, wait for a tap: focusing would throw up the
+  // on-screen keyboard over half the screen before anyone asked for it
+  if (typeof window.isTouchScreen === "function" && window.isTouchScreen()) return;
   setTimeout(() => {
     try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
     if (typeof then === "function") then();
@@ -128,3 +131,32 @@ if (document.readyState === "loading") {
   initSidePanels();
 }
 window.upgradeToSidePanel = upgradeToSidePanel;
+
+
+// ---------------------------------------------------------------------------
+// On-screen keyboard: keep the box you're typing in visible. When the
+// keyboard opens the page shrinks (interactive-widget=resizes-content in
+// index.html), so once it has settled, scroll the focused box to the middle
+// of what's left of the screen.
+// ---------------------------------------------------------------------------
+(function keepTypingBoxVisible() {
+  const isTextBox = (el) => el && (el.tagName === "TEXTAREA" ||
+    (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|range|color|file|hidden)$/i.test(el.type || "")));
+  let timer = null;
+  const reveal = () => {
+    const el = document.activeElement;
+    if (!isTextBox(el)) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      // Instant, not smooth: smooth scrolling gets cut short while the
+      // keyboard animates in, and stutters on slower tablets
+      try { el.scrollIntoView({ block: "center", inline: "nearest" }); } catch (e) {}
+    }, 250);
+  };
+  document.addEventListener("focusin", (e) => {
+    if (typeof window.isTouchScreen === "function" && window.isTouchScreen() && isTextBox(e.target)) reveal();
+  });
+  // The keyboard opening (or switching size) resizes the visible area
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", reveal);
+  window.addEventListener("resize", reveal);
+})();
