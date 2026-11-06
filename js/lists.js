@@ -146,7 +146,7 @@ function renderListsView() {
         </header>
         <form class="list-column-add" data-add-item>
           <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
-          <button type="submit" aria-label="Add item">+</button>
+          <button type="button" data-open-add-panel aria-label="Add items to ${escapeHtml(list.title)}">+</button>
         </form>
         <ul class="list-column-items">
           ${open.map(itemHtml).join("")}
@@ -216,8 +216,86 @@ function onListsBoardClick(e) {
   }
   if (e.target.closest("[data-edit-list]")) {
     openCreateListModal(listId);
+    return;
+  }
+  if (e.target.closest("[data-open-add-panel]")) {
+    const typed = column.querySelector(".list-column-add input");
+    const draft = typed ? typed.value.trim() : "";
+    if (typed) typed.value = "";
+    openAddListItemPanel(listId, draft);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Add items side panel (#list-item-modal): + on a list opens it. One item
+// per line, so a whole shop can go in at once.
+// ---------------------------------------------------------------------------
+let addPanelListId = GROCERIES_LIST_ID;
+
+function renderAddPanelListPicker() {
+  const row = document.getElementById("list-item-list-picker");
+  if (!row) return;
+  const lists = loadFamilyLists();
+  row.innerHTML = lists.map((l, i) => {
+    const col = getListColor(l, i);
+    const on = l.id === addPanelListId;
+    return `<button type="button" class="list-item-picker-pill ${on ? "is-selected" : ""}" data-pick-list="${escapeHtml(l.id)}" aria-pressed="${on}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+      <span>${escapeHtml(l.emoji || "📋")}</span>${escapeHtml(l.title)}
+    </button>`;
+  }).join("");
+  const list = lists.find(l => l.id === addPanelListId);
+  const heading = document.getElementById("list-item-title");
+  if (heading) heading.textContent = list ? `Add to ${list.title}` : "Add Items";
+}
+
+function openAddListItemPanel(listId, draft = "") {
+  const modal = document.getElementById("list-item-modal");
+  if (!modal) return;
+  addPanelListId = listId || GROCERIES_LIST_ID;
+  const textarea = document.getElementById("list-item-text");
+  textarea.value = draft;
+  renderAddPanelListPicker();
+
+  if (!modal.hasAttribute("data-wired")) {
+    modal.setAttribute("data-wired", "true");
+    document.getElementById("btn-close-list-item").addEventListener("click", () => modal.close());
+    document.getElementById("list-item-list-picker").addEventListener("click", (e) => {
+      const pill = e.target.closest("[data-pick-list]");
+      if (!pill) return;
+      addPanelListId = pill.getAttribute("data-pick-list");
+      renderAddPanelListPicker();
+    });
+    document.getElementById("list-item-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const lines = document.getElementById("list-item-text").value
+        .split("\n").map(s => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+      if (lines.length === 0) { document.getElementById("list-item-text").focus(); return; }
+      const lists = loadFamilyLists();
+      const list = lists.find(l => l.id === addPanelListId);
+      if (!list) return;
+      if (!Array.isArray(list.items)) list.items = [];
+      const stamp = Date.now();
+      // Keep the order they were typed in, at the top of the list
+      list.items = lines.map((text, i) => ({
+        id: `item-${stamp}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+        text,
+        checked: false,
+        addedAt: new Date().toISOString()
+      })).concat(list.items);
+      saveFamilyLists(lists);
+      if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+      modal.close();
+      renderListsView();
+    });
+  }
+
+  if (!modal.open) modal.showModal();
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }, 60);
+}
+window.openAddListItemPanel = openAddListItemPanel;
 
 // ---------------------------------------------------------------------------
 // Item changes

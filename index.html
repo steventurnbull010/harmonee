@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="css/tasks.css?v=4">
   <link rel="stylesheet" href="css/meals.css?v=2">
   <link rel="stylesheet" href="css/calendar.css?v=2">
-  <link rel="stylesheet" href="css/lists.css?v=2">
+  <link rel="stylesheet" href="css/lists.css?v=3">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=1">
   <link rel="stylesheet" href="css/modals.css?v=2">
@@ -688,6 +688,30 @@
       </div>
     </div>
   </div>
+
+  <!-- ADD ITEMS TO A LIST (opens as the shared side panel; js/lists.js) -->
+  <dialog id="list-item-modal" class="roster-dialog" aria-modal="true" aria-labelledby="list-item-title">
+    <div class="modal-content">
+      <button type="button" class="btn-modal-close" id="btn-close-list-item" aria-label="Close">✕</button>
+      <div class="modal-header">
+        <h2 id="list-item-title" class="modal-title">Add Items</h2>
+      </div>
+      <form id="list-item-form" class="settings-form" novalidate>
+        <div class="form-group">
+          <label for="list-item-text">Items</label>
+          <textarea id="list-item-text" rows="6" placeholder="One item per line, e.g.&#10;Milk&#10;Bananas&#10;Bread"></textarea>
+          <span class="list-item-hint">Put each item on its own line to add several at once.</span>
+        </div>
+        <div class="form-group">
+          <label>Add to</label>
+          <div class="list-item-picker" id="list-item-list-picker"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn-primary-modal" id="btn-save-list-item">Add</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 
   <!-- ADD / EDIT REWARD GOAL (opens as the shared side panel) -->
   <dialog id="reward-goal-modal" class="roster-dialog" aria-modal="true" aria-labelledby="reward-goal-title">
@@ -2670,7 +2694,7 @@
   <script src="js/audio.js?v=3"></script>
   <script src="js/weather.js?v=3"></script>
   <script src="js/sleep.js?v=6"></script>
-  <script src="js/lists.js?v=6"></script>
+  <script src="js/lists.js?v=7"></script>
   <script src="js/magic-scanner.js?v=5"></script>
   <script src="js/rewards.js?v=5"></script>
   <script src="js/reward-goals.js?v=1"></script>
@@ -2678,7 +2702,7 @@
   <script src="js/calendar.js?v=5"></script>
   <script src="js/tasks.js?v=8"></script>
   <script src="js/board-access.js?v=1"></script>
-  <script src="js/side-panel.js?v=3"></script>
+  <script src="js/side-panel.js?v=4"></script>
   <script type="module" src="js/meals.js?v=11"></script>
   <script type="module" src="app.js?v=210"></script>
 </body>
