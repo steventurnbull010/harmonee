@@ -185,7 +185,7 @@ function renderPodiumRewards() {
     } else {
       streaksGrid.innerHTML = streakTasks.slice(0, 6).map(t => {
         const streakCount = t.streak || 1;
-        const assignedName = t.assignedTo || "Anyone";
+        const assignedName = formatAssigneeNames(t.assignedTo);
         const initial = assignedName.charAt(0).toUpperCase();
         return `
           <div class="streak-card-item">

@@ -1312,6 +1312,8 @@ function renderWeekCalendar() {
     } else {
       assigned = isDaily ? "Anyone" : (task.assignedTo || "Anyone");
     }
+    // Shared chores store several people as a list; this code works on "Ava, Dara"
+    if (typeof assigned !== "string") assigned = getAssigneeNames(assigned).join(", ") || "Anyone";
 
     const effectivePerson = (isCompleted && completerName) ? completerName : assigned;
     const isUnassigned = !effectivePerson || effectivePerson.toLowerCase() === "anyone" || effectivePerson.toLowerCase() === "unassigned" || effectivePerson.toLowerCase() === "up for grabs";

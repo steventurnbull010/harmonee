@@ -185,3 +185,22 @@ function detectEmojiForChore(text) {
   return null;
 }
 window.detectEmojiForChore = detectEmojiForChore;
+
+// A chore's assignedTo can be one name ("Ava"), a comma list ("Ava, Dara"),
+// an array (["Ava", "Dara"], which the Tasks panel saves for shared chores) or
+// empty. Always go through this instead of treating it as a string.
+function getAssigneeNames(assignedTo) {
+  if (!assignedTo) return [];
+  const raw = Array.isArray(assignedTo) ? assignedTo : (typeof assignedTo === "string" ? assignedTo.split(",") : []);
+  return raw.map(m => String(m).trim()).filter(Boolean);
+}
+window.getAssigneeNames = getAssigneeNames;
+
+// "Ava", "Ava & Dara", "Ava, Dara & Sorcha", or the fallback when nobody's named
+function formatAssigneeNames(assignedTo, fallback = "Anyone") {
+  const names = getAssigneeNames(assignedTo);
+  if (names.length === 0) return fallback;
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+}
+window.formatAssigneeNames = formatAssigneeNames;

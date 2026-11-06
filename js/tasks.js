@@ -734,7 +734,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null) {
         <span style="font-weight: 500;">${escapeHtml(assignedList.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", "))}</span>
       `;
     } else {
-      const assigned = task.assignedTo || "Up for grabs";
+      const assigned = getAssigneeNames(task.assignedTo)[0] || "Up for grabs";
       const pal = (assigned === "Up for grabs" || assigned === "Anyone") ? { primary: "#ef4444" } : getMemberPalette(assigned);
       assigneeEl.innerHTML = `
         <span class="skylight-avatar avatar-mini" style="background: ${pal.primary}; color: #fff;">${assigned.charAt(0).toUpperCase()}</span>

@@ -2232,7 +2232,7 @@ function renderTaskLists() {
     } else {
       const filterLower = activeAssigneeFilter.toLowerCase();
       filtered = filtered.filter(t => {
-        if (t.assignedTo && t.assignedTo.toLowerCase() === filterLower) return true;
+        if (getAssigneeNames(t.assignedTo).some(n => n.toLowerCase() === filterLower)) return true;
         if (t.effectiveCompletedBy) {
           if (Array.isArray(t.effectiveCompletedBy)) {
             if (t.effectiveCompletedBy.some(m => String(m).toLowerCase() === filterLower)) return true;
@@ -2288,7 +2288,7 @@ function renderTaskLists() {
     const upForGrabs = [];
 
     activeTasks.forEach(t => {
-      if (t.assignedTo && t.assignedTo.toLowerCase() === filterLower) {
+      if (getAssigneeNames(t.assignedTo).some(n => n.toLowerCase() === filterLower)) {
         assignedToMember.push(t);
       } else {
         upForGrabs.push(t);
@@ -2387,7 +2387,7 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
   const card = document.createElement("article");
   let assignedAccentClass = "";
   if (!isDone && (highlightMember || (task.assignedTo && activeAssigneeFilter === task.assignedTo))) {
-    const memberName = (highlightMember || task.assignedTo).toLowerCase();
+    const memberName = String(highlightMember || getAssigneeNames(task.assignedTo)[0] || "").toLowerCase();
     assignedAccentClass = `assigned-accent assigned-${memberName}`;
   }
 
@@ -2429,7 +2429,7 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
   }
 
   // Up for Grabs Badge for unassigned tasks
-  if (!isDone && (!task.assignedTo || task.assignedTo.toLowerCase() === "anyone")) {
+  if (!isDone && getAssigneeNames(task.assignedTo).every(n => n.toLowerCase() === "anyone")) {
     badgesHtml += `<span class="badge badge-up-for-grabs">⚡ Up for Grabs</span>`;
   }
 
@@ -2505,12 +2505,13 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
         </div>
       `;
     }
-  } else if (task.assignedTo) {
-    const memberIdx = familyMembers.indexOf(task.assignedTo);
+  } else if (getAssigneeNames(task.assignedTo).length) {
+    const firstAssignee = getAssigneeNames(task.assignedTo)[0];
+    const memberIdx = familyMembers.indexOf(firstAssignee);
     const color = getMemberColor(memberIdx !== -1 ? memberIdx : 0);
-    const initial = task.assignedTo.charAt(0).toUpperCase();
+    const initial = firstAssignee.charAt(0).toUpperCase();
     avatarRightHtml = `
-      <button type="button" class="card-assignee-avatar-btn btn-open-assign" data-task-id="${task.id}" title="Assigned to ${escapeHtml(task.assignedTo)} — Tap to change" aria-label="Assigned to ${escapeHtml(task.assignedTo)}">
+      <button type="button" class="card-assignee-avatar-btn btn-open-assign" data-task-id="${task.id}" title="Assigned to ${escapeHtml(formatAssigneeNames(task.assignedTo))} — Tap to change" aria-label="Assigned to ${escapeHtml(formatAssigneeNames(task.assignedTo))}">
         <div class="avatar-ring" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
       </button>
     `;
@@ -2665,6 +2666,7 @@ function getRosterDayCardInnerHtml(day, assignedPerson, isTarget) {
   let colorBorder = "#f59e0b";
   let colorText = "#d97706";
 
+  if (assignedPerson && typeof assignedPerson !== "string") assignedPerson = getAssigneeNames(assignedPerson).join(", ");
   if (assignedPerson && assignedPerson.toLowerCase() !== "anyone") {
     nameLabel = assignedPerson;
     initial = assignedPerson.charAt(0).toUpperCase();
@@ -2718,7 +2720,7 @@ function renderDailyRosterInputs(task, activeTargetDay = null) {
     if (task && task.assignedDays && task.assignedDays[day] !== undefined) {
       assigned = task.assignedDays[day] || "";
     } else if (task && task.assignedTo) {
-      assigned = task.assignedTo;
+      assigned = getAssigneeNames(task.assignedTo).join(", ");
     }
     currentRosterAssignments[day] = assigned;
   });
