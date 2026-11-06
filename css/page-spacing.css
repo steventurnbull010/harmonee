@@ -80,7 +80,7 @@
 #view-calendar .month-mini-event { padding: 0 8px !important; gap: 8px !important; }
 
 /* Meals */
-#view-meals .skylight-meals-main { padding: 16px 24px 80px 24px !important; }
+#view-meals .skylight-meals-main { padding: 16px 24px 24px 24px !important; }
 #view-meals .calendar-header { padding: 8px 8px 16px 8px !important; }
 #view-meals .calendar-header-controls { gap: 8px !important; }
 #view-meals .skylight-meals-header { padding: 16px 24px !important; gap: 16px !important; }

@@ -377,8 +377,8 @@ function renderMealsView() {
       } else {
         matrixHtml += `
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
-            <div class="meal-empty-slot" role="button" tabindex="0" title="Tap to plan ${cat.label} for this day">
-              <span>+ Plan</span>
+            <div class="meal-empty-slot meal-empty-${cat.key}" role="button" tabindex="0" title="Tap to plan ${cat.label} for this day" aria-label="Plan ${cat.label}">
+              <span aria-hidden="true">+</span>
             </div>
           </div>
         `;
