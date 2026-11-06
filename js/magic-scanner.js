@@ -7,6 +7,7 @@
 // ADD RECIPE FROM PHOTO (Gemini 1.5 Flash Multimodal Vision Extraction)
 // ============================================================================
 let currentScannedRecipeData = null;
+let currentScannedCalendarEvents = [];
 
 // Guardrail constants: Daily Allowance & Anti-Spam Debounce
 const MAX_DAILY_PHOTO_SCANS = 15;

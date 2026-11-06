@@ -635,6 +635,28 @@ export const DEFAULT_FIREBASE_CONFIG = {
 };
 
 let db = null;
+
+// Share Firestore handles with the classic-script domain modules in js/.
+// Those files can't see this module's scope or its imports, so they read
+// these as globals (window.db is kept in sync in initializeDataSource).
+Object.assign(window, {
+  db: null,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  onSnapshot,
+  writeBatch,
+  serverTimestamp,
+  DEFAULT_FIREBASE_CONFIG,
+  // app.js functions the js/ modules call (hoisted, so safe to share here)
+  loadWeeklyMeals,
+  getTaskDocRef,
+  renderApp,
+  showGamifiedCelebration
+});
+
 let firestoreUnsubscribe = null;
 let firestoreBoardUnsubscribe = null;
 let currentTasks = [];
@@ -823,7 +845,6 @@ let sleepScreenTemporaryWakeUntil = 0;
 let localWeatherForecast = null;
 let isMagicEventScanningActive = false;
 let lastMagicEventScanTimestamp = 0;
-let currentScannedCalendarEvents = [];
 let currentScannedFlyerDataUrl = "";
 let currentScannedDocTitle = "";
 
@@ -1278,7 +1299,8 @@ async function initializeDataSource() {
       if (statusText) statusText.textContent = "Connecting...";
       const app = initializeApp(cfg);
       db = getFirestore(app);
-      
+      window.db = db;
+
       if (statusDot) {
         statusDot.classList.add("connected");
         statusDot.classList.remove("pulsing");
