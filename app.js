@@ -469,6 +469,7 @@ window.normalizeFamilyMemberName = normalizeFamilyMemberName;
 const STORAGE_KEY_TASKS = isDefaultTurnbullBoard ? "harmonee_tasks" : `harmonee_tasks_${currentBoardId}`;
 const STORAGE_KEY_ROSTER = isDefaultTurnbullBoard ? "harmonee_roster" : `harmonee_roster_${currentBoardId}`;
 const STORAGE_KEY_CONFIG = "harmonee_firebase_cfg";
+const LEGACY_TURNBULL_PROJECT_ID = "ava-turnbull-official";
 
 // Helper collection and document references for multi-tenancy
 function getTasksCollectionRef() {
@@ -1262,7 +1263,15 @@ function loadSavedFirebaseConfig() {
     let cfg = null;
     if (raw) {
       cfg = JSON.parse(raw);
-    } else if (DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
+    }
+    // The Turnbull board moved from the legacy project to harmonee-app on
+    // 2026-11-06. Devices that still have the legacy project saved switch to
+    // the new one for this board only; other households stay on whatever
+    // they have saved until their data is migrated too.
+    if (cfg && cfg.projectId === LEGACY_TURNBULL_PROJECT_ID && isDefaultTurnbullBoard) {
+      cfg = null;
+    }
+    if (!cfg && DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
       cfg = DEFAULT_FIREBASE_CONFIG;
     }
 
