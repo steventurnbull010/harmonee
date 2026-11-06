@@ -599,6 +599,36 @@ function updateDrawerChefsUI() {
 }
 
 // Open Slide-out "Plan Meal" Drawer (Matching Photo 2)
+// Header line ("Tuesday, Nov 10 • Dinner") and date box follow the date and
+// meal being planned
+function updatePlanDrawerTarget() {
+  const targetLabelEl = document.getElementById("drawer-target-slot-label");
+  const [y, m, d] = currentPlanningDateStr.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  if (targetLabelEl) {
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const slotCapitalized = currentPlanningSlot.charAt(0).toUpperCase() + currentPlanningSlot.slice(1);
+    targetLabelEl.textContent = `${dayNames[dateObj.getDay()]}, ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()} • ${slotCapitalized}`;
+  }
+  const dateInput = document.getElementById("plan-meal-date-input");
+  if (dateInput && dateInput.value !== currentPlanningDateStr) dateInput.value = currentPlanningDateStr;
+  // New Entry's Meal Category matches the meal being planned
+  document.querySelectorAll("input[name='custom-meal-category']").forEach(radio => {
+    radio.checked = radio.value === currentPlanningSlot;
+  });
+}
+
+// After planning a meal, show the week it's in (e.g. next Tuesday's)
+function showMealsWeekFor(dateStr) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  if (!y) return;
+  const target = new Date(y, m - 1, d);
+  const mondayOf = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  mealsWeekOffset = Math.round((mondayOf(target) - mondayOf(new Date())) / (7 * 86400000));
+  window.mealsWeekOffset = mealsWeekOffset;
+}
+
 function openPlanMealDrawer(dateStr, slot = "dinner") {
   currentPlanningDateStr = dateStr || (window.getLocalDateKey || getLocalDateKey)(new Date());
   currentPlanningSlot = slot || "dinner";
@@ -623,24 +653,40 @@ function openPlanMealDrawer(dateStr, slot = "dinner") {
   renderDrawerChefChips();
   updateDrawerChefsUI();
 
-  // Update target slot label in drawer header: e.g. "Thursday, Nov 5 • Dinner"
-  const targetLabelEl = document.getElementById("drawer-target-slot-label");
-  if (targetLabelEl) {
-    const [y, m, d] = currentPlanningDateStr.split("-").map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const slotCapitalized = currentPlanningSlot.charAt(0).toUpperCase() + currentPlanningSlot.slice(1);
-    targetLabelEl.textContent = `${dayNames[dateObj.getDay()]}, ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()} • ${slotCapitalized}`;
+  // "Thursday, Nov 5 • Dinner" line and the date picker
+  updatePlanDrawerTarget();
+  const dateInput = document.getElementById("plan-meal-date-input");
+  if (dateInput && !dateInput.hasAttribute("data-wired")) {
+    dateInput.setAttribute("data-wired", "true");
+    dateInput.addEventListener("change", () => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value)) {
+        currentPlanningDateStr = dateInput.value;
+        updatePlanDrawerTarget();
+      } else {
+        dateInput.value = currentPlanningDateStr; // cleared: put the date back
+      }
+    });
   }
 
   // Highlight corresponding category bubble (B, L, D, or S)
   updateDrawerCategoryBubblesUI();
 
-  // Set radio in custom form
+  // Set radio in custom form; choosing a different one there switches the
+  // whole panel (bubbles, header, recipe list) to that meal
   const customCatRadios = document.querySelectorAll("input[name='custom-meal-category']");
   customCatRadios.forEach(radio => {
     radio.checked = radio.value === currentPlanningSlot;
+    if (!radio.hasAttribute("data-wired")) {
+      radio.setAttribute("data-wired", "true");
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        currentPlanningSlot = radio.value;
+        currentDrawerCategory = radio.value;
+        updateDrawerCategoryBubblesUI();
+        updatePlanDrawerTarget();
+        renderDrawerRecipeList();
+      });
+    }
   });
 
   // Reset tabs to "From Recipes" by default when opening drawer
@@ -1081,6 +1127,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
         (window.showCalendarToast || showCalendarToast)(`📅 Planned "${currentCookingRecipe.title}" for ${slotCap}!`);
       }
 
+      showMealsWeekFor(selectedDate);
       renderMealsView();
       (window.renderWeekCalendar || renderWeekCalendar)();
     };
@@ -1465,6 +1512,7 @@ function wireMealsHeaderAndDrawerListeners() {
         currentDrawerCategory = bubble.getAttribute("data-category") || "dinner";
         currentPlanningSlot = currentDrawerCategory;
         updateDrawerCategoryBubblesUI();
+        updatePlanDrawerTarget();
         renderDrawerRecipeList();
       };
     }
@@ -1614,6 +1662,7 @@ function wireMealsHeaderAndDrawerListeners() {
       if (titleInput) titleInput.value = "";
       if (notesInput) notesInput.value = "";
 
+      showMealsWeekFor(currentPlanningDateStr);
       renderMealsView();
       renderWeekCalendar();
       closePlanMealDrawer();

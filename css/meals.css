@@ -3609,3 +3609,53 @@ body.theme-dark .meal-empty-slot.meal-empty-dinner { background: rgba(139, 92, 2
     gap: 8px;
   }
 }
+
+/* Plan Meal: pick another day with the device's own date picker */
+.plan-drawer-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+}
+
+body.theme-dark .plan-drawer-date-row {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+.plan-drawer-date-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.plan-drawer-date-input {
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plan-drawer-date-input:focus {
+  outline: none;
+}
+
+.plan-drawer-date-row:focus-within {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+body.theme-dark .plan-drawer-date-input {
+  color-scheme: dark;
+}

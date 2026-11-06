@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=11">
-  <link rel="stylesheet" href="css/meals.css?v=8">
+  <link rel="stylesheet" href="css/meals.css?v=9">
   <link rel="stylesheet" href="css/calendar.css?v=3">
   <link rel="stylesheet" href="css/lists.css?v=4">
   <link rel="stylesheet" href="css/rewards.css?v=2">
@@ -423,6 +423,12 @@
               <div class="plan-drawer-target-slot" id="drawer-target-slot-label">
                 Thursday, Nov 5 • Dinner
               </div>
+              <!-- Plan for another day: opens the device's own date picker -->
+              <label class="plan-drawer-date-row" for="plan-meal-date-input">
+                <span class="plan-drawer-date-icon" aria-hidden="true">📅</span>
+                <span class="plan-drawer-date-label">Date</span>
+                <input type="date" id="plan-meal-date-input" class="plan-drawer-date-input" required>
+              </label>
             </div>
 
             <!-- Segmented Toggle: [From Recipes] | [New Entry] -->
@@ -2734,7 +2740,7 @@
   <script src="js/tasks.js?v=12"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=8"></script>
-  <script type="module" src="js/meals.js?v=17"></script>
+  <script type="module" src="js/meals.js?v=19"></script>
   <script type="module" src="app.js?v=215"></script>
 </body>
 </html>
