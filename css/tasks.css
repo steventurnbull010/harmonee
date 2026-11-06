@@ -2451,3 +2451,65 @@ body.theme-dark .drawer-rota-chip.is-grab { color: #fca5a5; background: rgba(239
 body.theme-dark .drawer-rota-pill { border-color: #475569; color: #64748b; }
 body.theme-dark .drawer-rota-pill.is-selected { border-color: var(--rota-color); color: #fff; }
 body.theme-dark .drawer-rota-tick { background: #0f172a; }
+
+/* ==========================================================================
+   Task emoji picker: grouped by kind of job, big tiles that are easy to hit
+   on a tablet, the current emoji highlighted.
+   ========================================================================== */
+.drawer-emoji-preview {
+  font-size: 1.75rem;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+#drawer-emoji-trigger { cursor: pointer; }
+#drawer-emoji-trigger:focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+
+.drawer-emoji-grid {
+  max-height: 360px;
+  padding: 0 16px 16px;
+  border-radius: 16px;
+  overscroll-behavior: contain;
+}
+.drawer-emoji-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 16px 0 8px;
+  background: var(--card-bg, #ffffff);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary, #64748b);
+}
+.drawer-emoji-group-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+}
+.skylight-task-drawer .drawer-emoji-item,
+.drawer-emoji-item {
+  width: 100%;
+  height: 56px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: #f1f5f9;
+  border: 2px solid transparent;
+  font-size: 2rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.drawer-emoji-item:hover { background: #e2e8f0; }
+.drawer-emoji-item:active { transform: scale(0.92); }
+.drawer-emoji-item:focus-visible { outline: none; border-color: var(--accent, #3b82f6); }
+.drawer-emoji-item.is-selected {
+  background: color-mix(in srgb, var(--accent, #3b82f6) 14%, #ffffff);
+  border-color: var(--accent, #3b82f6);
+}
+
+body.theme-dark .drawer-emoji-group-title { background: #0f172a; color: #94a3b8; }
+body.theme-dark .drawer-emoji-item { background: #1e293b; }
+body.theme-dark .drawer-emoji-item:hover { background: #334155; }
+body.theme-dark .drawer-emoji-item.is-selected { background: color-mix(in srgb, var(--accent, #3b82f6) 24%, #0f172a); }

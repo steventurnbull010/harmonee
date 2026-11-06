@@ -975,6 +975,22 @@ let drawerRotaEnabled = false;
 let drawerRota = {};
 let drawerTaskHadRota = false;
 
+// Emojis for chores and routines, grouped by the kind of job. Kept to emojis
+// that every tablet from the last few years can show.
+const TASK_EMOJI_GROUPS = [
+  { name: "Cleaning", items: [["🧹","Sweep"],["🧽","Scrub"],["🧼","Soap"],["🪣","Mop"],["🧴","Spray"],["🫧","Bubbles"],["🪟","Windows"],["🛁","Bath"],["🚿","Shower"],["🚽","Toilet"],["🧻","Toilet roll"],["🗑️","Bins"],["♻️","Recycling"],["✨","Tidy up"]] },
+  { name: "Kitchen & meals", items: [["🍽️","Dishes"],["🍴","Set the table"],["🍳","Cook"],["🥣","Breakfast"],["🥪","Packed lunch"],["🍱","Lunchbox"],["🥗","Salad"],["🍲","Dinner"],["☕","Tea or coffee"],["🥛","Milk"],["🛒","Shopping"],["🥕","Veg"],["🍎","Fruit"],["🧊","Fridge"]] },
+  { name: "Laundry & bedroom", items: [["🧺","Laundry"],["👕","Clothes"],["👖","Trousers"],["🧦","Socks"],["👟","Shoes"],["🧥","Coat"],["👔","Ironing"],["🛏️","Make the bed"],["🧸","Toys"],["🎒","School bag"],["🪞","Mirror"],["🧷","Mending"]] },
+  { name: "DIY & repairs", items: [["🔨","Hammer"],["🪛","Screwdriver"],["🔧","Spanner"],["🪚","Saw"],["🧰","Toolbox"],["🪜","Ladder"],["🖌️","Paint"],["🎨","Decorate"],["🧱","Building"],["📏","Measure"],["💡","Light bulb"],["🔌","Plug"],["🔋","Batteries"],["🪝","Hook"],["🔩","Nuts and bolts"],["🚪","Door"]] },
+  { name: "Garden & outside", items: [["🌱","Plant"],["🪴","Pot plant"],["🌻","Flowers"],["🌳","Tree"],["🌿","Weeding"],["🍂","Leaves"],["💧","Water"],["🏡","House"],["🚗","Car"],["🚲","Bike"],["📬","Post"],["📦","Parcel"],["❄️","Snow"],["☔","Rain"]] },
+  { name: "Pets", items: [["🐶","Dog"],["🐱","Cat"],["🐟","Fish"],["🐰","Rabbit"],["🐹","Hamster"],["🐦","Bird"],["🐢","Tortoise"],["🦮","Walk the dog"],["🦴","Feed"],["🐾","Pet care"]] },
+  { name: "Getting ready & health", items: [["🪥","Brush teeth"],["🛀","Bath time"],["💇","Hair"],["😴","Bedtime"],["⏰","Wake up"],["☀️","Morning"],["🌙","Evening"],["💊","Medicine"],["💪","Exercise"],["🧘","Calm time"],["🚰","Drink water"],["🩺","Doctor"]] },
+  { name: "School & learning", items: [["📚","Homework"],["📖","Reading"],["✏️","Writing"],["📝","Notes"],["🧮","Maths"],["💻","Computer"],["🔬","Science"],["🌍","Geography"],["🎓","Study"],["🗣️","Practise"]] },
+  { name: "Activities & clubs", items: [["⚽","Football"],["🏀","Basketball"],["🎾","Tennis"],["🏊","Swimming"],["🥋","Martial arts"],["🩰","Dance"],["🏃","Running"],["🎹","Piano"],["🎸","Guitar"],["🎤","Singing"],["🧩","Puzzle"],["🎮","Games"],["📵","Screen-free"]] },
+  { name: "Errands & money", items: [["🛍️","Shopping bags"],["💰","Money"],["🪙","Pocket money"],["🧾","Bills"],["✉️","Letter"],["📞","Phone call"],["🗓️","Plan"],["🔑","Keys"],["🚌","Bus"],["🏦","Bank"]] },
+  { name: "Other", items: [["⭐","Star"],["✅","Done"],["❤️","Kindness"],["🎁","Gift"],["🎉","Party"],["📌","Reminder"],["🙏","Thank you"],["👍","Good job"]] }
+];
+
 function renderDrawerRota() {
   const toggle = document.getElementById("drawer-toggle-rota");
   const wrap = document.getElementById("drawer-rota-days");
@@ -1284,15 +1300,27 @@ function initSkylightTaskDrawerEvents() {
   const emojiTrigger = document.getElementById("drawer-emoji-trigger");
   const emojiGrid = document.getElementById("drawer-emoji-grid");
   if (emojiTrigger && emojiGrid) {
-    emojiGrid.innerHTML = EVENT_EMOJI_LIST.map(em => `<button type="button" class="drawer-emoji-item" data-emoji="${em}">${em}</button>`).join("");
+    emojiGrid.innerHTML = TASK_EMOJI_GROUPS.map(g => `
+      <div class="drawer-emoji-group">
+        <div class="drawer-emoji-group-title">${escapeHtml(g.name)}</div>
+        <div class="drawer-emoji-group-items">${g.items.map(([em, label]) => `<button type="button" class="drawer-emoji-item" data-emoji="${em}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${em}</button>`).join("")}</div>
+      </div>`).join("");
     emojiTrigger.onclick = () => {
-      emojiGrid.style.display = (emojiGrid.style.display === "none") ? "grid" : "none";
+      const opening = emojiGrid.style.display === "none";
+      emojiGrid.style.display = opening ? "block" : "none";
+      emojiTrigger.setAttribute("aria-expanded", String(opening));
+      if (opening) {
+        emojiGrid.querySelectorAll(".drawer-emoji-item").forEach(b => b.classList.toggle("is-selected", b.getAttribute("data-emoji") === drawerSelectedEmoji));
+        emojiGrid.scrollTop = 0;
+      }
     };
+    emojiTrigger.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); emojiTrigger.onclick(); } };
     emojiGrid.querySelectorAll(".drawer-emoji-item").forEach(btn => {
       btn.onclick = () => {
         drawerSelectedEmoji = btn.getAttribute("data-emoji");
         document.getElementById("drawer-emoji-preview").textContent = drawerSelectedEmoji;
         emojiGrid.style.display = "none";
+        emojiTrigger.setAttribute("aria-expanded", "false");
       };
     });
   }
