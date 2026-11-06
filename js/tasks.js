@@ -31,6 +31,7 @@ function getTaskRoutineInfo(task) {
   if (task.routineSlot === "morning") return { order: 1, label: "☀️ Morning" };
   if (task.routineSlot === "afternoon") return { order: 2, label: "⛅ Afternoon" };
   if (task.routineSlot === "evening") return { order: 4, label: "🌙 Evening" };
+  if (task.routineSlot === "anytime") return { order: 5, label: "🕑 Anytime" };
 
   const t = (task.title || "").toLowerCase();
   const cat = (task.category || task.taskType || "").toLowerCase();
@@ -198,16 +199,19 @@ function renderSkylightTasksPage() {
     const morningTasks = [];
     const afternoonTasks = [];
     const eveningTasks = [];
+    const anytimeTasks = [];
     const generalChores = [];
 
     memberTasks.forEach(task => {
       const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
       const rInfo = getTaskRoutineInfo(task);
       if (isDaily || task.routineSlot) {
-        const slot = task.routineSlot || (rInfo.label.includes("Morning") ? "morning" : (rInfo.label.includes("Afternoon") ? "afternoon" : "evening"));
+        // No time of day set (and none in the title) means Anytime, not Evening
+        const slot = task.routineSlot || (rInfo.label.includes("Morning") ? "morning" : (rInfo.label.includes("Afternoon") ? "afternoon" : (rInfo.label.includes("Evening") ? "evening" : "anytime")));
         if (slot === "morning") morningTasks.push(task);
         else if (slot === "afternoon") afternoonTasks.push(task);
-        else eveningTasks.push(task);
+        else if (slot === "evening") eveningTasks.push(task);
+        else anytimeTasks.push(task);
       } else {
         generalChores.push(task);
       }
@@ -217,10 +221,11 @@ function renderSkylightTasksPage() {
     const hasMorning = morningTasks.length > 0;
     const hasAfternoon = afternoonTasks.length > 0;
     const hasEvening = eveningTasks.length > 0;
+    const hasAnytime = anytimeTasks.length > 0;
     const hasChores = generalChores.length > 0;
 
     let filterPillsHtml = "";
-    if (hasMorning || hasAfternoon || hasEvening || hasChores) {
+    if (hasMorning || hasAfternoon || hasEvening || hasAnytime || hasChores) {
       filterPillsHtml = `
         <div class="tasks-col-routine-filters">
           ${hasMorning ? `
@@ -239,6 +244,12 @@ function renderSkylightTasksPage() {
             <button type="button" class="routine-filter-circle-btn ${activeFilter === 'evening' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="evening" title="Show Evening routines">
               <div class="circle-icon-wrap">🌙</div>
               <span class="circle-label">Evening</span>
+            </button>
+          ` : ''}
+          ${hasAnytime ? `
+            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'anytime' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="anytime" title="Show Anytime routines">
+              <div class="circle-icon-wrap">🕑</div>
+              <span class="circle-label">Anytime</span>
             </button>
           ` : ''}
           ${hasChores ? `
@@ -331,6 +342,9 @@ function renderSkylightTasksPage() {
       }
       if (activeFilter === "all" || activeFilter === "evening") {
         if (eveningTasks.length > 0) sectionsToShow.push({ title: "Evening", list: eveningTasks });
+      }
+      if (activeFilter === "all" || activeFilter === "anytime") {
+        if (anytimeTasks.length > 0) sectionsToShow.push({ title: "Anytime", list: anytimeTasks });
       }
       if (activeFilter === "all" || activeFilter === "chores") {
         if (generalChores.length > 0) sectionsToShow.push({ title: "Chores", list: generalChores });
@@ -840,7 +854,13 @@ function openSkylightTaskDrawer(taskId = null) {
     const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
     drawerCurrentType = (isDaily || task.routineSlot) ? "routine" : "chore";
     drawerRewardValue = task.value || 10;
-    drawerRoutineSlot = task.routineSlot || "morning";
+    // Same rule as the board: no time of day set (or in the title) = Anytime
+    if (task.routineSlot) {
+      drawerRoutineSlot = task.routineSlot;
+    } else {
+      const lbl = getTaskRoutineInfo(task).label;
+      drawerRoutineSlot = lbl.includes("Morning") ? "morning" : (lbl.includes("Afternoon") ? "afternoon" : (lbl.includes("Evening") ? "evening" : "anytime"));
+    }
   } else {
     headingEl.textContent = "Add Task";
     submitBtn.textContent = "Add";
@@ -869,7 +889,7 @@ function openSkylightTaskDrawer(taskId = null) {
   });
 
   // Sync Routine slot UI
-  ["morning", "afternoon", "evening"].forEach(s => {
+  ["morning", "afternoon", "evening", "anytime"].forEach(s => {
     const b = document.getElementById(`btn-routine-slot-${s}`);
     if (b) b.classList.toggle("active", s === drawerRoutineSlot);
   });
@@ -1004,12 +1024,12 @@ function initSkylightTaskDrawerEvents() {
   });
 
   // Routine slot segments (Morning, Afternoon, Evening)
-  ["morning", "afternoon", "evening"].forEach(slot => {
+  ["morning", "afternoon", "evening", "anytime"].forEach(slot => {
     const btn = document.getElementById(`btn-routine-slot-${slot}`);
     if (btn) {
       btn.onclick = () => {
         drawerRoutineSlot = slot;
-        ["morning", "afternoon", "evening"].forEach(s => {
+        ["morning", "afternoon", "evening", "anytime"].forEach(s => {
           const b = document.getElementById(`btn-routine-slot-${s}`);
           if (b) b.classList.toggle("active", s === slot);
         });
@@ -1070,7 +1090,7 @@ function initSkylightTaskDrawerEvents() {
         repeat: isRoutine ? "daily" : "none",
         routineSlot: isRoutine ? drawerRoutineSlot : null,
         value: drawerRewardValue,
-        order: isRoutine ? (drawerRoutineSlot === 'morning' ? 1 : (drawerRoutineSlot === 'afternoon' ? 2 : 4)) : 3
+        order: isRoutine ? ({ morning: 1, afternoon: 2, evening: 4, anytime: 5 }[drawerRoutineSlot] || 4) : 3
       };
 
       if (id) {

@@ -26,23 +26,34 @@ try {
   process.exit(1);
 }
 
-// 2. CSS Brace Balance Check
-console.log('\n2. Checking style.css brace balance...');
-const css = fs.readFileSync(styleCssPath, 'utf8');
-let openBraces = 0;
-for (let i = 0; i < css.length; i++) {
-  if (css[i] === '{') openBraces++;
-  else if (css[i] === '}') openBraces--;
-  if (openBraces < 0) {
-    console.error(`   ❌ Extra closing brace in style.css at char ${i}`);
-    process.exit(1);
+// 2. CSS Brace Balance Check (every stylesheet)
+// One missing or extra brace silently breaks every rule after it: browsers
+// read the rest of the file as nested inside the open rule, or drop the
+// rule after a stray "}". Comments are ignored; line numbers are reported.
+console.log('\n2. Checking every stylesheet\'s brace balance...');
+const cssFiles = [styleCssPath, ...fs.readdirSync(path.join(__dirname, '..', 'css'))
+  .filter(f => f.endsWith('.css'))
+  .map(f => path.join(__dirname, '..', 'css', f))];
+let cssProblems = 0;
+for (const file of cssFiles) {
+  const raw = fs.readFileSync(file, 'utf8');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+  const name = path.relative(path.join(__dirname, '..'), file);
+  const open = [];
+  let line = 1;
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === '\n') line++;
+    else if (ch === '{') open.push(line);
+    else if (ch === '}') {
+      if (open.length === 0) { console.error(`   ❌ ${name}: extra closing brace on line ${line}`); cssProblems++; }
+      else open.pop();
+    }
   }
+  open.forEach(l => { console.error(`   ❌ ${name}: block opened on line ${l} is never closed`); cssProblems++; });
 }
-if (openBraces !== 0) {
-  console.error(`   ❌ Mismatched braces in style.css! Unclosed: ${openBraces}`);
-  process.exit(1);
-}
-console.log('   ✅ style.css braces balanced perfectly.');
+if (cssProblems) process.exit(1);
+console.log(`   ✅ ${cssFiles.length} stylesheets, all braces balanced.`);
 
 // 3. index.html Cache Buster Check
 console.log('\n3. Checking index.html script & css links...');

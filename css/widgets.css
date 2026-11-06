@@ -296,7 +296,6 @@ body.theme-dark .create-list-dialog::backdrop {
   flex-direction: column;
   gap: 16px;
 }
-}
 
 body.theme-dark .sticky-modal-content,
 body.theme-dark .create-list-content {
