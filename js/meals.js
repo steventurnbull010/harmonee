@@ -291,6 +291,19 @@ function getMealsWeekDates(offsetWeeks = 0) {
   return dates;
 }
 
+// The meal coming up next, for the + Plan Meal button: breakfast before
+// 10am, lunch until 2pm, dinner until 8pm, then tomorrow's breakfast.
+function getNextMealToPlan(now) {
+  const date = new Date(now);
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  if (minutes < 10 * 60) return { date, slot: "breakfast" };
+  if (minutes < 14 * 60) return { date, slot: "lunch" };
+  if (minutes < 20 * 60) return { date, slot: "dinner" };
+  date.setDate(date.getDate() + 1);
+  return { date, slot: "breakfast" };
+}
+window.getNextMealToPlan = getNextMealToPlan;
+
 function renderMealsView() {
   const matrixContainer = document.getElementById("skylight-meals-matrix");
   if (!matrixContainer) return;
@@ -1367,7 +1380,8 @@ function wireMealsHeaderAndDrawerListeners() {
   if (btnPlanDinner && !btnPlanDinner.hasAttribute("data-wired")) {
     btnPlanDinner.setAttribute("data-wired", "true");
     btnPlanDinner.onclick = () => {
-      openPlanMealDrawer(getLocalDateKey(new Date()), "dinner");
+      const next = getNextMealToPlan(new Date());
+      openPlanMealDrawer(getLocalDateKey(next.date), next.slot);
     };
   }
 
