@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="css/lists.css?v=3">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=1">
-  <link rel="stylesheet" href="css/modals.css?v=2">
+  <link rel="stylesheet" href="css/modals.css?v=4">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
-  <link rel="stylesheet" href="css/side-panel.css?v=4">
+  <link rel="stylesheet" href="css/side-panel.css?v=5">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
   <script>
@@ -1348,10 +1348,13 @@
     </dialog>
 
     <!-- MANAGE FAMILY ROSTER MODAL -->
-    <dialog id="roster-modal" class="roster-dialog" aria-modal="true" aria-labelledby="roster-modal-title">
+    <!-- Family members now live in Settings → Profiles -->
+
+    <!-- BOARD SETTINGS & GAME MODE MODAL -->
+    <dialog id="settings-modal" class="settings-dialog" aria-modal="true" aria-labelledby="settings-modal-title">
       <div class="modal-backdrop-blur"></div>
       <div class="modal-content">
-        <button type="button" class="btn-modal-close" id="btn-close-roster-modal" aria-label="Close modal" title="Close">
+        <button type="button" class="btn-modal-close" id="btn-close-settings-modal" aria-label="Close modal" title="Close">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1359,12 +1362,24 @@
         </button>
 
         <div class="modal-header">
-          <div class="modal-trophy">👥</div>
-          <h2 id="roster-modal-title" class="modal-title">Family Roster</h2>
-          <p class="modal-subtitle">Add or edit members for this board's leaderboard and task assignments.</p>
+          <h2 id="settings-modal-title" class="modal-title">Settings</h2>
         </div>
 
-        <div class="roster-members-list" id="roster-members-list">
+        <!-- Jump-to menu; stays at the top while the panel scrolls -->
+        <nav class="settings-section-nav" id="settings-section-nav" aria-label="Settings sections">
+          <button type="button" class="settings-nav-chip" data-section="profiles">👥 Profiles</button>
+          <button type="button" class="settings-nav-chip" data-section="display">🎨 Display</button>
+          <button type="button" class="settings-nav-chip" data-section="rewards">🏆 Rewards</button>
+          <button type="button" class="settings-nav-chip" data-section="access">🔐 Access</button>
+          <button type="button" class="settings-nav-chip" data-section="sleep">🌙 Sleep</button>
+          <button type="button" class="settings-nav-chip" data-section="reset">⚠️ Reset</button>
+        </nav>
+
+        <!-- PROFILES: family members (saved as soon as you change them) -->
+        <section class="settings-section" id="settings-sec-profiles">
+          <h3 class="settings-section-title">👥 Profiles</h3>
+          <p class="settings-section-desc">Everyone on this board. Changes here save straight away.</p>
+          <div class="roster-members-list" id="roster-members-list">
           <!-- Member rows injected dynamically -->
         </div>
 
@@ -1385,31 +1400,11 @@
             <input type="hidden" id="new-member-selected-color" value="sky-blue">
           </div>
         </form>
-
-        <div class="modal-footer button-row">
-          <button type="button" class="btn-primary-modal" id="btn-save-roster">Done</button>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- BOARD SETTINGS & GAME MODE MODAL -->
-    <dialog id="settings-modal" class="settings-dialog" aria-modal="true" aria-labelledby="settings-modal-title">
-      <div class="modal-backdrop-blur"></div>
-      <div class="modal-content">
-        <button type="button" class="btn-modal-close" id="btn-close-settings-modal" aria-label="Close modal" title="Close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-
-        <div class="modal-header">
-          <div class="modal-trophy">⚙️</div>
-          <h2 id="settings-modal-title" class="modal-title">Board Settings & Rewards</h2>
-          <p class="modal-subtitle">Choose whether your household plays for leaderboard points or earns pocket money!</p>
-        </div>
+        </section>
 
         <form id="settings-form" class="settings-form">
+          <section class="settings-section" id="settings-sec-display">
+            <h3 class="settings-section-title">🎨 Display</h3>
           <!-- Theme & Appearance (Light / Dark) -->
           <div class="form-group settings-theme-group">
             <label>Theme & Appearance</label>
@@ -1427,6 +1422,10 @@
             </div>
           </div>
 
+          </section>
+
+          <section class="settings-section" id="settings-sec-rewards">
+            <h3 class="settings-section-title">🏆 Rewards</h3>
           <div class="form-group">
             <label>Reward / Game Mode</label>
             <div class="mode-selector-grid">
@@ -1458,13 +1457,16 @@
               <h4 class="settings-box-title">📜 Weekly Payout History</h4>
               <span class="settings-box-badge">Auto-resets Sun Midnight</span>
             </div>
-            <p class="settings-box-desc">Points and earnings reset every Sunday night so each week starts fresh. Check previous weeks below if allowances haven't been paid yet!</p>
+            <p class="settings-box-desc">Each week's points are saved here at Sunday midnight, then the week starts fresh. Unspent points carry over for reward goals.</p>
             
             <div class="weekly-history-list" id="weekly-history-container">
               <div class="history-empty-note">No archived weeks yet. First weekly snapshot records this Sunday at midnight!</div>
             </div>
           </div>
 
+          </section>
+
+          <section class="settings-section" id="settings-sec-access">
           <!-- Family Access: code, join link, joined devices -->
           <div class="settings-section-box" id="family-access-box">
             <div class="settings-box-header">
@@ -1477,6 +1479,9 @@
             </div>
           </div>
 
+          </section>
+
+          <section class="settings-section" id="settings-sec-sleep">
           <!-- Scheduled Sleep Window (Lights-Out Overnight) -->
           <div class="settings-section-box">
             <div class="settings-box-header">
@@ -1511,14 +1516,16 @@
             </div>
           </div>
 
-          <!-- Danger Zone: Reset Tasks to Defaults -->
-          <div class="settings-danger-zone">
-            <h4 class="danger-zone-title">Danger Zone</h4>
-            <p class="danger-zone-desc">Reset all chores back to the default household starter list. Completed task status will be cleared.</p>
+          </section>
+
+          <!-- RESET: last, and needs the word RESET typed -->
+          <section class="settings-section settings-danger-zone" id="settings-sec-reset">
+            <h4 class="danger-zone-title">⚠️ Reset chores</h4>
+            <p class="danger-zone-desc">Replaces every chore on this board with the starter list and clears all ticks and this week's points. Profiles, lists, meals and events are kept. This can't be undone.</p>
             <button type="button" class="btn-danger-outline" id="btn-trigger-reset-modal">
-              <span>Reset Tasks to Starter Pack</span>
+              <span>Reset chores to the starter list…</span>
             </button>
-          </div>
+          </section>
 
           <div class="modal-footer button-row">
             <button type="button" class="btn-cancel" id="btn-cancel-settings">Cancel</button>
@@ -1534,20 +1541,24 @@
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-trophy text-danger">⚠️</div>
-          <h2 id="reset-confirm-title" class="modal-title">Reset Board to Defaults?</h2>
+          <h2 id="reset-confirm-title" class="modal-title">Reset all chores?</h2>
           <p class="modal-subtitle">Are you sure you want to restore default chores?</p>
         </div>
         <div class="notice-box notice-warning">
           <strong>This action will:</strong>
           <ul style="margin: 8px 0 0 16px; font-size: 0.85rem; line-height: 1.5;">
-            <li>Replace all active chores with the standard starter checklist</li>
+            <li>Replace every chore on this board with the starter list</li>
             <li>Clear all completed checkmarks and current scores</li>
             <li>Keep your family members list intact</li>
           </ul>
         </div>
+        <div class="form-group reset-type-confirm">
+          <label for="reset-confirm-input">Type <strong>RESET</strong> to confirm</label>
+          <input type="text" id="reset-confirm-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESET">
+        </div>
         <div class="modal-footer button-row">
           <button type="button" class="btn-cancel" id="btn-cancel-reset-confirm">Cancel</button>
-          <button type="button" class="btn-danger-confirm" id="btn-confirm-factory-reset">Yes, Reset Board</button>
+          <button type="button" class="btn-danger-confirm" id="btn-confirm-factory-reset" disabled>Yes, Reset Chores</button>
         </div>
       </div>
     </dialog>
@@ -2704,6 +2715,6 @@
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=5"></script>
   <script type="module" src="js/meals.js?v=11"></script>
-  <script type="module" src="app.js?v=210"></script>
+  <script type="module" src="app.js?v=211"></script>
 </body>
 </html>

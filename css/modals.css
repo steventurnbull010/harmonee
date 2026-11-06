@@ -1350,3 +1350,171 @@ body.board-join-active { overflow: hidden; }
   font-size: 0.8rem;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   SETTINGS SECTIONS (Profiles, Display, Rewards, Access, Sleep, Reset)
+   ========================================================================== */
+.settings-section-nav {
+  position: sticky;
+  top: -28px; /* the side panel's top padding, so it pins flush to the top */
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: -6px -24px 0;
+  padding: 10px 24px;
+  background: var(--card-bg, #fff);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.settings-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+body.theme-dark .settings-section-nav {
+  background: #1e293b;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.settings-nav-chip {
+  flex-shrink: 0;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 99px;
+  padding: 7px 14px;
+  min-height: 38px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.settings-nav-chip.is-active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #fff;
+}
+
+body.theme-dark .settings-nav-chip {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.settings-section {
+  scroll-margin-top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section + .settings-section,
+#settings-sec-profiles + .settings-form .settings-section:first-child {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 20px;
+}
+
+body.theme-dark .settings-section + .settings-section,
+body.theme-dark #settings-sec-profiles + .settings-form .settings-section:first-child {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.settings-section-desc {
+  margin: -8px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settings-section.settings-danger-zone {
+  margin-top: 8px;
+}
+
+.reset-type-confirm input {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  text-align: center;
+}
+
+#btn-confirm-factory-reset:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Profiles inside Settings: one tidy row per person */
+#settings-sec-profiles .roster-members-list {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  gap: 8px;
+}
+
+#settings-sec-profiles .roster-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-align: left;
+}
+
+#settings-sec-profiles .roster-member-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+#settings-sec-profiles .roster-color-trigger-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+#settings-sec-profiles .roster-member-names-wrap {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+#settings-sec-profiles .roster-member-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+#settings-sec-profiles .roster-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#settings-sec-profiles .btn-remove-member {
+  width: 36px;
+  height: 36px;
+}
+
+#settings-sec-profiles .roster-inline-color-picker {
+  grid-column: 1 / -1;
+}
+
+#settings-sec-profiles .skylight-color-picker-grid {
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 6px;
+}
+
+#settings-sec-profiles .add-member-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}

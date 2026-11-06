@@ -4690,8 +4690,20 @@ function setupEventListeners() {
         if (typeof settingsModal.close === "function") settingsModal.close();
         else settingsModal.removeAttribute("open");
       }
+      const typed = document.getElementById("reset-confirm-input");
+      if (typed) typed.value = "";
+      if (btnConfirmFactoryReset) btnConfirmFactoryReset.disabled = true;
       if (typeof resetConfirmModal.showModal === "function") resetConfirmModal.showModal();
       else resetConfirmModal.setAttribute("open", "");
+      if (typed) setTimeout(() => typed.focus(), 200);
+    });
+  }
+
+  // The reset button only wakes up once RESET has been typed
+  const resetTypedInput = document.getElementById("reset-confirm-input");
+  if (resetTypedInput && btnConfirmFactoryReset) {
+    resetTypedInput.addEventListener("input", () => {
+      btnConfirmFactoryReset.disabled = resetTypedInput.value.trim().toUpperCase() !== "RESET";
     });
   }
 
@@ -4704,6 +4716,8 @@ function setupEventListeners() {
 
   if (btnConfirmFactoryReset && resetConfirmModal) {
     btnConfirmFactoryReset.addEventListener("click", async () => {
+      const typedNow = document.getElementById("reset-confirm-input");
+      if (!typedNow || typedNow.value.trim().toUpperCase() !== "RESET") return;
       if (typeof resetConfirmModal.close === "function") resetConfirmModal.close();
       else resetConfirmModal.removeAttribute("open");
 
@@ -4954,7 +4968,7 @@ function setupEventListeners() {
     Object.assign(boardSettings.memberColors, memberColorOverrides);
     saveLocalBoardSettings(boardSettings);
 
-    if (db && !isDefaultTurnbullBoard) {
+    if (db) {
       try {
         const boardDocRef = getBoardDocRef();
         if (boardDocRef) {
@@ -5051,11 +5065,7 @@ function setupEventListeners() {
   if (menuItemRoster) {
     menuItemRoster.addEventListener("click", () => {
       closeHamburgerMenu();
-      renderRosterModalList();
-      if (rosterModal) {
-        if (typeof rosterModal.showModal === "function") rosterModal.showModal();
-        else rosterModal.setAttribute("open", "");
-      }
+      openSettingsModal("profiles");
     });
   }
 
@@ -5130,16 +5140,61 @@ function setupEventListeners() {
   let tempSelectedMode = boardSettings.gameMode || "points";
   let tempSelectedCurrency = boardSettings.currency || "£";
 
-  function openSettingsModal() {
+  // Settings is one side panel split into sections (Profiles, Display,
+  // Rewards, Access, Sleep, Reset) with a jump-to menu at the top.
+  // openSettingsModal("profiles") opens it at that section.
+  function scrollSettingsToSection(key, smooth = true) {
+    const sec = document.getElementById(`settings-sec-${key}`);
+    if (sec) sec.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+    highlightSettingsNav(key);
+  }
+
+  function highlightSettingsNav(key) {
+    document.querySelectorAll("#settings-section-nav .settings-nav-chip").forEach(chip => {
+      chip.classList.toggle("is-active", chip.getAttribute("data-section") === key);
+    });
+  }
+
+  function wireSettingsSectionNav() {
+    const nav = document.getElementById("settings-section-nav");
+    if (!nav || nav.hasAttribute("data-wired")) return;
+    nav.setAttribute("data-wired", "true");
+    nav.addEventListener("click", (e) => {
+      const chip = e.target.closest("[data-section]");
+      if (chip) scrollSettingsToSection(chip.getAttribute("data-section"));
+    });
+    // Light up the section you've scrolled to
+    const scroller = settingsModal && settingsModal.querySelector(".modal-content");
+    if (scroller) {
+      scroller.addEventListener("scroll", () => {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        let current = "profiles";
+        document.querySelectorAll("#settings-modal .settings-section").forEach(sec => {
+          if (sec.getBoundingClientRect().top - navBottom < 40) current = sec.id.replace("settings-sec-", "");
+        });
+        highlightSettingsNav(current);
+      }, { passive: true });
+    }
+  }
+
+  function openSettingsModal(section = null) {
     tempSelectedMode = boardSettings.gameMode || "points";
     tempSelectedCurrency = boardSettings.currency || "£";
 
     updateSettingsModalUI();
     renderFamilyAccessSection();
+    renderRosterModalList();
+    wireSettingsSectionNav();
 
     if (settingsModal) {
       if (typeof settingsModal.showModal === "function") settingsModal.showModal();
       else settingsModal.setAttribute("open", "");
+      const scroller = settingsModal.querySelector(".modal-content");
+      if (scroller) scroller.scrollTop = 0;
+      highlightSettingsNav("profiles");
+      if (typeof section === "string" && section) {
+        setTimeout(() => scrollSettingsToSection(section), 340);
+      }
     }
   }
   window.openSettingsModal = openSettingsModal;
@@ -5222,9 +5277,23 @@ function setupEventListeners() {
     const container = document.getElementById("weekly-history-container");
     if (!container) return;
 
-    const ledger = loadWeeklyLedger();
+    // Weeks banked on the board (rewardWeeks, shared by every device) first,
+    // plus any older weeks this device recorded locally before that existed.
+    const banked = window.rewardWeeks || {};
+    const isMoneyNow = boardSettings.gameMode === "money";
+    const bankedEntries = Object.entries(banked).map(([weekKey, totals]) => ({
+      weekKey,
+      archivedAt: null,
+      gameMode: isMoneyNow ? "money" : "points",
+      currency: boardSettings.currency || "£",
+      totals: totals || {}
+    }));
+    const ledger = bankedEntries
+      .concat(loadWeeklyLedger().filter(e => !banked[e.weekKey]))
+      .sort((a, b) => String(b.weekKey).localeCompare(String(a.weekKey)))
+      .slice(0, 12);
     if (ledger.length === 0) {
-      container.innerHTML = `<div class="history-empty-note">No archived weeks yet. First weekly snapshot records this Sunday at midnight!</div>`;
+      container.innerHTML = `<div class="history-empty-note">No finished weeks yet. Each week's points are saved here on Sunday at midnight.</div>`;
       return;
     }
 
@@ -5238,7 +5307,8 @@ function setupEventListeners() {
 
       const pillsHtml = Object.entries(entry.totals)
         .map(([name, score]) => {
-          const val = isMoney ? `${currency}${score.toFixed(2)}` : `${score} pts`;
+          const num = Number(score) || 0;
+          const val = isMoney ? `${currency}${num.toFixed(2)}` : `${num} pts`;
           return `<span class="history-member-pill">${escapeHtml(name)}: <span class="history-member-score">${val}</span></span>`;
         })
         .join("");
@@ -5246,7 +5316,7 @@ function setupEventListeners() {
       card.innerHTML = `
         <div class="history-week-top">
           <span>Week: ${escapeHtml(entry.weekKey)}</span>
-          <span>${new Date(entry.archivedAt).toLocaleDateString()}</span>
+          <span>${entry.archivedAt ? new Date(entry.archivedAt).toLocaleDateString() : "Saved on the board"}</span>
         </div>
         <div class="history-week-payouts">
           ${pillsHtml}

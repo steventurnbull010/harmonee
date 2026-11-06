@@ -363,3 +363,10 @@ dialog.side-panel.is-closing::backdrop {
     animation: none !important;
   }
 }
+
+/* Nothing inside a panel gets squashed by its column layout (the Settings
+   menu was being shrunk to 21px and cut off) */
+dialog.side-panel .side-panel-body > *,
+dialog.side-panel .side-panel-body > form > * {
+  flex-shrink: 0;
+}
