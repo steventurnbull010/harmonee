@@ -807,16 +807,11 @@ function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
   const btnClose = document.getElementById("btn-popover-close");
 
   const recipe = findRecipeByIdOrTitle(meal.recipeId || meal.title);
-  const fullIngredients = (recipe && recipe.ingredients) || meal.ingredients || [
-    "Fresh ingredients for " + meal.title,
-    "Olive oil, salt & pepper",
-    "Seasoning to taste"
-  ];
-  const fullInstructions = (recipe && recipe.instructions) || meal.instructions || [
-    "Prepare ingredients as directed.",
-    "Cook over medium heat until golden and thoroughly heated.",
-    "Serve hot with family sides and enjoy!"
-  ];
+  // Only real recipe details: a meal typed in by hand has no made-up
+  // ingredients or method (its notes are shown instead)
+  const fullIngredients = ((recipe && recipe.ingredients) || meal.ingredients || []).filter(Boolean);
+  const fullInstructions = ((recipe && recipe.instructions) || meal.instructions || []).filter(Boolean);
+  const mealNotes = (meal.notes || "").trim();
 
   if (titleEl) titleEl.textContent = meal.title;
 
@@ -839,20 +834,37 @@ function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
     catNameEl.className = `popover-cat-name cat-theme-pill cat-theme-${slot.toLowerCase()}`;
   }
 
-  // Render Ingredients with dashes matching Photo 1: "- 1 Tbsp olive oil"
+  // Ingredients (with dashes), or the meal's own notes, or nothing at all
+  const ingredientsSection = document.getElementById("popover-ingredients-section");
+  const ingredientsHeading = ingredientsSection ? ingredientsSection.querySelector(".popover-ingredients-heading") : null;
   if (ingredientsListEl) {
-    ingredientsListEl.innerHTML = fullIngredients.map(ing => {
-      const text = ing.startsWith("-") ? ing : `- ${ing}`;
-      return `<li>${escapeHtml(text)}</li>`;
-    }).join("");
+    if (fullIngredients.length) {
+      ingredientsListEl.innerHTML = fullIngredients.map(ing => {
+        const text = ing.startsWith("-") ? ing : `- ${ing}`;
+        return `<li>${escapeHtml(text)}</li>`;
+      }).join("");
+      if (ingredientsHeading) ingredientsHeading.textContent = "Ingredients:";
+    } else if (mealNotes) {
+      ingredientsListEl.innerHTML = mealNotes.split("\n").filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join("");
+      if (ingredientsHeading) ingredientsHeading.textContent = "Notes:";
+    }
   }
+  if (ingredientsSection) ingredientsSection.style.display = (fullIngredients.length || mealNotes) ? "" : "none";
 
-  // Render Instructions
+  // Method: only for meals with a real recipe
+  const instructionsSection = document.getElementById("popover-instructions-section");
   if (instructionsEl) {
     instructionsEl.innerHTML = fullInstructions.map((step, idx) => {
       return `<p style="margin: 0 0 8px 0;"><strong>Step ${idx + 1}:</strong> ${escapeHtml(step)}</p>`;
     }).join("");
   }
+  if (instructionsSection) instructionsSection.style.display = fullInstructions.length ? "" : "none";
+
+  // Add to List needs real ingredients; Open Recipe needs a real recipe
+  if (btnAddGrocery) btnAddGrocery.style.display = fullIngredients.length ? "" : "none";
+  if (btnOpenRecipe) btnOpenRecipe.style.display = recipe ? "" : "none";
+  const pillsRow = btnAddGrocery ? btnAddGrocery.parentElement : null;
+  if (pillsRow) pillsRow.style.display = (fullIngredients.length || recipe) ? "" : "none";
 
   // Reset Add to List button state
   if (btnAddGrocery) {
