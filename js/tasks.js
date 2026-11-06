@@ -748,7 +748,8 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null) {
         <span style="font-weight: 500;">${escapeHtml(assignedList.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", "))}</span>
       `;
     } else {
-      const assigned = getAssigneeNames(task.assignedTo)[0] || "Up for grabs";
+      const dayRota = (isDaily && task.assignedDays && task.assignedDays[targetDay] !== undefined) ? task.assignedDays[targetDay] : undefined;
+      const assigned = (dayRota !== undefined ? getAssigneeNames(dayRota)[0] : getAssigneeNames(task.assignedTo)[0]) || "Up for grabs";
       const pal = (assigned === "Up for grabs" || assigned === "Anyone") ? { primary: "#ef4444" } : getMemberPalette(assigned);
       assigneeEl.innerHTML = `
         <span class="skylight-avatar avatar-mini" style="background: ${pal.primary}; color: #fff;">${assigned.charAt(0).toUpperCase()}</span>
@@ -827,6 +828,71 @@ let drawerRoutineSlot = "morning";
 let drawerRewardValue = 10;
 let drawerSelectedEmoji = "🪴";
 
+// Rota: a different person on different days (stored as task.assignedDays,
+// the same field the calendar and Up for grabs claims use). null = Up for grabs.
+const ROTA_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+let drawerRotaEnabled = false;
+let drawerRota = {};
+let drawerTaskHadRota = false;
+
+function defaultRotaPerson() {
+  const p = drawerSelectedProfiles.find(x => x !== "Up for grabs");
+  return p || null;
+}
+
+function renderDrawerRota() {
+  const toggle = document.getElementById("drawer-toggle-rota");
+  const wrap = document.getElementById("drawer-rota-days");
+  const sub = document.getElementById("drawer-rota-sub");
+  if (!toggle || !wrap) return;
+  toggle.checked = drawerRotaEnabled;
+  wrap.style.display = drawerRotaEnabled ? "" : "none";
+  if (sub) sub.textContent = drawerRotaEnabled ? "Pick who does it each day" : "Same people every day";
+  if (!drawerRotaEnabled) { wrap.innerHTML = ""; return; }
+
+  const people = [...(window.familyMembers || []), null];
+  // Two letters where initials clash (Steven / Sorcha -> St / So)
+  const members = window.familyMembers || [];
+  const badge = (p) => {
+    const first = p.charAt(0).toUpperCase();
+    const clash = members.filter(m => m.charAt(0).toUpperCase() === first).length > 1;
+    if (!clash) return first;
+    const digit = p.match(/\d+$/);
+    return digit ? first + digit[0] : first + p.charAt(1).toLowerCase();
+  };
+  wrap.innerHTML = ROTA_DAYS.map(day => {
+    const chosen = drawerRota[day] === undefined ? null : drawerRota[day];
+    const pills = people.map(p => {
+      const on = (p === null && !chosen) || (p !== null && chosen === p);
+      const pal = p ? getMemberPalette(p) : { primary: "#ef4444" };
+      const label = p ? p : "Up for grabs";
+      return `<button type="button" class="drawer-rota-pill ${on ? "is-selected" : ""}" data-rota-day="${day}" data-rota-person="${p ? escapeHtml(p) : ""}" aria-pressed="${on}" title="${escapeHtml(label)} on ${day}" style="--rota-color: ${pal.primary};">${p ? escapeHtml(badge(p)) : "⚡"}</button>`;
+    }).join("");
+    return `<div class="drawer-rota-row"><span class="drawer-rota-day">${day.slice(0, 3)}</span><div class="drawer-rota-pills">${pills}</div><span class="drawer-rota-name">${escapeHtml(chosen || "Up for grabs")}</span></div>`;
+  }).join("");
+}
+
+function wireDrawerRota() {
+  const toggle = document.getElementById("drawer-toggle-rota");
+  const wrap = document.getElementById("drawer-rota-days");
+  if (!toggle || !wrap || toggle.hasAttribute("data-wired")) return;
+  toggle.setAttribute("data-wired", "true");
+  toggle.addEventListener("change", () => {
+    drawerRotaEnabled = toggle.checked;
+    if (drawerRotaEnabled) {
+      const base = defaultRotaPerson();
+      ROTA_DAYS.forEach(d => { if (drawerRota[d] === undefined) drawerRota[d] = base; });
+    }
+    renderDrawerRota();
+  });
+  wrap.addEventListener("click", (e) => {
+    const pill = e.target.closest("[data-rota-day]");
+    if (!pill) return;
+    drawerRota[pill.getAttribute("data-rota-day")] = pill.getAttribute("data-rota-person") || null;
+    renderDrawerRota();
+  });
+}
+
 function openSkylightTaskDrawer(taskId = null) {
   const overlay = document.getElementById("skylight-task-drawer-overlay");
   if (!overlay) return;
@@ -872,6 +938,22 @@ function openSkylightTaskDrawer(taskId = null) {
     drawerRewardValue = 1;
     drawerRoutineSlot = "morning";
   }
+
+  // Rota (different person each day)
+  const rotaTask = taskId ? (window.currentTasks || []).find(t => t.id === taskId) : null;
+  const rotaSource = rotaTask && rotaTask.assignedDays && typeof rotaTask.assignedDays === "object" ? rotaTask.assignedDays : null;
+  drawerTaskHadRota = !!(rotaSource && Object.keys(rotaSource).length);
+  drawerRotaEnabled = drawerTaskHadRota;
+  drawerRota = {};
+  if (drawerRotaEnabled) {
+    const base = getAssigneeNames(rotaTask.assignedTo).find(n => n.toLowerCase() !== "up for grabs") || null;
+    ROTA_DAYS.forEach(d => {
+      const v = rotaSource[d];
+      drawerRota[d] = v === undefined ? base : (Array.isArray(v) ? (v[0] || null) : (v || null));
+    });
+  }
+  wireDrawerRota();
+  renderDrawerRota();
 
   // Sync Emoji preview
   document.getElementById("drawer-emoji-preview").textContent = drawerSelectedEmoji;
@@ -1092,6 +1174,12 @@ function initSkylightTaskDrawerEvents() {
         value: drawerRewardValue,
         order: isRoutine ? ({ morning: 1, afternoon: 2, evening: 4, anytime: 5 }[drawerRoutineSlot] || 4) : 3
       };
+      if (isRoutine && drawerRotaEnabled) {
+        taskData.assignedDays = {};
+        ROTA_DAYS.forEach(d => { taskData.assignedDays[d] = drawerRota[d] === undefined ? null : drawerRota[d]; });
+      } else if (drawerTaskHadRota) {
+        taskData.assignedDays = {}; // rota switched off: same people every day
+      }
 
       if (id) {
         // Edit existing
@@ -1129,6 +1217,7 @@ function initSkylightTaskDrawerEvents() {
       document.getElementById("skylight-task-drawer-overlay").style.display = "none";
       if (typeof sfx !== "undefined" && sfx && sfx.playSuccess) sfx.playSuccess();
       renderSkylightTasksPage();
+      if (typeof window.renderApp === "function") window.renderApp();
     };
   }
 

@@ -1884,3 +1884,65 @@ body.is-grab-dragging * {
     font-size: 1.05rem;
   }
 }
+
+/* Rota in the Tasks panel: one row per day, tap who's doing it */
+.drawer-rota-days {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.drawer-rota-row {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  grid-template-areas: "day pills" ". name";
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.025);
+}
+
+body.theme-dark .drawer-rota-row {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.drawer-rota-day {
+  grid-area: day;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.drawer-rota-pills {
+  grid-area: pills;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawer-rota-name {
+  grid-area: name;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.drawer-rota-pill {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--rota-color);
+  background: transparent;
+  color: var(--rota-color);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.drawer-rota-pill.is-selected {
+  background: var(--rota-color);
+  color: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rota-color) 25%, transparent);
+}

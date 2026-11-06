@@ -4329,7 +4329,7 @@ function setupEventListeners() {
       const editBtn = e.target.closest(".btn-edit-task");
       if (editBtn) {
         const taskId = editBtn.getAttribute("data-task-id");
-        openEditTaskModal(taskId);
+        if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(taskId);
         return;
       }
 
@@ -4345,7 +4345,7 @@ function setupEventListeners() {
   // Add Task Button (Header)
   const addTaskBtn = document.getElementById("btn-add-task");
   if (addTaskBtn) {
-    addTaskBtn.addEventListener("click", openCreateTaskModal);
+    addTaskBtn.addEventListener("click", () => window.openSkylightTaskDrawer && window.openSkylightTaskDrawer());
   }
 
   // Progress Breakdown Foldout Toggle
@@ -6369,7 +6369,7 @@ function initSkylightNavigation() {
     };
   }
   if (btnCalendarAddTask) {
-    btnCalendarAddTask.addEventListener("click", () => openCreateTaskModal());
+    btnCalendarAddTask.addEventListener("click", () => window.openSkylightTaskDrawer && window.openSkylightTaskDrawer());
   }
   const fabContainer = document.getElementById("calendar-fab-container");
   const fabBackdrop = document.getElementById("calendar-fab-backdrop");
@@ -6440,9 +6440,7 @@ function initSkylightNavigation() {
       e.preventDefault();
       e.stopPropagation();
       closeFabSpeedDial();
-      const weekDaysList = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-      const currentWeekDay = weekDaysList[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1] || "Tuesday";
-      openCreateTaskModal(currentWeekDay);
+      if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer();
     };
   }
 
@@ -6729,8 +6727,16 @@ function initSkylightNavigation() {
       if (choreCard) {
         const taskId = choreCard.getAttribute("data-task-id");
         const targetDay = choreCard.getAttribute("data-day");
-        const targetDate = choreCard.getAttribute("data-date");
-        openEditTaskModal(taskId, targetDay, targetDate);
+        // Same quick card as the Tasks page (Complete / Edit / Delete), for
+        // whoever is doing it that day; Edit opens the Tasks side panel.
+        const task = (currentTasks || []).find(t => t.id === taskId);
+        if (task && typeof window.openSkylightTaskQuickModal === "function") {
+          const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+          const dayValue = (isDaily && task.assignedDays && task.assignedDays[targetDay] !== undefined) ? task.assignedDays[targetDay] : task.assignedTo;
+          const who = getAssigneeNames(dayValue);
+          const colMember = who.length === 0 || who.every(n => /^(up for grabs|anyone)$/i.test(n)) ? "Up for grabs" : (who.length === 1 ? who[0] : null);
+          window.openSkylightTaskQuickModal(taskId, targetDay || task.day, colMember);
+        }
       }
     });
   }

@@ -13,7 +13,7 @@
   
   <link rel="stylesheet" href="style.css?v=143">
   <link rel="stylesheet" href="css/navigation.css?v=1">
-  <link rel="stylesheet" href="css/tasks.css?v=8">
+  <link rel="stylesheet" href="css/tasks.css?v=9">
   <link rel="stylesheet" href="css/meals.css?v=2">
   <link rel="stylesheet" href="css/calendar.css?v=3">
   <link rel="stylesheet" href="css/lists.css?v=3">
@@ -997,6 +997,22 @@
                 <button type="button" class="drawer-pill-segment" data-slot="anytime" id="btn-routine-slot-anytime">Anytime</button>
               </div>
             </div>
+
+            <!-- Rota: a different person on different days (e.g. who cooks dinner) -->
+            <div class="drawer-toggle-row" id="drawer-rota-toggle-row">
+              <div class="drawer-toggle-left">
+                <span class="drawer-toggle-icon">🔄</span>
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">Different person each day</span>
+                  <span class="drawer-toggle-sub" id="drawer-rota-sub">Same people every day</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="drawer-toggle-rota">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div class="drawer-rota-days" id="drawer-rota-days" style="display: none;"></div>
           </div>
 
           <!-- POINTS / ££ REWARD STEPPER (Custom for Turnbull family) -->
@@ -2712,10 +2728,10 @@
   <script src="js/reward-goals.js?v=2"></script>
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=5"></script>
-  <script src="js/tasks.js?v=9"></script>
+  <script src="js/tasks.js?v=11"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=5"></script>
   <script type="module" src="js/meals.js?v=11"></script>
-  <script type="module" src="app.js?v=211"></script>
+  <script type="module" src="app.js?v=212"></script>
 </body>
 </html>
