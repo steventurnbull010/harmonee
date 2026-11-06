@@ -126,7 +126,9 @@ const firebaseMock = {
   collection: () => ({}), doc: () => ({}), query: () => ({}), where: () => ({}),
   onSnapshot: () => () => {},
   getDocs: () => Promise.resolve({ docs: [], empty: true, forEach() {} }),
-  getDoc: () => Promise.resolve({ exists: () => false, data: () => ({}) }),
+  getDoc: () => Promise.resolve({ exists: () => true, data: () => ({}) }), // device has joined
+  getAuth: () => ({ currentUser: null }),
+  signInAnonymously: () => Promise.resolve({ user: { uid: 'verify-build-device' } }),
   setDoc: () => Promise.resolve(), updateDoc: () => Promise.resolve(),
   deleteDoc: () => Promise.resolve(), addDoc: () => Promise.resolve({ id: 'mock' }),
   writeBatch: () => ({ set() {}, update() {}, delete() {}, commit: () => Promise.resolve() }),

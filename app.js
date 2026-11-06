@@ -14,10 +14,15 @@ import {
   updateDoc, 
   setDoc, 
   deleteDoc,
+  getDoc,
   getDocs,
   writeBatch,
-  serverTimestamp 
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth,
+  signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Preloaded Recipes Bank & Helper Imports
 // [Preloaded recipes bank moved to js/meals.js]
@@ -471,26 +476,21 @@ const STORAGE_KEY_ROSTER = isDefaultTurnbullBoard ? "harmonee_roster" : `harmone
 const STORAGE_KEY_CONFIG = "harmonee_firebase_cfg";
 const LEGACY_TURNBULL_PROJECT_ID = "ava-turnbull-official";
 
-// Helper collection and document references for multi-tenancy
+// Helper collection and document references for multi-tenancy.
+// Every household (Turnbull included) lives under boards/{boardId}.
 function getTasksCollectionRef() {
   if (!db) return null;
-  return isDefaultTurnbullBoard 
-    ? collection(db, "turnbull_reset_tasks") 
-    : collection(db, "boards", currentBoardId, "tasks");
+  return collection(db, "boards", currentBoardId, "tasks");
 }
 
 function getTaskDocRef(taskId) {
   if (!db) return null;
-  return isDefaultTurnbullBoard 
-    ? doc(db, "turnbull_reset_tasks", taskId) 
-    : doc(db, "boards", currentBoardId, "tasks", taskId);
+  return doc(db, "boards", currentBoardId, "tasks", taskId);
 }
 
 function getBoardDocRef() {
   if (!db) return null;
-  return isDefaultTurnbullBoard
-    ? null
-    : doc(db, "boards", currentBoardId);
+  return doc(db, "boards", currentBoardId);
 }
 
 // ============================================================================
@@ -1264,11 +1264,9 @@ function loadSavedFirebaseConfig() {
     if (raw) {
       cfg = JSON.parse(raw);
     }
-    // The Turnbull board moved from the legacy project to harmonee-app on
-    // 2026-11-06. Devices that still have the legacy project saved switch to
-    // the new one for this board only; other households stay on whatever
-    // they have saved until their data is migrated too.
-    if (cfg && cfg.projectId === LEGACY_TURNBULL_PROJECT_ID && isDefaultTurnbullBoard) {
+    // Every household moved from the legacy project to harmonee-app on
+    // 2026-11-06, so a saved legacy config is ignored.
+    if (cfg && cfg.projectId === LEGACY_TURNBULL_PROJECT_ID) {
       cfg = null;
     }
     if (!cfg && DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
@@ -1310,6 +1308,11 @@ async function initializeDataSource() {
       db = getFirestore(app);
       window.db = db;
 
+      // Board data is only readable by devices that have joined the board
+      // with its family code (see firestore.rules). initApp has already
+      // rendered the local cache, so this waits behind cached data.
+      await ensureBoardAccess(app);
+
       if (statusDot) {
         statusDot.classList.add("connected");
         statusDot.classList.remove("pulsing");
@@ -1331,6 +1334,144 @@ async function initializeDataSource() {
   // Load from LocalStorage or Seed Data
   loadLocalTasks();
 }
+
+// ============================================================================
+// 5b. BOARD ACCESS: ANONYMOUS DEVICE SIGN-IN + FAMILY CODE
+// ============================================================================
+// Each device signs in anonymously (remembered by Firebase). To use a board
+// it must have joined it once with the board's family code, which creates
+// boards/{boardId}/devices/{uid}. A brand-new board is created together with
+// its code and the creator's device in one batch.
+const PENDING_NEW_BOARD_KEY = "harmonee_pending_new_board";
+const FAMILY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+
+function generateFamilyCode() {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => FAMILY_CODE_ALPHABET[b % FAMILY_CODE_ALPHABET.length]).join("");
+}
+
+// "hx4p-9ktb " -> "HX4P9KTB"
+function normalizeFamilyCode(raw) {
+  return String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function formatFamilyCode(code) {
+  const c = normalizeFamilyCode(code);
+  return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
+}
+
+function describeThisDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad|Macintosh.*Mobile/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? "Android phone" : "Android tablet";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Windows/.test(ua)) return "Windows PC";
+  return "Device";
+}
+
+let boardDeviceUid = null;
+
+async function tryJoinBoard(code) {
+  const normalized = normalizeFamilyCode(code);
+  if (normalized.length < 8) return false;
+  try {
+    await setDoc(doc(db, "boards", currentBoardId, "devices", boardDeviceUid), {
+      code: normalized,
+      label: describeThisDevice(),
+      joinedAt: serverTimestamp()
+    });
+    return true;
+  } catch (err) {
+    console.warn("Join refused:", err && err.code);
+    return false;
+  }
+}
+
+async function createBoardWithAccess() {
+  const code = generateFamilyCode();
+  const batch = writeBatch(db);
+  batch.set(doc(db, "boards", currentBoardId), {
+    boardId: currentBoardId,
+    members: familyMembers,
+    settings: boardSettings,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  batch.set(doc(db, "boards", currentBoardId, "private", "access"), { code });
+  batch.set(doc(db, "boards", currentBoardId, "devices", boardDeviceUid), {
+    code,
+    label: describeThisDevice(),
+    joinedAt: serverTimestamp()
+  });
+  await batch.commit();
+}
+
+async function ensureBoardAccess(app) {
+  const auth = getAuth(app);
+  const cred = await signInAnonymously(auth); // returns the remembered device user if there is one
+  boardDeviceUid = cred.user.uid;
+
+  const deviceRef = doc(db, "boards", currentBoardId, "devices", boardDeviceUid);
+  const deviceSnap = await getDoc(deviceRef);
+  if (deviceSnap.exists()) return;
+
+  // Join link: ?board=xyz&code=ABCD-EFGH (the code is removed from the URL afterwards)
+  const params = new URLSearchParams(window.location.search);
+  const linkCode = params.get("code") || params.get("join");
+  if (linkCode) {
+    params.delete("code");
+    params.delete("join");
+    const qs = params.toString();
+    history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
+    if (await tryJoinBoard(linkCode)) return;
+  }
+
+  // Brand-new board from onboarding
+  if (localStorage.getItem(PENDING_NEW_BOARD_KEY) === currentBoardId) {
+    try {
+      await createBoardWithAccess();
+      localStorage.removeItem(PENDING_NEW_BOARD_KEY);
+      return;
+    } catch (err) {
+      // The name is already taken by another household: fall through to joining
+      console.warn("Could not create board:", err && err.code);
+      localStorage.removeItem(PENDING_NEW_BOARD_KEY);
+    }
+  }
+
+  // Ask for the family code until it's right
+  await window.showJoinBoardScreen({
+    familyName: isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || ""),
+    hadWrongLinkCode: !!linkCode,
+    tryCode: tryJoinBoard
+  });
+}
+
+// Settings > Family access: read the code and joined devices (members only)
+async function loadFamilyAccessInfo() {
+  if (!db || !boardDeviceUid) return null;
+  const [accessSnap, devicesSnap] = await Promise.all([
+    getDoc(doc(db, "boards", currentBoardId, "private", "access")),
+    getDocs(collection(db, "boards", currentBoardId, "devices"))
+  ]);
+  const devices = [];
+  devicesSnap.forEach(d => devices.push({ id: d.id, ...d.data(), isThisDevice: d.id === boardDeviceUid }));
+  devices.sort((a, b) => ((a.joinedAt && a.joinedAt.seconds) || 0) - ((b.joinedAt && b.joinedAt.seconds) || 0));
+  const code = accessSnap.exists() ? accessSnap.data().code : null;
+  const joinUrl = new URL(window.location.origin + window.location.pathname);
+  joinUrl.searchParams.set("board", currentBoardId);
+  if (code) joinUrl.searchParams.set("code", formatFamilyCode(code));
+  return { code: code ? formatFamilyCode(code) : null, joinUrl: joinUrl.toString(), devices };
+}
+
+async function removeBoardDevice(uid) {
+  await deleteDoc(doc(db, "boards", currentBoardId, "devices", uid));
+}
+
+window.loadFamilyAccessInfo = loadFamilyAccessInfo;
+window.removeBoardDevice = removeBoardDevice;
 
 // ============================================================================
 // 6. FIRESTORE SYNC & SEEDING (MULTI-TENANCY)
@@ -4648,10 +4789,13 @@ function setupEventListeners() {
       const rawName = boardNameInput ? boardNameInput.value.trim() : "";
       if (!rawName) return;
 
-      const slug = rawName
+      const baseSlug = rawName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
+      const slug = `${baseSlug}-${generateFamilyCode().slice(0, 4).toLowerCase()}`;
+      // Tells ensureBoardAccess to create the board (with a family code) on arrival
+      localStorage.setItem(PENDING_NEW_BOARD_KEY, slug);
 
       const template = templateSelect ? templateSelect.value : "empty";
       const targetUrl = new URL(window.location.href);
@@ -4981,6 +5125,7 @@ function setupEventListeners() {
     tempSelectedCurrency = boardSettings.currency || "£";
 
     updateSettingsModalUI();
+    renderFamilyAccessSection();
 
     if (settingsModal) {
       if (typeof settingsModal.showModal === "function") settingsModal.showModal();
@@ -4988,6 +5133,73 @@ function setupEventListeners() {
     }
   }
   window.openSettingsModal = openSettingsModal;
+
+  async function renderFamilyAccessSection() {
+    const box = document.getElementById("family-access-content");
+    if (!box) return;
+    if (!db) {
+      box.innerHTML = `<p class="settings-box-desc">Family access is available once the board is connected.</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="settings-box-desc">Loading…</p>`;
+    let info;
+    try {
+      info = await loadFamilyAccessInfo();
+    } catch (err) {
+      console.warn("Could not load family access:", err);
+      box.innerHTML = `<p class="settings-box-desc">Couldn't load family access right now.</p>`;
+      return;
+    }
+    if (!info || !info.code) {
+      box.innerHTML = `<p class="settings-box-desc">No family code is set for this board yet.</p>`;
+      return;
+    }
+
+    const devicesHtml = info.devices.map(d => {
+      const joined = d.joinedAt && d.joinedAt.seconds
+        ? new Date(d.joinedAt.seconds * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" })
+        : "";
+      return `
+        <li>
+          <span>${escapeHtml(d.label || "Device")}${d.isThisDevice ? " <strong>(this device)</strong>" : ""}${joined ? ` · joined ${escapeHtml(joined)}` : ""}</span>
+          ${d.isThisDevice ? "" : `<button type="button" class="family-access-small-btn" data-remove-device="${escapeHtml(d.id)}">Remove</button>`}
+        </li>`;
+    }).join("");
+
+    box.innerHTML = `
+      <div class="family-access-row">
+        <span class="family-access-code" aria-label="Family code">${escapeHtml(info.code)}</span>
+        <button type="button" class="family-access-small-btn" id="btn-copy-join-link">Copy join link</button>
+      </div>
+      <p class="settings-box-desc" style="margin-top: 12px;">Joined devices (${info.devices.length})</p>
+      <ul class="family-access-devices">${devicesHtml}</ul>
+    `;
+
+    const copyBtn = document.getElementById("btn-copy-join-link");
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(info.joinUrl);
+          copyBtn.textContent = "Copied ✓";
+        } catch (e) {
+          window.prompt("Copy this join link:", info.joinUrl);
+        }
+        setTimeout(() => { copyBtn.textContent = "Copy join link"; }, 2000);
+      };
+    }
+    box.querySelectorAll("[data-remove-device]").forEach(btn => {
+      btn.onclick = async () => {
+        if (!window.confirm("Remove this device? It will need the family code to get back in.")) return;
+        btn.disabled = true;
+        try {
+          await removeBoardDevice(btn.getAttribute("data-remove-device"));
+        } catch (err) {
+          console.warn("Could not remove device:", err);
+        }
+        renderFamilyAccessSection();
+      };
+    });
+  }
 
   function closeSettingsModal() {
     if (settingsModal) {
@@ -5262,6 +5474,9 @@ function setupEventListeners() {
 
       // Save initial settings & roster for this board in local storage
       localStorage.setItem("chore_active_board_id", newBoardId);
+      localStorage.setItem("harmonee_active_board_id", newBoardId);
+      // Tells ensureBoardAccess to create the board (with a family code) on arrival
+      localStorage.setItem(PENDING_NEW_BOARD_KEY, newBoardId);
       localStorage.setItem(`chore_roster_${newBoardId}`, JSON.stringify(membersList));
       localStorage.setItem(`chore_settings_${newBoardId}`, JSON.stringify({
         gameMode: onbSelectedMode,

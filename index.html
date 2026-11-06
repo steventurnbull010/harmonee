@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/lists.css?v=1">
   <link rel="stylesheet" href="css/rewards.css?v=1">
   <link rel="stylesheet" href="css/widgets.css?v=1">
-  <link rel="stylesheet" href="css/modals.css?v=1">
+  <link rel="stylesheet" href="css/modals.css?v=2">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   
@@ -1430,6 +1430,18 @@
             </div>
           </div>
 
+          <!-- Family Access: code, join link, joined devices -->
+          <div class="settings-section-box" id="family-access-box">
+            <div class="settings-box-header">
+              <h4 class="settings-box-title">🔐 Family Access</h4>
+              <span class="settings-box-badge">Private board</span>
+            </div>
+            <p class="settings-box-desc">Only devices that have entered this code can see or change your board. Use it on a new phone or tablet, or send the join link.</p>
+            <div id="family-access-content" class="family-access-content">
+              <p class="settings-box-desc">Loading…</p>
+            </div>
+          </div>
+
           <!-- Scheduled Sleep Window (Lights-Out Overnight) -->
           <div class="settings-section-box">
             <div class="settings-box-header">
@@ -2648,7 +2660,8 @@
   <script src="js/sticky-note.js?v=2"></script>
   <script src="js/calendar.js?v=3"></script>
   <script src="js/tasks.js?v=6"></script>
+  <script src="js/board-access.js?v=1"></script>
   <script type="module" src="js/meals.js?v=9"></script>
-  <script type="module" src="app.js?v=205"></script>
+  <script type="module" src="app.js?v=206"></script>
 </body>
 </html>

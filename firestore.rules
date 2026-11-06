@@ -1,19 +1,83 @@
 rules_version = '2';
+
+// harmonee security model
+// -----------------------
+// Every device signs in anonymously (Firebase Auth). A device may read or
+// write a household board only after it has "joined" that board by
+// presenting the board's family code once:
+//
+//   boards/{boardId}                       board settings, calendar, meals, lists
+//   boards/{boardId}/tasks/{taskId}        chores & routines
+//   boards/{boardId}/private/access        { code } — the family code
+//   boards/{boardId}/devices/{uid}         one doc per joined device
+//
+// Joining = creating devices/{uid} with a `code` matching private/access.
+// A brand-new board is created in one batch: board doc + private/access +
+// the creator's device doc.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Existing Turnbull family tasks collection (Preserved!)
-    match /turnbull_reset_tasks/{taskId} {
-      allow read, write: if true;
+
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Dynamic Multi-Family Boards: tasks and board settings
+    function isMember(boardId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/boards/$(boardId)/devices/$(request.auth.uid));
+    }
+
+    function isMemberAfter(boardId) {
+      return signedIn()
+        && existsAfter(/databases/$(database)/documents/boards/$(boardId)/devices/$(request.auth.uid));
+    }
+
+    function validCode(code) {
+      return code is string && code.size() >= 8 && code.size() <= 16;
+    }
+
     match /boards/{boardId} {
-      allow read, write: if true;
+      allow read, update: if isMember(boardId);
+      // New board: created together with its access code and the creator's device
+      allow create: if isMemberAfter(boardId)
+        && existsAfter(/databases/$(database)/documents/boards/$(boardId)/private/access);
+      allow delete: if false;
 
       match /tasks/{taskId} {
-        allow read, write: if true;
+        allow read, write: if isMember(boardId);
       }
+
+      match /private/access {
+        allow read: if isMember(boardId);
+        // Only when the board itself is being created in the same batch
+        allow create: if signedIn()
+          && !exists(/databases/$(database)/documents/boards/$(boardId))
+          && isMemberAfter(boardId)
+          && validCode(request.resource.data.code);
+        // Members can rotate the code
+        allow update: if isMember(boardId) && validCode(request.resource.data.code);
+        allow delete: if false;
+      }
+
+      match /devices/{deviceId} {
+        // A device can always check whether it has joined; members can list devices
+        allow get: if signedIn() && (request.auth.uid == deviceId || isMember(boardId));
+        allow list: if isMember(boardId);
+        // Join: only for yourself, and only with the right family code
+        allow create: if signedIn()
+          && request.auth.uid == deviceId
+          && request.resource.data.code
+             == getAfter(/databases/$(database)/documents/boards/$(boardId)/private/access).data.code;
+        allow update: if isMember(boardId) && request.auth.uid == deviceId
+          && request.resource.data.code == resource.data.code;
+        // Members can remove any device (e.g. a lost phone)
+        allow delete: if isMember(boardId);
+      }
+    }
+
+    // Everything else, including the legacy turnbull_reset_tasks collection, is closed.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

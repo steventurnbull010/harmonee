@@ -7,13 +7,19 @@
       "firestore.indexes.json",
       ".firebaserc",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "scripts/**",
+      "CLAUDE.md",
+      "README.md"
     ],
     "headers": [
       {
         "source": "{/,**/*.html}",
         "headers": [
-          { "key": "Cache-Control", "value": "no-cache" }
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
         ]
       }
     ]

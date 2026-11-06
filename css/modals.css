@@ -1205,3 +1205,148 @@ body.theme-dark .skylight-color-swatch.is-selected {
   flex: 1;
 }
 
+
+/* ==========================================================================
+   Board access: "enter your family code" screen (js/board-access.js)
+   ========================================================================== */
+body.board-join-active { overflow: hidden; }
+
+.board-join-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg-primary);
+  font-family: var(--font-body);
+}
+
+.board-join-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 32px 28px 24px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.board-join-icon { font-size: 40px; line-height: 1; margin-bottom: 12px; }
+
+.board-join-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+}
+
+.board-join-sub {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0 0 24px;
+  line-height: 1.45;
+}
+
+.board-join-label {
+  display: block;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.board-join-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 14px 12px;
+  border: 2px solid var(--input-border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.board-join-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 4px var(--accent-cyan-glow);
+}
+
+.board-join-error {
+  min-height: 1.3em;
+  margin: 8px 0 12px;
+  color: var(--priority-red);
+  font-size: 0.9rem;
+}
+
+.board-join-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent-cyan);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.board-join-btn:hover { background: var(--accent-cyan-hover); }
+.board-join-btn:disabled { opacity: 0.6; cursor: progress; }
+
+.board-join-help {
+  margin: 16px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Settings > Family access */
+.family-access-code {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.family-access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.family-access-devices {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.family-access-devices li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.family-access-small-btn {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
