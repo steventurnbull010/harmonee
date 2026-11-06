@@ -6,12 +6,15 @@
    Loaded after the domain stylesheets so it wins over their centred-modal rules.
    ========================================================================== */
 
+/* The dialog is a full-screen, see-through layer (like the Tasks drawer's
+   overlay) and the panel is pinned to its right edge. Nothing clips the
+   panel, so it slides in from the screen edge with its shadow intact. */
 dialog.side-panel {
   position: fixed !important;
-  inset: 0 0 0 auto !important;
+  inset: 0 !important;
   margin: 0 !important;
-  width: 420px !important;
-  max-width: 92vw !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
   height: 100% !important;
   height: 100dvh !important;
   max-height: none !important;
@@ -20,7 +23,7 @@ dialog.side-panel {
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   z-index: 1200;
 }
 
@@ -50,8 +53,9 @@ dialog.side-panel .side-panel-hidden-close {
 
 /* The panel itself */
 dialog.side-panel .side-panel-body {
-  width: 100% !important;
-  max-width: none !important;
+  width: 420px !important;
+  max-width: 92vw !important;
+  flex-shrink: 0;
   height: 100% !important;
   max-height: none !important;
   box-sizing: border-box !important;
@@ -78,8 +82,7 @@ body.theme-dark dialog.side-panel .side-panel-body {
 }
 
 @media (max-width: 520px) {
-  dialog.side-panel { width: 100vw !important; max-width: 100vw !important; }
-  dialog.side-panel .side-panel-body { padding: 20px 16px 0 16px !important; }
+  dialog.side-panel .side-panel-body { width: 100vw !important; max-width: 100vw !important; padding: 20px 16px 0 16px !important; }
 }
 
 /* Header: ← and title, exactly like .task-drawer-header */
