@@ -1,0 +1,480 @@
+/* ==========================================================================
+   REWARDS & PODIUM MODULE (css/rewards.css)
+   Champions Podium, Pastel Pillars, Allowance & Earnings Breakdown
+   ========================================================================== */
+
+/* ==========================================================================
+   REWARDS PODIUM VIEW (Step 2 Enhancement)
+   Champions podium & allowance earnings breakdown
+   ========================================================================== */
+
+.rewards-view-container {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 28px 90px 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.rewards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 20px;
+  padding: 18px 24px;
+  box-shadow: var(--card-shadow);
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.theme-dark .rewards-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.rewards-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rewards-badge-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.rewards-title {
+  font-family: var(--font-display, "Outfit", sans-serif);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.rewards-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.btn-rewards-confetti {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-rewards-confetti:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.45);
+}
+
+.btn-rewards-confetti:active {
+  transform: scale(0.97);
+}
+
+/* Dynamic Family Members Podium Stage */
+.podium-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px auto 8px auto;
+  max-width: 1100px;
+  width: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 75px;
+  max-width: 220px;
+  text-align: center;
+}
+
+.podium-avatar-wrap {
+  position: relative;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.podium-crown {
+  position: absolute;
+  top: -24px;
+  font-size: 1.8rem;
+  animation: floatCrown 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes floatCrown {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+
+.podium-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.podium-col.is-leader .podium-avatar {
+  width: 72px;
+  height: 72px;
+  font-size: 1.7rem;
+  border: 3.5px solid #facc15 !important;
+}
+
+.podium-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.podium-col.is-leader .podium-name {
+  font-size: 1.1rem;
+}
+
+/* Pillar Base Bars */
+.podium-col .podium-pillar {
+  width: 100%;
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px;
+  box-sizing: border-box;
+  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Prominent Score Inside the Bar */
+.podium-bar-score {
+  font-family: var(--font-display, "Outfit", sans-serif);
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+/* ==========================================================================
+   PASTEL PILLAR STYLES (Soft, Creamy, Skylight-Inspired)
+   ========================================================================== */
+
+/* 1. Champion / Leader (Pastel Sunshine Buttercup) */
+.podium-col.pillar-pastel-leader .podium-pillar {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  border-top: 5px solid #facc15;
+  box-shadow: 0 8px 24px rgba(250, 204, 21, 0.22);
+}
+.podium-col.pillar-pastel-leader .podium-bar-score {
+  color: #854d0e;
+  font-size: 1.7rem;
+}
+body.theme-dark .podium-col.pillar-pastel-leader .podium-pillar {
+  background: linear-gradient(180deg, #713f12 0%, #451a03 100%);
+  border-top-color: #facc15;
+  box-shadow: 0 8px 24px rgba(250, 204, 21, 0.15);
+}
+body.theme-dark .podium-col.pillar-pastel-leader .podium-bar-score {
+  color: #fef08a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* 2. Pastel Royal Purple / Violet (Sorcha) */
+.podium-col.pillar-pastel-rose .podium-pillar,
+.podium-col.pillar-pastel-purple .podium-pillar {
+  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
+  border-top: 5px solid #a78bfa;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.18);
+}
+.podium-col.pillar-pastel-rose .podium-bar-score,
+.podium-col.pillar-pastel-purple .podium-bar-score {
+  color: #6d28d9;
+}
+body.theme-dark .podium-col.pillar-pastel-rose .podium-pillar,
+body.theme-dark .podium-col.pillar-pastel-purple .podium-pillar {
+  background: linear-gradient(180deg, #5b21b6 0%, #3b0764 100%);
+  border-top-color: #c4b5fd;
+}
+body.theme-dark .podium-col.pillar-pastel-rose .podium-bar-score,
+body.theme-dark .podium-col.pillar-pastel-purple .podium-bar-score {
+  color: #ede9fe;
+}
+
+/* 3. Pastel Lavender / Lilac (Ava) */
+.podium-col.pillar-pastel-lavender .podium-pillar {
+  background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  border-top: 5px solid #c084fc;
+  box-shadow: 0 8px 24px rgba(192, 132, 252, 0.18);
+}
+.podium-col.pillar-pastel-lavender .podium-bar-score {
+  color: #6b21a8;
+}
+body.theme-dark .podium-col.pillar-pastel-lavender .podium-pillar {
+  background: linear-gradient(180deg, #581c87 0%, #3b0764 100%);
+  border-top-color: #c084fc;
+}
+body.theme-dark .podium-col.pillar-pastel-lavender .podium-bar-score {
+  color: #e9d5ff;
+}
+
+/* 4. Pastel Mint / Sage (Dara) */
+.podium-col.pillar-pastel-mint .podium-pillar {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+  border-top: 5px solid #4ade80;
+  box-shadow: 0 8px 24px rgba(74, 222, 128, 0.18);
+}
+.podium-col.pillar-pastel-mint .podium-bar-score {
+  color: #14532d;
+}
+body.theme-dark .podium-col.pillar-pastel-mint .podium-pillar {
+  background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+  border-top-color: #4ade80;
+}
+body.theme-dark .podium-col.pillar-pastel-mint .podium-bar-score {
+  color: #bbf7d0;
+}
+
+/* 5. Pastel Sky Blue (Steven) */
+.podium-col.pillar-pastel-sky .podium-pillar {
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+  border-top: 5px solid #38bdf8;
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.18);
+}
+.podium-col.pillar-pastel-sky .podium-bar-score {
+  color: #0369a1;
+}
+body.theme-dark .podium-col.pillar-pastel-sky .podium-pillar {
+  background: linear-gradient(180deg, #0c4a6e 0%, #082f49 100%);
+  border-top-color: #38bdf8;
+}
+body.theme-dark .podium-col.pillar-pastel-sky .podium-bar-score {
+  color: #bae6fd;
+}
+
+/* 6. Default Pastel Cream */
+.podium-col.pillar-pastel-default .podium-pillar {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  border-top: 5px solid #94a3b8;
+  box-shadow: 0 8px 24px rgba(148, 163, 184, 0.15);
+}
+.podium-col.pillar-pastel-default .podium-bar-score {
+  color: #334155;
+}
+body.theme-dark .podium-col.pillar-pastel-default .podium-pillar {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-top-color: #64748b;
+}
+body.theme-dark .podium-col.pillar-pastel-default .podium-bar-score {
+  color: #f1f5f9;
+}
+
+/* Detailed Household Breakdown Card */
+.rewards-breakdown-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--card-shadow);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.theme-dark .rewards-breakdown-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.rewards-breakdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.breakdown-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.breakdown-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  padding: 4px 12px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+body.theme-dark .breakdown-badge {
+  background: #0f172a;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.rewards-members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .rewards-members-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.rewards-member-card {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rewards-member-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-dark .rewards-member-card {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.rewards-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rewards-card-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rewards-card-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.rewards-card-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.rewards-card-score {
+  font-family: var(--font-display, "Outfit", sans-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
+.rewards-card-tasklist {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-top: 1px dashed var(--card-border);
+  padding-top: 10px;
+  line-height: 1.45;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+body.theme-dark .rewards-card-tasklist {
+  border-top-color: #334155;
+  color: #94a3b8;
+}
+
+.rewards-empty-note {
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .rewards-view-container {
+    padding: 16px 12px 90px 12px;
+  }
+  .podium-stage {
+    gap: 8px;
+    margin: 14px auto 8px auto;
+  }
+  .podium-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+  .podium-col.is-leader .podium-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+  }
+  .podium-bar-score {
+    font-size: 1.15rem;
+  }
+  .podium-col.is-leader .podium-bar-score {
+    font-size: 1.35rem;
+  }
+  .rewards-members-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

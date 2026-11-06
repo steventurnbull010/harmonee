@@ -1,0 +1,16 @@
+# Local Environment & Editor
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Temporary and Scratch Backups
+.backup_working_state/
+scratch/
+
+# Firebase Cache & Emulator Artifacts
+.firebase/
+.firebaserc.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

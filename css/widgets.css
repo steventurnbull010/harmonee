@@ -1,0 +1,1011 @@
+/* ==========================================================================
+   FAMILY WIDGETS & OVERLAYS MODULE (css/widgets.css)
+   Sticky Note, Weather Forecast, Overnight Sleep Window, Habit Streaks
+   ========================================================================== */
+
+/* ==========================================================================
+   SPRINT 2: FAMILY STICKY NOTE / MESSAGE OF THE DAY
+   ========================================================================== */
+
+.family-sticky-container {
+  width: 100%;
+  margin: 0 0 14px 0;
+  box-sizing: border-box;
+}
+
+.family-sticky-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid #fef08a;
+  background: #fef9c3;
+  color: #713f12;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.family-sticky-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.06);
+}
+
+.sticky-pin-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
+  transform: rotate(-10deg);
+}
+
+.sticky-content-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sticky-message-text {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: inherit;
+  word-break: break-word;
+}
+
+.sticky-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  opacity: 0.82;
+}
+
+.sticky-author-badge {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sticky-time-badge {
+  font-weight: 500;
+}
+
+.btn-sticky-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-sticky-action:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.03);
+}
+
+/* Color Themes for Sticky Card */
+.family-sticky-card.color-yellow {
+  background: #fef9c3;
+  border-color: #fde047;
+  color: #713f12;
+}
+.family-sticky-card.color-pink {
+  background: #fce7f3;
+  border-color: #f472b6;
+  color: #831843;
+}
+.family-sticky-card.color-mint {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
+.family-sticky-card.color-lavender {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #4c1d95;
+}
+.family-sticky-card.color-peach {
+  background: #ffedd5;
+  border-color: #fdba74;
+  color: #7c2d12;
+}
+
+/* Dark Theme Sticky Notes */
+body.theme-dark .family-sticky-card.color-yellow {
+  background: #422006;
+  border-color: #a16207;
+  color: #fef08a;
+}
+body.theme-dark .family-sticky-card.color-pink {
+  background: #500724;
+  border-color: #9d174d;
+  color: #fbcfe8;
+}
+body.theme-dark .family-sticky-card.color-mint {
+  background: #052e16;
+  border-color: #15803d;
+  color: #bbf7d0;
+}
+body.theme-dark .family-sticky-card.color-lavender {
+  background: #2e1065;
+  border-color: #6b21a8;
+  color: #ddd6fe;
+}
+body.theme-dark .family-sticky-card.color-peach {
+  background: #431407;
+  border-color: #9a3412;
+  color: #fed7aa;
+}
+body.theme-dark .btn-sticky-action {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
+}
+
+/* Color Pills in Sticky Modal */
+.sticky-color-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sticky-color-pill {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.sticky-color-pill.color-yellow { background: #fef9c3; color: #713f12; }
+.sticky-color-pill.color-pink { background: #fce7f3; color: #831843; }
+.sticky-color-pill.color-mint { background: #dcfce7; color: #14532d; }
+.sticky-color-pill.color-lavender { background: #ede9fe; color: #4c1d95; }
+.sticky-color-pill.color-peach { background: #ffedd5; color: #7c2d12; }
+
+.sticky-color-pill.selected {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+  transform: scale(1.05);
+}
+
+/* Slide-out Tray Shell for Sticky Note Modal */
+.sticky-modal {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 440px;
+  width: 100%;
+  height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  margin: 0 0 0 auto !important;
+  position: fixed !important;
+  inset: 0 0 0 auto !important;
+  box-sizing: border-box;
+  z-index: 2000;
+  overflow: visible;
+}
+
+.sticky-modal[open] {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+}
+
+.sticky-modal::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+body.theme-dark .sticky-modal::backdrop {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.sticky-modal-content {
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  border-radius: 0;
+  background: var(--modal-bg, #ffffff);
+  border-left: 1.5px solid var(--card-border, #e2e8f0);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.16);
+  padding: 28px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.theme-dark .sticky-modal-content {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.4);
+}
+
+/* Centering & Dialog Shell for Create List Modal */
+.create-list-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 520px;
+  width: min(92vw, 520px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+  box-sizing: border-box;
+  z-index: 2000;
+  overflow: visible;
+}
+
+.create-list-dialog[open] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.create-list-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.theme-dark .create-list-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.create-list-content {
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
+  border-radius: var(--radius-lg, 16px);
+  background: var(--modal-bg, #ffffff);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+}
+
+body.theme-dark .sticky-modal-content,
+body.theme-dark .create-list-content {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* Polished CTA Button Footers */
+.sticky-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border, #e2e8f0);
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.create-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border, #e2e8f0);
+}
+
+body.theme-dark .sticky-modal-footer,
+body.theme-dark .create-list-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.sticky-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-sticky-delete {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1.5px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-sticky-delete:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #b91c1c;
+}
+
+body.theme-dark .btn-sticky-delete {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+body.theme-dark .btn-sticky-delete:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ffffff;
+}
+
+.btn-sticky-cancel {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--card-border, #cbd5e1);
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-secondary, #64748b);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-sticky-cancel:hover {
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-primary, #0f172a);
+  border-color: #94a3b8;
+}
+
+body.theme-dark .btn-sticky-cancel {
+  background: #1e293b;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+body.theme-dark .btn-sticky-cancel:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.btn-sticky-save {
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 10px;
+  border: none;
+  background: #0284c7;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.btn-sticky-save:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45);
+}
+
+
+
+/* ==========================================================================
+   5-DAY WEATHER FORECAST POPUP MODAL
+   ========================================================================== */
+
+.weather-forecast-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 560px;
+  width: min(92vw, 560px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+  box-sizing: border-box;
+  z-index: 2000;
+  overflow: visible;
+}
+
+.weather-forecast-dialog[open] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.weather-forecast-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.theme-dark .weather-forecast-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.weather-modal-content {
+  width: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+  border-radius: var(--radius-lg, 16px);
+  background: var(--modal-bg, #ffffff);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+body.theme-dark .weather-modal-content {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+}
+
+.weather-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weather-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weather-header-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.weather-modal-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.weather-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  margin: 2px 0 0 0;
+}
+
+.weather-hero-card {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #0369a1;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+body.theme-dark .weather-hero-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(30, 58, 138, 0.35) 100%);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #e0f2fe;
+}
+
+.weather-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.weather-hero-temp {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.weather-hero-condition {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.weather-hero-range {
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.weather-hero-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.weather-hero-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.65);
+  padding: 3px 10px;
+  border-radius: 20px;
+  color: #0369a1;
+}
+
+body.theme-dark .weather-hero-pill {
+  background: rgba(15, 23, 42, 0.6);
+  color: #bae6fd;
+}
+
+.weather-forecast-heading {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #64748b);
+  margin: 6px 0 0 0;
+}
+
+.weather-forecast-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--card-border, #e2e8f0);
+  transition: all 0.15s ease;
+}
+
+body.theme-dark .weather-day-row {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.weather-day-name {
+  width: 90px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.weather-day-condition-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.weather-day-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.weather-day-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.weather-day-metrics {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.weather-day-rain {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0284c7;
+  min-width: 58px;
+  text-align: right;
+}
+
+body.theme-dark .weather-day-rain {
+  color: #38bdf8;
+}
+
+.weather-day-temp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 80px;
+  justify-content: flex-end;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.weather-temp-min {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.weather-temp-max {
+  color: var(--text-primary);
+}
+
+.weather-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border, #e2e8f0);
+}
+
+.btn-weather-refresh {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--card-border, #cbd5e1);
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-weather-refresh:hover {
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+body.theme-dark .btn-weather-refresh {
+  background: #1e293b;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+.btn-weather-done {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: none;
+  background: #0284c7;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-weather-done:hover {
+  background: #0369a1;
+}
+
+/* ==========================================================================
+   SCHEDULED SLEEP WINDOW OVERLAY (Lights-Out Overnight Night Clock)
+   ========================================================================== */
+
+.ambient-sleep-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: #000000;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  animation: sleepFadeIn 0.8s ease forwards;
+}
+
+@keyframes sleepFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sleep-screen-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #64748b;
+  gap: 12px;
+  padding: 24px;
+  pointer-events: auto;
+}
+
+.sleep-screen-moon {
+  font-size: 3rem;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.15));
+}
+
+.sleep-screen-clock {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: min(15vw, 6.5rem);
+  font-weight: 800;
+  color: #94a3b8;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 30px rgba(148, 163, 184, 0.2);
+}
+
+.sleep-screen-date {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.sleep-screen-weather {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.sleep-screen-wake-card {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sleep-screen-badge {
+  font-size: 0.82rem;
+  color: #334155;
+  background: #0a0f1d;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid #1e293b;
+}
+
+.sleep-screen-hint {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
+
+.btn-sleep-manual-wake {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.btn-sleep-manual-wake:hover {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #64748b;
+}
+
+/* ==========================================================================
+   CHORE STREAKS & HABIT MOMENTUM (🔥)
+   ========================================================================== */
+
+.chore-streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+body.theme-dark .chore-streak-badge {
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.18) 0%, rgba(154, 52, 18, 0.25) 100%);
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.4);
+}
+
+.chore-streak-badge.milestone {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border-color: #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+/* Champions Podium Streaks Section */
+.rewards-streaks-card {
+  background: var(--card-bg, #ffffff);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  border-radius: 20px;
+  padding: 22px 26px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.theme-dark .rewards-streaks-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.rewards-streaks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.streaks-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streaks-flame-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.streaks-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.streaks-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.streaks-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.rewards-streaks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.streak-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 14px;
+  transition: all 0.15s ease;
+}
+
+body.theme-dark .streak-card-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.streak-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.streak-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.streak-item-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.streak-item-sub {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.streak-count-badge {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ea580c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* [Extracted to css/calendar.css: Magic Calendar Import] */
+/* [Extracted to css/meals.css: Mobile-First Meal Planner Feed] */
+/* [Extracted to css/calendar.css: Continuous Time-Grid, Split Day, Date Picker] */

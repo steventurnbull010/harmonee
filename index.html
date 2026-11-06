@@ -3,15 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chore Challenge — Family Chores Made Easy</title>
-  <meta name="description" content="Tablet and mobile-first live synced family chore challenge and leaderboard with real-time Firebase Firestore support.">
+  <title>harmonee — family life in sync</title>
+  <meta name="description" content="Tablet and mobile-first live synced family calendar, routines, meals, lists, and leaderboard with real-time Firebase Firestore support.">
   
   <!-- Modern Typography (Outfit & Plus Jakarta Sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=137">
+  <link rel="stylesheet" href="style.css?v=143">
+  <link rel="stylesheet" href="css/navigation.css?v=1">
+  <link rel="stylesheet" href="css/tasks.css?v=3">
+  <link rel="stylesheet" href="css/meals.css?v=1">
+  <link rel="stylesheet" href="css/calendar.css?v=2">
+  <link rel="stylesheet" href="css/lists.css?v=1">
+  <link rel="stylesheet" href="css/rewards.css?v=1">
+  <link rel="stylesheet" href="css/widgets.css?v=1">
+  <link rel="stylesheet" href="css/modals.css?v=1">
+  <link rel="stylesheet" href="css/magic-ai.css?v=1">
+  <link rel="stylesheet" href="css/celebrations.css?v=1">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
   <script>
@@ -46,7 +56,7 @@
   <script>
     (function() {
       try {
-        var theme = localStorage.getItem("chore_theme") || "light";
+        var theme = localStorage.getItem("harmonee_theme") || localStorage.getItem("chore_theme") || "light";
         if (theme === "dark") {
           document.documentElement.classList.add("theme-dark");
         } else {
@@ -319,13 +329,6 @@
               <span class="fab-option-text">
                 <span class="fab-option-title">Add Event</span>
                 <span class="fab-option-sub">Tutors, lessons & schedule</span>
-              </span>
-            </button>
-            <button type="button" class="calendar-fab-option fab-option-chore" id="fab-action-add-chore" role="menuitem">
-              <span class="fab-option-icon">🧹</span>
-              <span class="fab-option-text">
-                <span class="fab-option-title">Add Chore</span>
-                <span class="fab-option-sub">Daily tasks & routines</span>
               </span>
             </button>
             <button type="button" class="calendar-fab-option fab-option-note" id="fab-action-add-note" role="menuitem">
@@ -925,8 +928,12 @@
                 </div>
               </div>
               <div class="drawer-stepper-arrows">
-                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-down" aria-label="Decrease frequency">&lt;</button>
-                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-up" aria-label="Increase frequency">&gt;</button>
+                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-down" aria-label="Decrease frequency">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-up" aria-label="Increase frequency">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
               </div>
             </div>
 
@@ -1266,7 +1273,7 @@
 
         <div class="modal-header">
           <div class="modal-trophy">✨</div>
-          <h2 id="share-modal-title" class="modal-title">Family Chore Boards</h2>
+          <h2 id="share-modal-title" class="modal-title">harmonee Family Boards</h2>
           <p class="modal-subtitle">Share your active board with family or create a brand new private board for friends.</p>
         </div>
 
@@ -1504,8 +1511,8 @@
       <div class="modal-content">
         <div class="onboarding-welcome-hero">
           <div class="modal-trophy">⚡</div>
-          <h2 id="onboarding-modal-title" class="modal-title">Welcome to Chore Challenge!</h2>
-          <p class="modal-subtitle">Create a private household board in 10 seconds and share it with your family.</p>
+          <h2 id="onboarding-modal-title" class="modal-title">Welcome to harmonee!</h2>
+          <p class="modal-subtitle">Family life in sync — create a private household board in 10 seconds.</p>
         </div>
 
         <form id="onboarding-form" class="onboarding-form">
@@ -2629,7 +2636,19 @@
     </div>
   </div>
 
-  <!-- Audio Synthesizer & Main Script -->
-  <script type="module" src="app.js?v=176"></script>
+  <!-- Core Utilities & Extracted Domain Modules -->
+  <script src="js/utils.js?v=5"></script>
+  <script src="js/seed-data.js?v=3"></script>
+  <script src="js/audio.js?v=3"></script>
+  <script src="js/weather.js?v=3"></script>
+  <script src="js/sleep.js?v=6"></script>
+  <script src="js/lists.js?v=4"></script>
+  <script src="js/magic-scanner.js?v=3"></script>
+  <script src="js/rewards.js?v=2"></script>
+  <script src="js/sticky-note.js?v=2"></script>
+  <script src="js/calendar.js?v=3"></script>
+  <script src="js/tasks.js?v=5"></script>
+  <script type="module" src="js/meals.js?v=9"></script>
+  <script type="module" src="app.js?v=203"></script>
 </body>
 </html>
