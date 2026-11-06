@@ -13,7 +13,7 @@
   
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
-  <link rel="stylesheet" href="css/tasks.css?v=11">
+  <link rel="stylesheet" href="css/tasks.css?v=12">
   <link rel="stylesheet" href="css/meals.css?v=9">
   <link rel="stylesheet" href="css/calendar.css?v=3">
   <link rel="stylesheet" href="css/lists.css?v=4">
@@ -900,6 +900,19 @@
             <button type="button" class="drawer-segment-btn active" data-type="chore" id="btn-drawer-type-chore">Chore</button>
             <button type="button" class="drawer-segment-btn" data-type="routine" id="btn-drawer-type-routine">Routine</button>
           </div>
+          <p class="drawer-type-hint" id="drawer-type-hint">A household job. Anyone can take it over and get the points.</p>
+
+          <!-- How often: separate from Chore/Routine, so a chore can repeat daily -->
+          <div class="drawer-field-group">
+            <div class="drawer-section-label-row">
+              <span class="drawer-section-icon">🗓️</span>
+              <span class="drawer-section-label">How often</span>
+            </div>
+            <div class="drawer-segmented-pills" id="drawer-schedule-pills">
+              <button type="button" class="drawer-pill-segment" data-schedule="once" id="btn-schedule-once">Once</button>
+              <button type="button" class="drawer-pill-segment" data-schedule="daily" id="btn-schedule-daily">Every day</button>
+            </div>
+          </div>
 
           <!-- CHORE-SPECIFIC FIELDS -->
           <div id="drawer-chore-fields" class="drawer-dynamic-fields">
@@ -954,7 +967,6 @@
               <select id="drawer-chore-repeat-select" class="drawer-select-input">
                 <option value="none">Does not repeat</option>
                 <option value="weekly">Weekly on this day</option>
-                <option value="daily">Every day</option>
               </select>
             </div>
           </div>
@@ -2737,10 +2749,10 @@
   <script src="js/page-intro.js?v=3"></script>
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=5"></script>
-  <script src="js/tasks.js?v=12"></script>
+  <script src="js/tasks.js?v=13"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=8"></script>
   <script type="module" src="js/meals.js?v=19"></script>
-  <script type="module" src="app.js?v=215"></script>
+  <script type="module" src="app.js?v=216"></script>
 </body>
 </html>

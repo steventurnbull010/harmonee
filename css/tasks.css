@@ -2023,3 +2023,69 @@ body.theme-dark .skylight-switch .switch-slider {
   min-width: 0;
   white-space: nowrap;
 }
+
+/* Chores in someone's column can be picked up and moved */
+.skylight-task-card.is-movable {
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* "Make the Family Dinner moved to Dara · Undo" */
+.task-move-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 8px 8px 24px;
+  min-height: 48px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.task-move-toast.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.task-move-undo {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  min-height: 40px;
+  background: #38bdf8;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Chore / Routine explanation under the switch */
+.drawer-type-hint {
+  margin: -8px 0 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* The old "Every 1" stepper and "Repeats every Day/Week" never saved
+   anything; "How often" replaces them */
+#drawer-routine-fields .drawer-row-every,
+#drawer-routine-fields .drawer-field-group:has(#btn-routine-unit-day) {
+  display: none !important;
+}

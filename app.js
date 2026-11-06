@@ -6751,7 +6751,9 @@ function initSkylightNavigation() {
         const task = (currentTasks || []).find(t => t.id === taskId);
         if (task && typeof window.openSkylightTaskQuickModal === "function") {
           const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-          const dayValue = (isDaily && task.assignedDays && task.assignedDays[targetDay] !== undefined) ? task.assignedDays[targetDay] : task.assignedTo;
+          const dayValue = (isDaily && typeof window.getEffectiveAssignee === "function")
+            ? window.getEffectiveAssignee(task, targetDay, getIsoWeekKey(new Date()))
+            : task.assignedTo;
           const who = getAssigneeNames(dayValue);
           const colMember = who.length === 0 || who.every(n => /^(up for grabs|anyone)$/i.test(n)) ? "Up for grabs" : (who.length === 1 ? who[0] : null);
           window.openSkylightTaskQuickModal(taskId, targetDay || task.day, colMember);

@@ -46,6 +46,39 @@ function isTaskDoneOnDate(task, date, memberLower = null) {
 }
 window.isTaskDoneOnDate = isTaskDoneOnDate;
 
+// ---------------------------------------------------------------------------
+// Chores vs routines
+// A ROUTINE is personal: everyone does their own (brush teeth, make your
+// bed), so it can't be handed to someone else. A CHORE is a household job
+// (dishwasher, dinner) that anyone can take over and get the points for.
+// Set per task in the Tasks panel (task.kind); tasks saved before that
+// existed are recognised by name.
+// ---------------------------------------------------------------------------
+const PERSONAL_ROUTINE_NAMES = /\b(brush(ing)? (your |my |their )?teeth|teeth|floss|make (your |my |the )?bed|tidy (your |my )?(room|bedroom|clothes|toys)|put (your |my )?clothes away|clothes away|get dressed|curtains|blinds|(school )?bag ready|pack (your |my )?(school )?bag|homework|reading|shower|bath(time)?|wash (your |my )?(face|hair|hands)|skincare|get ready for (school|bed)|pyjamas|pajamas|lunch ?box ready|practi[cs]e (piano|guitar|violin|instrument))\b/i;
+
+function isPersonalRoutine(task) {
+  if (!task) return false;
+  if (task.kind === "routine") return true;
+  if (task.kind === "chore") return false;
+  return PERSONAL_ROUTINE_NAMES.test(task.title || "");
+}
+window.isPersonalRoutine = isPersonalRoutine;
+
+// Who's doing a chore on a given day. A swap (dragging a chore to someone
+// else) is saved for that one date in task.assignedOverrides, keyed by
+// "ISO week|weekday", so the regular rota (assignedDays) and next week are
+// untouched. null in an override means Up for grabs.
+function getEffectiveAssignee(task, dayName, weekKey) {
+  if (!task) return null;
+  const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+  if (!isDaily) return task.assignedTo;
+  const key = `${weekKey}|${dayName}`;
+  if (task.assignedOverrides && Object.prototype.hasOwnProperty.call(task.assignedOverrides, key)) return task.assignedOverrides[key];
+  if (task.assignedDays && task.assignedDays[dayName] !== undefined) return task.assignedDays[dayName];
+  return task.assignedTo;
+}
+window.getEffectiveAssignee = getEffectiveAssignee;
+
 // True when an assignee value names no specific person (empty, or only the
 // shared "Up for grabs" / "Anyone" / "Family" pools).
 function isUnassignedValue(assignedTo) {
@@ -148,11 +181,9 @@ function renderSkylightTasksPage() {
       const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
       const assigned = task.assignedTo || "Up for grabs";
 
-      // A daily task's owner for the selected day: its per-day schedule entry
-      // when it has one for this day, otherwise its main assignee.
-      const dailyAssignee = (isDaily && task.assignedDays && task.assignedDays[dayName] !== undefined)
-        ? task.assignedDays[dayName]
-        : task.assignedTo;
+      // A daily task's owner for the selected day: a swap for this date, else
+      // its rota entry for this weekday, else its main assignee.
+      const dailyAssignee = isDaily ? getEffectiveAssignee(task, dayName, getIsoWeekKey(tasksSelectedDate)) : task.assignedTo;
 
       if (isGrabPool) {
         if (isDaily) {
@@ -288,6 +319,9 @@ function renderSkylightTasksPage() {
       // Up for grabs cards can't be ticked: they must be dragged into a
       // person's column first, which assigns the chore to them.
       const isGrabbable = isGrabPool && !isDone;
+      // A chore in someone's column can be dragged to another person or back
+      // to Up for grabs; personal routines (brush teeth...) stay put
+      const isMovable = !isGrabPool && !isDone && !isPersonalRoutine(t);
       const actionHtml = (isFutureDay && !isGrabPool)
         ? `<span class="skylight-task-check-circle is-static is-future" title="You can tick this off on the day" aria-label="Not due yet"></span>`
         : isGrabPool
@@ -301,7 +335,7 @@ function renderSkylightTasksPage() {
           </button>`;
 
       return `
-        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''}"
+        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''}"
              style="background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
              data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}">
           <div class="skylight-task-card-main">
@@ -435,10 +469,11 @@ let grabDrag = null;
 let grabDragJustEnded = false;
 
 function wireGrabDragAndDrop(container) {
-  container.querySelectorAll(".skylight-task-card.is-grabbable").forEach(card => {
+  container.querySelectorAll(".skylight-task-card.is-grabbable, .skylight-task-card.is-movable").forEach(card => {
     // Touch: press-and-hold to pick up
     card.addEventListener("touchstart", (e) => {
       if (e.touches.length !== 1) return;
+      if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
       const t = e.touches[0];
       const pending = { card, container, startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastY: t.clientY };
       pending.holdTimer = setTimeout(() => beginGrabDrag(pending, pending.lastX, pending.lastY), GRAB_HOLD_MS);
@@ -474,6 +509,7 @@ function wireGrabDragAndDrop(container) {
     // Mouse: drag once the pointer moves a few pixels
     card.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
+      if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
       e.preventDefault(); // no text selection while dragging
       const pending = { card, container, startX: e.clientX, startY: e.clientY };
       grabDrag = pending;
@@ -514,6 +550,8 @@ function beginGrabDrag(state, x, y) {
   state.active = true;
   state.taskId = state.card.getAttribute("data-task-id");
   state.day = state.card.getAttribute("data-day");
+  state.date = state.card.getAttribute("data-date");
+  state.fromMember = state.card.getAttribute("data-member");
   state.card.classList.add("is-drag-source");
   document.body.classList.add("is-grab-dragging");
   if (navigator.vibrate) navigator.vibrate(15);
@@ -536,7 +574,8 @@ function moveGrabDrag(x, y) {
   const under = document.elementFromPoint(x, y);
   const col = under ? under.closest(".skylight-tasks-col") : null;
   const member = col ? col.getAttribute("data-col-member") : null;
-  const target = (member && member !== "Up for grabs") ? col : null;
+  // Any other column, including back to Up for grabs
+  const target = (member && member !== state.fromMember) ? col : null;
   if (state.targetCol !== target) {
     if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
     if (target) target.classList.add("is-drop-target");
@@ -558,37 +597,104 @@ function endGrabDrag() {
   grabDragJustEnded = true;
   setTimeout(() => { grabDragJustEnded = false; }, 60);
 
-  if (state.targetMember) claimGrabTask(state.taskId, state.day, state.targetMember);
+  if (state.targetMember) moveTaskBetween(state.taskId, state.date, state.fromMember, state.targetMember);
 }
 
-// Assign an Up for grabs chore to a family member.
-// Daily chores are claimed for the given day only (they return to Up for
-// grabs on other days); one-off chores become theirs outright.
-function claimGrabTask(taskId, day, member) {
+// Move a chore from one column to another for one date: Up for grabs to a
+// person (claim), person to person (swap), or person back to Up for grabs.
+// Daily chores change for that date only (task.assignedOverrides), leaving
+// the rota and other weeks alone; one-off chores change outright. Whoever
+// ends up with it gets the points when they tick it. Shows an Undo message.
+function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
   const task = (window.currentTasks || []).find(t => t.id === taskId);
-  if (!task) return;
+  if (!task || !dateStr || fromMember === toMember) return;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
+  const weekKey = getIsoWeekKey(date);
   const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+  const pools = ["up for grabs", "anyone", "family"];
+
+  // Work out the new assignee: swap fromMember for toMember (shared chores
+  // keep their other people)
+  const current = isDaily ? getEffectiveAssignee(task, dayName, weekKey) : task.assignedTo;
+  let people = getAssigneeNames(current).filter(n => !pools.includes(n.toLowerCase()));
+  if (fromMember !== "Up for grabs") people = people.filter(n => n.toLowerCase() !== fromMember.toLowerCase());
+  else people = [];
+  if (toMember !== "Up for grabs" && !people.some(n => n.toLowerCase() === toMember.toLowerCase())) people.push(toMember);
+  const newValue = people.length === 0 ? null : (people.length === 1 ? people[0] : people);
+
+  const before = isDaily
+    ? { assignedOverrides: JSON.parse(JSON.stringify(task.assignedOverrides || {})) }
+    : { assignedTo: task.assignedTo === undefined ? null : JSON.parse(JSON.stringify(task.assignedTo)) };
 
   let payload;
   if (isDaily) {
-    task.assignedDays = { ...(task.assignedDays || {}), [day]: member };
-    payload = { assignedDays: task.assignedDays };
+    const thisWeek = getIsoWeekKey(new Date());
+    const overrides = {};
+    // keep this week's and future swaps; drop old ones
+    Object.entries(task.assignedOverrides || {}).forEach(([k, v]) => { if (k.split("|")[0] >= thisWeek) overrides[k] = v; });
+    overrides[`${weekKey}|${dayName}`] = newValue;
+    task.assignedOverrides = overrides;
+    payload = { assignedOverrides: overrides };
   } else {
-    task.assignedTo = member;
-    payload = { assignedTo: member };
+    task.assignedTo = newValue;
+    payload = { assignedTo: newValue };
   }
+  saveTaskAssignment(task, payload);
 
+  const where = toMember === "Up for grabs" ? "Up for grabs" : toMember;
+  showTaskMoveToast(`${task.title} moved to ${where}`, () => {
+    Object.assign(task, before);
+    saveTaskAssignment(task, before);
+  });
+  if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+}
+window.moveTaskBetween = moveTaskBetween;
+
+function saveTaskAssignment(task, payload) {
   saveLocalCache(window.currentTasks || []);
   if (db) {
     try {
-      updateDoc(getTaskDocRef(taskId), payload).catch(console.error);
+      updateDoc(getTaskDocRef(task.id), payload).catch(console.error);
     } catch (err) {
-      console.error("Failed to save claimed task:", err);
+      console.error("Failed to save chore move:", err);
     }
   }
   renderSkylightTasksPage();
 }
+
+// Kept for anything that still calls it: claiming from Up for grabs
+function claimGrabTask(taskId, day, member) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const want = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(day);
+  const date = new Date(today);
+  if (want !== -1) date.setDate(today.getDate() - ((today.getDay() + 6) % 7) + ((want + 6) % 7));
+  moveTaskBetween(taskId, getLocalDateKey(date), "Up for grabs", member);
+}
 window.claimGrabTask = claimGrabTask;
+
+// "Make the Family Dinner moved to Dara · Undo" along the bottom, 8 seconds
+let taskMoveToastTimer = null;
+function showTaskMoveToast(text, onUndo) {
+  let toast = document.getElementById("task-move-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "task-move-toast";
+    toast.className = "task-move-toast";
+    toast.setAttribute("role", "status");
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="task-move-undo">Undo</button>`;
+  toast.classList.add("is-visible");
+  toast.querySelector(".task-move-undo").onclick = () => {
+    toast.classList.remove("is-visible");
+    clearTimeout(taskMoveToastTimer);
+    onUndo();
+  };
+  clearTimeout(taskMoveToastTimer);
+  taskMoveToastTimer = setTimeout(() => toast.classList.remove("is-visible"), 8000);
+}
 
 // --- Task Completion with Sound & Full Celebration Trigger ---
 function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = null) {
@@ -743,8 +849,12 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
         <span style="font-weight: 500;">${escapeHtml(assignedList.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", "))}</span>
       `;
     } else {
-      const dayRota = (isDaily && task.assignedDays && task.assignedDays[targetDay] !== undefined) ? task.assignedDays[targetDay] : undefined;
-      const assigned = (dayRota !== undefined ? getAssigneeNames(dayRota)[0] : getAssigneeNames(task.assignedTo)[0]) || "Up for grabs";
+      // Who's on it that day: a swap for that date, the rota, or the main assignee
+      const quickWeek = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+        ? getIsoWeekKey(new Date(...dateStr.split("-").map((n, i) => i === 1 ? Number(n) - 1 : Number(n))))
+        : getIsoWeekKey(new Date());
+      const dayValue = isDaily ? getEffectiveAssignee(task, targetDay, quickWeek) : task.assignedTo;
+      const assigned = getAssigneeNames(dayValue)[0] || "Up for grabs";
       const pal = (assigned === "Up for grabs" || assigned === "Anyone") ? { primary: "#ef4444" } : getMemberPalette(assigned);
       assigneeEl.innerHTML = `
         <span class="skylight-avatar avatar-mini" style="background: ${pal.primary}; color: #fff;">${assigned.charAt(0).toUpperCase()}</span>
@@ -814,7 +924,8 @@ window.openSkylightTaskQuickModal = openSkylightTaskQuickModal;
 // ============================================================================
 // 17. SKYLIGHT RIGHT-SIDE SLIDE-IN DRAWER (Add / Edit Task)
 // ============================================================================
-let drawerCurrentType = "chore";
+let drawerCurrentType = "chore"; // "chore" (swappable) or "routine" (personal)
+let drawerSchedule = "once";      // "once" or "daily"
 let drawerSelectedProfiles = ["Steven"];
 let drawerSelectedDate = new Date();
 let drawerRoutineFreq = 1;
@@ -913,7 +1024,17 @@ function openSkylightTaskDrawer(taskId = null) {
       drawerSelectedProfiles = ["Up for grabs"];
     }
     const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-    drawerCurrentType = (isDaily || task.routineSlot) ? "routine" : "chore";
+    drawerCurrentType = isPersonalRoutine(task) ? "routine" : "chore";
+    drawerSchedule = isDaily ? "daily" : "once";
+    // Once: weekly repeat and time
+    const repeatToggle = document.getElementById("drawer-toggle-repeat");
+    const repeatSelect = document.getElementById("drawer-chore-repeat-select");
+    if (repeatToggle) repeatToggle.checked = task.repeat === "weekly";
+    if (repeatSelect) repeatSelect.value = task.repeat === "weekly" ? "weekly" : "none";
+    const timeToggle = document.getElementById("drawer-toggle-time");
+    const timeInput = document.getElementById("drawer-chore-time-input");
+    if (timeToggle) timeToggle.checked = !isDaily && !!task.time && /^\d{1,2}:\d{2}/.test(task.time);
+    if (timeInput && timeToggle && timeToggle.checked) timeInput.value = task.time.slice(0, 5);
     drawerRewardValue = task.value || 10;
     // Same rule as the board: no time of day set (or in the title) = Anytime
     if (task.routineSlot) {
@@ -930,6 +1051,11 @@ function openSkylightTaskDrawer(taskId = null) {
     drawerSelectedEmoji = "🪴";
     drawerSelectedProfiles = [((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) && (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"])[0]) || "Steven"];
     drawerCurrentType = "chore";
+    drawerSchedule = "once";
+    const repeatToggle = document.getElementById("drawer-toggle-repeat");
+    if (repeatToggle) repeatToggle.checked = false;
+    const timeToggle = document.getElementById("drawer-toggle-time");
+    if (timeToggle) timeToggle.checked = false;
     drawerRewardValue = 1;
     drawerRoutineSlot = "morning";
   }
@@ -1033,11 +1159,36 @@ function syncDrawerTypeUI() {
   const btnRoutine = document.getElementById("btn-drawer-type-routine");
   const choreFields = document.getElementById("drawer-chore-fields");
   const routineFields = document.getElementById("drawer-routine-fields");
+  const hint = document.getElementById("drawer-type-hint");
 
+  // Chore / Routine: can it be handed to someone else?
   if (btnChore) btnChore.classList.toggle("active", drawerCurrentType === "chore");
   if (btnRoutine) btnRoutine.classList.toggle("active", drawerCurrentType === "routine");
-  if (choreFields) choreFields.style.display = drawerCurrentType === "chore" ? "block" : "none";
-  if (routineFields) routineFields.style.display = drawerCurrentType === "routine" ? "block" : "none";
+  if (hint) hint.textContent = drawerCurrentType === "routine"
+    ? "Something personal everyone does for themselves. It stays with each person."
+    : "A household job. Anyone can take it over and get the points.";
+
+  // How often: one date, or every day at a time of day
+  document.querySelectorAll("#drawer-schedule-pills [data-schedule]").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-schedule") === drawerSchedule);
+  });
+  if (choreFields) choreFields.style.display = drawerSchedule === "once" ? "block" : "none";
+  if (routineFields) routineFields.style.display = drawerSchedule === "daily" ? "block" : "none";
+
+  // Once: show the time and weekly options when switched on
+  const timeToggle = document.getElementById("drawer-toggle-time");
+  const timeWrap = document.getElementById("drawer-chore-time-selector");
+  const timeLabel = document.getElementById("drawer-chore-time-label");
+  const timeInput = document.getElementById("drawer-chore-time-input");
+  if (timeWrap && timeToggle) timeWrap.style.display = timeToggle.checked ? "" : "none";
+  if (timeLabel && timeToggle) timeLabel.textContent = timeToggle.checked && timeInput ? timeInput.value : "All Day";
+  const repeatToggle = document.getElementById("drawer-toggle-repeat");
+  const repeatWrap = document.getElementById("drawer-chore-repeat-selector");
+  const repeatLabel = document.getElementById("drawer-chore-repeat-label");
+  const repeatSelect = document.getElementById("drawer-chore-repeat-select");
+  if (repeatWrap && repeatToggle) repeatWrap.style.display = repeatToggle.checked ? "" : "none";
+  if (repeatToggle && repeatSelect && repeatToggle.checked && repeatSelect.value === "none") repeatSelect.value = "weekly";
+  if (repeatLabel && repeatToggle) repeatLabel.textContent = repeatToggle.checked && repeatSelect && repeatSelect.value === "weekly" ? "Weekly on this day" : "Does not repeat";
 }
 
 function syncDrawerRewardUI() {
@@ -1052,7 +1203,19 @@ function initSkylightTaskDrawerEvents() {
   const btnChore = document.getElementById("btn-drawer-type-chore");
   const btnRoutine = document.getElementById("btn-drawer-type-routine");
   if (btnChore) btnChore.onclick = () => { drawerCurrentType = "chore"; syncDrawerTypeUI(); };
-  if (btnRoutine) btnRoutine.onclick = () => { drawerCurrentType = "routine"; syncDrawerTypeUI(); };
+  if (btnRoutine) btnRoutine.onclick = () => {
+    drawerCurrentType = "routine";
+    // Routines are usually daily: suggest it for a new one
+    if (!document.getElementById("drawer-task-id").value) drawerSchedule = "daily";
+    syncDrawerTypeUI();
+  };
+  document.querySelectorAll("#drawer-schedule-pills [data-schedule]").forEach(b => {
+    b.onclick = () => { drawerSchedule = b.getAttribute("data-schedule"); syncDrawerTypeUI(); };
+  });
+  ["drawer-toggle-time", "drawer-toggle-repeat", "drawer-chore-time-input", "drawer-chore-repeat-select"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", syncDrawerTypeUI);
+  });
 
   // Emoji accordion
   const emojiTrigger = document.getElementById("drawer-emoji-trigger");
@@ -1144,7 +1307,13 @@ function initSkylightTaskDrawerEvents() {
       const title = document.getElementById("drawer-task-title").value.trim();
       if (!title) return;
 
-      const isRoutine = (drawerCurrentType === "routine");
+      const isRoutine = (drawerSchedule === "daily"); // repeats every day at a time of day
+      const repeatToggle = document.getElementById("drawer-toggle-repeat");
+      const repeatSelect = document.getElementById("drawer-chore-repeat-select");
+      const isWeekly = !isRoutine && repeatToggle && repeatToggle.checked && repeatSelect && repeatSelect.value === "weekly";
+      const timeToggle = document.getElementById("drawer-toggle-time");
+      const timeInput = document.getElementById("drawer-chore-time-input");
+      const choreTime = (!isRoutine && timeToggle && timeToggle.checked && timeInput && timeInput.value) ? timeInput.value : null;
       const dName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][drawerSelectedDate.getDay()];
       const dStr = getLocalDateKey(drawerSelectedDate);
 
@@ -1163,12 +1332,14 @@ function initSkylightTaskDrawerEvents() {
         assignedTo: effectiveAssigned,
         taskType: isRoutine ? "Daily Task" : "Standard",
         day: isRoutine ? "Daily" : dName,
-        date: isRoutine ? null : dStr,
-        repeat: isRoutine ? "daily" : "none",
+        date: (isRoutine || isWeekly) ? null : dStr,
+        repeat: isRoutine ? "daily" : (isWeekly ? "weekly" : "none"),
+        kind: drawerCurrentType, // "routine" stays with each person; "chore" can be swapped
         routineSlot: isRoutine ? drawerRoutineSlot : null,
         value: drawerRewardValue,
         order: isRoutine ? ({ morning: 1, afternoon: 2, evening: 4, anytime: 5 }[drawerRoutineSlot] || 4) : 3
       };
+      if (!isRoutine) taskData.time = choreTime; // one-off chores can have a time
       if (isRoutine && drawerRotaEnabled) {
         taskData.assignedDays = {};
         ROTA_DAYS.forEach(d => { taskData.assignedDays[d] = drawerRota[d] === undefined ? null : drawerRota[d]; });
