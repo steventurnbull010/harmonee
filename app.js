@@ -285,11 +285,23 @@ async function checkWeeklySundayReset() {
 
     // Bank last week's points on the board so reward goals keep them after
     // the chores reset. Same scoring as the podium, including daily routines.
+    // Bank every finished week the chores still hold ticks for, not just
+    // this device's "last active" week: a phone last opened weeks ago would
+    // otherwise bank an old, empty week and then clear this week's ticks.
     if (typeof window.computeMemberScores === "function" && typeof window.bankRewardWeek === "function") {
-      const scored = window.computeMemberScores(lastActiveWeek);
-      const banked = {};
-      Object.entries(scored).forEach(([m, d]) => { banked[m] = d.score; });
-      window.bankRewardWeek(lastActiveWeek, banked);
+      const finishedWeeks = new Set([lastActiveWeek]);
+      currentTasks.forEach(t => {
+        if (t.completedWeek && t.completedWeek !== currentWeek) finishedWeeks.add(t.completedWeek);
+        Object.values(t.completedDays || {}).forEach(rec => {
+          if (rec && typeof rec === "object" && rec.completedWeek && rec.completedWeek !== currentWeek) finishedWeeks.add(rec.completedWeek);
+        });
+      });
+      finishedWeeks.forEach(week => {
+        const scored = window.computeMemberScores(week);
+        const banked = {};
+        Object.entries(scored).forEach(([m, d]) => { banked[m] = d.score; });
+        window.bankRewardWeek(week, banked);
+      });
     }
 
     const hasAnyPoints = Object.values(totals).some(val => val > 0);
