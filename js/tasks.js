@@ -823,101 +823,135 @@ let currentQuickTaskDay = null;
 function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr = null) {
   const task = (window.currentTasks || []).find(t => t.id === taskId);
   if (!task) return;
+  const overlay = document.getElementById("skylight-task-quick-modal");
+  if (!overlay) return;
 
   currentQuickTaskId = taskId;
   currentQuickTaskDay = targetDay;
 
-  const overlay = document.getElementById("skylight-task-quick-modal");
-  if (!overlay) return;
-
-  document.getElementById("quick-card-title").textContent = task.title;
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-  document.getElementById("quick-card-datetime").textContent = isDaily ? `${targetDay} Routine • ${task.time || 'Anytime'}` : `${task.day || targetDay} Chore • ${task.time || 'Today'}`;
 
-  const assignedList = getAssignedMembersList(task.assignedTo);
-  const isMultiAssign = assignedList.length > 1;
-
-  const assigneeEl = document.getElementById("quick-card-assignee");
-  if (assigneeEl) {
-    if (isMultiAssign) {
-      const avatars = assignedList.map(m => {
-        const pal = getMemberPalette(m);
-        return `<span class="skylight-avatar avatar-mini" style="background: ${pal.primary}; color: #fff;">${m.charAt(0).toUpperCase()}</span>`;
-      }).join("");
-      assigneeEl.innerHTML = `
-        <div style="display: flex; gap: 4px; align-items: center;">${avatars}</div>
-        <span style="font-weight: 500;">${escapeHtml(assignedList.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", "))}</span>
-      `;
-    } else {
-      // Who's on it that day: a swap for that date, the rota, or the main assignee
-      const quickWeek = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr))
-        ? getIsoWeekKey(new Date(...dateStr.split("-").map((n, i) => i === 1 ? Number(n) - 1 : Number(n))))
-        : getIsoWeekKey(new Date());
-      const dayValue = isDaily ? getEffectiveAssignee(task, targetDay, quickWeek) : task.assignedTo;
-      const assigned = getAssigneeNames(dayValue)[0] || "Up for grabs";
-      const pal = (assigned === "Up for grabs" || assigned === "Anyone") ? { primary: "#ef4444" } : getMemberPalette(assigned);
-      assigneeEl.innerHTML = `
-        <span class="skylight-avatar avatar-mini" style="background: ${pal.primary}; color: #fff;">${assigned.charAt(0).toUpperCase()}</span>
-        <span style="font-weight: 500;">${escapeHtml(assigned)}</span>
-      `;
-    }
-  }
-
-  const isMoney = (window.boardSettings || {}).gameMode === "money";
-  const curr = (window.boardSettings || {}).currency || "£";
-  document.getElementById("quick-card-reward").textContent = isMoney ? `${curr}${((task.value || 10) / 10).toFixed(2)}` : `${task.value || 10} pts`;
-
-  const compBtn = document.getElementById("btn-quick-card-complete");
-  const mLower = colMember ? colMember.toLowerCase() : null;
-  // Which date is this? From the Tasks page we're told; otherwise it's this
-  // week's occurrence of targetDay.
-  let cardDate = null;
+  // Which date this card is for: given by the Tasks page, else this week's
+  // occurrence of targetDay
+  let cardDate;
   if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [y, m, d] = dateStr.split("-").map(Number);
     cardDate = new Date(y, m - 1, d);
   } else {
     cardDate = new Date(); cardDate.setHours(0, 0, 0, 0);
-    const want = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(targetDay);
-    if (want !== -1) {
-      const monday = new Date(cardDate);
-      monday.setDate(cardDate.getDate() - ((cardDate.getDay() + 6) % 7));
-      cardDate = new Date(monday);
-      cardDate.setDate(monday.getDate() + ((want + 6) % 7));
-    }
+    const want = DAYS.indexOf(targetDay);
+    if (want !== -1) cardDate.setDate(cardDate.getDate() - ((cardDate.getDay() + 6) % 7) + ((want + 6) % 7));
   }
-  const isDone = isTaskDoneOnDate(task, cardDate, mLower);
+  const dayName = DAYS[cardDate.getDay()];
+  const weekKey = getIsoWeekKey(cardDate);
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const isFuture = cardDate.getTime() > todayStart.getTime();
+  const isToday = cardDate.getTime() === todayStart.getTime();
+  const mLower = colMember ? colMember.toLowerCase() : null;
+  const isDone = isTaskDoneOnDate(task, cardDate, mLower);
 
-  // Up for grabs chores are claimed by dragging, not ticked from the pool.
-  compBtn.style.display = (colMember === "Up for grabs" || isFuture) ? "none" : "";
-  compBtn.textContent = isDone ? "Mark as Incomplete" : "Mark as Complete";
-  compBtn.onclick = () => {
-    overlay.style.display = "none";
-    if (isDone) {
-      handleUndoTask(taskId, targetDay, null, colMember);
+  // Who's on it that day
+  const pools = ["up for grabs", "anyone", "family"];
+  const assigneeValue = isDaily ? getEffectiveAssignee(task, dayName, weekKey) : task.assignedTo;
+  const people = getAssigneeNames(assigneeValue).filter(n => !pools.includes(n.toLowerCase()));
+  const shown = (mLower && people.length > 1) ? people.filter(n => n.toLowerCase() === mLower) : people;
+  const grabPal = { primary: "#ef4444" };
+
+  // Title, colour square and "Friday 6 November · Evening"
+  document.getElementById("quick-card-title").textContent = task.title;
+  const swatch = document.getElementById("quick-card-swatch");
+  if (swatch) swatch.style.background = shown.length ? getMemberPalette(shown[0]).primary : grabPal.primary;
+  const slotLabel = isDaily ? ({ morning: "Morning", afternoon: "Afternoon", evening: "Evening", anytime: "Anytime" }[task.routineSlot] || getTaskRoutineInfo(task).label.replace(/^\S+\s/, "") || "Anytime") : "";
+  // A one-off chore set for a weekday shows that day, in the week being viewed
+  let whenDate = cardDate;
+  if (!isDaily && DAYS.includes(task.day) && task.day !== dayName) {
+    whenDate = new Date(cardDate);
+    whenDate.setDate(whenDate.getDate() - ((whenDate.getDay() + 6) % 7) + ((DAYS.indexOf(task.day) + 6) % 7));
+  }
+  const whenIsToday = whenDate.getTime() === todayStart.getTime();
+  const whenParts = [`${whenIsToday ? "Today, " : ""}${DAYS[whenDate.getDay()]} ${whenDate.getDate()} ${MONTHS[whenDate.getMonth()]}`];
+  if (task.time && /^\d{1,2}:\d{2}/.test(task.time)) whenParts.push(task.time.slice(0, 5));
+  else if (slotLabel) whenParts.push(slotLabel);
+  document.getElementById("quick-card-datetime").textContent = whenParts.join(" · ");
+
+  // Who
+  const assigneeEl = document.getElementById("quick-card-assignee");
+  if (assigneeEl) {
+    if (!shown.length) {
+      assigneeEl.innerHTML = `<span class="task-pop-avatar" style="background:${grabPal.primary}">⚡</span><span>Up for grabs</span>`;
     } else {
-      handleCompleteTaskWithCelebration(taskId, targetDay, colMember);
+      const avatars = shown.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("");
+      assigneeEl.innerHTML = `<span class="task-pop-avatars">${avatars}</span><span>${escapeHtml(formatAssigneeNames(shown))}</span>`;
     }
+  }
+
+  // How often
+  let repeatText;
+  if (isDaily) repeatText = (task.assignedDays && Object.keys(task.assignedDays).length) ? "Every day, on a rota" : "Every day";
+  else if (task.repeat === "weekly" && DAYS.includes(task.day)) repeatText = `Every ${task.day}`;
+  else if (task.date) repeatText = "Just this once";
+  else if (DAYS.includes(task.day)) repeatText = `Once, on ${task.day}`;
+  else repeatText = "Once, any day this week";
+  document.getElementById("quick-card-repeat").textContent = repeatText;
+
+  // Chore or routine
+  document.getElementById("quick-card-kind").textContent = isPersonalRoutine(task)
+    ? "Routine · everyone does their own"
+    : "Chore · anyone can take it over";
+
+  // Points
+  const isMoney = (window.boardSettings || {}).gameMode === "money";
+  const curr = (window.boardSettings || {}).currency || "£";
+  const pts = task.value || 10;
+  document.getElementById("quick-card-reward").textContent = isMoney ? `${curr}${(pts / 10).toFixed(2)}` : `${pts} point${pts === 1 ? "" : "s"}`;
+
+  // Done by
+  const doneRow = document.getElementById("quick-card-done-row");
+  if (doneRow) {
+    let by = null;
+    if (isDone) {
+      const rec = isDaily ? (task.completedDays || {})[dayName] : null;
+      const raw = isDaily ? (rec && typeof rec === "object" ? rec.completedBy : rec) : task.completedBy;
+      by = getAssigneeNames(raw).map(n => normalizeFamilyMemberName ? normalizeFamilyMemberName(n) : n);
+    }
+    doneRow.style.display = isDone ? "" : "none";
+    document.getElementById("quick-card-done-text").textContent = isDone ? (by && by.length ? `Done by ${formatAssigneeNames(by)}` : "Done") : "";
+  }
+
+  // The one action, or a hint when it doesn't apply
+  const compBtn = document.getElementById("btn-quick-card-complete");
+  const hint = document.getElementById("quick-card-hint");
+  const isGrabPool = colMember === "Up for grabs" || (!colMember && !shown.length);
+  let hintText = "";
+  if (isGrabPool && !isDone) hintText = "Drag it into someone's column to claim it.";
+  else if (isFuture) hintText = "You can tick this off on the day.";
+  compBtn.style.display = hintText ? "none" : "";
+  hint.textContent = hintText;
+  hint.style.display = hintText ? "" : "none";
+  compBtn.textContent = isDone ? "Mark as not done" : "Mark as complete";
+  compBtn.classList.toggle("is-undo", isDone);
+
+  const close = () => {
+    overlay.style.display = "none";
+    document.removeEventListener("keydown", onKey);
   };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+
+  compBtn.onclick = () => {
+    close();
+    if (isDone) handleUndoTask(taskId, targetDay, null, colMember);
+    else handleCompleteTaskWithCelebration(taskId, targetDay, colMember);
+  };
+  document.getElementById("btn-quick-card-close").onclick = close;
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  document.getElementById("btn-quick-card-edit").onclick = () => { close(); openSkylightTaskDrawer(taskId); };
+  document.getElementById("btn-quick-card-delete").onclick = () => { close(); openDeleteTaskModal(taskId); };
 
   overlay.style.display = "flex";
-
-  // Wire close
-  document.getElementById("btn-quick-card-close").onclick = () => { overlay.style.display = "none"; };
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = "none"; };
-
-  // Wire Edit -> opens right drawer prefilled
-  document.getElementById("btn-quick-card-edit").onclick = () => {
-    overlay.style.display = "none";
-    openSkylightTaskDrawer(taskId);
-  };
-
-  // Wire Delete
-  document.getElementById("btn-quick-card-delete").onclick = () => {
-    overlay.style.display = "none";
-    openDeleteTaskModal(taskId);
-  };
+  setTimeout(() => { try { document.getElementById("btn-quick-card-close").focus({ preventScroll: true }); } catch (e) {} }, 50);
 }
 window.openSkylightTaskQuickModal = openSkylightTaskQuickModal;
 
