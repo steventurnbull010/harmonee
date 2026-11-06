@@ -1842,6 +1842,10 @@ function renderApp() {
   if (currentActiveView === "meals" && typeof renderMealsView === "function") {
     renderMealsView();
   }
+  // First visit to this page on this device: show its intro (js/page-intro.js)
+  if (typeof window.maybeShowPageIntro === "function") {
+    setTimeout(() => window.maybeShowPageIntro(currentActiveView || "calendar"), 0);
+  }
 }
 
 // Dynamic Leaderboard calculation and DOM rendering
@@ -6273,6 +6277,9 @@ function switchSkylightView(viewName) {
     renderSkylightTasksPage();
     window.scrollTo({ top: 0, behavior: "instant" });
   }
+  // First visit to this page on this device: show its intro (js/page-intro.js)
+  const introPage = ["calendar", "meals", "lists", "rewards"].includes(viewName) ? viewName : "chores";
+  if (typeof window.maybeShowPageIntro === "function") setTimeout(() => window.maybeShowPageIntro(introPage), 0);
 }
 window.switchSkylightView = switchSkylightView;
 

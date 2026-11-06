@@ -532,8 +532,6 @@ function renderMealsView() {
 
   wireMealsHeaderAndDrawerListeners();
 
-  // First visit on this device: show the short Meals introduction
-  setTimeout(() => { if (typeof window.maybeShowMealsIntro === "function") window.maybeShowMealsIntro(); }, 0);
 }
 window.renderMealsView = renderMealsView;
 
