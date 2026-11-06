@@ -2742,7 +2742,7 @@ function renderDailyRosterInputs(task, activeTargetDay = null) {
   WEEK_DAYS_7.forEach(day => {
     let assigned = "";
     if (task && task.assignedDays && task.assignedDays[day] !== undefined) {
-      assigned = task.assignedDays[day] || "";
+      assigned = getAssigneeNames(task.assignedDays[day]).join(", ");
     } else if (task && task.assignedTo) {
       assigned = getAssigneeNames(task.assignedTo).join(", ");
     }
@@ -3036,8 +3036,8 @@ function openEditTaskModal(taskId, targetDay = null, targetDate = null) {
 
   // Resolve effective assignee for targetDay (or default)
   const effectiveAssignee = (isDaily && targetDay && task.assignedDays && task.assignedDays[targetDay] !== undefined)
-    ? (task.assignedDays[targetDay] || "")
-    : (task.assignedTo || "");
+    ? getAssigneeNames(task.assignedDays[targetDay]).join(", ")
+    : getAssigneeNames(task.assignedTo).join(", ");
   document.getElementById("task-form-assignee").value = effectiveAssignee;
 
   const curReward = (typeof task.rewardValue === "number" && task.rewardValue >= 0)
@@ -3687,10 +3687,10 @@ function openClaimModal(taskId, targetDay = null, targetDate = null) {
     const effectiveAssignee = (isDaily && claimTargetDay && task.assignedDays && task.assignedDays[claimTargetDay] !== undefined)
       ? task.assignedDays[claimTargetDay]
       : task.assignedTo;
-    const isUnassigned = !effectiveAssignee || effectiveAssignee.toLowerCase() === "anyone" || effectiveAssignee.toLowerCase() === "unassigned" || effectiveAssignee.toLowerCase() === "up for grabs";
-    hintEl.textContent = isUnassigned
+    const named = getAssigneeNames(effectiveAssignee).filter(n => !["anyone", "unassigned", "up for grabs"].includes(n.toLowerCase()));
+    hintEl.textContent = !named.length
       ? "⚡ Up for Grabs! Tap who completed this chore to claim the points:"
-      : `Assigned to ${escapeHtml(effectiveAssignee)}. Select who completed this chore:`;
+      : `Assigned to ${formatAssigneeNames(named)}. Select who completed this chore:`;
   }
 
   // Re-render members dynamically

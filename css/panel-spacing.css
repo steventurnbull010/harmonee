@@ -123,7 +123,7 @@ dialog.side-panel #btn-close-grocery-footer { padding: 8px 24px !important; }
 .skylight-task-drawer .drawer-pill-segment { padding: 8px 16px !important; }
 .skylight-task-drawer #drawer-rota-toggle-row { padding: 16px 8px !important; }
 .skylight-task-drawer #drawer-rota-days { margin-top: 8px !important; margin-bottom: 0 !important; gap: 8px !important; }
-.skylight-task-drawer .drawer-rota-row { padding: 8px !important; }
+.skylight-task-drawer .drawer-rota-row { padding: 16px !important; }
 .skylight-task-drawer .drawer-rota-pills { gap: 8px !important; }
 .skylight-task-drawer .drawer-reward-stepper-box { padding: 16px !important; }
 .skylight-task-drawer .drawer-reward-header { gap: 0 !important; }

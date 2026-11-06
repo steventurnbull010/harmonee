@@ -2383,3 +2383,71 @@ body.theme-dark .drawer-profile-name { color: #64748b; }
 body.theme-dark .drawer-profile-pill.active .drawer-profile-name { color: #f8fafc; }
 body.theme-dark .drawer-who-summary { background: rgba(255, 255, 255, 0.06); }
 body.theme-dark .drawer-who-summary.is-grab { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+
+/* ==========================================================================
+   Rota rows: the day and who's on it read as one line ("Mon  ● Sorcha
+   ● Dara"), with the people to tap underneath. Picked = filled with a tick,
+   not picked = empty dashed circle, same as "Who's doing it" above.
+   ========================================================================== */
+.drawer-rota-days { gap: 8px; margin-top: 8px; }
+
+.drawer-rota-row {
+  grid-template-columns: 48px 1fr;
+  grid-template-areas: "day who" "pills pills";
+  row-gap: 8px;
+  column-gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.drawer-rota-day { font-size: 0.95rem; font-weight: 800; }
+
+.drawer-rota-who { grid-area: who; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.drawer-rota-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 16px 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rota-color) 14%, transparent);
+  color: var(--text-primary);
+  font-size: 0.88rem; font-weight: 700;
+  white-space: nowrap;
+}
+.drawer-rota-chip-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--rota-color); }
+.drawer-rota-chip.is-grab { padding: 0 16px 0 8px; background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+
+.drawer-rota-pills { grid-area: pills; gap: 8px; flex-wrap: nowrap; }
+.drawer-rota-pill {
+  position: relative;
+  width: 40px; height: 40px;
+  border: 2px dashed #cbd5e1;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.drawer-rota-pill:hover { border-color: var(--rota-color); color: var(--rota-color); }
+.drawer-rota-pill:focus-visible { outline: 2px solid var(--rota-color); outline-offset: 3px; }
+.drawer-rota-pill.is-selected {
+  border: 2px solid var(--rota-color);
+  background: var(--rota-color);
+  color: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rota-color) 22%, transparent);
+}
+.drawer-rota-tick {
+  position: absolute; right: -4px; bottom: -4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; color: var(--rota-color);
+  display: none; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+}
+.drawer-rota-pill.is-selected .drawer-rota-tick { display: flex; }
+.drawer-rota-name { display: none; }
+
+body.theme-dark .drawer-rota-row { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.08); }
+body.theme-dark .drawer-rota-chip { color: #f8fafc; background: color-mix(in srgb, var(--rota-color) 24%, transparent); }
+body.theme-dark .drawer-rota-chip.is-grab { color: #fca5a5; background: rgba(239, 68, 68, 0.16); }
+body.theme-dark .drawer-rota-pill { border-color: #475569; color: #64748b; }
+body.theme-dark .drawer-rota-pill.is-selected { border-color: var(--rota-color); color: #fff; }
+body.theme-dark .drawer-rota-tick { background: #0f172a; }

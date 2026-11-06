@@ -975,11 +975,6 @@ let drawerRotaEnabled = false;
 let drawerRota = {};
 let drawerTaskHadRota = false;
 
-function defaultRotaPerson() {
-  const p = drawerSelectedProfiles.find(x => x !== "Up for grabs");
-  return p || null;
-}
-
 function renderDrawerRota() {
   const toggle = document.getElementById("drawer-toggle-rota");
   const wrap = document.getElementById("drawer-rota-days");
@@ -1001,15 +996,19 @@ function renderDrawerRota() {
     const digit = p.match(/\d+$/);
     return digit ? first + digit[0] : first + p.charAt(1).toLowerCase();
   };
+  const tick = `<span class="drawer-rota-tick" aria-hidden="true"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
   wrap.innerHTML = ROTA_DAYS.map(day => {
-    const chosen = drawerRota[day] === undefined ? null : drawerRota[day];
+    const chosen = Array.isArray(drawerRota[day]) ? drawerRota[day] : [];
     const pills = people.map(p => {
-      const on = (p === null && !chosen) || (p !== null && chosen === p);
+      const on = p === null ? !chosen.length : chosen.includes(p);
       const pal = p ? getMemberPalette(p) : { primary: "#ef4444" };
       const label = p ? p : "Up for grabs";
-      return `<button type="button" class="drawer-rota-pill ${on ? "is-selected" : ""}" data-rota-day="${day}" data-rota-person="${p ? escapeHtml(p) : ""}" aria-pressed="${on}" title="${escapeHtml(label)} on ${day}" style="--rota-color: ${pal.primary};">${p ? escapeHtml(badge(p)) : "⚡"}</button>`;
+      return `<button type="button" class="drawer-rota-pill ${on ? "is-selected" : ""}" data-rota-day="${day}" data-rota-person="${p ? escapeHtml(p) : ""}" aria-pressed="${on}" aria-label="${escapeHtml(label)} on ${day}" title="${escapeHtml(label)}" style="--rota-color: ${pal.primary};">${p ? escapeHtml(badge(p)) : "⚡"}${tick}</button>`;
     }).join("");
-    return `<div class="drawer-rota-row"><span class="drawer-rota-day">${day.slice(0, 3)}</span><div class="drawer-rota-pills">${pills}</div><span class="drawer-rota-name">${escapeHtml(chosen || "Up for grabs")}</span></div>`;
+    const who = chosen.length
+      ? chosen.map(p => `<span class="drawer-rota-chip" style="--rota-color: ${getMemberPalette(p).primary};"><span class="drawer-rota-chip-dot"></span>${escapeHtml(p)}</span>`).join("")
+      : `<span class="drawer-rota-chip is-grab"><span aria-hidden="true">⚡</span>Up for grabs</span>`;
+    return `<div class="drawer-rota-row${chosen.length ? "" : " is-grab"}"><span class="drawer-rota-day">${day.slice(0, 3)}</span><div class="drawer-rota-who">${who}</div><div class="drawer-rota-pills" role="group" aria-label="Who's on ${day}">${pills}</div></div>`;
   }).join("");
 }
 
@@ -1021,15 +1020,19 @@ function wireDrawerRota() {
   toggle.addEventListener("change", () => {
     drawerRotaEnabled = toggle.checked;
     if (drawerRotaEnabled) {
-      const base = defaultRotaPerson();
-      ROTA_DAYS.forEach(d => { if (drawerRota[d] === undefined) drawerRota[d] = base; });
+      // Every day starts as Up for grabs; tap people to put them on it
+      ROTA_DAYS.forEach(d => { if (!Array.isArray(drawerRota[d])) drawerRota[d] = []; });
     }
     renderDrawerRota();
   });
   wrap.addEventListener("click", (e) => {
     const pill = e.target.closest("[data-rota-day]");
     if (!pill) return;
-    drawerRota[pill.getAttribute("data-rota-day")] = pill.getAttribute("data-rota-person") || null;
+    const day = pill.getAttribute("data-rota-day");
+    const person = pill.getAttribute("data-rota-person");
+    const current = Array.isArray(drawerRota[day]) ? drawerRota[day] : [];
+    if (!person) drawerRota[day] = []; // Up for grabs clears the day
+    else drawerRota[day] = current.includes(person) ? current.filter(p => p !== person) : [...current, person];
     renderDrawerRota();
   });
 }
@@ -1102,10 +1105,9 @@ function openSkylightTaskDrawer(taskId = null) {
   drawerRotaEnabled = drawerTaskHadRota;
   drawerRota = {};
   if (drawerRotaEnabled) {
-    const base = getAssigneeNames(rotaTask.assignedTo).find(n => n.toLowerCase() !== "up for grabs") || null;
+    const pools = ["up for grabs", "anyone", "family"];
     ROTA_DAYS.forEach(d => {
-      const v = rotaSource[d];
-      drawerRota[d] = v === undefined ? base : (Array.isArray(v) ? (v[0] || null) : (v || null));
+      drawerRota[d] = getAssigneeNames(rotaSource[d]).filter(n => !pools.includes(n.toLowerCase()));
     });
   }
   wireDrawerRota();
@@ -1403,7 +1405,10 @@ function initSkylightTaskDrawerEvents() {
       if (!isRoutine) taskData.time = choreTime; // one-off chores can have a time
       if (isRoutine && drawerRotaEnabled) {
         taskData.assignedDays = {};
-        ROTA_DAYS.forEach(d => { taskData.assignedDays[d] = drawerRota[d] === undefined ? null : drawerRota[d]; });
+        ROTA_DAYS.forEach(d => {
+          const who = Array.isArray(drawerRota[d]) ? drawerRota[d] : [];
+          taskData.assignedDays[d] = who.length === 0 ? null : (who.length === 1 ? who[0] : who);
+        });
       } else if (drawerTaskHadRota) {
         taskData.assignedDays = {}; // rota switched off: same people every day
       }
