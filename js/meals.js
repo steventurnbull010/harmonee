@@ -25,6 +25,29 @@ window.mealsWeekOffset = mealsWeekOffset;
 // 16. FAMILY MEALS & DINNER PLANNER (Step 3)
 // ============================================================================
 
+// The board's own people, used for the "Who's cooking?" buttons and labels
+function getMealCookMembers() {
+  return (window.familyMembers && window.familyMembers.length) ? window.familyMembers : ["Steven", "Sorcha", "Ava", "Dara"];
+}
+function getDefaultMealCook() {
+  return getMealCookMembers()[0] || "Family";
+}
+// "Steve & Ava" -> ["Steven", "Ava"], using the board's spelling of each name
+function splitMealCooks(cookStr) {
+  if (!cookStr) return [];
+  return String(cookStr).split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean)
+    .map(n => (n.toLowerCase() === "family" ? "Family" : (window.normalizeFamilyMemberName || normalizeFamilyMemberName)(n)));
+}
+// The small cook label on a meal card, tinted with the first cook's colour
+function renderMealCookTagHtml(cookStr, className) {
+  const cooks = splitMealCooks(cookStr);
+  if (cooks.length === 0) return "";
+  const first = cooks[0];
+  const pal = (first !== "Family" && typeof window.getMemberPalette === "function") ? window.getMemberPalette(first) : null;
+  const style = pal ? ` style="background: ${pal.lightBg}; color: ${pal.text}; border: 1px solid ${pal.border};"` : "";
+  return `<span class="${className}"${style}>${escapeHtml(cooks.join(" & "))}</span>`;
+}
+
 function renderChefAvatarsHtml(cookStr) {
   if (!cookStr) return "";
   const chefs = cookStr.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
@@ -200,7 +223,7 @@ let currentDrawerTag = "all";
 function loadFamilyGroceryList() {
   if (familyGroceryList) return familyGroceryList;
   try {
-    const raw = localStorage.getItem("turnbull_grocery_list_v2");
+    const raw = localStorage.getItem(boardCacheKey("turnbull_grocery_list_v2"));
     if (raw) {
       familyGroceryList = JSON.parse(raw);
       return familyGroceryList;
@@ -222,12 +245,12 @@ function loadFamilyGroceryList() {
 function saveFamilyGroceryList(items) {
   familyGroceryList = items;
   try {
-    localStorage.setItem("turnbull_grocery_list_v2", JSON.stringify(items));
+    localStorage.setItem(boardCacheKey("turnbull_grocery_list_v2"), JSON.stringify(items));
     if ((window.familyLists || []) && Array.isArray((window.familyLists || []))) {
       const groc = (window.familyLists || []).find(l => l.id === "groceries");
       if (groc) {
         groc.items = items;
-        localStorage.setItem("turnbull_family_lists", JSON.stringify((window.familyLists || [])));
+        localStorage.setItem(boardCacheKey("turnbull_family_lists"), JSON.stringify((window.familyLists || [])));
       }
     }
   } catch(e) {}
@@ -305,6 +328,12 @@ function renderMealsView() {
 
   updateGroceryBadgeCount();
 
+  const familyTitleEl = document.querySelector(".skylight-meals-family-name");
+  if (familyTitleEl) {
+    const familyName = window.isDefaultTurnbullBoard ? "Turnbull Family" : ((window.boardSettings || {}).familyName || "Our Family");
+    familyTitleEl.textContent = `${familyName} Meal Planner`;
+  }
+
   const weekDates = getMealsWeekDates(mealsWeekOffset);
   const today = new Date();
   const todayStr = (window.getLocalDateKey || getLocalDateKey)(today);
@@ -371,7 +400,6 @@ function renderMealsView() {
 
       if (hasMeal) {
         const emoji = meal.emoji || cat.emoji;
-        const cookName = meal.cook || "Steve";
         matrixHtml += `
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
             <div class="meal-block-card meal-cat-${cat.key}" role="button" tabindex="0" title="Tap to view meal details: ${escapeHtml(meal.title)}">
@@ -380,7 +408,7 @@ function renderMealsView() {
                 <span class="meal-block-title">${escapeHtml(meal.title)}</span>
               </div>
               <div class="meal-block-meta-row">
-                <span class="meal-block-cook-tag">${escapeHtml(cookName)}</span>
+                ${renderMealCookTagHtml(meal.cook, "meal-block-cook-tag")}
               </div>
             </div>
           </div>
@@ -471,7 +499,7 @@ function renderMealsView() {
 
         if (hasMeal) {
           const emoji = meal.emoji || cat.emoji;
-          const cookName = meal.cook || "Steve";
+          const cookName = splitMealCooks(meal.cook).join(" & ");
           const recipe = typeof findRecipeByIdOrTitle === "function" ? findRecipeByIdOrTitle(meal.recipeId || meal.title) : null;
           const cookMin = recipe ? (parseInt(recipe.cookTime, 10) || 0) : 0;
           const prepMin = recipe ? (parseInt(recipe.prepTime, 10) || 0) : 0;
@@ -485,7 +513,7 @@ function renderMealsView() {
                 <div class="mobile-meal-info">
                   <div class="mobile-meal-title">${escapeHtml(meal.title)}</div>
                   <div class="mobile-meal-sub">
-                    <span class="mobile-meal-cook-pill">👨‍🍳 ${escapeHtml(cookName)}</span>
+                    ${cookName ? `<span class="mobile-meal-cook-pill">👨‍🍳 ${escapeHtml(cookName)}</span>` : ""}
                     ${timeText ? `<span class="mobile-meal-time-pill">⏱️ ${timeText}</span>` : ''}
                   </div>
                 </div>
@@ -545,7 +573,44 @@ function renderMealsView() {
 }
 window.renderMealsView = renderMealsView;
 
-let drawerSelectedChefs = ["Steve"];
+let drawerSelectedChefs = [];
+
+// "Who's cooking?" buttons: one per board member, plus Family
+function renderDrawerChefChips() {
+  const wrap = document.getElementById("drawer-chef-chips-select");
+  if (!wrap) return;
+  const people = [...getMealCookMembers(), "Family"];
+  wrap.innerHTML = people.map(name => {
+    let avatarStyle = "background: linear-gradient(135deg, #f59e0b, #ec4899);";
+    let avatar = "👥";
+    if (name !== "Family") {
+      const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : null;
+      avatarStyle = pal ? `background: ${pal.primary};` : "background: #0284c7;";
+      avatar = escapeHtml(name.charAt(0).toUpperCase());
+    }
+    return `<button type="button" class="chef-select-chip" data-chef="${escapeHtml(name)}">
+      <span class="chef-chip-avatar" style="${avatarStyle}">${avatar}</span> ${escapeHtml(name)}
+    </button>`;
+  }).join("");
+  wrap.querySelectorAll(".chef-select-chip").forEach(chip => {
+    chip.setAttribute("data-wired", "true");
+    chip.onclick = () => onDrawerChefChipClick(chip.getAttribute("data-chef"));
+  });
+}
+
+function onDrawerChefChipClick(chef) {
+  if (chef === "Family") {
+    drawerSelectedChefs = drawerSelectedChefs.includes("Family") ? [getDefaultMealCook()] : ["Family"];
+  } else {
+    drawerSelectedChefs = drawerSelectedChefs.filter(c => c !== "Family");
+    if (drawerSelectedChefs.includes(chef)) {
+      if (drawerSelectedChefs.length > 1) drawerSelectedChefs = drawerSelectedChefs.filter(c => c !== chef);
+    } else {
+      drawerSelectedChefs.push(chef);
+    }
+  }
+  updateDrawerChefsUI();
+}
 
 function updateDrawerChefsUI() {
   document.querySelectorAll("#drawer-chef-chips-select .chef-select-chip").forEach(c => {
@@ -554,7 +619,7 @@ function updateDrawerChefsUI() {
   });
   const cookInput = document.getElementById("drawer-cook-input");
   if (cookInput) {
-    cookInput.value = drawerSelectedChefs.length > 0 ? drawerSelectedChefs.join(" & ") : "Steve";
+    cookInput.value = drawerSelectedChefs.length > 0 ? drawerSelectedChefs.join(" & ") : getDefaultMealCook();
   }
 }
 
@@ -576,10 +641,11 @@ function openPlanMealDrawer(dateStr, slot = "dinner") {
   // Initialize selected chefs (Item 4)
   const existingMeal = (window.getMealForDate || getMealForDate)(currentPlanningDateStr, currentPlanningSlot);
   if (existingMeal && existingMeal.cook) {
-    drawerSelectedChefs = existingMeal.cook.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
+    drawerSelectedChefs = splitMealCooks(existingMeal.cook);
   } else {
-    drawerSelectedChefs = ["Steve"];
+    drawerSelectedChefs = [getDefaultMealCook()];
   }
+  renderDrawerChefChips();
   updateDrawerChefsUI();
 
   // Update target slot label in drawer header: e.g. "Thursday, Nov 5 • Dinner"
@@ -898,11 +964,24 @@ function closeMealDetailsPopover() {
 window.closeMealDetailsPopover = closeMealDetailsPopover;
 
 let currentCookingRecipe = null;
-let cookingModalChefs = ["Steve"];
+let cookingModalChefs = [];
 
 function updateCookingModalChefsUI() {
   const container = document.getElementById("cooking-chef-chips");
   if (!container) return;
+
+  // One button per board member (the markup in index.html is only a placeholder)
+  const people = getMealCookMembers();
+  if (container.getAttribute("data-members") !== people.join("|")) {
+    container.innerHTML = people.map(name => {
+      const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : null;
+      return `<button type="button" class="cooking-chef-chip" data-chef="${escapeHtml(name)}">
+        <span class="chip-avatar" style="background: ${pal ? pal.primary : "#0284c7"};">${escapeHtml(name.charAt(0).toUpperCase())}</span> ${escapeHtml(name)}
+      </button>`;
+    }).join("");
+    container.setAttribute("data-members", people.join("|"));
+  }
+  cookingModalChefs = cookingModalChefs.map(n => splitMealCooks(n)[0] || n);
 
   container.querySelectorAll(".cooking-chef-chip").forEach(chip => {
     const chefName = chip.getAttribute("data-chef");
@@ -957,11 +1036,11 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
   // Pre-fill Chefs in planning footer
   const existingMeal = (window.getMealForDate || getMealForDate)(targetDate, targetCategory);
   if (existingMeal && existingMeal.cook) {
-    cookingModalChefs = existingMeal.cook.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
+    cookingModalChefs = splitMealCooks(existingMeal.cook);
   } else if (drawerSelectedChefs && drawerSelectedChefs.length > 0) {
     cookingModalChefs = [...drawerSelectedChefs];
   } else {
-    cookingModalChefs = ["Steve"];
+    cookingModalChefs = [getDefaultMealCook()];
   }
   updateCookingModalChefsUI();
 
@@ -975,7 +1054,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       const curSlotSelect = document.getElementById("cooking-plan-slot-select");
       const selectedDate = (curDateInput && curDateInput.value) || targetDate;
       const selectedSlot = (curSlotSelect && curSlotSelect.value) || targetCategory || "dinner";
-      const selectedChefs = (cookingModalChefs && cookingModalChefs.length > 0) ? cookingModalChefs : ["Steve"];
+      const selectedChefs = (cookingModalChefs && cookingModalChefs.length > 0) ? cookingModalChefs : [getDefaultMealCook()];
 
       // Confirmation dialog if overwriting an existing planned meal
       const existing = (window.getMealForDate || getMealForDate)(selectedDate, selectedSlot);
@@ -1486,29 +1565,11 @@ function wireMealsHeaderAndDrawerListeners() {
   // Drawer chef selection chips for custom meal (Item 4: Multi-person team effort)
   updateDrawerChefsUI();
 
+  renderDrawerChefChips();
   document.querySelectorAll("#drawer-chef-chips-select .chef-select-chip").forEach(chip => {
     if (!chip.hasAttribute("data-wired")) {
       chip.setAttribute("data-wired", "true");
-      chip.onclick = () => {
-        const chef = chip.getAttribute("data-chef");
-        if (chef === "Family") {
-          if (drawerSelectedChefs.includes("Family")) {
-            drawerSelectedChefs = ["Steve"];
-          } else {
-            drawerSelectedChefs = ["Family"];
-          }
-        } else {
-          drawerSelectedChefs = drawerSelectedChefs.filter(c => c !== "Family");
-          if (drawerSelectedChefs.includes(chef)) {
-            if (drawerSelectedChefs.length > 1) {
-              drawerSelectedChefs = drawerSelectedChefs.filter(c => c !== chef);
-            }
-          } else {
-            drawerSelectedChefs.push(chef);
-          }
-        }
-        updateDrawerChefsUI();
-      };
+      chip.onclick = () => onDrawerChefChipClick(chip.getAttribute("data-chef"));
     }
   });
 
@@ -1525,7 +1586,7 @@ function wireMealsHeaderAndDrawerListeners() {
       const checkedRadio = document.querySelector("input[name='custom-meal-category']:checked");
       const category = checkedRadio ? checkedRadio.value : currentPlanningSlot;
       const cookInput = document.getElementById("drawer-cook-input");
-      const cook = (cookInput && cookInput.value.trim()) || (drawerSelectedChefs.length > 0 ? drawerSelectedChefs.join(" & ") : "Steve");
+      const cook = (cookInput && cookInput.value.trim()) || (drawerSelectedChefs.length > 0 ? drawerSelectedChefs.join(" & ") : getDefaultMealCook());
       const notesInput = document.getElementById("custom-meal-notes");
       const notes = notesInput ? notesInput.value.trim() : "";
 

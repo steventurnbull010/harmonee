@@ -132,7 +132,11 @@ function renderPodiumRewards() {
   }).join("");
 
   grid.innerHTML = sortedMembers.map((m, rankIdx) => {
-    const rankBadge = rankIdx === 0 ? "👑 Leader" : (rankIdx === 1 ? "🥈 2nd" : (rankIdx === 2 ? "🥉 3rd" : `#${rankIdx + 1}`));
+    // Place by score, so ties share a place and nobody "leads" on 0 points
+    const place = 1 + sortedMembers.filter(o => o.score > m.score).length;
+    const tied = sortedMembers.filter(o => o.score === m.score).length > 1;
+    const placeLabel = place === 1 ? "👑 Leader" : (place === 2 ? "🥈 2nd" : (place === 3 ? "🥉 3rd" : `#${place}`));
+    const rankBadge = m.score > 0 ? (tied ? `Joint ${placeLabel.replace("👑 Leader", "👑 leader")}` : placeLabel) : "";
     const tasksCount = m.tasks.length;
     const taskListHtml = tasksCount > 0
       ? `<ul style="margin: 6px 0 0 16px; padding: 0; font-size: 0.82rem; line-height: 1.5;">${m.tasks.map(t => `<li style="margin-bottom: 2px;">✓ ${escapeHtml(t)}</li>`).join("")}</ul>`
@@ -146,7 +150,7 @@ function renderPodiumRewards() {
               ${escapeHtml(m.name.charAt(0).toUpperCase())}
             </div>
             <div>
-              <div class="rewards-card-name">${escapeHtml(m.name)} <span style="font-size: 0.75rem; font-weight: 700; opacity: 0.8;">(${rankBadge})</span></div>
+              <div class="rewards-card-name">${escapeHtml(m.name)} ${rankBadge ? `<span style="font-size: 0.75rem; font-weight: 700; opacity: 0.8;">(${rankBadge})</span>` : ""}</div>
               <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${tasksCount} chore${tasksCount === 1 ? "" : "s"} completed</div>
             </div>
           </div>

@@ -14,7 +14,7 @@ window.selectedStickyColor = selectedStickyColor;
 function loadFamilyStickyNote() {
   if (familyStickyNote !== null && familyStickyNote !== undefined) return familyStickyNote;
   try {
-    const raw = localStorage.getItem("turnbull_sticky_note");
+    const raw = localStorage.getItem(boardCacheKey("turnbull_sticky_note"));
     if (raw === "none" || raw === "null" || !raw) {
       familyStickyNote = null;
       return null;
@@ -33,12 +33,12 @@ function saveFamilyStickyNote(note) {
   if (note && note.text && !note.deleted) {
     familyStickyNote = note;
     try {
-      localStorage.setItem("turnbull_sticky_note", JSON.stringify(note));
+      localStorage.setItem(boardCacheKey("turnbull_sticky_note"), JSON.stringify(note));
     } catch(e) {}
   } else {
     familyStickyNote = null;
     try {
-      localStorage.setItem("turnbull_sticky_note", "none");
+      localStorage.setItem(boardCacheKey("turnbull_sticky_note"), "none");
     } catch(e) {}
   }
   if (db && typeof setDoc === "function") {

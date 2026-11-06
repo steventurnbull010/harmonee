@@ -204,3 +204,23 @@ function formatAssigneeNames(assignedTo, fallback = "Anyone") {
   return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
 }
 window.formatAssigneeNames = formatAssigneeNames;
+
+// Each board keeps its own saved copy of meals, events, lists, recipes and
+// the sticky note on this device. Turnbull keeps the original key names so
+// existing devices don't lose their saved copy; other boards get a suffix.
+// (Same rule app.js uses for harmonee_settings / harmonee_tasks.)
+function getStorageBoardId() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const b = (params.get("board") || params.get("b") || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (b) return b;
+    return localStorage.getItem("harmonee_active_board_id") || localStorage.getItem("chore_active_board_id") || "turnbull";
+  } catch (e) {
+    return "turnbull";
+  }
+}
+function boardCacheKey(base) {
+  const id = getStorageBoardId();
+  return id === "turnbull" ? base : `${base}__${id}`;
+}
+window.boardCacheKey = boardCacheKey;

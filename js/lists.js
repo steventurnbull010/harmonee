@@ -16,7 +16,7 @@ window.activeListId = activeListId;
 function loadFamilyLists() {
   if (familyLists && Array.isArray(familyLists) && familyLists.length > 0) return familyLists;
   try {
-    const raw = localStorage.getItem("turnbull_family_lists");
+    const raw = localStorage.getItem(boardCacheKey("turnbull_family_lists"));
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -70,11 +70,11 @@ function loadFamilyLists() {
 function saveFamilyLists(lists) {
   familyLists = lists;
   try {
-    localStorage.setItem("turnbull_family_lists", JSON.stringify(lists));
+    localStorage.setItem(boardCacheKey("turnbull_family_lists"), JSON.stringify(lists));
     const groc = lists.find(l => l.id === "groceries");
     if (groc) {
       window.familyGroceryList = groc.items;
-      localStorage.setItem("turnbull_grocery_list_v2", JSON.stringify(groc.items));
+      localStorage.setItem(boardCacheKey("turnbull_grocery_list_v2"), JSON.stringify(groc.items));
       if (typeof updateGroceryBadgeCount === "function") updateGroceryBadgeCount();
     }
   } catch(e) {}

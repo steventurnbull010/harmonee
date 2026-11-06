@@ -365,7 +365,7 @@ function loadLocalBoardSettings() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed) {
-        boardSettings = { ...boardSettings, ...parsed };
+        boardSettings = { ...boardSettings, ...parsed }; window.boardSettings = boardSettings;
       }
     }
   } catch (e) {
@@ -374,7 +374,7 @@ function loadLocalBoardSettings() {
 }
 
 function saveLocalBoardSettings(settings) {
-  boardSettings = { ...boardSettings, ...settings };
+  boardSettings = { ...boardSettings, ...settings }; window.boardSettings = boardSettings;
   try {
     localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(boardSettings));
   } catch (e) {
@@ -883,7 +883,7 @@ window.getCurrentWeekDates = getCurrentWeekDates;
 function loadDateMeals() {
   if (dateMealsStore && typeof dateMealsStore === "object") return dateMealsStore;
   try {
-    const cached = localStorage.getItem("turnbull_meals_v4") || localStorage.getItem("turnbull_meals_v3");
+    const cached = localStorage.getItem(boardCacheKey("turnbull_meals_v4")) || localStorage.getItem(boardCacheKey("turnbull_meals_v3"));
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -898,9 +898,9 @@ function loadDateMeals() {
   dateMealsStore = {};
 
   // Only auto-seed if this device has NEVER been seeded before
-  const hasSeeded = localStorage.getItem("turnbull_meals_has_seeded_v4");
-  if (!hasSeeded) {
-    localStorage.setItem("turnbull_meals_has_seeded_v4", "true");
+  const hasSeeded = localStorage.getItem(boardCacheKey("turnbull_meals_has_seeded_v4"));
+  if (!hasSeeded && isDefaultTurnbullBoard) {
+    localStorage.setItem(boardCacheKey("turnbull_meals_has_seeded_v4"), "true");
     const todayKey = getLocalDateKey(new Date());
     dateMealsStore[todayKey] = {
       title: "Easy Peasy Spinach & Ricotta Tortelloni",
@@ -931,8 +931,8 @@ function loadDateMeals() {
 function saveDateMeals(meals) {
   dateMealsStore = meals;
   try {
-    localStorage.setItem("turnbull_meals_v4", JSON.stringify(meals));
-    localStorage.setItem("turnbull_meals_v3", JSON.stringify(meals));
+    localStorage.setItem(boardCacheKey("turnbull_meals_v4"), JSON.stringify(meals));
+    localStorage.setItem(boardCacheKey("turnbull_meals_v3"), JSON.stringify(meals));
   } catch (e) {
     console.warn("Error saving meals cache", e);
   }
@@ -1091,15 +1091,15 @@ window.familyEvents = familyEvents;
 
 function loadFamilyEvents() {
   try {
-    const cached = localStorage.getItem("turnbull_family_events_v3");
+    const cached = localStorage.getItem(boardCacheKey("turnbull_family_events_v3"));
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn("Error reading family events cache", e);
   }
-  return JSON.parse(JSON.stringify(DEFAULT_FAMILY_EVENTS));
+  return isDefaultTurnbullBoard ? JSON.parse(JSON.stringify(DEFAULT_FAMILY_EVENTS)) : [];
 }
 window.loadFamilyEvents = loadFamilyEvents;
 window.saveFamilyEvents = saveFamilyEvents;
@@ -1108,7 +1108,7 @@ function saveFamilyEvents(events) {
   familyEvents = events;
   window.familyEvents = events;
   try {
-    localStorage.setItem("turnbull_family_events_v3", JSON.stringify(events));
+    localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(events));
   } catch (e) {
     console.warn("Error saving family events cache", e);
   }
@@ -1555,43 +1555,43 @@ function listenToFirestoreBoard() {
         shouldRender = true;
       }
       if (data.settings) {
-        boardSettings = { ...boardSettings, ...data.settings };
+        boardSettings = { ...boardSettings, ...data.settings }; window.boardSettings = boardSettings;
         saveLocalBoardSettings(boardSettings);
         shouldRender = true;
       }
-      if (Array.isArray(data.events) && data.events.length > 0) {
+      if (Array.isArray(data.events)) {
         familyEvents = data.events;
         window.familyEvents = data.events;
-        try { localStorage.setItem("turnbull_family_events_v3", JSON.stringify(data.events)); } catch (e) {}
+        try { localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(data.events)); } catch (e) {}
         shouldRender = true;
       }
       if (data.meals && typeof data.meals === "object") {
         dateMealsStore = data.meals;
         try {
-          localStorage.setItem("turnbull_meals_v4", JSON.stringify(data.meals));
-          localStorage.setItem("turnbull_meals_v3", JSON.stringify(data.meals));
+          localStorage.setItem(boardCacheKey("turnbull_meals_v4"), JSON.stringify(data.meals));
+          localStorage.setItem(boardCacheKey("turnbull_meals_v3"), JSON.stringify(data.meals));
         } catch (e) {}
         shouldRender = true;
       }
       if (Array.isArray(data.customRecipes)) {
         try {
           const safeRecipes = data.customRecipes.filter(r => r && typeof r === "object" && r.id);
-          localStorage.setItem("turnbull_custom_recipes", JSON.stringify(safeRecipes));
+          localStorage.setItem(boardCacheKey("turnbull_custom_recipes"), JSON.stringify(safeRecipes));
         } catch (e) {}
       }
       if (data.stickyNote !== undefined) {
         if (data.stickyNote && data.stickyNote.text && !data.stickyNote.deleted) {
           familyStickyNote = data.stickyNote;
-          try { localStorage.setItem("turnbull_sticky_note", JSON.stringify(data.stickyNote)); } catch (e) {}
+          try { localStorage.setItem(boardCacheKey("turnbull_sticky_note"), JSON.stringify(data.stickyNote)); } catch (e) {}
         } else {
           familyStickyNote = null;
-          try { localStorage.setItem("turnbull_sticky_note", "none"); } catch (e) {}
+          try { localStorage.setItem(boardCacheKey("turnbull_sticky_note"), "none"); } catch (e) {}
         }
         renderFamilyStickyNote();
       }
       if (Array.isArray(data.familyLists)) {
         familyLists = data.familyLists;
-        try { localStorage.setItem("turnbull_family_lists", JSON.stringify(data.familyLists)); } catch (e) {}
+        try { localStorage.setItem(boardCacheKey("turnbull_family_lists"), JSON.stringify(data.familyLists)); } catch (e) {}
         if (currentActiveView === "lists") {
           renderListsView();
         }

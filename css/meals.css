@@ -152,10 +152,11 @@ body.theme-dark .skylight-meals-matrix-wrapper {
 
 .skylight-meals-matrix {
   display: grid;
-  grid-template-columns: 80px repeat(7, minmax(130px, 1fr));
+  /* All seven days fit a 1024px tablet without sideways scrolling */
+  grid-template-columns: 64px repeat(7, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
-  min-width: 960px;
+  min-width: 0;
 }
 
 /* Header Cells in Matrix */

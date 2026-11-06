@@ -376,7 +376,7 @@ async function saveReviewedPhotoRecipe(andPlan = false) {
   if (db) {
     try {
       const boardDocRef = doc(db, "boards", (window.currentBoardId || "turnbull"));
-      const raw = localStorage.getItem("turnbull_custom_recipes");
+      const raw = localStorage.getItem(boardCacheKey("turnbull_custom_recipes"));
       let list = [];
       try {
         if (raw) {
