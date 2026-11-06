@@ -23,6 +23,60 @@ const SIDE_PANEL_DIALOGS = [
   "list-item-modal",    // Lists: add items to a list
 ];
 
+const SIDE_PANEL_SLIDE_MS = 300; // keep in step with css/side-panel.css
+
+// Put the cursor in a field once the panel has finished sliding in. Doing it
+// mid-slide makes the browser jump to the field (and on an iPad starts the
+// keyboard), which is what made these panels feel jerkier than Tasks.
+function focusAfterPanelOpens(el, then) {
+  if (!el) return;
+  setTimeout(() => {
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+    if (typeof then === "function") then();
+  }, SIDE_PANEL_SLIDE_MS + 20);
+}
+window.focusAfterPanelOpens = focusAfterPanelOpens;
+
+// Slide out on close instead of vanishing. Every way of closing goes through
+// dialog.close() (or Escape), so wrapping it here covers all the panels.
+function addSmoothClose(dialog) {
+  const nativeClose = dialog.close.bind(dialog);
+  const nativeShowModal = dialog.showModal.bind(dialog);
+  let closeTimer = null;
+
+  const finish = (returnValue) => {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+    dialog.classList.remove("is-closing");
+    if (dialog.open) nativeClose(returnValue);
+  };
+
+  dialog.close = (returnValue) => {
+    if (!dialog.open || closeTimer) return;
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) { nativeClose(returnValue); return; }
+    dialog.classList.add("is-closing");
+    closeTimer = setTimeout(() => finish(returnValue), SIDE_PANEL_SLIDE_MS * 0.8);
+  };
+
+  dialog.showModal = () => {
+    // Reopened while still sliding out: just stay open
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+      dialog.classList.remove("is-closing");
+      return;
+    }
+    if (!dialog.open) nativeShowModal();
+  };
+
+  // Escape: slide out too
+  dialog.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    dialog.close();
+  });
+}
+
 function upgradeToSidePanel(dialog) {
   if (!dialog || dialog.classList.contains("side-panel")) return;
   const body = dialog.querySelector(".modal-content");
@@ -30,6 +84,7 @@ function upgradeToSidePanel(dialog) {
 
   dialog.classList.add("side-panel");
   body.classList.add("side-panel-body");
+  addSmoothClose(dialog);
 
   const closeBtn = dialog.querySelector(".btn-modal-close");
   const titleEl = body.querySelector(".modal-title");

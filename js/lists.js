@@ -290,10 +290,7 @@ function openAddListItemPanel(listId, draft = "") {
   }
 
   if (!modal.open) modal.showModal();
-  setTimeout(() => {
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-  }, 60);
+  focusAfterPanelOpens(textarea, () => textarea.setSelectionRange(textarea.value.length, textarea.value.length));
 }
 window.openAddListItemPanel = openAddListItemPanel;
 
@@ -455,7 +452,7 @@ function openCreateListModal(listId = null) {
   }
 
   if (!modal.open) modal.showModal();
-  if (input && !editing) setTimeout(() => input.focus(), 60);
+  if (input && !editing) focusAfterPanelOpens(input);
 }
 window.openCreateListModal = openCreateListModal;
 

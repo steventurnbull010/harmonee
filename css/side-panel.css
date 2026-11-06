@@ -306,3 +306,51 @@ dialog.side-panel #btn-save-event {
 dialog.side-panel #btn-save-event:hover {
   background: #0369a1 !important;
 }
+
+/* --------------------------------------------------------------------------
+   Motion: slide in (same curve as the Tasks drawer), fade the dimmed
+   background in, and slide out on close (.is-closing, set by side-panel.js)
+   -------------------------------------------------------------------------- */
+dialog.side-panel .side-panel-body {
+  animation: sidePanelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  will-change: transform;
+}
+
+dialog.side-panel[open]::backdrop {
+  animation: sidePanelBackdropIn 0.3s ease both;
+}
+
+dialog.side-panel.is-closing .side-panel-body {
+  animation: sidePanelOut 0.24s cubic-bezier(0.4, 0, 1, 1) both !important;
+}
+
+dialog.side-panel.is-closing::backdrop {
+  animation: sidePanelBackdropOut 0.24s ease both;
+}
+
+@keyframes sidePanelIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes sidePanelOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes sidePanelBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sidePanelBackdropOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.side-panel .side-panel-body,
+  dialog.side-panel[open]::backdrop {
+    animation: none !important;
+  }
+}

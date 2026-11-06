@@ -146,7 +146,7 @@ function openStickyNoteModal() {
 
   if (typeof modal.showModal === "function") modal.showModal();
   else modal.setAttribute("open", "true");
-  if (input) input.focus();
+  if (input) focusAfterPanelOpens(input);
 }
 window.openStickyNoteModal = openStickyNoteModal;
 

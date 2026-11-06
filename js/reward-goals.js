@@ -270,7 +270,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
   renderRewardGoalPanelPickers();
   wireRewardGoalPanel();
   if (!dialog.open) dialog.showModal();
-  setTimeout(() => { if (!goal) document.getElementById("reward-goal-name").focus(); }, 60);
+  if (!goal) focusAfterPanelOpens(document.getElementById("reward-goal-name"));
 }
 window.openRewardGoalPanel = openRewardGoalPanel;
 
