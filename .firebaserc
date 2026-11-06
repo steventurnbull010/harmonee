@@ -1,14 +1,5 @@
 {
   "projects": {
-    "default": "ava-turnbull-official"
-  },
-  "targets": {
-    "ava-turnbull-official": {
-      "hosting": {
-        "harmonee": [
-          "harmonee"
-        ]
-      }
-    }
+    "default": "harmonee-app"
   }
 }

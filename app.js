@@ -626,12 +626,12 @@ window.getMemberColor = getMemberColor;
 // ============================================================================
 // Default live Firebase configuration
 export const DEFAULT_FIREBASE_CONFIG = {
-  projectId: "ava-turnbull-official",
-  appId: "1:308604825341:web:1185f9e1f7139d180c9894",
-  storageBucket: "ava-turnbull-official.firebasestorage.app",
-  apiKey: "AIzaSyD8imvxL_Wdnzn5a4XHXW9p0D20p37olr4",
-  authDomain: "ava-turnbull-official.firebaseapp.com",
-  messagingSenderId: "308604825341"
+  projectId: "harmonee-app",
+  appId: "1:344148325793:web:4e6f27fa8e15d5082087e0",
+  storageBucket: "harmonee-app.firebasestorage.app",
+  apiKey: "AIzaSyCOkZ_BlVEgW8K9paG_L-JLrgtTzfgRzNQ",
+  authDomain: "harmonee-app.firebaseapp.com",
+  messagingSenderId: "344148325793"
 };
 
 let db = null;
