@@ -478,3 +478,309 @@ body.theme-dark .rewards-card-tasklist {
   }
 }
 
+
+/* ==========================================================================
+   REWARD GOALS (js/reward-goals.js)
+   One column per person: balance, goals with progress, Redeem.
+   ========================================================================== */
+.rewards-goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.reward-goals-member {
+  background: var(--member-light, #f8fafc);
+  border: 1.5px solid var(--member-border, #e2e8f0);
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+body.theme-dark .reward-goals-member {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.reward-goals-member-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reward-goals-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reward-goals-member-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reward-goals-member-name {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 1.02rem;
+}
+
+.reward-goals-balance {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--member-text, var(--text-secondary));
+}
+
+body.theme-dark .reward-goals-balance {
+  color: var(--text-secondary);
+}
+
+.reward-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reward-goal-row {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+body.theme-dark .reward-goal-row {
+  background: #1e293b;
+}
+
+.reward-goal-row.is-ready {
+  box-shadow: 0 0 0 2px var(--member-primary, #0284c7), 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+.reward-goal-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  min-width: 0;
+}
+
+.reward-goal-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.reward-goal-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reward-goal-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reward-goal-cost {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.reward-goal-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+body.theme-dark .reward-goal-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.reward-goal-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.reward-goal-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reward-goal-togo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.reward-goal-redeem {
+  border: none;
+  border-radius: 99px;
+  padding: 8px 18px;
+  min-height: 40px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #fff;
+  background: var(--member-primary, #0284c7);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.reward-goal-redeem.is-armed {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+  animation: rewardRedeemPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes rewardRedeemPulse {
+  50% { transform: scale(1.04); }
+}
+
+.reward-goals-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 6px 2px;
+}
+
+.reward-goals-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.reward-goals-add {
+  border: 1.5px dashed var(--member-border, #cbd5e1);
+  background: transparent;
+  color: var(--member-text, var(--text-secondary));
+  border-radius: 12px;
+  min-height: 42px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+body.theme-dark .reward-goals-add {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Goal side panel pickers */
+.reward-goal-member-row,
+.reward-goal-emoji-row,
+.reward-goal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reward-goal-member-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary);
+  border-radius: 99px;
+  padding: 5px 14px 5px 5px;
+  min-height: 40px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reward-goal-member-pill.is-selected {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.reward-goal-member-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reward-goal-emoji-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: rgba(15, 23, 42, 0.04);
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.reward-goal-emoji-btn.is-selected {
+  border-color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.reward-goal-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reward-goal-cost-row input {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem !important;
+}
+
+.reward-goal-step {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.reward-goal-preset {
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 99px;
+  padding: 6px 14px;
+  min-height: 36px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.theme-dark .reward-goal-member-pill,
+body.theme-dark .reward-goal-step,
+body.theme-dark .reward-goal-preset {
+  border-color: #334155;
+  background: #0f172a;
+}

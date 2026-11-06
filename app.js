@@ -283,6 +283,15 @@ async function checkWeeklySundayReset() {
       }
     });
 
+    // Bank last week's points on the board so reward goals keep them after
+    // the chores reset. Same scoring as the podium, including daily routines.
+    if (typeof window.computeMemberScores === "function" && typeof window.bankRewardWeek === "function") {
+      const scored = window.computeMemberScores(lastActiveWeek);
+      const banked = {};
+      Object.entries(scored).forEach(([m, d]) => { banked[m] = d.score; });
+      window.bankRewardWeek(lastActiveWeek, banked);
+    }
+
     const hasAnyPoints = Object.values(totals).some(val => val > 0);
     if (hasAnyPoints) {
       const ledger = loadWeeklyLedger();
@@ -1588,6 +1597,9 @@ function listenToFirestoreBoard() {
           try { localStorage.setItem(boardCacheKey("turnbull_sticky_note"), "none"); } catch (e) {}
         }
         renderFamilyStickyNote();
+      }
+      if (typeof window.applyBoardRewardData === "function") {
+        window.applyBoardRewardData(data);
       }
       if (Array.isArray(data.familyLists)) {
         familyLists = data.familyLists;

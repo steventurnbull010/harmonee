@@ -18,6 +18,7 @@ const SIDE_PANEL_DIALOGS = [
   "create-list-modal",  // Lists: new list
   "roster-modal",       // Family members
   "settings-modal",     // Settings
+  "reward-goal-modal",  // Rewards: add / edit a goal
 ];
 
 function upgradeToSidePanel(dialog) {

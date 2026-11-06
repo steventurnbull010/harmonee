@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/meals.css?v=2">
   <link rel="stylesheet" href="css/calendar.css?v=2">
   <link rel="stylesheet" href="css/lists.css?v=1">
-  <link rel="stylesheet" href="css/rewards.css?v=1">
+  <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=1">
   <link rel="stylesheet" href="css/modals.css?v=2">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
@@ -685,6 +685,17 @@
             <!-- Dynamically populated from household scores in app.js -->
           </div>
 
+          <!-- Reward goals: save up, track progress, redeem (js/reward-goals.js) -->
+          <div class="rewards-breakdown-card rewards-goals-card">
+            <div class="rewards-breakdown-header">
+              <h3 class="breakdown-title">🎯 Reward Goals</h3>
+              <span class="breakdown-badge">Points carry over week to week</span>
+            </div>
+            <div class="rewards-goals-grid" id="rewards-goals-grid">
+              <!-- One column per family member, rendered by js/reward-goals.js -->
+            </div>
+          </div>
+
           <!-- All Household Members Earnings Breakdown -->
           <div class="rewards-breakdown-card">
             <div class="rewards-breakdown-header">
@@ -716,6 +727,44 @@
       </div>
     </div>
   </div>
+
+  <!-- ADD / EDIT REWARD GOAL (opens as the shared side panel) -->
+  <dialog id="reward-goal-modal" class="roster-dialog" aria-modal="true" aria-labelledby="reward-goal-title">
+    <div class="modal-content">
+      <button type="button" class="btn-modal-close" id="btn-close-reward-goal" aria-label="Close">✕</button>
+      <div class="modal-header">
+        <h2 id="reward-goal-title" class="modal-title">Add Reward Goal</h2>
+      </div>
+      <form id="reward-goal-form" class="settings-form" novalidate>
+        <input type="hidden" id="reward-goal-id">
+        <div class="form-group">
+          <label>Who is it for?</label>
+          <div class="reward-goal-member-row" id="reward-goal-members"></div>
+        </div>
+        <div class="form-group">
+          <label for="reward-goal-name">Reward</label>
+          <input type="text" id="reward-goal-name" maxlength="60" autocomplete="off" placeholder="e.g. Cinema trip, Extra screen time, New Lego set">
+        </div>
+        <div class="form-group">
+          <label>Icon</label>
+          <div class="reward-goal-emoji-row" id="reward-goal-emojis"></div>
+        </div>
+        <div class="form-group">
+          <label for="reward-goal-cost" id="reward-goal-cost-label">Points needed</label>
+          <div class="reward-goal-cost-row">
+            <button type="button" class="reward-goal-step" id="btn-goal-cost-minus" aria-label="Less">−</button>
+            <input type="number" id="reward-goal-cost" min="0" step="1" inputmode="decimal">
+            <button type="button" class="reward-goal-step" id="btn-goal-cost-plus" aria-label="More">+</button>
+          </div>
+          <div class="reward-goal-presets" id="reward-goal-presets"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sticky-delete" id="btn-delete-reward-goal" style="display: none;">Delete Goal</button>
+          <button type="submit" class="btn-primary-modal" id="btn-save-reward-goal">Add Goal</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 
   <!-- TOUCH MODAL: "Who Smashed It?" -->
   <dialog id="claim-modal" class="claim-dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -2657,13 +2706,14 @@
   <script src="js/sleep.js?v=6"></script>
   <script src="js/lists.js?v=5"></script>
   <script src="js/magic-scanner.js?v=5"></script>
-  <script src="js/rewards.js?v=4"></script>
+  <script src="js/rewards.js?v=5"></script>
+  <script src="js/reward-goals.js?v=1"></script>
   <script src="js/sticky-note.js?v=3"></script>
   <script src="js/calendar.js?v=5"></script>
   <script src="js/tasks.js?v=8"></script>
   <script src="js/board-access.js?v=1"></script>
-  <script src="js/side-panel.js?v=1"></script>
+  <script src="js/side-panel.js?v=2"></script>
   <script type="module" src="js/meals.js?v=10"></script>
-  <script type="module" src="app.js?v=208"></script>
+  <script type="module" src="app.js?v=209"></script>
 </body>
 </html>

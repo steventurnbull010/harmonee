@@ -3,21 +3,12 @@
 // Champions Podium, Weekly Ledger, Pocket Money & Points Breakdown
 // ============================================================================
 
-// ============================================================================
-function renderPodiumRewards() {
-  const stage = document.getElementById("podium-stage");
-  const grid = document.getElementById("rewards-members-grid");
-  const modeBadge = document.getElementById("rewards-mode-badge");
-  const weekLabel = document.getElementById("rewards-week-label");
-  if (!stage || !grid) return;
-
+// Points (or money) each member earned in one ISO week, from the chores'
+// completion records. Used by the podium and by the Sunday bank in app.js,
+// so both always agree.
+function computeMemberScores(weekKey) {
   const isMoney = (window.boardSettings && window.boardSettings.gameMode) === "money";
-  const currency = (window.boardSettings && window.boardSettings.currency) || "£";
-  const activeWeekKey = getIsoWeekKey();
-
-  if (modeBadge) modeBadge.textContent = isMoney ? `Pocket Money (${currency})` : "Points Mode";
-  if (weekLabel) weekLabel.textContent = `${getWeekCommencingLabel(false)} • Live Household Standings`;
-
+  const activeWeekKey = weekKey || getIsoWeekKey();
   const memberData = {};
   (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]).forEach(m => {
     memberData[m] = { score: 0, tasks: [] };
@@ -69,6 +60,27 @@ function renderPodiumRewards() {
       awardMemberTask(task.completedBy, rewardVal, task.title);
     }
   });
+
+  return memberData;
+}
+window.computeMemberScores = computeMemberScores;
+
+// ============================================================================
+function renderPodiumRewards() {
+  const stage = document.getElementById("podium-stage");
+  const grid = document.getElementById("rewards-members-grid");
+  const modeBadge = document.getElementById("rewards-mode-badge");
+  const weekLabel = document.getElementById("rewards-week-label");
+  if (!stage || !grid) return;
+
+  const isMoney = (window.boardSettings && window.boardSettings.gameMode) === "money";
+  const currency = (window.boardSettings && window.boardSettings.currency) || "£";
+  const activeWeekKey = getIsoWeekKey();
+
+  if (modeBadge) modeBadge.textContent = isMoney ? `Pocket Money (${currency})` : "Points Mode";
+  if (weekLabel) weekLabel.textContent = `${getWeekCommencingLabel(false)} • Live Household Standings`;
+
+  const memberData = computeMemberScores(activeWeekKey);
 
   const sortedMembers = (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]).map((name, idx) => ({
     name,
@@ -209,6 +221,8 @@ function renderPodiumRewards() {
       }).join("");
     }
   }
+
+  if (typeof window.renderRewardGoals === "function") window.renderRewardGoals();
 }
 window.renderPodiumRewards = renderPodiumRewards;
 
