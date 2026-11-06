@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=6">
-  <link rel="stylesheet" href="css/page-spacing.css?v=2">
+  <link rel="stylesheet" href="css/page-spacing.css?v=3">
   <link rel="stylesheet" href="css/panel-spacing.css?v=1">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
@@ -361,27 +361,15 @@
           <!-- Main Content Area: Header + 4-Tier Grid -->
           <div class="skylight-meals-main">
             <!-- Skylight Clean Single-Line Header -->
-            <header class="skylight-meals-header">
-              <div class="skylight-meals-brand-row">
-                <span class="skylight-meals-logo-pill">🍽️</span>
-                <div class="skylight-meals-headings">
-                  <h2 class="skylight-meals-family-name">Turnbull Family Meal Planner</h2>
-                  <span class="skylight-meals-time-weather" id="meals-header-time-weather">12:36 PM • ☀️ 12°</span>
-                </div>
+            <!-- Same single-line header as Calendar and Tasks -->
+            <header class="calendar-header skylight-single-header skylight-meals-page-header">
+              <div class="calendar-header-left">
+                <h2 class="calendar-family-title skylight-meals-family-name">Turnbull Family</h2>
+                <span class="calendar-time-indicator" id="meals-live-clock"></span>
+                <span class="calendar-weather-badge" id="meals-weather-badge" title="Local weather"></span>
               </div>
-
-              <!-- Top Right Controls: Week Nav, Grocery List, Plan Meal Button -->
-              <div class="skylight-meals-nav-controls">
-                <div class="calendar-nav-buttons">
-                  <button type="button" class="calendar-btn-nav" id="btn-meals-prev-week" title="Previous Week" aria-label="Previous Week">
-                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                  </button>
-                  <button type="button" class="calendar-btn-today" id="btn-meals-today" title="Jump to Current Week">Today</button>
-                  <button type="button" class="calendar-btn-nav" id="btn-meals-next-week" title="Next Week" aria-label="Next Week">
-                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </button>
-                </div>
-
+              <!-- Top Right Controls: Grocery List, Plan Meal, then week navigation far right -->
+              <div class="calendar-header-controls skylight-meals-nav-controls">
                 <button type="button" class="btn-skylight-action-pill" id="btn-open-grocery-list" title="View & Manage Grocery Shopping List">
                   <span class="pill-icon">🛒</span>
                   <span class="pill-text">Grocery List</span>
@@ -392,6 +380,17 @@
                   <span class="pill-icon">＋</span>
                   <span class="pill-text">Plan Meal</span>
                 </button>
+
+                <!-- Week navigation sits far right, as on Calendar and Tasks -->
+                <div class="calendar-nav-buttons">
+                  <button type="button" class="calendar-btn-nav" id="btn-meals-prev-week" title="Previous Week" aria-label="Previous Week">
+                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <button type="button" class="calendar-btn-today" id="btn-meals-today" title="Jump to Current Week">Today</button>
+                  <button type="button" class="calendar-btn-nav" id="btn-meals-next-week" title="Next Week" aria-label="Next Week">
+                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </div>
               </div>
             </header>
 
@@ -2733,7 +2732,7 @@
   <script src="js/tasks.js?v=12"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=5"></script>
-  <script type="module" src="js/meals.js?v=11"></script>
+  <script type="module" src="js/meals.js?v=12"></script>
   <script type="module" src="app.js?v=213"></script>
 </body>
 </html>

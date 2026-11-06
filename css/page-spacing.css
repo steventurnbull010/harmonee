@@ -80,7 +80,9 @@
 #view-calendar .month-mini-event { padding: 0 8px !important; gap: 8px !important; }
 
 /* Meals */
-#view-meals .skylight-meals-main { padding: 24px 24px 80px 24px !important; }
+#view-meals .skylight-meals-main { padding: 16px 24px 80px 24px !important; }
+#view-meals .calendar-header { padding: 8px 8px 16px 8px !important; }
+#view-meals .calendar-header-controls { gap: 8px !important; }
 #view-meals .skylight-meals-header { padding: 16px 24px !important; gap: 16px !important; }
 #view-meals .skylight-meals-brand-row { gap: 16px !important; }
 #view-meals #meals-header-time-weather { margin-left: 8px !important; margin-right: 0 !important; }

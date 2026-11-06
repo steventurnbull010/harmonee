@@ -302,7 +302,7 @@ function renderMealsView() {
   const familyTitleEl = document.querySelector(".skylight-meals-family-name");
   if (familyTitleEl) {
     const familyName = window.isDefaultTurnbullBoard ? "Turnbull Family" : ((window.boardSettings || {}).familyName || "Our Family");
-    familyTitleEl.textContent = `${familyName} Meal Planner`;
+    familyTitleEl.textContent = familyName;
   }
 
   const weekDates = getMealsWeekDates(mealsWeekOffset);
@@ -310,19 +310,9 @@ function renderMealsView() {
   const todayStr = (window.getLocalDateKey || getLocalDateKey)(today);
 
   // Update header time/weather
-  const timeWeatherEl = document.getElementById("meals-header-time-weather");
-  if (timeWeatherEl) {
-    const timeStr = today.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const cachedWeather = localStorage.getItem("turnbull_weather_cache");
-    let weatherStr = "";
-    if (cachedWeather) {
-      try {
-        const parsed = JSON.parse(cachedWeather);
-        const wInfo = weatherMap[parsed.code] || { icon: "🌤️" };
-        weatherStr = ` • ${wInfo.icon} ${Math.round(parsed.temp)}°`;
-      } catch (e) {}
-    }
-    timeWeatherEl.textContent = `${timeStr}${weatherStr}`;
+  const mealsClockEl = document.getElementById("meals-live-clock");
+  if (mealsClockEl) {
+    mealsClockEl.textContent = today.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   const dayShortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
