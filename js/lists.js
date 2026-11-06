@@ -351,6 +351,27 @@ function handleClearCompletedListItems(listId) {
 // New / edit list side panel (#create-list-modal)
 // ---------------------------------------------------------------------------
 let listPanelEmoji = "📋";
+
+// Icons for lists, grouped loosely: shopping, home, family, school,
+// travel and outdoors, food, celebrations, pets and hobbies.
+const LIST_EMOJIS = [
+  "📋", "📝", "✅", "⭐", "📌", "💡",
+  "🛒", "🛍️", "🥦", "🍎", "🥖", "🧀", "🍼", "🧃", "🍕", "🍰",
+  "🏠", "🧹", "🧺", "🛠️", "🔧", "🪴", "🛏️", "🚿", "🗑️", "💡",
+  "👪", "👶", "🧸", "🎒", "📚", "✏️", "🏫", "💊", "🩺",
+  "🧳", "✈️", "🚗", "⛺", "🏖️", "🏔️", "🗺️", "🎫",
+  "🎁", "🎂", "🎄", "🎃", "🐣", "🎉", "💌",
+  "🐶", "🐱", "🐟", "⚽", "🎨", "🎸", "🎮", "📷", "💪", "🧘",
+  "💷", "📅", "📞", "💻"
+].filter((e, i, a) => a.indexOf(e) === i);
+
+function renderListEmojiPicker(modal) {
+  const row = document.getElementById("new-list-emoji-picker");
+  if (!row) return;
+  const emojis = LIST_EMOJIS.includes(listPanelEmoji) ? LIST_EMOJIS : [listPanelEmoji, ...LIST_EMOJIS];
+  row.innerHTML = emojis.map(e =>
+    `<button type="button" class="emoji-picker-btn ${e === listPanelEmoji ? "selected" : ""}" data-emoji="${e}" aria-label="Icon ${e}">${e}</button>`).join("");
+}
 let listPanelColor = "sky";
 
 function renderListColorPicker() {
@@ -385,14 +406,16 @@ function openCreateListModal(listId = null) {
     btnDelete.removeAttribute("data-armed");
   }
 
-  const emojis = modal.querySelectorAll(".emoji-picker-btn");
-  emojis.forEach(btn => {
-    btn.classList.toggle("selected", btn.getAttribute("data-emoji") === listPanelEmoji);
-    btn.onclick = () => {
+  renderListEmojiPicker(modal);
+  const emojiRow = document.getElementById("new-list-emoji-picker");
+  if (emojiRow) {
+    emojiRow.onclick = (e) => {
+      const btn = e.target.closest("[data-emoji]");
+      if (!btn) return;
       listPanelEmoji = btn.getAttribute("data-emoji");
-      emojis.forEach(b => b.classList.toggle("selected", b === btn));
+      emojiRow.querySelectorAll(".emoji-picker-btn").forEach(b => b.classList.toggle("selected", b === btn));
     };
-  });
+  }
 
   renderListColorPicker();
   const colorRow = document.getElementById("new-list-color-picker");

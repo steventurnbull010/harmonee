@@ -730,3 +730,27 @@ body.theme-dark .list-item-picker-pill {
 body.theme-dark .list-item-picker-pill.is-selected {
   background: color-mix(in srgb, var(--list-accent) 25%, #0f172a);
 }
+
+/* Bigger icon choice for lists: a tidy grid, about four rows tall, that
+   scrolls inside the panel so Colour and Create stay in view */
+#new-list-emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.03);
+}
+
+body.theme-dark #new-list-emoji-picker {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#new-list-emoji-picker .emoji-picker-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+}
