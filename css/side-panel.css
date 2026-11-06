@@ -64,14 +64,14 @@ dialog.side-panel .side-panel-body {
   border-radius: 0 !important;
   background: var(--card-bg, #ffffff) !important;
   box-shadow: -10px 0 35px rgba(0, 0, 0, 0.16) !important;
-  padding: 28px 24px 0 24px !important;
+  padding: 24px 24px 0 24px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   display: flex !important;
   flex-direction: column !important;
-  gap: 20px !important;
+  gap: 24px !important;
   text-align: left;
   animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
@@ -89,7 +89,7 @@ body.theme-dark dialog.side-panel .side-panel-body {
 .side-panel-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   padding-bottom: 2px;
   flex-shrink: 0;
 }
@@ -212,13 +212,13 @@ dialog.side-panel .modal-actions {
   position: sticky;
   bottom: 0;
   margin-top: auto !important;
-  padding: 14px 0 24px 0 !important;
+  padding: 16px 0 24px 0 !important;
   background: var(--card-bg, #ffffff);
   display: flex !important;
   flex-direction: column-reverse !important;
   align-items: stretch !important;
   justify-content: flex-start !important;
-  gap: 10px !important;
+  gap: 8px !important;
   border: none !important;
   z-index: 2;
 }
@@ -232,7 +232,7 @@ dialog.side-panel .modal-footer .sticky-footer-right,
 dialog.side-panel .modal-actions .sticky-footer-right {
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
+  gap: 8px !important;
   width: 100% !important;
 }
 dialog.side-panel .modal-footer .btn-cancel,
@@ -287,11 +287,11 @@ dialog.side-panel .modal-actions .btn-modal-mark-done {
 /* Meals "Plan Meal" drawer: already a right-hand panel, give it the same header */
 .skylight-plan-drawer .plan-drawer-header {
   border-bottom: none;
-  padding: 28px 24px 8px 24px;
+  padding: 24px 24px 8px 24px;
 }
 
 .skylight-plan-drawer .btn-drawer-back {
-  gap: 14px;
+  gap: 16px;
 }
 
 .skylight-plan-drawer .btn-drawer-back span {

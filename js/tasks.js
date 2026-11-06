@@ -17,6 +17,35 @@ function getAssignedMembersList(assignedTo) {
 }
 window.getAssignedMembersList = getAssignedMembersList;
 
+// Is this chore done (for this member) on the given date? Ticks are saved
+// per weekday name ("Tuesday") with the ISO week they were made in, so a
+// tick only counts for that week: this Tuesday's tick must not show on next
+// Tuesday. A tick saved without a week counts for the current week only.
+function isTaskDoneOnDate(task, date, memberLower = null) {
+  if (!task) return false;
+  const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
+  const weekKey = getIsoWeekKey(date);
+  const inWeek = (wk) => (wk ? wk === weekKey : weekKey === getIsoWeekKey(new Date()));
+  const completers = (val) => Array.isArray(val)
+    ? val.map(s => String(s).trim().toLowerCase())
+    : (typeof val === "string" ? val.split(",").map(s => s.trim().toLowerCase()) : []);
+  const isMultiAssign = getAssignedMembersList(task.assignedTo).length > 1;
+  const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+
+  if (isDaily) {
+    const comp = task.completedDays && task.completedDays[dayName];
+    if (!comp) return false;
+    if (!inWeek(typeof comp === "object" ? comp.completedWeek : null)) return false;
+    if (isMultiAssign && memberLower) return completers(typeof comp === "object" ? comp.completedBy : comp).includes(memberLower);
+    return true;
+  }
+  // A dated chore belongs to that one day; otherwise the tick must be from this week
+  if (!task.date && !inWeek(task.completedWeek)) return false;
+  if (isMultiAssign && memberLower) return completers(task.completedBy).includes(memberLower);
+  return !!task.done;
+}
+window.isTaskDoneOnDate = isTaskDoneOnDate;
+
 // True when an assignee value names no specific person (empty, or only the
 // shared "Up for grabs" / "Anyone" / "Family" pools).
 function isUnassignedValue(assignedTo) {
@@ -90,6 +119,9 @@ function renderSkylightTasksPage() {
   const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayName = weekDays[tasksSelectedDate.getDay()];
   const isSelectedCurrentWeek = (getIsoWeekKey(tasksSelectedDate) === getIsoWeekKey(new Date()));
+  // Ticks are saved against this week's weekday, so a future day can't be ticked yet
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const isFutureDay = tasksSelectedDate.getTime() > startOfToday.getTime();
 
   // Active columns: Family Members + "Up for grabs"
   let columns = [...((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) || ["Steven", "Sorcha", "Ava", "Dara"]), "Up for grabs"];
@@ -130,7 +162,9 @@ function renderSkylightTasksPage() {
         }
         // Unassigned or assigned to Anyone / Up for grabs
         if (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family") {
-          return task.date ? task.date === selectedDateStr : (task.day === dayName || isSelectedCurrentWeek);
+          if (task.date) return task.date === selectedDateStr;
+          if (task.repeat === "weekly") return task.day === dayName;
+          return isSelectedCurrentWeek; // a one-off is up for grabs all this week, not in future weeks
         }
         return false;
       }
@@ -165,28 +199,7 @@ function renderSkylightTasksPage() {
     let completedCount = 0;
 
     memberTasks.forEach(task => {
-      const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-      const assignedList = getAssignedMembersList(task.assignedTo);
-      const isMultiAssign = assignedList.length > 1;
-
-      if (isDaily) {
-        const comp = task.completedDays && task.completedDays[dayName];
-        if (comp) {
-          if (isMultiAssign) {
-            const list = Array.isArray(comp.completedBy) ? comp.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof comp.completedBy === "string" ? comp.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-            if (list.includes(mLower)) completedCount++;
-          } else {
-            completedCount++;
-          }
-        }
-      } else {
-        if (isMultiAssign) {
-          const list = Array.isArray(task.completedBy) ? task.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof task.completedBy === "string" ? task.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-          if (list.includes(mLower)) completedCount++;
-        } else {
-          if (task.done) completedCount++;
-        }
-      }
+      if (isTaskDoneOnDate(task, tasksSelectedDate, mLower)) completedCount++;
     });
 
     totalTasksAllBoard += totalCount;
@@ -265,27 +278,7 @@ function renderSkylightTasksPage() {
     // Render task cards helper
     const renderCard = (t) => {
       const isDaily = t.repeat === "daily" || t.day === "Daily" || t.taskType === "Daily Task";
-      const assignedList = getAssignedMembersList(t.assignedTo);
-      const isMultiAssign = assignedList.length > 1;
-      let isDone = false;
-      if (isDaily) {
-        const comp = t.completedDays && t.completedDays[dayName];
-        if (comp) {
-          if (isMultiAssign) {
-            const list = Array.isArray(comp.completedBy) ? comp.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof comp.completedBy === "string" ? comp.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-            isDone = list.includes(mLower);
-          } else {
-            isDone = true;
-          }
-        }
-      } else {
-        if (isMultiAssign) {
-          const list = Array.isArray(t.completedBy) ? t.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof t.completedBy === "string" ? t.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-          isDone = list.includes(mLower);
-        } else {
-          isDone = !!t.done;
-        }
-      }
+      const isDone = isTaskDoneOnDate(t, tasksSelectedDate, mLower);
       const tIcon = t.icon || detectEmojiForChore(t.title) || "🪆";
       const isMoney = (window.boardSettings || {}).gameMode === "money";
       const curr = (window.boardSettings || {}).currency || "£";
@@ -295,7 +288,9 @@ function renderSkylightTasksPage() {
       // Up for grabs cards can't be ticked: they must be dragged into a
       // person's column first, which assigns the chore to them.
       const isGrabbable = isGrabPool && !isDone;
-      const actionHtml = isGrabPool
+      const actionHtml = (isFutureDay && !isGrabPool)
+        ? `<span class="skylight-task-check-circle is-static is-future" title="You can tick this off on the day" aria-label="Not due yet"></span>`
+        : isGrabPool
         ? (isDone
             ? `<span class="skylight-task-check-circle is-static" aria-label="Completed">✓</span>`
             : `<span class="skylight-task-grab-handle" aria-hidden="true" title="Drag to someone's column to claim">⠿</span>`)
@@ -403,7 +398,7 @@ function renderSkylightTasksPage() {
       const tid = card.getAttribute("data-task-id");
       const dName = card.getAttribute("data-day");
       const colMem = card.getAttribute("data-member") || null;
-      openSkylightTaskQuickModal(tid, dName, colMem);
+      openSkylightTaskQuickModal(tid, dName, colMem, card.getAttribute("data-date"));
     };
   });
 
@@ -719,7 +714,7 @@ window.showSkylightCelebration = showSkylightCelebration;
 let currentQuickTaskId = null;
 let currentQuickTaskDay = null;
 
-function openSkylightTaskQuickModal(taskId, targetDay, colMember = null) {
+function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr = null) {
   const task = (window.currentTasks || []).find(t => t.id === taskId);
   if (!task) return;
 
@@ -764,28 +759,28 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null) {
 
   const compBtn = document.getElementById("btn-quick-card-complete");
   const mLower = colMember ? colMember.toLowerCase() : null;
-  let isDone = false;
-  if (isDaily) {
-    const comp = task.completedDays && task.completedDays[targetDay];
-    if (comp) {
-      if (isMultiAssign && mLower) {
-        const list = Array.isArray(comp.completedBy) ? comp.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof comp.completedBy === "string" ? comp.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-        isDone = list.includes(mLower);
-      } else {
-        isDone = true;
-      }
-    }
+  // Which date is this? From the Tasks page we're told; otherwise it's this
+  // week's occurrence of targetDay.
+  let cardDate = null;
+  if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    cardDate = new Date(y, m - 1, d);
   } else {
-    if (isMultiAssign && mLower) {
-      const list = Array.isArray(task.completedBy) ? task.completedBy.map(s => String(s).trim().toLowerCase()) : (typeof task.completedBy === "string" ? task.completedBy.split(",").map(s => s.trim().toLowerCase()) : []);
-      isDone = list.includes(mLower);
-    } else {
-      isDone = !!task.done;
+    cardDate = new Date(); cardDate.setHours(0, 0, 0, 0);
+    const want = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(targetDay);
+    if (want !== -1) {
+      const monday = new Date(cardDate);
+      monday.setDate(cardDate.getDate() - ((cardDate.getDay() + 6) % 7));
+      cardDate = new Date(monday);
+      cardDate.setDate(monday.getDate() + ((want + 6) % 7));
     }
   }
+  const isDone = isTaskDoneOnDate(task, cardDate, mLower);
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const isFuture = cardDate.getTime() > todayStart.getTime();
 
   // Up for grabs chores are claimed by dragging, not ticked from the pool.
-  compBtn.style.display = (colMember === "Up for grabs") ? "none" : "";
+  compBtn.style.display = (colMember === "Up for grabs" || isFuture) ? "none" : "";
   compBtn.textContent = isDone ? "Mark as Incomplete" : "Mark as Complete";
   compBtn.onclick = () => {
     overlay.style.display = "none";
