@@ -3525,3 +3525,264 @@ body.theme-dark .slot-empty-dinner {
   }
 }
 
+
+/* ==========================================================================
+   MEALS INTRO (js/meals-intro.js): first visit on a device
+   Sample week on the left, what Meals does on the right. All spacing on
+   the 8px grid.
+   ========================================================================== */
+#view-meals.meals-intro-active .skylight-meals-matrix-wrapper,
+#view-meals.meals-intro-active .skylight-meals-mobile-wrapper,
+#view-meals.meals-intro-active .skylight-meals-nav-controls {
+  display: none !important;
+}
+
+.meals-intro {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
+  min-height: calc(100dvh - 160px);
+  padding: 48px 24px 48px 0;
+  box-sizing: border-box;
+  animation: mealsIntroIn 0.35s ease both;
+}
+
+@keyframes mealsIntroIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.meals-intro-skip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px;
+  cursor: pointer;
+}
+
+/* Sample week, fading out on the right like it carries on */
+.meals-intro-preview {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent);
+  mask-image: linear-gradient(90deg, #000 80%, transparent);
+}
+
+.meals-intro-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(5, minmax(96px, 1fr));
+  gap: 8px;
+  min-width: 560px;
+}
+
+.meals-intro-day {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0 0 8px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meals-intro-day.is-today {
+  color: var(--text-primary);
+}
+
+.meals-intro-today-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meals-intro-row-label {
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meals-intro-row-label span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.meals-intro-cell {
+  min-height: 96px;
+  border-radius: 16px;
+  padding: 8px;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: default;
+}
+
+.meals-intro-cell.meal-block-card:hover,
+.meals-intro-cell.meal-block-card:active {
+  transform: none;
+}
+
+.meals-intro-cell.is-empty {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1.5px dashed rgba(15, 23, 42, 0.12);
+}
+
+.meals-intro-cell.is-plan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border: 1.5px dashed rgba(15, 23, 42, 0.2);
+  background: var(--card-bg, #fff);
+}
+
+.meals-intro-cell.is-highlight {
+  border: 2px solid #0284c7;
+  color: #0284c7;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
+  animation: mealsIntroPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes mealsIntroPulse {
+  50% { box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.08); }
+}
+
+body.theme-dark .meals-intro-cell.is-empty,
+body.theme-dark .meals-intro-cell.is-plan {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* The words */
+.meals-intro-copy {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meals-intro-title {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.meals-intro-lead {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.meals-intro-rows {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.meals-intro-rows li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+
+.meals-intro-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.meals-intro-footer {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.meals-intro-next {
+  min-width: 224px;
+  min-height: 56px;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(2, 132, 199, 0.25);
+}
+
+.meals-intro-next:hover {
+  background: #0369a1;
+}
+
+.meals-intro-steps {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.meals-intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.meals-intro-dot.is-current {
+  background: #0284c7;
+}
+
+body.theme-dark .meals-intro-dot {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Portrait tablets and phones: words first, preview underneath */
+@media (max-width: 900px) {
+  .meals-intro {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 48px 0 32px 0;
+    min-height: 0;
+  }
+  .meals-intro-copy {
+    order: -1;
+    max-width: none;
+  }
+  .meals-intro-next {
+    min-width: 0;
+    flex: 1;
+  }
+}
