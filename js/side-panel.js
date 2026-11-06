@@ -19,6 +19,7 @@ const SIDE_PANEL_DIALOGS = [
   "roster-modal",       // Family members
   "settings-modal",     // Settings
   "reward-goal-modal",  // Rewards: add / edit a goal
+  "grocery-list-modal", // Meals: the shared Groceries list
 ];
 
 function upgradeToSidePanel(dialog) {

@@ -220,66 +220,37 @@ let currentDrawerCategory = "dinner"; // 'breakfast' | 'lunch' | 'dinner' | 'sna
 let currentDrawerTag = "all";
 
 // Grocery List Storage & Helpers
+// The grocery list IS the "Groceries" list on the Lists page (js/lists.js),
+// so there's one list, synced to every device, wherever you add to it.
 function loadFamilyGroceryList() {
-  if (familyGroceryList) return familyGroceryList;
-  try {
-    const raw = localStorage.getItem(boardCacheKey("turnbull_grocery_list_v2"));
-    if (raw) {
-      familyGroceryList = JSON.parse(raw);
-      return familyGroceryList;
-    }
-  } catch(e) {}
-
-  familyGroceryList = [
-    { id: "g-1", text: "Spinach & Ricotta Tortelloni (500g)", checked: false, source: "Easy Peasy Tortelloni" },
-    { id: "g-2", text: "Green Basil Pesto (190g)", checked: false, source: "Easy Peasy Tortelloni" },
-    { id: "g-3", text: "Crème Fraîche (150g)", checked: false, source: "Easy Peasy Tortelloni" },
-    { id: "g-4", text: "Frozen Garden Peas (150g)", checked: true, source: "Easy Peasy Tortelloni" },
-    { id: "g-5", text: "Italian Sausage (1/2 lb)", checked: false, source: "Skillet Lasagna" },
-    { id: "g-6", text: "Fresh Mozzarella (250g)", checked: false, source: "Skillet Lasagna" }
-  ];
-  saveFamilyGroceryList(familyGroceryList);
+  if (typeof window.getGroceriesList !== "function") return familyGroceryList || [];
+  familyGroceryList = window.getGroceriesList().items;
+  window.familyGroceryList = familyGroceryList;
   return familyGroceryList;
 }
 
 function saveFamilyGroceryList(items) {
   familyGroceryList = items;
-  try {
-    localStorage.setItem(boardCacheKey("turnbull_grocery_list_v2"), JSON.stringify(items));
-    if ((window.familyLists || []) && Array.isArray((window.familyLists || []))) {
-      const groc = (window.familyLists || []).find(l => l.id === "groceries");
-      if (groc) {
-        groc.items = items;
-        localStorage.setItem(boardCacheKey("turnbull_family_lists"), JSON.stringify((window.familyLists || [])));
-      }
-    }
-  } catch(e) {}
-  if (db && typeof setDoc === "function") {
-    try {
-      const payload = {
-        groceryList: items,
-        updatedAt: serverTimestamp()
-      };
-      if ((window.familyLists || []) && Array.isArray((window.familyLists || []))) {
-        payload.familyLists = (window.familyLists || []);
-      }
-      setDoc(doc(db, "boards", (window.currentBoardId || "turnbull")), payload, { merge: true }).catch(() => {});
-    } catch(e) {}
+  window.familyGroceryList = items;
+  if (typeof window.getGroceriesList === "function" && typeof window.saveFamilyLists === "function") {
+    window.getGroceriesList().items = items;
+    window.saveFamilyLists(window.loadFamilyLists());
   }
   updateGroceryBadgeCount();
 }
 
+window.updateGroceryBadgeCount = (...args) => updateGroceryBadgeCount(...args);
 function updateGroceryBadgeCount() {
   const badge = document.getElementById("grocery-list-count-badge");
   if (!badge) return;
-  const list = familyGroceryList || loadFamilyGroceryList();
+  const list = loadFamilyGroceryList();
   const unbought = list.filter(i => !i.checked).length;
   badge.textContent = unbought;
 }
 
 function addIngredientsToGroceryList(ingredients, sourceTitle = "") {
   if (!ingredients || !ingredients.length) return 0;
-  const list = familyGroceryList || loadFamilyGroceryList();
+  const list = loadFamilyGroceryList();
   let addedCount = 0;
   ingredients.forEach(item => {
     const cleanText = item.replace(/^-\s*/, '').trim();
@@ -1232,7 +1203,7 @@ function openGroceryListModal() {
   const btnCloseFooter = document.getElementById("btn-close-grocery-footer");
 
   const renderItems = () => {
-    const list = familyGroceryList || loadFamilyGroceryList();
+    const list = loadFamilyGroceryList();
     if (!itemsListEl) return;
 
     if (list.length === 0) {
@@ -1264,7 +1235,7 @@ function openGroceryListModal() {
       const chk = row.querySelector("input[type='checkbox']");
       if (chk) {
         chk.onchange = () => {
-          const l = familyGroceryList || loadFamilyGroceryList();
+          const l = loadFamilyGroceryList();
           const target = l.find(i => i.id === id);
           if (target) {
             target.checked = chk.checked;
@@ -1277,7 +1248,7 @@ function openGroceryListModal() {
       if (delBtn) {
         delBtn.onclick = (e) => {
           e.stopPropagation();
-          const l = (familyGroceryList || loadFamilyGroceryList()).filter(i => i.id !== id);
+          const l = (loadFamilyGroceryList()).filter(i => i.id !== id);
           saveFamilyGroceryList(l);
           renderItems();
         };
@@ -1298,7 +1269,7 @@ function openGroceryListModal() {
     if (!quickInput) return;
     const val = quickInput.value.trim();
     if (!val) return;
-    const list = familyGroceryList || loadFamilyGroceryList();
+    const list = loadFamilyGroceryList();
     list.unshift({
       id: "g-" + Date.now(),
       text: val,
@@ -1324,7 +1295,7 @@ function openGroceryListModal() {
 
   if (btnClearCompleted) {
     btnClearCompleted.onclick = () => {
-      const list = (familyGroceryList || loadFamilyGroceryList()).filter(i => !i.checked);
+      const list = (loadFamilyGroceryList()).filter(i => !i.checked);
       saveFamilyGroceryList(list);
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
       renderItems();

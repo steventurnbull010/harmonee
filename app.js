@@ -1601,12 +1601,8 @@ function listenToFirestoreBoard() {
       if (typeof window.applyBoardRewardData === "function") {
         window.applyBoardRewardData(data);
       }
-      if (Array.isArray(data.familyLists)) {
-        familyLists = data.familyLists;
-        try { localStorage.setItem(boardCacheKey("turnbull_family_lists"), JSON.stringify(data.familyLists)); } catch (e) {}
-        if (currentActiveView === "lists") {
-          renderListsView();
-        }
+      if (Array.isArray(data.familyLists) && typeof window.applyBoardFamilyLists === "function") {
+        window.applyBoardFamilyLists(data.familyLists);
       }
       if (shouldRender) {
         renderApp();

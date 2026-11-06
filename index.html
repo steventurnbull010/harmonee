@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="css/tasks.css?v=4">
   <link rel="stylesheet" href="css/meals.css?v=2">
   <link rel="stylesheet" href="css/calendar.css?v=2">
-  <link rel="stylesheet" href="css/lists.css?v=1">
+  <link rel="stylesheet" href="css/lists.css?v=2">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=1">
   <link rel="stylesheet" href="css/modals.css?v=2">
@@ -617,47 +617,8 @@
             </div>
           </header>
 
-          <!-- Lists Selector Bar (Tabs) -->
-          <div class="lists-selector-bar" id="lists-selector-bar">
-            <!-- Rendered dynamically: 🛒 Groceries, 📋 Weekend To-Do, 🧳 Holiday Packing, etc. -->
-          </div>
-
-          <!-- Active List Container Card -->
-          <div class="active-list-card" id="active-list-card">
-            <div class="active-list-header">
-              <div class="active-list-title-wrap">
-                <span class="active-list-emoji" id="active-list-emoji">🛒</span>
-                <div class="active-list-titles">
-                  <h3 class="active-list-title" id="active-list-title">Family Groceries</h3>
-                  <div class="active-list-progress-wrap">
-                    <div class="active-list-progress-bar">
-                      <div class="active-list-progress-fill" id="active-list-progress-fill" style="width: 0%;"></div>
-                    </div>
-                    <span class="active-list-progress-text" id="active-list-progress-text">0 items</span>
-                  </div>
-                </div>
-              </div>
-              <div class="active-list-actions">
-                <button type="button" class="btn-subtle-action" id="btn-lists-clear-checked" title="Remove checked items">Clear Completed</button>
-                <button type="button" class="btn-subtle-action btn-delete-list" id="btn-lists-delete-list" title="Delete this list">Delete List</button>
-              </div>
-            </div>
-
-            <!-- Quick Add Input Form -->
-            <div class="list-quick-add-wrap">
-              <div class="list-quick-add-input-group">
-                <input type="text" id="list-quick-add-input" class="list-quick-input" placeholder="Add an item to this list... (e.g. Milk, Pack passports, Book dentist)">
-                <button type="button" class="btn-list-add-item" id="btn-list-add-item">＋ Add Item</button>
-              </div>
-            </div>
-
-            <!-- Items List -->
-            <div class="list-items-container">
-              <ul class="list-items-ul" id="list-items-ul">
-                <!-- Injected dynamically -->
-              </ul>
-            </div>
-          </div>
+          <!-- Every list side by side, Skylight style (js/lists.js) -->
+          <div class="lists-board" id="lists-board"></div>
         </div>
       </div>
 
@@ -2503,7 +2464,7 @@
       <div class="modal-header">
         <div class="modal-header-left">
           <span class="modal-header-icon">📝</span>
-          <h2 id="create-list-title" class="modal-title">Create New Family List</h2>
+          <h2 id="create-list-title" class="modal-title">New List</h2>
         </div>
         <button type="button" class="btn-modal-close" id="btn-close-create-list" aria-label="Close">✕</button>
       </div>
@@ -2527,8 +2488,13 @@
             <button type="button" class="emoji-picker-btn" data-emoji="🧹">🧹</button>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Colour</label>
+          <div class="list-color-picker" id="new-list-color-picker"></div>
+        </div>
       </div>
       <div class="modal-footer create-list-footer">
+        <button type="button" class="btn-sticky-delete" id="btn-delete-list-panel" style="display: none;">Delete List</button>
         <button type="button" class="btn-sticky-cancel" id="btn-cancel-create-list">Cancel</button>
         <button type="button" class="btn-sticky-save" id="btn-save-new-list">Create List</button>
       </div>
@@ -2704,7 +2670,7 @@
   <script src="js/audio.js?v=3"></script>
   <script src="js/weather.js?v=3"></script>
   <script src="js/sleep.js?v=6"></script>
-  <script src="js/lists.js?v=5"></script>
+  <script src="js/lists.js?v=6"></script>
   <script src="js/magic-scanner.js?v=5"></script>
   <script src="js/rewards.js?v=5"></script>
   <script src="js/reward-goals.js?v=1"></script>
@@ -2712,8 +2678,8 @@
   <script src="js/calendar.js?v=5"></script>
   <script src="js/tasks.js?v=8"></script>
   <script src="js/board-access.js?v=1"></script>
-  <script src="js/side-panel.js?v=2"></script>
-  <script type="module" src="js/meals.js?v=10"></script>
-  <script type="module" src="app.js?v=209"></script>
+  <script src="js/side-panel.js?v=3"></script>
+  <script type="module" src="js/meals.js?v=11"></script>
+  <script type="module" src="app.js?v=210"></script>
 </body>
 </html>
