@@ -1228,7 +1228,7 @@ function updateDrawerWhoSummary() {
   } else if (people.length === 1) {
     el.textContent = `${people[0]} is doing it.`;
   } else {
-    el.textContent = `${formatAssigneeNames(people)} each do it.`;
+    el.textContent = `${formatAssigneeNames(people)} are doing it.`;
   }
 }
 
