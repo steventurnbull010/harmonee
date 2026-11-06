@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chore Challenge — Family Chores Made Easy</title>
+  <meta name="description" content="Tablet and mobile-first live synced family chore challenge and leaderboard with real-time Firebase Firestore support.">
+  
+  <!-- Modern Typography (Outfit & Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=137">
+  
+  <!-- Global Crash-Proof Safety Error Boundary -->
+  <script>
+    window.hardReloadApp = function() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) { caches.delete(k); });
+          });
+        }
+      } catch (e) {}
+      try { localStorage.removeItem("chore_calendar_view"); } catch (e) {}
+      var sep = window.location.href.indexOf('?') !== -1 ? '&' : '?';
+      window.location.href = window.location.href + sep + 't=' + Date.now();
+    };
+
+    window.addEventListener('error', function(e) {
+      console.warn('Safety Catch: Unhandled error intercepted:', e.error || e.message);
+      if (!document.getElementById('emergency-recovery-banner')) {
+        var errDetail = (e && e.message) ? e.message : 'Temporary script glitch';
+        var b = document.createElement('div');
+        b.id = 'emergency-recovery-banner';
+        b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;padding:12px 20px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.3);z-index:99999;font-family:sans-serif;font-size:13px;display:flex;align-items:center;gap:12px;border:1px solid #475569;max-width:90vw;flex-wrap:wrap;';
+        b.innerHTML = '<span>⚠️ ' + errDetail + '. All household data in Firestore is safe.</span>' +
+          '<button type="button" onclick="window.hardReloadApp()" style="background:#4f46e5;color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;">Reload App</button>';
+        if (document.body) document.body.appendChild(b);
+      }
+    });
+  </script>
+  
+  <!-- Theme Pre-Initialization (Prevents FOUC, defaults to Skylight Pastel Light) -->
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem("chore_theme") || "light";
+        if (theme === "dark") {
+          document.documentElement.classList.add("theme-dark");
+        } else {
+          document.documentElement.classList.add("theme-light");
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body class="theme-light">
+  <!-- Canvas overlay for custom particle effects if needed -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Gamified Celebration Announcement Anchor -->
+  <div id="celebration-toast-anchor" class="celebration-toast-anchor" aria-live="polite"></div>
+
+  <div class="skylight-app-wrapper">
+    <!-- Skylight Left Navigation Menu (15" Calendar Max Style) -->
+    <aside class="skylight-sidebar" id="skylight-sidebar" aria-label="Main Navigation">
+      <div class="skylight-brand-mark" id="sidebar-brand-mark" title="Turnbull Family Command Center" onclick="window.switchSkylightView && window.switchSkylightView('calendar')">S</div>
+      
+      <nav class="skylight-nav-group" id="skylight-nav-group">
+        <button type="button" class="skylight-nav-item active" id="nav-item-calendar" data-view="calendar" title="Week Calendar" onclick="window.switchSkylightView && window.switchSkylightView('calendar')">
+          <span class="skylight-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Calendar</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item" id="nav-item-chores" data-view="chores" title="Tasks & Routines" onclick="window.switchSkylightView && window.switchSkylightView('chores')">
+          <span class="skylight-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Tasks</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item" id="nav-item-meals" data-view="meals" title="Meals & Dinners" onclick="window.switchSkylightView && window.switchSkylightView('meals')">
+          <span class="skylight-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+              <line x1="6" y1="1" x2="6" y2="4"></line>
+              <line x1="10" y1="1" x2="10" y2="4"></line>
+              <line x1="14" y1="1" x2="14" y2="4"></line>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Meals</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item" id="nav-item-lists" data-view="lists" title="Family Lists & Checklists" onclick="window.switchSkylightView && window.switchSkylightView('lists')">
+          <span class="skylight-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Lists</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item" id="nav-item-rewards" data-view="rewards" title="Rewards & Leaderboard" onclick="window.switchSkylightView && window.switchSkylightView('rewards')">
+          <span class="skylight-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Rewards</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item nav-item-bottom" id="nav-item-sleep" title="Switch to Dark Mode" onclick="window.toggleSleepTheme && window.toggleSleepTheme()">
+          <span class="skylight-nav-icon" id="sidebar-sleep-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+          <span class="skylight-nav-label" id="sidebar-sleep-label">Dark</span>
+        </button>
+
+        <button type="button" class="skylight-nav-item" id="nav-item-settings" title="Settings" onclick="window.openSettingsModal && window.openSettingsModal()">
+          <span class="skylight-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </span>
+          <span class="skylight-nav-label">Settings</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main View Stage -->
+    <div class="skylight-main-viewport">
+      <!-- VIEW 1: TASKS (Skylight Profiles Multi-Column Board) -->
+      <div id=view-chores class=skylight-page-view style="display: none;">
+        <div class="skylight-tasks-page-container">
+          <!-- Skylight Single-Line Header (Turnbull Family, Live Clock, Weather | Filter ⌵, < Today >) -->
+          <header class="calendar-header skylight-single-header skylight-tasks-header">
+            <div class="calendar-header-left">
+              <h2 class="calendar-family-title" id="tasks-family-name">Turnbull Family</h2>
+              <span class="calendar-time-indicator" id="tasks-live-clock">1:52 PM</span>
+              <span class="calendar-weather-badge" id="tasks-weather-badge" title="Local weather">☀️ 18°</span>
+            </div>
+
+            <div class="calendar-header-controls">
+              <!-- Filter Dropdown: Filter by Profiles -->
+              <div class="skylight-dropdown-wrap" id="tasks-filter-dropdown-wrap">
+                <button type="button" class="skylight-header-dropdown-btn" id="btn-tasks-filter-dropdown" aria-haspopup="true" aria-expanded="false" title="Filter Members">
+                  <span>Filter</span>
+                  <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="skylight-dropdown-menu skylight-filter-menu" id="tasks-filter-dropdown-menu" style="display: none;">
+                  <!-- Populated dynamically with Select All, Member rows, Done button -->
+                </div>
+              </div>
+
+              <!-- Day Stepper: < Today > -->
+              <div class="calendar-nav-buttons">
+                <button type="button" class="calendar-btn-nav" id="btn-tasks-prev-day" title="Previous Day" aria-label="Previous Day">
+                  <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button type="button" class="calendar-btn-today" id="btn-tasks-today" title="Jump to Today">Today</button>
+                <button type="button" class="calendar-btn-nav" id="btn-tasks-next-day" title="Next Day" aria-label="Next Day">
+                  <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <!-- Selected Day Date Display Banner (Subtle Serif) -->
+          <div class="skylight-tasks-date-sub-bar" id="tasks-date-sub-bar">
+            <!-- e.g. Wednesday, November 6 -->
+          </div>
+
+          <!-- Multi-Column Board: Steven, Sorcha, Ava, Dara, Up for grabs -->
+          <div class="skylight-tasks-columns-grid" id="tasks-columns-grid">
+            <!-- Dynamically populated profile columns -->
+          </div>
+        </div>
+
+        <!-- Floating Action Button (+ FAB) for Tasks -->
+        <div class="skylight-tasks-fab-container">
+          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-task" aria-label="Add Task" title="Add Task or Routine">
+            <svg class="fab-plus-icon" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <!-- VIEW 2: WEEK CALENDAR (Skylight 7-Day Timeline Grid) -->
+      <div id="view-calendar" class="skylight-page-view active-page">
+        <div class="calendar-view-container">
+          <!-- Skylight Single-Line Header (Family Name, Live Clock, Weather | Week ⌵, Filter ⌵, < Today >) -->
+          <header class="calendar-header skylight-single-header">
+            <div class="calendar-header-left">
+              <h2 class="calendar-family-title" id="calendar-family-name">Turnbull Family</h2>
+              <span class="calendar-time-indicator" id="calendar-live-clock">12:26 PM</span>
+              <span class="calendar-weather-badge" id="calendar-weather-badge" title="Local weather">☀️ 18°</span>
+            </div>
+
+            <div class="calendar-header-controls">
+              <!-- Magic Calendar Schedule Import Dropdown / Button (Subtle grey text like other header items) -->
+              <button type="button" class="skylight-header-dropdown-btn btn-header-magic-scan" id="btn-calendar-magic-scan" title="Magic Import Schedule from Photo or PDF">
+                <span>Magic Import</span>
+                <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+
+              <!-- View Selector Dropdown: Schedule (3-Day), Day, Week, Month -->
+              <div class="skylight-dropdown-wrap" id="view-dropdown-wrap">
+                <button type="button" class="skylight-header-dropdown-btn" id="btn-view-dropdown" aria-haspopup="true" aria-expanded="false" title="Change Calendar View">
+                  <span id="current-view-label">View</span>
+                  <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="skylight-dropdown-menu" id="view-dropdown-menu" style="display: none;">
+                  <button type="button" class="dropdown-menu-item active" data-view="schedule">
+                    <span class="dropdown-item-check">✓</span>
+                    <span>Schedule (3-Day)</span>
+                  </button>
+                  <button type="button" class="dropdown-menu-item" data-view="day">
+                    <span class="dropdown-item-check"></span>
+                    <span>Day</span>
+                  </button>
+                  <button type="button" class="dropdown-menu-item" data-view="week">
+                    <span class="dropdown-item-check"></span>
+                    <span>Week (8-Day Grid)</span>
+                  </button>
+                  <button type="button" class="dropdown-menu-item" data-view="month">
+                    <span class="dropdown-item-check"></span>
+                    <span>Month</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Family Member Filter Dropdown (Clean text + chevron) -->
+              <div class="skylight-dropdown-wrap" id="filter-dropdown-wrap">
+                <button type="button" class="skylight-header-dropdown-btn" id="btn-filter-dropdown" aria-haspopup="true" aria-expanded="false" title="Filter by Family Member">
+                  <span id="current-filter-label">Filter</span>
+                  <span class="filter-active-dot" id="filter-active-dot" style="display: none;"></span>
+                  <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="skylight-dropdown-menu skylight-filter-menu" id="filter-dropdown-menu" style="display: none;">
+                  <div id="filter-members-list" class="skylight-filter-list">
+                    <!-- Populated dynamically in app.js: Select All + Each Profile toggle switch -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="calendar-header-nav">
+              <!-- Date Navigation (< Today >) -->
+              <div class="calendar-nav-buttons">
+                <button type="button" class="calendar-btn-nav" id="btn-calendar-prev-week" title="Previous" aria-label="Previous"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                <button type="button" class="calendar-btn-today" id="btn-calendar-today">Today</button>
+                <button type="button" class="calendar-btn-nav" id="btn-calendar-next-week" title="Next" aria-label="Next"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              </div>
+            </div>
+          </header>
+
+          <!-- Family Sticky Note / Message of the Day Widget -->
+          <div class="family-sticky-container" id="family-sticky-container">
+            <div class="family-sticky-card color-yellow" id="family-sticky-card">
+              <span class="sticky-pin-icon" aria-hidden="true">📌</span>
+              <div class="sticky-content-wrap" id="sticky-content-wrap">
+                <p class="sticky-message-text" id="sticky-message-text">Welcome to the Turnbull Family Board! Have a fantastic day! ❤️</p>
+                <div class="sticky-meta-row">
+                  <span class="sticky-author-badge" id="sticky-author-badge">Family Note</span>
+                  <span class="sticky-time-badge" id="sticky-time-badge">Today</span>
+                </div>
+              </div>
+              <button type="button" class="btn-sticky-action" id="btn-edit-sticky" title="Edit Message of the Day">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Edit Note</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 7-Day Week Columns Grid (Mon - Sun) -->
+          <div class="calendar-week-grid" id="calendar-week-grid">
+            <!-- 7 columns injected dynamically in app.js: Mon, Tue, Wed, Thu, Fri, Sat, Sun -->
+          </div>
+        </div>
+
+        <!-- Backdrop for Floating Add Speed-Dial -->
+        <div class="calendar-fab-backdrop" id="calendar-fab-backdrop"></div>
+
+        <!-- Floating Add Speed-Dial Container (Add Event or Add Chore) -->
+        <div class="calendar-fab-container" id="calendar-fab-container">
+          <div class="calendar-fab-menu" id="calendar-fab-menu" role="menu" aria-label="Add options">
+            <button type="button" class="calendar-fab-option fab-option-magic" id="fab-action-magic-import" role="menuitem">
+              <span class="fab-option-icon">🪄</span>
+              <span class="fab-option-text">
+                <span class="fab-option-title">Magic Import</span>
+                <span class="fab-option-sub">Scan schedule with AI</span>
+              </span>
+            </button>
+            <button type="button" class="calendar-fab-option fab-option-event" id="fab-action-add-event" role="menuitem">
+              <span class="fab-option-icon">📅</span>
+              <span class="fab-option-text">
+                <span class="fab-option-title">Add Event</span>
+                <span class="fab-option-sub">Tutors, lessons & schedule</span>
+              </span>
+            </button>
+            <button type="button" class="calendar-fab-option fab-option-chore" id="fab-action-add-chore" role="menuitem">
+              <span class="fab-option-icon">🧹</span>
+              <span class="fab-option-text">
+                <span class="fab-option-title">Add Chore</span>
+                <span class="fab-option-sub">Daily tasks & routines</span>
+              </span>
+            </button>
+            <button type="button" class="calendar-fab-option fab-option-note" id="fab-action-add-note" role="menuitem">
+              <span class="fab-option-icon">📌</span>
+              <span class="fab-option-text">
+                <span class="fab-option-title">Add / Edit Note</span>
+                <span class="fab-option-sub">Message of the day</span>
+              </span>
+            </button>
+          </div>
+          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-calendar" aria-label="Add Event or Chore" aria-expanded="false" title="Add Event or Chore">
+            <svg class="fab-plus-icon" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Hidden Inputs for Calendar AI Schedule & Flyer Scanning -->
+        <input type="file" id="calendar-camera-input" accept="image/*" capture="environment" style="display: none;">
+        <input type="file" id="calendar-gallery-input" accept="image/*" style="display: none;">
+      </div>
+
+      <!-- VIEW 3: MEALS & RECIPE PLANNER (Skylight 4-Tier Matrix + Plan Meal Drawer) -->
+      <div id="view-meals" class="skylight-page-view" style="display: none;">
+        <div class="skylight-meals-layout">
+          <!-- Main Content Area: Header + 4-Tier Grid -->
+          <div class="skylight-meals-main">
+            <!-- Skylight Clean Single-Line Header -->
+            <header class="skylight-meals-header">
+              <div class="skylight-meals-brand-row">
+                <span class="skylight-meals-logo-pill">🍽️</span>
+                <div class="skylight-meals-headings">
+                  <h2 class="skylight-meals-family-name">Turnbull Family Meal Planner</h2>
+                  <span class="skylight-meals-time-weather" id="meals-header-time-weather">12:36 PM • ☀️ 12°</span>
+                </div>
+              </div>
+
+              <!-- Top Right Controls: Week Nav, Grocery List, Plan Meal Button -->
+              <div class="skylight-meals-nav-controls">
+                <div class="calendar-nav-buttons">
+                  <button type="button" class="calendar-btn-nav" id="btn-meals-prev-week" title="Previous Week" aria-label="Previous Week">
+                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <button type="button" class="calendar-btn-today" id="btn-meals-today" title="Jump to Current Week">Today</button>
+                  <button type="button" class="calendar-btn-nav" id="btn-meals-next-week" title="Next Week" aria-label="Next Week">
+                    <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </div>
+
+                <button type="button" class="btn-skylight-action-pill" id="btn-open-grocery-list" title="View & Manage Grocery Shopping List">
+                  <span class="pill-icon">🛒</span>
+                  <span class="pill-text">Grocery List</span>
+                  <span class="pill-counter-badge" id="grocery-list-count-badge">0</span>
+                </button>
+
+                <button type="button" class="btn-skylight-primary-pill" id="btn-meals-plan-dinner" title="Open Plan Meal Drawer">
+                  <span class="pill-icon">＋</span>
+                  <span class="pill-text">Plan Meal</span>
+                </button>
+              </div>
+            </header>
+
+            <!-- 7-Day x 3-Row Weekly Meal Matrix (Desktop & Tablet Landscape) -->
+            <div class="skylight-meals-matrix-wrapper" id="skylight-meals-matrix-wrapper">
+              <div class="skylight-meals-matrix" id="skylight-meals-matrix">
+                <!-- Dynamically populated by renderMealsView() -->
+              </div>
+            </div>
+
+            <!-- Mobile Meal Planner: Vertical Daily Cards Feed -->
+            <div class="skylight-meals-mobile-wrapper" id="skylight-meals-mobile-wrapper">
+              <div class="meals-mobile-cards-feed" id="meals-mobile-cards-feed">
+                <!-- Injected dynamically: 7 Day Cards with Breakfast, Lunch, Dinner -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide-out Right Drawer: "Plan Meal" (Matching Photo 2) -->
+          <aside class="skylight-plan-drawer" id="plan-meal-drawer" aria-label="Plan Meal Drawer" style="display: none;">
+            <div class="plan-drawer-header">
+              <button type="button" class="btn-drawer-back" id="btn-close-plan-drawer" title="Close drawer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Plan Meal</span>
+              </button>
+              <div class="plan-drawer-target-slot" id="drawer-target-slot-label">
+                Thursday, Nov 5 • Dinner
+              </div>
+            </div>
+
+            <!-- Segmented Toggle: [From Recipes] | [New Entry] -->
+            <div class="drawer-segmented-toggle">
+              <button type="button" class="toggle-segment active" id="tab-from-recipes">From Recipes</button>
+              <button type="button" class="toggle-segment" id="tab-new-entry">New Entry</button>
+            </div>
+
+            <!-- TAB 1: FROM RECIPES -->
+            <div class="drawer-tab-pane" id="pane-from-recipes">
+              <!-- 3 Clean Category Filter Badges: Breakfast, Lunch, Dinner (Set Colors) -->
+              <div class="drawer-category-bubbles">
+                <button type="button" class="cat-bubble cat-bubble-b" data-category="breakfast" title="Breakfast Recipes">
+                  <span class="bubble-name">Breakfast</span>
+                </button>
+                <button type="button" class="cat-bubble cat-bubble-l" data-category="lunch" title="Lunch Recipes">
+                  <span class="bubble-name">Lunch</span>
+                </button>
+                <button type="button" class="cat-bubble cat-bubble-d active" data-category="dinner" title="Dinner Recipes">
+                  <span class="bubble-name">Dinner</span>
+                </button>
+              </div>
+
+              <!-- Search Bar with Vertical Overlay Dropdown Filter & Add from Photo -->
+              <div class="drawer-search-filter-row">
+                <div class="drawer-search-bar">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="recipe-search-input" placeholder="Search recipes..." class="drawer-search-input">
+                  <button type="button" class="btn-clear-search" id="btn-clear-recipe-search" style="display: none;">✕</button>
+                </div>
+
+                <div class="drawer-filter-actions-row">
+                  <div class="drawer-filter-dropdown-wrap" id="recipe-filter-dropdown-wrap">
+                    <button type="button" class="btn-drawer-filter-dropdown" id="btn-recipe-filter-dropdown" aria-haspopup="true" aria-expanded="false" title="Filter Recipes">
+                      <span class="filter-dropdown-label" id="current-recipe-filter-label">Filter: All</span>
+                      <svg class="icon-chevron-wide" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="drawer-filter-menu" id="recipe-filter-menu" style="display: none;">
+                      <button type="button" class="drawer-filter-opt active" data-tag="all">
+                        <span class="opt-check">✓</span>
+                        <span>All Recipes</span>
+                      </button>
+                      <button type="button" class="drawer-filter-opt" data-tag="veggie">
+                        <span class="opt-check"></span>
+                        <span>🥗 Veggie</span>
+                      </button>
+                      <button type="button" class="drawer-filter-opt" data-tag="quick">
+                        <span class="opt-check"></span>
+                        <span>⏱️ Quick (&lt;20m)</span>
+                      </button>
+                      <button type="button" class="drawer-filter-opt" data-tag="kid-fav">
+                        <span class="opt-check"></span>
+                        <span>⭐ Kids Fave</span>
+                      </button>
+                      <button type="button" class="drawer-filter-opt" data-tag="pasta">
+                        <span class="opt-check"></span>
+                        <span>🍝 Pasta</span>
+                      </button>
+                      <button type="button" class="drawer-filter-opt" data-tag="meat">
+                        <span class="opt-check"></span>
+                        <span>🥩 Hearty / Meat</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Add from Photo Button & Choices Popover -->
+                  <div class="drawer-photo-dropdown-wrap" id="photo-import-dropdown-wrap">
+                    <button type="button" class="btn-drawer-add-photo" id="btn-trigger-add-from-photo" aria-haspopup="true" aria-expanded="false" title="Add Recipe from Photo">
+                      <span class="photo-btn-icon">📸</span>
+                      <span class="photo-btn-text">Add from Photo</span>
+                      <svg class="icon-chevron-tiny" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="drawer-photo-menu" id="photo-import-menu" style="display: none;">
+                      <button type="button" class="photo-menu-opt" id="opt-photo-camera">
+                        <span class="opt-icon">📷</span>
+                        <div class="opt-text-wrap">
+                          <span class="opt-title">Take Photo</span>
+                          <span class="opt-desc">Snap cookbook or recipe card</span>
+                        </div>
+                      </button>
+                      <button type="button" class="photo-menu-opt" id="opt-photo-gallery">
+                        <span class="opt-icon">🖼️</span>
+                        <div class="opt-text-wrap">
+                          <span class="opt-title">Choose from Gallery</span>
+                          <span class="opt-desc">Upload from camera roll</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Hidden file inputs for Camera and Gallery -->
+                <input type="file" id="recipe-camera-input" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="recipe-gallery-input" accept="image/*" style="display: none;">
+              </div>
+
+              <!-- Recipe List -->
+              <div class="drawer-recipes-list" id="drawer-recipes-list">
+                <!-- Dynamically populated with recipe cards -->
+              </div>
+            </div>
+
+            <!-- TAB 2: NEW ENTRY (Custom Meal on the Fly) -->
+            <div class="drawer-tab-pane" id="pane-new-entry" style="display: none;">
+              <!-- Quick Photo Scan Prompt Card -->
+              <div class="pane-photo-prompt-card" id="btn-new-entry-photo-card" title="Scan a cookbook page or recipe photo">
+                <div class="photo-card-left">
+                  <span class="photo-card-icon">📸</span>
+                  <div class="photo-card-text">
+                    <strong>Have a recipe photo or cookbook?</strong>
+                    <span>Snap with camera or upload from gallery</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-photo-card-action">Add from Photo</button>
+              </div>
+
+              <form id="form-custom-meal" class="drawer-custom-form">
+                <div class="form-group">
+                  <label for="custom-meal-title">Dish / Meal Title *</label>
+                  <input type="text" id="custom-meal-title" class="form-input" placeholder="e.g. Takeout Chinese, Leftover Pizza, Sunday Roast..." required>
+                </div>
+
+                <div class="form-group">
+                  <label>Meal Category</label>
+                  <div class="custom-category-select-group">
+                    <label class="custom-cat-radio">
+                      <input type="radio" name="custom-meal-category" value="breakfast">
+                      <span class="custom-cat-btn cat-b">Breakfast</span>
+                    </label>
+                    <label class="custom-cat-radio">
+                      <input type="radio" name="custom-meal-category" value="lunch">
+                      <span class="custom-cat-btn cat-l">Lunch</span>
+                    </label>
+                    <label class="custom-cat-radio">
+                      <input type="radio" name="custom-meal-category" value="dinner" checked>
+                      <span class="custom-cat-btn cat-d">Dinner</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Who's Cooking? (Tap to select multiple)</label>
+                  <div class="meal-chef-chips-select" id="drawer-chef-chips-select">
+                    <button type="button" class="chef-select-chip is-selected" data-chef="Steve">
+                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
+                    </button>
+                    <button type="button" class="chef-select-chip" data-chef="Sorcha">
+                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
+                    </button>
+                    <button type="button" class="chef-select-chip" data-chef="Ava">
+                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
+                    </button>
+                    <button type="button" class="chef-select-chip" data-chef="Dara">
+                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
+                    </button>
+                    <button type="button" class="chef-select-chip" data-chef="Family">
+                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
+                    </button>
+                  </div>
+                  <input type="hidden" id="drawer-cook-input" value="Steve">
+                </div>
+
+                <div class="form-group">
+                  <label for="custom-meal-notes">Notes or Ingredients</label>
+                  <textarea id="custom-meal-notes" class="form-input" rows="3" placeholder="Optional notes, ingredients to buy, or cooking tips..."></textarea>
+                </div>
+
+                <div class="drawer-form-actions">
+                  <button type="submit" class="btn-primary-action" style="width: 100%;">
+                    <span>Save to Plan</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- VIEW 4: FAMILY SHARED LISTS & CHECKLISTS -->
+      <div id="view-lists" class="skylight-page-view" style="display: none;">
+        <div class="lists-view-container">
+          <header class="lists-header">
+            <div class="lists-header-left">
+              <div class="lists-header-title-row">
+                <span class="lists-header-icon">📝</span>
+                <h2 class="lists-title">Family Shared Lists</h2>
+              </div>
+              <p class="lists-subtitle">Groceries, packing checklists, weekend errands, and family to-dos</p>
+            </div>
+            <div class="lists-header-actions">
+              <button type="button" class="btn-primary-action" id="btn-create-new-list">
+                <span>＋ New List</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Lists Selector Bar (Tabs) -->
+          <div class="lists-selector-bar" id="lists-selector-bar">
+            <!-- Rendered dynamically: 🛒 Groceries, 📋 Weekend To-Do, 🧳 Holiday Packing, etc. -->
+          </div>
+
+          <!-- Active List Container Card -->
+          <div class="active-list-card" id="active-list-card">
+            <div class="active-list-header">
+              <div class="active-list-title-wrap">
+                <span class="active-list-emoji" id="active-list-emoji">🛒</span>
+                <div class="active-list-titles">
+                  <h3 class="active-list-title" id="active-list-title">Family Groceries</h3>
+                  <div class="active-list-progress-wrap">
+                    <div class="active-list-progress-bar">
+                      <div class="active-list-progress-fill" id="active-list-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <span class="active-list-progress-text" id="active-list-progress-text">0 items</span>
+                  </div>
+                </div>
+              </div>
+              <div class="active-list-actions">
+                <button type="button" class="btn-subtle-action" id="btn-lists-clear-checked" title="Remove checked items">Clear Completed</button>
+                <button type="button" class="btn-subtle-action btn-delete-list" id="btn-lists-delete-list" title="Delete this list">Delete List</button>
+              </div>
+            </div>
+
+            <!-- Quick Add Input Form -->
+            <div class="list-quick-add-wrap">
+              <div class="list-quick-add-input-group">
+                <input type="text" id="list-quick-add-input" class="list-quick-input" placeholder="Add an item to this list... (e.g. Milk, Pack passports, Book dentist)">
+                <button type="button" class="btn-list-add-item" id="btn-list-add-item">＋ Add Item</button>
+              </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="list-items-container">
+              <ul class="list-items-ul" id="list-items-ul">
+                <!-- Injected dynamically -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 5: REWARDS & PODIUM LEADERBOARD -->
+      <div id="view-rewards" class="skylight-page-view" style="display: none;">
+        <div class="rewards-view-container">
+          <header class="rewards-header">
+            <div class="rewards-title-wrap">
+              <span class="rewards-badge-icon">🏆</span>
+              <div>
+                <h2 class="rewards-title">Household Champions Podium</h2>
+                <p class="rewards-subtitle" id="rewards-week-label">Current Week Standings & Earnings</p>
+              </div>
+            </div>
+            
+            <div class="rewards-header-actions">
+              <button type="button" class="btn-rewards-confetti" id="btn-podium-confetti" title="Celebrate Champions!">
+                <span>Celebrate</span> <span>🎉</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Olympic-style 3-Place Podium -->
+          <div class="podium-stage" id="podium-stage">
+            <!-- Dynamically populated from household scores in app.js -->
+          </div>
+
+          <!-- All Household Members Earnings Breakdown -->
+          <div class="rewards-breakdown-card">
+            <div class="rewards-breakdown-header">
+              <h3 class="breakdown-title">📊 Household Standings & Earnings</h3>
+              <span class="breakdown-badge" id="rewards-mode-badge">Points Mode</span>
+            </div>
+            <div class="rewards-members-grid" id="rewards-members-grid">
+              <!-- Dynamically populated from scores and task completions in app.js -->
+            </div>
+          </div>
+
+          <!-- Household Daily Habit Streaks Showcase -->
+          <div class="rewards-streaks-card" id="rewards-streaks-card">
+            <div class="rewards-streaks-header">
+              <div class="streaks-header-left">
+                <span class="streaks-flame-icon">🔥</span>
+                <div>
+                  <h3 class="streaks-title">Daily Habit Streaks & Momentum</h3>
+                  <p class="streaks-subtitle">Keep daily routines going to earn bonus streak points!</p>
+                </div>
+              </div>
+              <span class="streaks-badge">+5 pts at 7-day milestone</span>
+            </div>
+            <div class="rewards-streaks-grid" id="rewards-streaks-grid">
+              <!-- Dynamically rendered streak items in app.js -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOUCH MODAL: "Who Smashed It?" -->
+  <dialog id="claim-modal" class="claim-dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-trophy">⚡</div>
+          <h2 id="modal-title" class="modal-title">Who Smashed It?</h2>
+          <p class="modal-subtitle" id="modal-task-name">Task Name</p>
+          <p class="modal-hint" id="claim-modal-hint">Select one, multiple people, or Team Effort</p>
+        </div>
+
+        <div class="member-selector-grid" id="modal-member-grid">
+          <!-- Dynamically populated from familyMembers -->
+        </div>
+
+        <div class="modal-footer modal-actions-stacked">
+          <button type="button" class="btn-confirm-claim" id="btn-confirm-claim" disabled>
+            <span class="btn-confirm-text">Select Member(s)</span>
+            <span class="btn-confirm-icon">⚡</span>
+          </button>
+          <button type="button" class="btn-cancel-secondary" id="btn-cancel-modal">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- ASSIGN TASK MODAL -->
+    <dialog id="assign-modal" class="claim-dialog" aria-modal="true" aria-labelledby="assign-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <!-- Close 'X' button top-right -->
+        <button type="button" class="btn-modal-close" id="btn-close-assign-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy">👤</div>
+          <h2 id="assign-modal-title" class="modal-title">Assign Chore</h2>
+          <p class="modal-subtitle" id="assign-modal-task-title">Task Title</p>
+          <p class="modal-hint">Tap a member to assign this chore, or leave it Up for Grabs</p>
+        </div>
+
+        <div class="member-selector-grid" id="assign-modal-member-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="modal-footer modal-actions-stacked">
+          <button type="button" class="btn-cancel-secondary" id="btn-unassign-task" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">
+            ⚡ Make Up for Grabs (Unassign)
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+
+    <!-- SKYLIGHT TASK QUICK ACTION MODAL (Card Click) -->
+    <div id="skylight-task-quick-modal" class="skylight-task-quick-overlay" style="display: none;">
+      <div class="skylight-task-quick-card">
+        <div class="quick-card-top-row">
+          <h3 class="quick-card-title" id="quick-card-title">Task Title</h3>
+          <button type="button" class="quick-card-close-x" id="btn-quick-card-close" aria-label="Close">✕</button>
+        </div>
+        <div class="quick-card-actions-row">
+          <button type="button" class="quick-action-btn btn-quick-edit" id="btn-quick-card-edit">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Edit</span>
+          </button>
+          <button type="button" class="quick-action-btn btn-quick-delete" id="btn-quick-card-delete">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Delete</span>
+          </button>
+        </div>
+        <div class="quick-card-detail-item">
+          <span class="quick-detail-icon">📅</span>
+          <span class="quick-detail-text" id="quick-card-datetime">Thursday, July 10, 5:00 PM</span>
+        </div>
+        <div class="quick-card-detail-item">
+          <span class="quick-detail-icon">👥</span>
+          <span class="quick-detail-label">Assigned To</span>
+          <div class="quick-detail-assignee" id="quick-card-assignee">
+            <!-- Avatar + name -->
+          </div>
+        </div>
+        <div class="quick-card-detail-item">
+          <span class="quick-detail-icon">⭐</span>
+          <span class="quick-detail-label">Reward</span>
+          <span class="quick-detail-value" id="quick-card-reward">10 pts</span>
+        </div>
+        <button type="button" class="btn-skylight-complete-big" id="btn-quick-card-complete">Mark as Complete</button>
+      </div>
+    </div>
+
+    <!-- SKYLIGHT RIGHT-SIDE SLIDE-IN DRAWER (Add / Edit Task) -->
+    <div id="skylight-task-drawer-overlay" class="skylight-task-drawer-backdrop" style="display: none;">
+      <div class="skylight-task-drawer" id="skylight-task-drawer">
+        <div class="task-drawer-header">
+          <button type="button" class="task-drawer-back-btn" id="btn-task-drawer-back" aria-label="Back">←</button>
+          <h2 class="task-drawer-title" id="task-drawer-heading">Add Task</h2>
+        </div>
+
+        <form id="skylight-task-drawer-form" class="task-drawer-form">
+          <input type="hidden" id="drawer-task-id">
+          
+          <!-- Title Input -->
+          <div class="drawer-input-row">
+            <span class="drawer-input-icon">≡</span>
+            <input type="text" id="drawer-task-title" class="drawer-input-title" placeholder="Task Title" required autocomplete="off">
+          </div>
+
+          <!-- Emoji Picker Accordion -->
+          <div class="drawer-field-group">
+            <div class="drawer-accordion-trigger" id="drawer-emoji-trigger">
+              <div class="drawer-trigger-left">
+                <span class="drawer-emoji-preview" id="drawer-emoji-preview">😀</span>
+                <span class="drawer-trigger-label">Emoji (Optional)</span>
+              </div>
+              <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="drawer-emoji-grid" id="drawer-emoji-grid" style="display: none;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Profiles Row -->
+          <div class="drawer-field-group">
+            <div class="drawer-section-label-row">
+              <span class="drawer-section-icon">👥</span>
+              <span class="drawer-section-label">Profiles</span>
+            </div>
+            <div class="drawer-profiles-pills-row" id="drawer-profiles-row">
+              <!-- Steven, Sorcha, Ava, Dara, Up for grabs (+ Add) -->
+            </div>
+          </div>
+
+          <!-- Type Switcher: [ Chore ] [ Routine ] -->
+          <div class="drawer-segmented-control">
+            <button type="button" class="drawer-segment-btn active" data-type="chore" id="btn-drawer-type-chore">Chore</button>
+            <button type="button" class="drawer-segment-btn" data-type="routine" id="btn-drawer-type-routine">Routine</button>
+          </div>
+
+          <!-- CHORE-SPECIFIC FIELDS -->
+          <div id="drawer-chore-fields" class="drawer-dynamic-fields">
+            <!-- Date Switch & Picker -->
+            <div class="drawer-toggle-row">
+              <div class="drawer-toggle-left">
+                <span class="drawer-toggle-icon">📅</span>
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">Date</span>
+                  <span class="drawer-toggle-sub" id="drawer-chore-date-label">Today</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="drawer-toggle-date" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <!-- Time Switch & Carousel -->
+            <div class="drawer-toggle-row">
+              <div class="drawer-toggle-left">
+                <span class="drawer-toggle-icon">🕒</span>
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">Time</span>
+                  <span class="drawer-toggle-sub" id="drawer-chore-time-label">All Day</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="drawer-toggle-time">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div id="drawer-chore-time-selector" class="drawer-time-selector-wrap" style="display: none;">
+              <input type="time" id="drawer-chore-time-input" class="drawer-time-input" value="09:00">
+            </div>
+
+            <!-- Repeats Switch -->
+            <div class="drawer-toggle-row">
+              <div class="drawer-toggle-left">
+                <span class="drawer-toggle-icon">🔁</span>
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">Repeats</span>
+                  <span class="drawer-toggle-sub" id="drawer-chore-repeat-label">Does not repeat</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="drawer-toggle-repeat">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div id="drawer-chore-repeat-selector" class="drawer-repeat-selector-wrap" style="display: none;">
+              <select id="drawer-chore-repeat-select" class="drawer-select-input">
+                <option value="none">Does not repeat</option>
+                <option value="weekly">Weekly on this day</option>
+                <option value="daily">Every day</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ROUTINE-SPECIFIC FIELDS -->
+          <div id="drawer-routine-fields" class="drawer-dynamic-fields" style="display: none;">
+            <!-- Frequency Row: Every 1 with < > stepper -->
+            <div class="drawer-row-every">
+              <div class="drawer-every-left">
+                <span class="drawer-icon-sub">↳</span>
+                <div class="drawer-every-text-wrap">
+                  <span class="drawer-label-small">Every</span>
+                  <span class="drawer-every-num" id="drawer-routine-freq-num">1</span>
+                </div>
+              </div>
+              <div class="drawer-stepper-arrows">
+                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-down" aria-label="Decrease frequency">&lt;</button>
+                <button type="button" class="drawer-arrow-btn" id="btn-routine-freq-up" aria-label="Increase frequency">&gt;</button>
+              </div>
+            </div>
+
+            <!-- Repeats every: Day / Week -->
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">🔄</span>
+                <span class="drawer-section-label">Repeats every</span>
+              </div>
+              <div class="drawer-segmented-pills">
+                <button type="button" class="drawer-pill-segment active" data-freq="day" id="btn-routine-unit-day">Day</button>
+                <button type="button" class="drawer-pill-segment" data-freq="week" id="btn-routine-unit-week">Week</button>
+              </div>
+            </div>
+
+            <!-- Time of Day Slot: Morning / Afternoon / Evening -->
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">☀️</span>
+                <span class="drawer-section-label">In the</span>
+              </div>
+              <div class="drawer-segmented-pills">
+                <button type="button" class="drawer-pill-segment active" data-slot="morning" id="btn-routine-slot-morning">Morning</button>
+                <button type="button" class="drawer-pill-segment" data-slot="afternoon" id="btn-routine-slot-afternoon">Afternoon</button>
+                <button type="button" class="drawer-pill-segment" data-slot="evening" id="btn-routine-slot-evening">Evening</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- POINTS / ££ REWARD STEPPER (Custom for Turnbull family) -->
+          <div class="drawer-field-group drawer-reward-stepper-box">
+            <div class="drawer-reward-header">
+              <span class="drawer-reward-title" id="drawer-reward-mode-text">Reward Points</span>
+              <span class="drawer-reward-sub">Earned upon completion</span>
+            </div>
+            <div class="drawer-reward-controls">
+              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-minus">−</button>
+              <span class="drawer-reward-display" id="drawer-reward-display">10 pts</span>
+              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-plus">+</button>
+            </div>
+          </div>
+
+          <!-- Bottom Submit Action -->
+          <div class="drawer-bottom-actions">
+            <button type="submit" class="btn-skylight-drawer-submit" id="btn-drawer-submit">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SKYLIGHT MINI CALENDAR DATE PICKER MODAL -->
+    <div id="skylight-datepicker-modal" class="skylight-datepicker-overlay" style="display: none;">
+      <div class="skylight-datepicker-card">
+        <div class="datepicker-header">
+          <span class="datepicker-header-label">Select date</span>
+          <h3 class="datepicker-header-selected" id="datepicker-selected-label">Jul 2, 2025</h3>
+        </div>
+        <div class="datepicker-calendar-body">
+          <div class="datepicker-month-nav">
+            <span class="datepicker-month-name" id="datepicker-month-name">July 2025</span>
+            <div class="datepicker-nav-arrows">
+              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-prev">‹</button>
+              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-next">›</button>
+            </div>
+          </div>
+          <div class="datepicker-weekdays">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div class="datepicker-days-grid" id="datepicker-days-grid">
+            <!-- Date cells -->
+          </div>
+        </div>
+        <div class="datepicker-footer-actions">
+          <button type="button" class="datepicker-btn-text" id="btn-datepicker-dismiss">Dismiss</button>
+          <button type="button" class="datepicker-btn-text font-bold" id="btn-datepicker-select">Select</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CELEBRATION FULL SCREEN OVERLAY -->
+    <div id="skylight-celebration-overlay" class="skylight-celebration-screen" style="display: none;">
+      <div class="celebration-card">
+        <div class="celebration-stars">✨ 🪅 🌟</div>
+        <h2 class="celebration-title">Yay! You completed all your tasks today.</h2>
+        <p class="celebration-subtitle">Awesome job! All routines & chores are finished.</p>
+        <button type="button" class="btn-celebration-dismiss" id="btn-celebration-dismiss">Celebrate!</button>
+      </div>
+    </div>
+
+    <!-- EDIT / CREATE TASK MODAL -->
+    <dialog id="task-modal" class="task-dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content modal-content-wide">
+        <!-- Close 'X' button top-right -->
+        <button type="button" class="btn-modal-close" id="btn-close-task-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy" id="task-modal-icon">✏️</div>
+          <h2 id="task-modal-title" class="modal-title">Edit Task</h2>
+          <p class="modal-subtitle">Update task details or assign it to family members.</p>
+        </div>
+
+        <form id="task-form" class="task-edit-form">
+          <input type="hidden" id="task-form-id">
+          <input type="hidden" id="task-form-target-day">
+          <input type="hidden" id="task-form-icon" value="">
+
+          <div class="form-group task-title-group">
+            <div class="form-label-row">
+              <label for="task-form-title">Task Title *</label>
+              <span class="emoji-picker-hint">Tap icon to change</span>
+            </div>
+            <div class="event-title-with-emoji chore-title-with-emoji">
+              <button type="button" class="event-emoji-picker-btn chore-emoji-picker-btn" id="btn-task-emoji-picker" title="Change Chore Emoji" aria-label="Change chore icon">
+                <span class="event-emoji-display" id="task-emoji-display">🪴</span>
+                <svg class="emoji-picker-chevron icon-chevron-wide" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <input type="text" id="task-form-title" class="form-input chore-title-input" required placeholder="e.g. Water the plants, Hoover rug, Empty dishwasher...">
+            </div>
+
+            <!-- Chore Emoji Palette Popover -->
+            <div class="event-emoji-palette" id="task-emoji-palette" style="display: none;">
+              <div class="emoji-palette-header">
+                <span>Choose Chore Icon</span>
+                <button type="button" class="btn-palette-close" id="btn-close-task-emoji-palette" aria-label="Close emoji picker">✕</button>
+              </div>
+              <div class="emoji-palette-grid" id="task-emoji-palette-grid">
+                <!-- Dynamically populated from CHORE_EMOJI_LIST -->
+              </div>
+            </div>
+          </div>
+
+          <!-- CHORE SCHEDULE & REPEAT ROW (Consistent with Event modal) -->
+          <div class="chore-schedule-row" style="display: flex; gap: 14px; margin-bottom: 14px;">
+            <div class="form-group" style="flex: 1;">
+              <label for="task-form-day">Day / Schedule</label>
+              <div class="select-chevron-wrapper">
+                <select id="task-form-day" class="form-input form-select-with-chevron">
+                  <option value="Monday">Mon — Monday</option>
+                  <option value="Tuesday">Tue — Tuesday</option>
+                  <option value="Wednesday">Wed — Wednesday</option>
+                  <option value="Thursday">Thu — Thursday</option>
+                  <option value="Friday">Fri — Friday</option>
+                  <option value="Saturday">Sat — Saturday</option>
+                  <option value="Sunday">Sun — Sunday</option>
+                  <option value="Daily">Daily Routine (Every day)</option>
+                  <option value="Anyday">📅 Anyday / Flexible</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="flex: 1.15;">
+              <label for="task-form-repeat">Repeat</label>
+              <div class="select-chevron-wrapper">
+                <select id="task-form-repeat" class="form-input form-select-with-chevron">
+                  <option value="weekly" id="task-repeat-opt-weekly" selected>Weekly on Sunday</option>
+                  <option value="none">One-off (Does not repeat)</option>
+                  <option value="daily">Daily (Every day)</option>
+                  <option value="fortnightly" id="task-repeat-opt-fortnightly">Fortnightly</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- DAILY TASK 7-DAY ROSTER STRIP -->
+          <div id="task-form-daily-roster-box" class="task-daily-roster-box" style="display: none;">
+            <div class="daily-roster-header">
+              <div class="daily-roster-title-wrap">
+                <span class="daily-roster-badge">🔄 Weekly Roster</span>
+                <span class="daily-roster-title">Day-by-Day Assignees</span>
+              </div>
+              <label class="daily-roster-apply-all-label" for="task-form-apply-all-days" title="Check this to set every day to the chosen assignee">
+                <input type="checkbox" id="task-form-apply-all-days">
+                <span class="checkbox-text-sm" id="label-apply-all-text">Apply to all 7 days</span>
+              </label>
+            </div>
+            <div class="daily-roster-days-row" id="task-form-daily-roster-grid">
+              <!-- 7 interactive day cards rendered dynamically: Mon - Sun -->
+            </div>
+          </div>
+
+          <!-- PRIMARY CHORE CONTROLS -->
+          <!-- 1. Dedicated Assignee Row (Shown only for non-daily one-off tasks) -->
+          <div class="form-group" id="task-form-assignee-group">
+            <label for="task-form-assignee" id="task-form-assignee-label">Assigned To</label>
+            <div class="select-chevron-wrapper">
+              <select id="task-form-assignee" class="form-input form-select-with-chevron">
+                <option value="">⚡ Up for Grabs (Anyone)</option>
+                <!-- Populated dynamically from familyMembers -->
+              </select>
+            </div>
+          </div>
+
+          <!-- 2. Dual Quick-Settings Card Row: Reward Points + High Priority Toggle -->
+          <div class="task-quick-settings-grid" id="task-quick-settings-grid">
+            <!-- Points / Reward Value Card -->
+            <div class="task-setting-card" id="task-form-reward-group">
+              <div class="setting-card-header">
+                <span class="setting-card-icon">⭐</span>
+                <label for="task-form-reward" class="setting-card-label" id="task-form-reward-label">Reward Points</label>
+              </div>
+              <div class="reward-stepper-wrap">
+                <button type="button" class="stepper-btn" id="btn-reward-minus" aria-label="Decrease reward">−</button>
+                <input type="number" id="task-form-reward" step="0.25" min="0" placeholder="1" class="reward-stepper-input">
+                <button type="button" class="stepper-btn" id="btn-reward-plus" aria-label="Increase reward">+</button>
+              </div>
+              <div class="reward-preset-chips" id="reward-preset-chips">
+                <button type="button" class="reward-chip" data-val="1">+1 pt</button>
+                <button type="button" class="reward-chip" data-val="2">+2 pts</button>
+                <button type="button" class="reward-chip" data-val="3">+3 pts</button>
+                <button type="button" class="reward-chip" data-val="5">+5 pts</button>
+              </div>
+            </div>
+
+            <!-- Priority Status Toggle Card -->
+            <div class="task-setting-card" id="task-form-priority-group">
+              <div class="setting-card-header">
+                <span class="setting-card-icon">🚨</span>
+                <span class="setting-card-label">Priority Status</span>
+              </div>
+              <button type="button" class="priority-toggle-card-btn" id="btn-priority-toggle" aria-pressed="false" title="Tap to toggle high priority">
+                <span class="priority-status-pill" id="priority-status-pill">
+                  <span class="priority-pill-icon" id="priority-pill-icon">⚪</span>
+                  <span class="priority-pill-text" id="priority-pill-text">Normal</span>
+                </span>
+                <span class="priority-hint-text" id="priority-hint-text">Tap to pin to top</span>
+              </button>
+              <input type="checkbox" id="task-form-priority" style="display: none;">
+            </div>
+          </div>
+
+          <!-- COLLAPSIBLE MORE CHORE OPTIONS (ZERO-SCROLL DESIGN) -->
+          <details class="task-form-more-details" id="task-form-more-details">
+            <summary class="more-details-summary">
+              <span class="summary-left">
+                <span class="summary-icon">⚙️</span>
+                <span class="summary-text">More Chore Options (Room, Type, Notes)</span>
+              </span>
+              <svg class="summary-chevron icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </summary>
+            
+            <div class="more-details-body">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="task-form-type">Task Type</label>
+                  <div class="select-chevron-wrapper">
+                    <select id="task-form-type" class="form-input form-select-with-chevron">
+                      <option value="Standard">📋 Standard Chore</option>
+                      <option value="Daily Task">🔄 Daily Habit / Chore</option>
+                      <option value="DIY Project">🔨 DIY Project</option>
+                      <option value="Deep Clean">🧽 Deep Clean</option>
+                      <option value="Organization">📦 Organization / Purge</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="task-form-time">Estimated Time</label>
+                  <input type="text" id="task-form-time" class="form-input" placeholder="e.g. 15 mins, 30 mins, 1 hr">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="task-form-room">Room / Area</label>
+                <div class="select-chevron-wrapper">
+                  <select id="task-form-room" class="form-input form-select-with-chevron">
+                    <!-- Populated dynamically based on Turnbull vs General board -->
+                  </select>
+                </div>
+                <span class="room-rename-hint" id="room-rename-hint" style="display: none; font-size: 0.76rem; color: var(--accent-cyan); cursor: pointer; margin-top: 4px;">✏️ Want to add a name to this bedroom? Tap to customize</span>
+                <input type="text" id="task-form-room-custom" class="form-input" placeholder="Type custom room or area (e.g. Utility, Balcony)..." style="display: none; margin-top: 8px;">
+              </div>
+
+              <div class="form-group">
+                <label for="task-form-note">Action Note & Details</label>
+                <textarea id="task-form-note" class="form-input" rows="2" placeholder="Describe the specifics or checklist..."></textarea>
+              </div>
+            </div>
+          </details>
+
+          <!-- FLOATING MEMBER SELECTOR POPOVER -->
+          <div id="roster-member-popover" class="roster-member-popover" style="display: none;">
+            <div class="popover-header">
+              <span class="popover-day-title">Assign <span id="popover-day-name">Wednesday</span></span>
+              <button type="button" class="popover-close" id="btn-close-roster-popover" aria-label="Close">✕</button>
+            </div>
+            <div class="popover-members-row" id="popover-members-row">
+              <!-- Injected dynamically: Anyone, Steven, Sorcha, Ava, Dara -->
+            </div>
+          </div>
+
+          <div class="modal-footer button-row task-modal-footer">
+            <button type="button" class="btn-modal-mark-done" id="btn-task-modal-mark-done" style="display: none;">
+              <span id="btn-task-modal-mark-done-icon">⚡</span> <span id="btn-task-modal-mark-done-text">Mark as Done</span>
+            </button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-cancel" id="btn-cancel-task-form">Cancel</button>
+              <button type="submit" class="btn-primary-modal" id="btn-save-task">Save Changes</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- DELETE CONFIRMATION DIALOG -->
+    <dialog id="delete-modal" class="delete-dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-trophy text-danger" id="delete-modal-icon">🗑️</div>
+          <h2 id="delete-modal-title" class="modal-title">Delete Task?</h2>
+          <p class="modal-subtitle" id="delete-modal-task-title">Are you sure you want to delete this task?</p>
+        </div>
+        <p class="delete-warning-text" id="delete-modal-warning">This will remove the task permanently from your challenge board.</p>
+        <div class="modal-footer button-row">
+          <button type="button" class="btn-cancel" id="btn-cancel-delete">Cancel</button>
+          <button type="button" class="btn-danger-confirm" id="btn-confirm-delete">Delete Task</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- SHARE / CREATE NEW BOARD MODAL -->
+    <dialog id="share-modal" class="share-dialog" aria-modal="true" aria-labelledby="share-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content modal-content-wide">
+        <button type="button" class="btn-modal-close" id="btn-close-share-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy">✨</div>
+          <h2 id="share-modal-title" class="modal-title">Family Chore Boards</h2>
+          <p class="modal-subtitle">Share your active board with family or create a brand new private board for friends.</p>
+        </div>
+
+        <div class="share-section-box">
+          <h3 class="share-subheading">📱 Current Board Link</h3>
+          <p class="share-help-text">Share this link with anyone in your house to collaborate live in real-time:</p>
+          <div class="copy-url-row">
+            <input type="text" id="current-board-share-url" readonly value="" class="share-url-input">
+            <button type="button" class="btn-copy-link" id="btn-copy-current-link">
+              <span id="copy-btn-text">Copy Link</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="share-section-box create-board-box">
+          <h3 class="share-subheading">🚀 Create a Brand New Board</h3>
+          <p class="share-help-text">Perfect for friends or different households! Starts with custom family members and a clean slate:</p>
+          <form id="create-board-form" class="create-board-form">
+            <div class="form-group">
+              <label for="new-board-name">Family or Board Name *</label>
+              <input type="text" id="new-board-name" required placeholder="e.g. Smith Family, Flat 4, The Bakers">
+            </div>
+            <div class="form-group">
+              <label for="new-board-template">Initial Board Content</label>
+              <select id="new-board-template">
+                <option value="empty">🌱 Blank Canvas (Empty task list)</option>
+                <option value="starter">🧹 Household Starter Pack (General chores)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary-action btn-full-width" id="btn-create-board-submit">
+              <span>Create Private Board</span>
+              <span>⚡</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MANAGE FAMILY ROSTER MODAL -->
+    <dialog id="roster-modal" class="roster-dialog" aria-modal="true" aria-labelledby="roster-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <button type="button" class="btn-modal-close" id="btn-close-roster-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy">👥</div>
+          <h2 id="roster-modal-title" class="modal-title">Family Roster</h2>
+          <p class="modal-subtitle">Add or edit members for this board's leaderboard and task assignments.</p>
+        </div>
+
+        <div class="roster-members-list" id="roster-members-list">
+          <!-- Member rows injected dynamically -->
+        </div>
+
+        <form id="add-member-form" class="add-member-form">
+          <div class="form-group">
+            <label for="new-member-name">Add New Member Name</label>
+            <div class="add-member-input-row">
+              <input type="text" id="new-member-name" placeholder="e.g. Jack, Sarah, Grandma">
+              <button type="submit" class="btn-primary-action" id="btn-add-member">Add</button>
+            </div>
+          </div>
+          <!-- Skylight 20-Swatch Color Palette for New Member -->
+          <div class="form-group" style="margin-top: 10px;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Choose Profile Color</label>
+            <div class="skylight-color-picker-grid" id="new-member-color-grid">
+              <!-- Injected dynamically: 20 circular color swatches -->
+            </div>
+            <input type="hidden" id="new-member-selected-color" value="sky-blue">
+          </div>
+        </form>
+
+        <div class="modal-footer button-row">
+          <button type="button" class="btn-primary-modal" id="btn-save-roster">Done</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- BOARD SETTINGS & GAME MODE MODAL -->
+    <dialog id="settings-modal" class="settings-dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <button type="button" class="btn-modal-close" id="btn-close-settings-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy">⚙️</div>
+          <h2 id="settings-modal-title" class="modal-title">Board Settings & Rewards</h2>
+          <p class="modal-subtitle">Choose whether your household plays for leaderboard points or earns pocket money!</p>
+        </div>
+
+        <form id="settings-form" class="settings-form">
+          <!-- Theme & Appearance (Light / Dark) -->
+          <div class="form-group settings-theme-group">
+            <label>Theme & Appearance</label>
+            <div class="theme-selector-grid">
+              <div class="theme-option-card selected" id="opt-theme-light" data-theme="light" role="button" tabindex="0">
+                <span class="theme-option-icon">☀️</span>
+                <span class="theme-option-title">Pastel Light</span>
+                <span class="theme-option-desc">Clean, bright daytime colors</span>
+              </div>
+              <div class="theme-option-card" id="opt-theme-dark" data-theme="dark" role="button" tabindex="0">
+                <span class="theme-option-icon">🌙</span>
+                <span class="theme-option-title">Midnight Dark</span>
+                <span class="theme-option-desc">Sleek, low-glare dark mode</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Reward / Game Mode</label>
+            <div class="mode-selector-grid">
+              <div class="mode-option-card selected" id="opt-mode-points" data-mode="points">
+                <span class="mode-option-icon">🏆</span>
+                <span class="mode-option-title">Points & Trophy</span>
+                <span class="mode-option-desc">Earn points to win the crown on the leaderboard</span>
+              </div>
+              <div class="mode-option-card" id="opt-mode-money" data-mode="money">
+                <span class="mode-option-icon">💰</span>
+                <span class="mode-option-title">Pocket Money</span>
+                <span class="mode-option-desc">Assign currency amounts to chores for kids</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" id="currency-select-group" style="display: none;">
+            <label>Currency Symbol</label>
+            <div class="currency-row">
+              <button type="button" class="currency-btn selected" data-currency="£">£ (Pound)</button>
+              <button type="button" class="currency-btn" data-currency="$">$ (Dollar)</button>
+              <button type="button" class="currency-btn" data-currency="€">€ (Euro)</button>
+            </div>
+          </div>
+
+          <!-- Weekly History & Payout Ledger -->
+          <div class="settings-section-box">
+            <div class="settings-box-header">
+              <h4 class="settings-box-title">📜 Weekly Payout History</h4>
+              <span class="settings-box-badge">Auto-resets Sun Midnight</span>
+            </div>
+            <p class="settings-box-desc">Points and earnings reset every Sunday night so each week starts fresh. Check previous weeks below if allowances haven't been paid yet!</p>
+            
+            <div class="weekly-history-list" id="weekly-history-container">
+              <div class="history-empty-note">No archived weeks yet. First weekly snapshot records this Sunday at midnight!</div>
+            </div>
+          </div>
+
+          <!-- Scheduled Sleep Window (Lights-Out Overnight) -->
+          <div class="settings-section-box">
+            <div class="settings-box-header">
+              <h4 class="settings-box-title">🌙 Scheduled Sleep Window</h4>
+              <span class="settings-box-badge">Overnight Display Off</span>
+            </div>
+            <p class="settings-box-desc">Automatically blanks the tablet display into a deep, OLED pure-black ambient night clock overnight so it doesn't disturb anyone in the kitchen.</p>
+            
+            <div class="form-group checkbox-group" style="margin-top: 10px;">
+              <label class="custom-checkbox-label">
+                <input type="checkbox" id="settings-sleep-enabled" checked>
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-text">Enable automatic overnight sleep schedule</span>
+              </label>
+            </div>
+
+            <div class="sleep-schedule-times-row" id="sleep-schedule-times-row" style="display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap;">
+              <div class="form-group" style="flex: 1; min-width: 130px;">
+                <label for="settings-sleep-start" style="font-size: 0.82rem; font-weight: 600;">Sleep Starts (Bedtime)</label>
+                <input type="time" id="settings-sleep-start" value="22:00" class="form-input" style="height: 40px; border-radius: 8px;">
+              </div>
+              <div class="form-group" style="flex: 1; min-width: 130px;">
+                <label for="settings-sleep-end" style="font-size: 0.82rem; font-weight: 600;">Wake Up (Morning)</label>
+                <input type="time" id="settings-sleep-end" value="07:00" class="form-input" style="height: 40px; border-radius: 8px;">
+              </div>
+            </div>
+
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+              <button type="button" class="btn-secondary-action" id="btn-preview-sleep-screen" style="height: 36px; font-size: 0.82rem; padding: 0 14px; border-radius: 8px; border: 1.5px solid var(--card-border); background: var(--bg-surface); cursor: pointer; font-family: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                <span>🌙 Preview Night Clock</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Danger Zone: Reset Tasks to Defaults -->
+          <div class="settings-danger-zone">
+            <h4 class="danger-zone-title">Danger Zone</h4>
+            <p class="danger-zone-desc">Reset all chores back to the default household starter list. Completed task status will be cleared.</p>
+            <button type="button" class="btn-danger-outline" id="btn-trigger-reset-modal">
+              <span>Reset Tasks to Starter Pack</span>
+            </button>
+          </div>
+
+          <div class="modal-footer button-row">
+            <button type="button" class="btn-cancel" id="btn-cancel-settings">Cancel</button>
+            <button type="submit" class="btn-primary-modal" id="btn-save-settings">Save Settings</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- RESET CONFIRMATION MODAL -->
+    <dialog id="reset-confirm-modal" class="delete-dialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-trophy text-danger">⚠️</div>
+          <h2 id="reset-confirm-title" class="modal-title">Reset Board to Defaults?</h2>
+          <p class="modal-subtitle">Are you sure you want to restore default chores?</p>
+        </div>
+        <div class="notice-box notice-warning">
+          <strong>This action will:</strong>
+          <ul style="margin: 8px 0 0 16px; font-size: 0.85rem; line-height: 1.5;">
+            <li>Replace all active chores with the standard starter checklist</li>
+            <li>Clear all completed checkmarks and current scores</li>
+            <li>Keep your family members list intact</li>
+          </ul>
+        </div>
+        <div class="modal-footer button-row">
+          <button type="button" class="btn-cancel" id="btn-cancel-reset-confirm">Cancel</button>
+          <button type="button" class="btn-danger-confirm" id="btn-confirm-factory-reset">Yes, Reset Board</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- NEW VISITOR ONBOARDING WIZARD MODAL -->
+    <dialog id="onboarding-modal" class="onboarding-dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <div class="onboarding-welcome-hero">
+          <div class="modal-trophy">⚡</div>
+          <h2 id="onboarding-modal-title" class="modal-title">Welcome to Chore Challenge!</h2>
+          <p class="modal-subtitle">Create a private household board in 10 seconds and share it with your family.</p>
+        </div>
+
+        <form id="onboarding-form" class="onboarding-form">
+          <div class="form-group">
+            <label for="onboarding-family-name">Family / Team Name *</label>
+            <input type="text" id="onboarding-family-name" required placeholder="e.g. Miller Family, The Bakers, Flat 4">
+          </div>
+
+          <div class="form-group">
+            <label for="onboarding-members">Family Members (comma-separated) *</label>
+            <input type="text" id="onboarding-members" required placeholder="e.g. Dave, Sarah, Leo, Maya">
+          </div>
+
+          <div class="form-group">
+            <label>How do you want to play?</label>
+            <div class="mode-selector-grid">
+              <div class="mode-option-card selected" id="onboarding-opt-points" data-mode="points">
+                <span class="mode-option-icon">🏆</span>
+                <span class="mode-option-title">Points Challenge</span>
+                <span class="mode-option-desc">Leaderboard points with trophy & crown</span>
+              </div>
+              <div class="mode-option-card" id="onboarding-opt-money" data-mode="money">
+                <span class="mode-option-icon">💰</span>
+                <span class="mode-option-title">Pocket Money</span>
+                <span class="mode-option-desc">Earn real pocket money per chore</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" id="onboarding-currency-group" style="display: none;">
+            <label>Currency</label>
+            <div class="currency-row">
+              <button type="button" class="currency-btn selected" data-currency="£">£ (GBP)</button>
+              <button type="button" class="currency-btn" data-currency="$">$ (USD)</button>
+              <button type="button" class="currency-btn" data-currency="€">€ (EUR)</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="onboarding-template">Initial Tasks</label>
+            <select id="onboarding-template">
+              <option value="starter">🧹 Household Starter Pack (Recommended)</option>
+              <option value="empty">🌱 Blank Canvas (Start completely fresh)</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn-primary-action btn-full-width" id="btn-launch-onboarding">
+              <span>Launch Our Family Board</span>
+              <span>🚀</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- MAGIC AI CHORE CREATOR MODAL -->
+    <dialog id="ai-modal" class="ai-dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content modal-content-wide">
+        <button type="button" class="btn-modal-close" id="btn-close-ai-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="modal-header">
+          <div class="modal-trophy">✨</div>
+          <h2 id="ai-modal-title" class="modal-title">Magic AI Chore Creator</h2>
+          <p class="modal-subtitle">Speak or type naturally. AI breaks it down into individual chores for your board!</p>
+        </div>
+
+        <!-- Voice & Text Input Form -->
+        <div class="ai-input-wrapper">
+          <div class="ai-textarea-container">
+            <textarea id="ai-prompt-input" rows="4" placeholder="Speak or type: 'Ava clean kitchen and feed the cats for £1.50 each, Steve vacuum upstairs on Saturday for £2...'"></textarea>
+            
+            <button type="button" id="btn-voice-dictate" class="btn-voice-dictate" title="Tap to dictate by voice">
+              <span class="mic-icon" id="mic-icon">🎙️</span>
+              <span class="mic-label" id="mic-label">Dictate</span>
+            </button>
+          </div>
+
+          <div class="ai-quick-examples">
+            <span class="quick-examples-label">Try:</span>
+            <button type="button" class="btn-example-pill" data-example="Weekend reset: Ava tidy bedrooms and empty dishwasher for £1 each, Dara clean living room rugs">Weekend Reset</button>
+            <button type="button" class="btn-example-pill" data-example="Feed cats fresh water daily, scoop litter trays, take out bins Friday">Daily Routine</button>
+          </div>
+
+          <button type="button" id="btn-generate-ai-tasks" class="btn-primary-action btn-full-width">
+            <span>Generate Chores with AI</span>
+            <span>✨</span>
+          </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="ai-loading-state" class="ai-loading-state" style="display: none;">
+          <div class="ai-spinner"></div>
+          <span class="ai-loading-text">Magic AI is organizing your chores...</span>
+        </div>
+
+        <!-- Preview Results Checklist -->
+        <div id="ai-results-preview" class="ai-results-preview" style="display: none;">
+          <h3 class="preview-heading">📋 Generated Chores (<span id="ai-tasks-count">0</span>):</h3>
+          <div id="ai-tasks-list" class="ai-tasks-list">
+            <!-- Dynamic task preview cards -->
+          </div>
+          <div class="modal-footer button-row">
+            <button type="button" class="btn-cancel" id="btn-discard-ai">Clear</button>
+            <button type="button" class="btn-primary-modal" id="btn-confirm-add-ai-tasks">Add All to Board 🚀</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- FIREBASE CONFIG MODAL -->
+    <dialog id="config-modal" class="config-dialog" aria-modal="true" aria-labelledby="config-modal-title">
+      <div class="modal-backdrop-blur"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-trophy">🔥</div>
+          <h2 id="config-modal-title" class="modal-title">Firebase Configuration</h2>
+          <p class="modal-subtitle">Sync tasks live across your phones & tablets using Firestore collection <code>turnbull_reset_tasks</code>.</p>
+        </div>
+
+        <form id="firebase-config-form" class="config-form">
+          <div class="form-group">
+            <label for="cfg-apiKey">API Key (apiKey)</label>
+            <input type="text" id="cfg-apiKey" placeholder="AIzaSy..." autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="cfg-authDomain">Auth Domain (authDomain)</label>
+            <input type="text" id="cfg-authDomain" placeholder="your-project.firebaseapp.com">
+          </div>
+          <div class="form-group">
+            <label for="cfg-projectId">Project ID (projectId)</label>
+            <input type="text" id="cfg-projectId" placeholder="your-project-id">
+          </div>
+          <div class="form-group">
+            <label for="cfg-storageBucket">Storage Bucket (storageBucket)</label>
+            <input type="text" id="cfg-storageBucket" placeholder="your-project.appspot.com">
+          </div>
+          <div class="form-group">
+            <label for="cfg-messagingSenderId">Messaging Sender ID</label>
+            <input type="text" id="cfg-messagingSenderId" placeholder="1234567890">
+          </div>
+          <div class="form-group">
+            <label for="cfg-appId">App ID (appId)</label>
+            <input type="text" id="cfg-appId" placeholder="1:123456:web:abcd...">
+          </div>
+
+          <div class="notice-box">
+            💡 <strong>Offline & Demo Ready:</strong> If you don't enter keys, the app works fully in local demo mode with instant persistence and audio/confetti celebration effects!
+          </div>
+
+          <div class="modal-footer button-row">
+            <button type="button" class="btn-cancel" id="btn-cancel-config">Close</button>
+            <button type="submit" class="btn-save-config" id="btn-save-config">Save & Connect</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+  <!-- RECIPE DETAILS MODAL (HelloFresh #47) -->
+  <dialog id="recipe-modal" class="recipe-dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content recipe-modal-content">
+      <div class="recipe-modal-header">
+        <div class="recipe-header-text">
+          <span class="recipe-badge-source">HelloFresh Recipe #47 • Tonight's Special</span>
+          <h2 id="recipe-modal-title" class="recipe-modal-title">Easy Peasy Spinach & Ricotta Tortelloni</h2>
+          <p class="recipe-modal-desc">with Creamy Pesto Sauce, Peas and Mushrooms</p>
+          <div class="recipe-meta-pills">
+            <span class="recipe-pill">⏱️ 10–15 Minutes</span>
+            <span class="recipe-pill">🥗 Veggie</span>
+            <span class="recipe-pill">🍎 1 of your 5 a day</span>
+            <span class="recipe-pill">👨‍🍳 Chef: Steve</span>
+          </div>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-recipe-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="recipe-modal-body">
+        <div class="recipe-columns">
+          <!-- Left: Shopping List & Tools -->
+          <div class="recipe-sidebar-col">
+            <div class="recipe-section-box">
+              <h4 class="recipe-box-title">🛒 Shopping List</h4>
+              <ul class="recipe-ingredients-list">
+                <li><span class="ing-bullet">🥟</span> Spinach & Ricotta Tortelloni (300g)</li>
+                <li><span class="ing-bullet">🍄</span> Sliced Mushrooms (120g)</li>
+                <li><span class="ing-bullet">🥛</span> Crème Fraîche (150g)</li>
+                <li><span class="ing-bullet">🥣</span> Vegetable Stock Paste (10g)</li>
+                <li><span class="ing-bullet">🌿</span> Basil Pesto with Cashew Nuts (30g)</li>
+                <li><span class="ing-bullet">🟢</span> Peas (120g)</li>
+                <li><span class="ing-bullet">🧂</span> Salt, Pepper, Olive Oil & Water (50ml)</li>
+              </ul>
+            </div>
+
+            <div class="recipe-section-box">
+              <h4 class="recipe-box-title">🍳 Cooking Tools</h4>
+              <p class="recipe-tools-text">Frying Pan, Kettle, Medium Saucepan</p>
+            </div>
+          </div>
+
+          <!-- Right: 4 Step Cooking Method -->
+          <div class="recipe-steps-col">
+            <h4 class="recipe-box-title">👨‍🍳 Step-by-Step Method</h4>
+            <div class="recipe-steps-list">
+              <div class="recipe-step-item">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                  <strong>Tortelloni Time</strong>
+                  <p>Boil a full kettle. Pour into saucepan with 1/2 tsp salt. Boil tortelloni for <strong>4–5 mins</strong>. Once cooked, drain and drizzle with oil to prevent sticking.</p>
+                </div>
+              </div>
+
+              <div class="recipe-step-item">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                  <strong>Sauce Time</strong>
+                  <p>Heat a drizzle of oil in a frying pan on high heat. Fry mushrooms for <strong>5–6 mins</strong>, season with salt & pepper. Stir through crème fraîche, veg stock paste, pesto, peas, and water (50ml). Simmer for <strong>1–2 mins</strong>.</p>
+                </div>
+              </div>
+
+              <div class="recipe-step-item">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                  <strong>Bring Together</strong>
+                  <p>Add the cooked tortelloni to the pesto sauce. Stir gently to combine. Season with salt and pepper to taste. (Add a splash of water if sauce is too thick).</p>
+                </div>
+              </div>
+
+              <div class="recipe-step-item">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                  <strong>Dinner's Ready! 🎉</strong>
+                  <p>Serve the piping hot tortelloni in bowls and enjoy!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recipe-modal-footer">
+        <button type="button" class="btn-cancel" id="btn-recipe-close-footer">Close</button>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- EDIT / PLAN DINNER MODAL -->
+  <dialog id="edit-meal-modal" class="meal-edit-dialog" aria-modal="true" aria-labelledby="meal-edit-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content meal-edit-content">
+      <div class="modal-header" style="position: relative;">
+        <button type="button" class="btn-modal-close" id="btn-close-meal-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="modal-trophy">🥘</div>
+        <h2 id="meal-edit-title" class="modal-title">Plan Family Dinner</h2>
+      </div>
+      <form id="form-edit-meal" class="meal-edit-form">
+        <input type="hidden" id="meal-date-key-input" value="">
+        <div class="form-group">
+          <label for="meal-day-select">Day of the Week</label>
+          <select id="meal-day-select" class="form-input">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="meal-title-input">Dinner / Recipe Name</label>
+          <input type="text" id="meal-title-input" class="form-input" placeholder="e.g. Easy Peasy Tortelloni, Taco Night..." required>
+        </div>
+
+        <div class="form-group">
+          <label>Who's Cooking? (Tap to select multiple)</label>
+          <div class="meal-chef-chips-select" id="meal-chef-chips-select">
+            <button type="button" class="chef-select-chip" data-chef="Steve">
+              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
+            </button>
+            <button type="button" class="chef-select-chip" data-chef="Sorcha">
+              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
+            </button>
+            <button type="button" class="chef-select-chip" data-chef="Ava">
+              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
+            </button>
+            <button type="button" class="chef-select-chip" data-chef="Dara">
+              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
+            </button>
+            <button type="button" class="chef-select-chip" data-chef="Team Effort">
+              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
+            </button>
+          </div>
+          <input type="hidden" id="meal-cook-input" value="Steve">
+        </div>
+
+        <div class="form-group">
+          <label for="meal-notes-input">Notes / Time / Tags</label>
+          <input type="text" id="meal-notes-input" class="form-input" placeholder="e.g. 15 mins, HelloFresh, Veggie...">
+        </div>
+
+        <div class="meal-recipe-quick-link-box" id="meal-modal-recipe-link-box" role="button" tabindex="0" title="Open HelloFresh Recipe Card & Shopping List">
+          <div class="meal-recipe-quick-link-content">
+            <span class="meal-recipe-quick-link-icon">📖</span>
+            <div class="meal-recipe-quick-link-text">
+              <div class="meal-recipe-quick-link-title" id="meal-modal-recipe-link-title">View HelloFresh #47 Recipe Card</div>
+              <div class="meal-recipe-quick-link-sub">Step-by-step instructions & shopping list</div>
+            </div>
+          </div>
+          <span class="meal-recipe-quick-link-arrow">→</span>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="btn-cancel-meal-modal">Cancel</button>
+          <button type="button" class="btn-delete-item" id="btn-delete-meal-plan" style="display: none; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 10px 16px; font-weight: 700; cursor: pointer;">Remove</button>
+          <button type="submit" class="btn-submit" id="btn-save-meal-plan">Save Dinner Plan</button>
+        </div>
+      </form>
+    </div>
+    </dialog>
+
+  <!-- SKILLIGHT MEAL DETAILS POPOVER / MODAL (Matching Photo 1) -->
+  <dialog id="meal-details-modal" class="skylight-meal-popover-dialog" aria-modal="true" aria-labelledby="meal-popover-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content skylight-meal-popover-content">
+      <div class="popover-top-bar">
+        <h2 id="meal-popover-title" class="popover-dish-title">Skillet Lasagna</h2>
+        <div class="popover-header-actions">
+          <button type="button" class="btn-popover-icon" id="btn-popover-edit-meal" title="Change or edit this meal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button type="button" class="btn-popover-icon btn-popover-danger" id="btn-popover-delete-meal" title="Remove meal from schedule">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+          <button type="button" class="btn-popover-icon" id="btn-popover-close" title="Close" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Pill Buttons (Add to List + Open Recipe) -->
+      <div class="popover-action-pills-row">
+        <button type="button" class="btn-popover-action-pill" id="btn-popover-add-to-grocery">
+          <span class="btn-pill-icon">🛒</span>
+          <span class="btn-pill-label">Add to List</span>
+        </button>
+        <button type="button" class="btn-popover-action-pill" id="btn-popover-open-recipe">
+          <span class="btn-pill-icon">📖</span>
+          <span class="btn-pill-label">Open Recipe</span>
+        </button>
+      </div>
+
+      <!-- Date Display -->
+      <div class="popover-meta-row">
+        <div class="popover-meta-date" id="popover-meal-date">
+          <span class="meta-icon">📅</span>
+          <span class="meta-text" id="popover-meal-date-text">Thursday, June 25</span>
+        </div>
+      </div>
+
+      <!-- Category Display with Pill Circle -->
+      <div class="popover-category-section">
+        <span class="popover-section-label">Category</span>
+        <div class="popover-cat-badge-wrap" id="popover-cat-badge-wrap">
+          <span class="popover-cat-name cat-theme-pill" id="popover-cat-name">Dinner</span>
+        </div>
+      </div>
+
+      <!-- Ingredients with dashes -->
+      <div class="popover-ingredients-section" id="popover-ingredients-section">
+        <div class="popover-ingredients-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span class="popover-ingredients-heading">Ingredients:</span>
+        </div>
+        <ul class="popover-ingredients-list" id="popover-ingredients-list">
+          <!-- Populated dynamically with "- 1 Tbsp olive oil" -->
+        </ul>
+      </div>
+
+      <!-- Instructions Section -->
+      <div class="popover-instructions-section" id="popover-instructions-section">
+        <span class="popover-instructions-heading">Instructions:</span>
+        <div class="popover-instructions-content" id="popover-instructions-content">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- INTERACTIVE COOKING MODE MODAL -->
+  <dialog id="cooking-recipe-modal" class="cooking-recipe-dialog" aria-modal="true" aria-labelledby="cooking-modal-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content cooking-modal-content">
+      <div class="cooking-modal-hero" id="cooking-modal-hero">
+        <button type="button" class="btn-modal-close btn-cooking-close" id="btn-close-cooking-modal" aria-label="Close modal" title="Close">✕</button>
+        <div class="cooking-hero-overlay">
+          <span class="cooking-badge" id="cooking-badge">Dinner Recipe</span>
+          <h2 id="cooking-modal-title" class="cooking-modal-title">Skillet Lasagna</h2>
+          <p id="cooking-modal-subtitle" class="cooking-modal-subtitle">One-pan Italian Sausage, Ricotta & Mozzarella Lasagna</p>
+          <div class="cooking-meta-pills" id="cooking-meta-pills">
+            <span class="cooking-pill">⏱️ 35 mins</span>
+            <span class="cooking-pill">👥 4 Servings</span>
+            <span class="cooking-pill">🔥 590 kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cooking-modal-body">
+        <div class="cooking-split-layout">
+          <!-- Left: Ingredients Checklist -->
+          <div class="cooking-ingredients-col">
+            <div class="cooking-box-header">
+              <h4 class="cooking-box-title">🛒 Ingredients Checklist</h4>
+              <button type="button" class="btn-subtle-link" id="btn-cooking-add-grocery">＋ Add to Grocery List</button>
+            </div>
+            <p class="cooking-subtle-hint">Tap an ingredient to check it off as you prep</p>
+            <ul class="cooking-checklist" id="cooking-checklist">
+              <!-- Checklist items with checkable boxes -->
+            </ul>
+          </div>
+
+          <!-- Right: Step-by-Step Cooking Guide -->
+          <div class="cooking-steps-col">
+            <h4 class="cooking-box-title">👨‍🍳 Cooking Method</h4>
+            <div class="cooking-steps-list" id="cooking-steps-list">
+              <!-- Step items with tickable steps -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cooking-modal-footer">
+        <!-- Top Row: Scheduling Inputs on Left, Action Buttons on Right -->
+        <div class="cooking-footer-main-row">
+          <div class="cooking-footer-inputs">
+            <div class="cooking-plan-pill-field">
+              <span class="cooking-pill-icon">📅</span>
+              <input type="date" id="cooking-plan-date-input" class="cooking-pill-input" aria-label="Meal Date">
+            </div>
+            <div class="cooking-plan-pill-field">
+              <span class="cooking-pill-icon">🍽️</span>
+              <select id="cooking-plan-slot-select" class="cooking-pill-select" aria-label="Meal Category">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="cooking-footer-actions">
+            <button type="button" class="btn-skylight-plan-confirm" id="btn-cooking-add-to-plan">
+              <span>📅 Add to Meal Plan</span>
+            </button>
+            <button type="button" class="btn-cancel" id="btn-cooking-close-footer">Close</button>
+          </div>
+        </div>
+
+        <!-- Bottom Row: Who's Cooking? Multi-select Chef Chips -->
+        <div class="cooking-chefs-row">
+          <span class="cooking-chefs-label">Cook:</span>
+          <div class="cooking-chef-chips" id="cooking-chef-chips">
+            <button type="button" class="cooking-chef-chip is-selected" data-chef="Steve">
+              <span class="chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
+            </button>
+            <button type="button" class="cooking-chef-chip" data-chef="Sorcha">
+              <span class="chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
+            </button>
+            <button type="button" class="cooking-chef-chip" data-chef="Ava">
+              <span class="chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
+            </button>
+            <button type="button" class="cooking-chef-chip" data-chef="Dara">
+              <span class="chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
+            </button>
+            <button type="button" class="cooking-chef-chip" data-chef="Family">
+              <span class="chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- PHOTO RECIPE SCANNING MODAL (Animated AI scanning state) -->
+  <dialog id="photo-recipe-scanning-modal" class="photo-scan-dialog" aria-modal="true" aria-labelledby="photo-scan-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content photo-scan-content">
+      <div class="photo-scan-preview-wrapper">
+        <img id="photo-scan-img-preview" class="photo-scan-img" src="" alt="Recipe Photo">
+        <div class="photo-scan-laser"></div>
+      </div>
+      <div class="photo-scan-status-wrap">
+        <div class="photo-scan-spinner"></div>
+        <h3 id="photo-scan-title" class="photo-scan-heading">Scanning Recipe...</h3>
+        <p id="photo-scan-status-text" class="photo-scan-sub">Gemini AI is reading ingredients & instructions</p>
+      </div>
+      <button type="button" class="btn-cancel" id="btn-cancel-photo-scan" style="margin-top: 6px; width: auto; min-width: 100px;">Cancel</button>
+    </div>
+    </dialog>
+
+  <!-- PHOTO RECIPE REVIEW & EDIT MODAL (Review AI Extraction) -->
+  <dialog id="photo-recipe-review-modal" class="photo-review-dialog" aria-modal="true" aria-labelledby="photo-review-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content photo-review-content">
+      <div class="modal-header photo-review-header">
+        <button type="button" class="btn-modal-close" id="btn-close-photo-review" aria-label="Close modal">✕</button>
+        <div class="photo-review-badge">✨ AI Recipe Extraction</div>
+        <h2 id="photo-review-title" class="modal-title">Review Scanned Recipe</h2>
+        <p class="modal-subtitle">Review details before saving to your Turnbull family cookbook</p>
+      </div>
+
+      <div class="photo-review-body">
+        <div class="photo-review-hero-preview">
+          <img id="photo-review-hero-img" class="review-hero-thumb" src="" alt="Recipe Photo">
+          <div class="review-hero-info">
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label for="review-recipe-title" class="form-label-compact">Dish Title *</label>
+              <input type="text" id="review-recipe-title" class="form-input review-input-title" placeholder="e.g. Grandma's Apple Pie" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="review-recipe-subtitle" class="form-label-compact">Short Description</label>
+              <input type="text" id="review-recipe-subtitle" class="form-input" placeholder="e.g. Fluffy warm cinnamon spiced crust...">
+            </div>
+          </div>
+        </div>
+
+        <div class="photo-review-meta-grid">
+          <div class="form-group">
+            <label class="form-label-compact">Category</label>
+            <select id="review-recipe-category" class="form-input">
+              <option value="dinner">Dinner</option>
+              <option value="lunch">Lunch</option>
+              <option value="breakfast">Breakfast</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label-compact">Prep Time</label>
+            <input type="text" id="review-recipe-prep" class="form-input" placeholder="e.g. 15 mins">
+          </div>
+          <div class="form-group">
+            <label class="form-label-compact">Cook Time</label>
+            <input type="text" id="review-recipe-cook" class="form-input" placeholder="e.g. 30 mins">
+          </div>
+          <div class="form-group">
+            <label class="form-label-compact">Servings</label>
+            <input type="number" id="review-recipe-servings" class="form-input" min="1" max="24" value="4">
+          </div>
+        </div>
+
+        <div class="photo-review-split">
+          <div class="form-group review-split-col">
+            <label for="review-recipe-ingredients" class="form-label-compact">🛒 Ingredients (one per line)</label>
+            <textarea id="review-recipe-ingredients" class="form-input review-textarea" rows="6" placeholder="e.g. 500g minced beef&#10;1 onion (diced)&#10;2 cloves garlic..."></textarea>
+          </div>
+          <div class="form-group review-split-col">
+            <label for="review-recipe-instructions" class="form-label-compact">👨‍🍳 Cooking Method (one step per line)</label>
+            <textarea id="review-recipe-instructions" class="form-input review-textarea" rows="6" placeholder="e.g. Brown beef and onion in a pan&#10;Add tomato sauce and simmer for 20 mins&#10;Serve with crusty bread..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="photo-review-footer">
+        <button type="button" class="btn-cancel" id="btn-cancel-photo-review">Cancel</button>
+        <button type="button" class="btn-primary-action btn-save-and-plan" id="btn-save-and-plan-recipe">
+          <span>📅 Save & Add to Plan</span>
+        </button>
+        <button type="button" class="btn-skylight-plan-confirm" id="btn-save-photo-recipe">
+          <span>✓ Save to Recipes</span>
+        </button>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- FAMILY GROCERY SHOPPING LIST MODAL -->
+  <dialog id="grocery-list-modal" class="grocery-list-dialog" aria-modal="true" aria-labelledby="grocery-modal-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content grocery-modal-content">
+      <div class="modal-header">
+        <button type="button" class="btn-modal-close" id="btn-close-grocery-modal" aria-label="Close modal" title="Close">✕</button>
+        <div class="modal-trophy">🛒</div>
+        <h2 id="grocery-modal-title" class="modal-title">Family Grocery List</h2>
+        <p class="modal-subtitle" id="grocery-modal-subtitle">Auto-synced with planned family meals & recipes</p>
+      </div>
+
+      <div class="grocery-quick-add-bar">
+        <input type="text" id="grocery-quick-input" placeholder="Add grocery item (e.g. Milk, Bananas, Bread...)" class="grocery-input">
+        <button type="button" class="btn-primary-action" id="btn-grocery-add-item">
+          <span>Add</span>
+        </button>
+      </div>
+
+      <div class="grocery-items-scroll-area">
+        <ul class="grocery-items-list" id="grocery-items-list">
+          <!-- Rendered grocery items -->
+        </ul>
+      </div>
+
+      <div class="grocery-modal-footer">
+        <button type="button" class="btn-grocery-clear" id="btn-clear-completed-grocery">Clear Checked Items</button>
+        <button type="button" class="btn-grocery-done" id="btn-close-grocery-footer">Done</button>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- CALENDAR EVENT MODAL -->
+  <dialog id="event-modal" class="event-dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content event-modal-content">
+      <div class="modal-header" style="position: relative;">
+        <button type="button" class="btn-modal-close" id="btn-close-event-modal" aria-label="Close modal" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="modal-trophy" id="event-modal-trophy">📅</div>
+        <h2 id="event-modal-title" class="modal-title">Add Calendar Event</h2>
+      </div>
+
+      <form id="form-event" class="event-form">
+        <input type="hidden" id="event-id-input" value="">
+        <input type="hidden" id="event-icon-input" value="📅">
+        <input type="hidden" id="event-category-input" value="Other">
+
+        <!-- Magic AI Flyer Scan Banner -->
+        <div class="event-magic-scan-banner" id="banner-event-magic-scan">
+          <div class="magic-banner-text">
+            <span class="magic-banner-sparkle">🪄</span>
+            <div class="magic-banner-desc">
+              <strong>Have a paper timetable or flyer?</strong>
+              <span>Snap with camera or upload photo to import with AI</span>
+            </div>
+          </div>
+          <button type="button" class="btn-event-magic-scan" id="btn-event-magic-scan">
+            <span>📷 Scan with AI</span>
+          </button>
+        </div>
+
+        <!-- Quick Suggestions (Tutors, Lessons, Family Gatherings) -->
+        <div class="form-group">
+          <label>Quick Suggestions</label>
+          <div class="event-preset-chips" id="event-preset-chips">
+            <button type="button" class="preset-chip" data-title="Maths Tutor" data-icon="📚" data-category="Tutor" data-time="16:30">
+              📚 Maths Tutor
+            </button>
+            <button type="button" class="preset-chip" data-title="English Tutor" data-icon="📚" data-category="Tutor" data-time="16:00">
+              📚 English Tutor
+            </button>
+            <button type="button" class="preset-chip" data-title="Driving Lesson" data-icon="🚗" data-category="Driving" data-time="17:00">
+              🚗 Driving Lesson
+            </button>
+            <button type="button" class="preset-chip" data-title="Family Get-Together" data-icon="👨‍👩‍👧‍👦" data-category="Family" data-time="14:00" data-for="Family" data-duration="3 hours">
+              👨‍👩‍👧‍👦 Family Gathering
+            </button>
+            <button type="button" class="preset-chip" data-title="Sports / Club Activity" data-icon="⚽" data-category="Sports" data-time="10:00">
+              ⚽ Sports Club
+            </button>
+            <button type="button" class="preset-chip" data-title="Music Lesson" data-icon="🎹" data-category="Music" data-time="15:30">
+              🎹 Music Lesson
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="event-title-input">Event / Activity Name</label>
+            <span class="emoji-picker-hint">Tap icon to change</span>
+          </div>
+          <div class="event-title-with-emoji">
+            <button type="button" class="event-emoji-picker-btn" id="btn-event-emoji-picker" title="Change Event Emoji" aria-label="Change event icon">
+              <span class="event-emoji-display" id="event-emoji-display">📅</span>
+              <svg class="emoji-picker-chevron icon-chevron-wide" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <input type="text" id="event-title-input" class="form-input event-title-input" placeholder="e.g. Business Tutor, Driving Lesson, Family Gathering..." required>
+          </div>
+
+          <!-- Emoji Picker Popover Palette -->
+          <div class="event-emoji-palette" id="event-emoji-palette" style="display: none;">
+            <div class="emoji-palette-header">
+              <span>Choose Event Icon</span>
+              <button type="button" class="btn-palette-close" id="btn-close-emoji-palette" aria-label="Close emoji picker">✕</button>
+            </div>
+            <div class="emoji-palette-grid" id="emoji-palette-grid">
+              <!-- Dynamically populated or static list -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Date Selector (Pick Any Date, Future Month or Year) -->
+        <div class="form-group event-date-group">
+          <div class="form-label-row">
+            <label for="event-date-input">Event Date</label>
+            <span class="selected-day-badge" id="event-selected-day-badge">Tuesday, 15 Dec 2026</span>
+          </div>
+          <div class="event-date-field-wrap">
+            <span class="event-date-input-icon">📅</span>
+            <input type="date" id="event-date-input" class="form-input event-date-input" required>
+          </div>
+          <div class="event-quick-date-pills" id="event-quick-date-pills">
+            <button type="button" class="quick-date-pill" data-offset="0">Today</button>
+            <button type="button" class="quick-date-pill" data-offset="1">Tomorrow</button>
+            <button type="button" class="quick-date-pill" data-offset="weekend">This Weekend</button>
+            <button type="button" class="quick-date-pill" data-offset="7">+1 Week</button>
+            <button type="button" class="quick-date-pill" data-offset="30">+1 Month</button>
+          </div>
+          <input type="hidden" id="event-day-select" value="Tuesday">
+        </div>
+
+        <!-- 2. Start Time Carousel (24h Hour Carousel + 00, 15, 30, 45 Minutes) -->
+        <div class="form-group time-carousel-group">
+          <div class="form-label-row">
+            <label>Start Time</label>
+            <div class="time-preview-badge" id="event-time-preview-badge">
+              <span class="time-clock-icon">🕒</span>
+              <span class="time-display-text" id="time-display-text">16:30</span>
+              <span class="time-12h-hint" id="time-12h-hint">(4:30 PM)</span>
+            </div>
+          </div>
+
+          <!-- 24-Hour Carousel Track (00 to 23) -->
+          <div class="time-picker-block">
+            <div class="time-sub-label">Select Hour (24h)</div>
+            <div class="carousel-container time-carousel-container">
+              <button type="button" class="carousel-arrow" id="btn-hour-prev" aria-label="Scroll hours left"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+              <div class="carousel-track hour-carousel-track" id="hour-carousel-track">
+                <button type="button" class="hour-chip" data-hour="00">00</button>
+                <button type="button" class="hour-chip" data-hour="01">01</button>
+                <button type="button" class="hour-chip" data-hour="02">02</button>
+                <button type="button" class="hour-chip" data-hour="03">03</button>
+                <button type="button" class="hour-chip" data-hour="04">04</button>
+                <button type="button" class="hour-chip" data-hour="05">05</button>
+                <button type="button" class="hour-chip" data-hour="06">06</button>
+                <button type="button" class="hour-chip" data-hour="07">07</button>
+                <button type="button" class="hour-chip" data-hour="08">08</button>
+                <button type="button" class="hour-chip" data-hour="09">09</button>
+                <button type="button" class="hour-chip" data-hour="10">10</button>
+                <button type="button" class="hour-chip" data-hour="11">11</button>
+                <button type="button" class="hour-chip" data-hour="12">12</button>
+                <button type="button" class="hour-chip" data-hour="13">13</button>
+                <button type="button" class="hour-chip" data-hour="14">14</button>
+                <button type="button" class="hour-chip" data-hour="15">15</button>
+                <button type="button" class="hour-chip is-selected" data-hour="16">16</button>
+                <button type="button" class="hour-chip" data-hour="17">17</button>
+                <button type="button" class="hour-chip" data-hour="18">18</button>
+                <button type="button" class="hour-chip" data-hour="19">19</button>
+                <button type="button" class="hour-chip" data-hour="20">20</button>
+                <button type="button" class="hour-chip" data-hour="21">21</button>
+                <button type="button" class="hour-chip" data-hour="22">22</button>
+                <button type="button" class="hour-chip" data-hour="23">23</button>
+              </div>
+              <button type="button" class="carousel-arrow" id="btn-hour-next" aria-label="Scroll hours right"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+            </div>
+          </div>
+
+          <!-- Minutes Selector: 00, 15, 30, 45 -->
+          <div class="time-picker-block" style="margin-top: 8px;">
+            <div class="time-sub-label">Select Minutes</div>
+            <div class="minutes-selector-row" id="minute-chips-row">
+              <button type="button" class="minute-chip" data-minute="00">:00</button>
+              <button type="button" class="minute-chip" data-minute="15">:15</button>
+              <button type="button" class="minute-chip is-selected" data-minute="30">:30</button>
+              <button type="button" class="minute-chip" data-minute="45">:45</button>
+            </div>
+          </div>
+
+          <input type="hidden" id="event-time-input" value="16:30">
+        </div>
+
+        <div class="form-row" style="display: flex; gap: 16px;">
+          <div class="form-group" style="flex: 1;">
+            <label for="event-duration-select">Duration</label>
+            <div class="select-chevron-wrapper">
+              <select id="event-duration-select" class="form-input form-select-with-chevron">
+                <option value="15 mins">15 mins</option>
+                <option value="30 mins">30 mins</option>
+                <option value="45 mins">45 mins</option>
+                <option value="1 hour" selected>1 hour (Default)</option>
+                <option value="1.5 hours">1.5 hours</option>
+                <option value="2 hours">2 hours</option>
+                <option value="3 hours">3 hours</option>
+                <option value="All Day">All Day</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="flex: 1.2;">
+            <label for="event-repeat-select">Repeat</label>
+            <div class="select-chevron-wrapper">
+              <select id="event-repeat-select" class="form-input form-select-with-chevron">
+                <option value="none" selected>One-off (Does not repeat)</option>
+                <option value="weekly" id="repeat-opt-weekly">Weekly on Tuesday</option>
+                <option value="daily">Daily</option>
+                <option value="weekdays">Every weekday (Monday to Friday)</option>
+                <option value="monthly" id="repeat-opt-monthly">Monthly on this day</option>
+                <option value="annually" id="repeat-opt-annually">Annually on this day</option>
+                <option value="custom">Custom...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Who is this for? (Tap to select multiple)</label>
+          <div class="event-member-chips" id="event-member-chips">
+            <button type="button" class="event-member-chip" data-member="Ava">
+              <span class="member-chip-dot" style="background: #db2777; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span> Ava
+            </button>
+            <button type="button" class="event-member-chip" data-member="Steven">
+              <span class="member-chip-dot" style="background: #0284c7; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span> Steven
+            </button>
+            <button type="button" class="event-member-chip" data-member="Sorcha">
+              <span class="member-chip-dot" style="background: #e11d48; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span> Sorcha
+            </button>
+            <button type="button" class="event-member-chip" data-member="Dara">
+              <span class="member-chip-dot" style="background: #059669; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span> Dara
+            </button>
+            <button type="button" class="event-member-chip" data-member="Family">
+              <span class="member-chip-dot" style="background: #f59e0b; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span> Whole Family
+            </button>
+          </div>
+          <input type="hidden" id="event-member-input" value="Ava">
+        </div>
+
+        <div class="form-group">
+          <label for="event-description-input">Description</label>
+          <textarea id="event-description-input" class="form-input event-textarea" rows="2" placeholder="e.g. Bring tutor notebook, review chapter 3, room 4..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="event-location-input">Location (Optional)</label>
+          <input type="text" id="event-location-input" class="form-input" placeholder="e.g. Outside school, Local library, With Grandparents...">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="btn-cancel-event-modal">Cancel</button>
+          <button type="button" class="btn-delete-event" id="btn-delete-event" style="display: none;">Delete</button>
+          <button type="submit" class="btn-submit" id="btn-save-event">Save Event</button>
+        </div>
+      </form>
+    </div>
+    </dialog>
+
+  <!-- Family Sticky Note Edit Modal -->
+  <dialog id="sticky-note-modal" class="skylight-modal sticky-modal" aria-modal="true" aria-labelledby="sticky-modal-title">
+    <div class="modal-content sticky-modal-content">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="modal-header-icon">📌</span>
+          <h2 id="sticky-modal-title" class="modal-title">Message of the Day</h2>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-sticky-modal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="sticky-input-text" class="form-label">Note for the Family</label>
+          <textarea id="sticky-input-text" class="form-input form-textarea" rows="3" placeholder="Write a note for the family... (e.g. Good luck with your maths test today Ava! ❤️)"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sticky Color</label>
+          <div class="sticky-color-pills" id="sticky-color-picker">
+            <button type="button" class="sticky-color-pill color-yellow selected" data-color="yellow">🟡 Yellow</button>
+            <button type="button" class="sticky-color-pill color-pink" data-color="pink">🌸 Pink</button>
+            <button type="button" class="sticky-color-pill color-mint" data-color="mint">🌿 Mint</button>
+            <button type="button" class="sticky-color-pill color-lavender" data-color="lavender">🫐 Lavender</button>
+            <button type="button" class="sticky-color-pill color-peach" data-color="peach">🍊 Peach</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="sticky-input-author" class="form-label">Signed by</label>
+          <select id="sticky-input-author" class="form-input form-select">
+            <option value="Family">❤️ Turnbull Family</option>
+            <option value="Steven">Steven</option>
+            <option value="Sorcha">Sorcha</option>
+            <option value="Ava">Ava</option>
+            <option value="Dara">Dara</option>
+            <option value="Mum">Mum</option>
+            <option value="Dad">Dad</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer sticky-modal-footer">
+        <button type="button" class="btn-sticky-delete" id="btn-clear-sticky">Delete Note</button>
+        <div class="sticky-footer-right">
+          <button type="button" class="btn-sticky-cancel" id="btn-cancel-sticky">Cancel</button>
+          <button type="button" class="btn-sticky-save" id="btn-save-sticky">Pin Note 📌</button>
+        </div>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- Create New Family List Modal -->
+  <dialog id="create-list-modal" class="skylight-modal create-list-dialog" aria-modal="true" aria-labelledby="create-list-title">
+    <div class="modal-content create-list-content">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="modal-header-icon">📝</span>
+          <h2 id="create-list-title" class="modal-title">Create New Family List</h2>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-create-list" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-list-title-input" class="form-label">List Name</label>
+          <input type="text" id="new-list-title-input" class="form-input" placeholder="e.g. Camping Gear, Holiday Packing, Costco Run">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Choose Emoji Icon</label>
+          <div class="emoji-picker-row" id="new-list-emoji-picker">
+            <button type="button" class="emoji-picker-btn selected" data-emoji="📋">📋</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🧳">🧳</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🛒">🛒</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🛠️">🛠️</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🎒">🎒</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🎄">🎄</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🐶">🐶</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="⚽">⚽</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🎁">🎁</button>
+            <button type="button" class="emoji-picker-btn" data-emoji="🧹">🧹</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer create-list-footer">
+        <button type="button" class="btn-sticky-cancel" id="btn-cancel-create-list">Cancel</button>
+        <button type="button" class="btn-sticky-save" id="btn-save-new-list">Create List</button>
+      </div>
+    </div>
+    </dialog>
+
+  <!-- 5-Day Weather Forecast Modal -->
+  <dialog id="weather-forecast-modal" class="skylight-modal weather-forecast-dialog" aria-modal="true" aria-labelledby="weather-modal-title">
+    <div class="modal-content weather-modal-content">
+      <div class="weather-modal-header">
+        <div class="weather-modal-header-left">
+          <span class="weather-header-icon" id="weather-modal-hero-icon">☀️</span>
+          <div>
+            <h2 id="weather-modal-title" class="weather-modal-title">5-Day Weather Forecast</h2>
+            <p class="weather-modal-subtitle" id="weather-modal-location">📍 Local Forecast</p>
+          </div>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-weather-modal" aria-label="Close">✕</button>
+      </div>
+
+      <div class="weather-modal-body">
+        <!-- Today's Current Conditions Hero Card -->
+        <div class="weather-hero-card" id="weather-hero-card">
+          <div class="weather-hero-main">
+            <div class="weather-hero-temp" id="weather-hero-temp">18°</div>
+            <div class="weather-hero-details">
+              <div class="weather-hero-condition" id="weather-hero-condition">Partly Cloudy</div>
+              <div class="weather-hero-range" id="weather-hero-range">High: 19° • Low: 9°</div>
+            </div>
+          </div>
+          <div class="weather-hero-meta">
+            <span class="weather-hero-pill" id="weather-hero-rain">💧 15% Rain</span>
+            <span class="weather-hero-pill" id="weather-hero-updated">Updated Just Now</span>
+          </div>
+        </div>
+
+        <!-- 5-Day Forecast Grid -->
+        <h4 class="weather-forecast-heading">Upcoming Days</h4>
+        <div class="weather-forecast-list" id="weather-forecast-list">
+          <!-- Dynamically populated in app.js -->
+        </div>
+      </div>
+
+      <div class="weather-modal-footer">
+        <button type="button" class="btn-weather-refresh" id="btn-refresh-weather">
+          <span>🔄 Refresh Weather</span>
+        </button>
+        <button type="button" class="btn-weather-done" id="btn-done-weather">Done</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MAGIC CALENDAR EVENT IMPORT MODALS -->
+
+  <!-- 1. Source Picker Modal (Camera vs Gallery) -->
+  <dialog id="calendar-source-picker-modal" class="skylight-modal magic-source-dialog" aria-modal="true" aria-labelledby="magic-source-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content magic-source-content">
+      <div class="modal-header">
+        <button type="button" class="btn-modal-close" id="btn-close-magic-source" aria-label="Close modal">✕</button>
+        <div class="magic-pill-badge">✨ Gemini AI Schedule Scanner</div>
+        <h2 id="magic-source-title" class="modal-title">Magic Schedule Import</h2>
+        <p class="modal-subtitle">Snap or upload a photo of a school newsletter, timetable, fixture card, or club flyer</p>
+      </div>
+      <div class="magic-source-grid">
+        <button type="button" class="magic-source-card" id="btn-magic-source-camera">
+          <div class="source-card-icon">📷</div>
+          <div class="source-card-title">Take Photo</div>
+          <div class="source-card-sub">Use tablet or phone camera</div>
+        </button>
+        <button type="button" class="magic-source-card" id="btn-magic-source-gallery">
+          <div class="source-card-icon">🖼️</div>
+          <div class="source-card-title">Upload Photo</div>
+          <div class="source-card-sub">From photo library or files</div>
+        </button>
+      </div>
+      <div class="magic-source-tips">
+        <span class="source-tips-icon">💡</span>
+        <span><strong>Works great with:</strong> School newsletters, swimming schedules, karate fixtures, sports timetables, party invitations & doctor appointments.</span>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 2. AI Scanning Progress Modal -->
+  <dialog id="calendar-magic-scanning-modal" class="photo-scan-dialog magic-scanning-dialog" aria-modal="true" aria-labelledby="magic-scan-heading">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content photo-scan-content">
+      <div class="photo-scan-preview-wrapper">
+        <img id="magic-scan-img-preview" class="photo-scan-img" src="" alt="Schedule Preview">
+        <div class="photo-scan-laser"></div>
+      </div>
+      <div class="photo-scan-status-wrap">
+        <div class="photo-scan-spinner"></div>
+        <h3 id="magic-scan-heading" class="photo-scan-heading">Reading Schedule with AI...</h3>
+        <p id="magic-scan-status-text" class="photo-scan-sub">Gemini is extracting dates, times, activities & family members</p>
+      </div>
+      <button type="button" class="btn-cancel" id="btn-cancel-magic-scan" style="margin-top: 6px; width: auto; min-width: 100px;">Cancel</button>
+    </div>
+  </dialog>
+
+  <!-- 3. Review & Confirmation Dialog -->
+  <dialog id="calendar-magic-review-modal" class="skylight-modal magic-review-dialog" aria-modal="true" aria-labelledby="magic-review-title">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-content magic-review-content">
+      <div class="modal-header magic-review-header">
+        <button type="button" class="btn-modal-close" id="btn-close-magic-review" aria-label="Close modal">✕</button>
+        <div class="magic-pill-badge">✨ AI Schedule Extraction</div>
+        <h2 id="magic-review-title" class="modal-title">Review Extracted Events</h2>
+        <p class="modal-subtitle" id="magic-review-subtitle">Review, edit, or adjust events before adding them to your Turnbull calendar</p>
+      </div>
+
+      <!-- Scanned Image Thumbnail / Details Toggle Bar -->
+      <div class="magic-review-flyer-bar" id="magic-review-flyer-bar">
+        <div class="flyer-bar-left">
+          <img id="magic-review-flyer-thumb" class="flyer-bar-thumb" src="" alt="Flyer">
+          <div class="flyer-bar-info">
+            <strong id="magic-review-doc-title">Paper Schedule</strong>
+            <span id="magic-review-count-badge">Found 0 events</span>
+          </div>
+        </div>
+        <div class="flyer-bar-actions">
+          <button type="button" class="btn-flyer-toggle" id="btn-toggle-flyer-preview">
+            <span>🔍 View Original Photo</span>
+          </button>
+          <button type="button" class="btn-flyer-toggle" id="btn-magic-select-all">Select All</button>
+        </div>
+      </div>
+
+      <!-- Collapsible Full Flyer Preview (Expanded on demand) -->
+      <div class="magic-flyer-expanded-preview" id="magic-flyer-expanded-preview" style="display: none;">
+        <img id="magic-flyer-full-img" src="" alt="Full Flyer Photo">
+      </div>
+
+      <!-- Events List Container -->
+      <div class="magic-events-review-container">
+        <div class="magic-events-review-list" id="magic-events-review-list">
+          <!-- Rendered dynamically -->
+        </div>
+        <button type="button" class="btn-magic-add-another" id="btn-magic-add-another">
+          <span>+ Add Another Event Manually</span>
+        </button>
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="magic-review-footer">
+        <button type="button" class="btn-cancel" id="btn-cancel-magic-review">Cancel</button>
+        <button type="button" class="btn-skylight-plan-confirm btn-import-magic-events" id="btn-confirm-magic-import">
+          <span>🪄 Import Selected to Calendar</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Ambient Scheduled Sleep Screen (Lights-Out Overnight) -->
+  <div id="ambient-sleep-overlay" class="ambient-sleep-overlay" aria-hidden="true" style="display: none;">
+    <div class="sleep-screen-content">
+      <div class="sleep-screen-moon">🌙</div>
+      <div class="sleep-screen-clock" id="sleep-screen-clock">22:45</div>
+      <div class="sleep-screen-date" id="sleep-screen-date">Wednesday, November 4</div>
+      <div class="sleep-screen-weather" id="sleep-screen-weather">🌙 9° • Clear Sky</div>
+      
+      <div class="sleep-screen-wake-card">
+        <span class="sleep-screen-badge" id="sleep-screen-wake-text">Night Clock Active • Wakes at 07:00 AM</span>
+        <p class="sleep-screen-hint">Tap anywhere to wake the screen</p>
+        <button type="button" class="btn-sleep-manual-wake" id="btn-sleep-manual-wake">Wake Up Now ☀️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Synthesizer & Main Script -->
+  <script type="module" src="app.js?v=176"></script>
+</body>
+</html>
