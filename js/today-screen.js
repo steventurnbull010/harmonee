@@ -130,7 +130,7 @@
   }
 
   function dinnerHtml(d) {
-    if (!d) return `<div class="today-plan-row"><p class="today-empty">Not planned yet.</p><button type="button" class="today-plan-btn" data-plan-dinner><span aria-hidden="true">+</span> Plan dinner</button></div>`;
+    if (!d) return `<div class="today-plan-row"><p class="today-empty">Not planned yet.</p>${addBtn("data-plan-dinner", "Plan dinner")}</div>`;
     // "Chef: Steven", "Chefs: Steven & Sorcha", "Chefs: Steven, Sorcha, Ava & Dara"
     const n = d.cooks.length;
     const names = n <= 1 ? d.cooks.join("") : `${d.cooks.slice(0, -1).join(", ")} & ${d.cooks[n - 1]}`;
@@ -148,6 +148,9 @@
     </div>`;
   }
 
+  // Every "add" on this screen looks the same: a soft sky-blue pill with a "+"
+  const addBtn = (attrs, label) => `<button type="button" class="today-add-btn" ${attrs}><span class="today-add-plus" aria-hidden="true">+</span> ${label}</button>`;
+
   // ---- Which cards show (Customise; saved for the whole board) ----------------
   const CARDS = [
     { key: "events",    label: "Today's plans",        icon: "📅" },
@@ -156,7 +159,7 @@
     { key: "music",     label: "Music",                icon: "🎵" },
     { key: "dinner",    label: "Dinner tonight",       icon: "🍽️" },
     { key: "groceries", label: "Groceries",            icon: "🛒" },
-    { key: "jobs",      label: "Jobs today",           icon: "✅" }
+    { key: "jobs",      label: "Tasks today",          icon: "✅" }
   ];
   const cardOn = (key) => (((window.boardSettings || {}).todayCards) || {})[key] !== false;
 
@@ -235,7 +238,7 @@
         : `<p class="today-empty">Nothing on the list.</p>`}
       <div class="today-groc-actions">
         ${left.length ? `<button type="button" class="today-groc-btn is-primary" data-groc="shop">🛒 Shop</button>` : ""}
-        <button type="button" class="today-groc-btn" data-groc="add"><span aria-hidden="true">+</span> Add</button>
+        ${addBtn('data-groc="add"', "Add to shopping list")}
       </div>
     </section>`;
   }
@@ -255,7 +258,7 @@
     const jobsHtml = jobs.length
       ? `<ul class="today-list">${jobs.map(j => {
           const isGrab = j.name === "Up for grabs";
-          const label = j.left === 0 ? "All done ✓" : `${j.left} ${j.left === 1 ? "job" : "jobs"} left`;
+          const label = j.left === 0 ? "All done ✓" : `${j.left} ${j.left === 1 ? "task" : "tasks"} left`;
           const open = expandedJobs.has(j.name);
           const icon = (t) => t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
           return `<li class="today-job${open ? " is-open" : ""}">
@@ -266,15 +269,15 @@
               <svg class="today-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             ${open ? `<ul class="today-job-list">${j.items.map(({ task, done }) => `<li>
-              <button type="button" class="today-job-item${done ? " is-done" : ""}" data-tick-job="${esc(task.id)}" data-job-member="${esc(j.name)}" aria-pressed="${done}" aria-label="${isGrab ? `Open Tasks to grab ${esc(task.title || "this job")}` : `${done ? "Untick" : "Tick"} ${esc(task.title || "job")}`}">
+              <button type="button" class="today-job-item${done ? " is-done" : ""}" data-tick-job="${esc(task.id)}" data-job-member="${esc(j.name)}" aria-pressed="${done}" aria-label="${isGrab ? `Open Tasks to grab ${esc(task.title || "this task")}` : `${done ? "Untick" : "Tick"} ${esc(task.title || "task")}`}">
                 <span class="today-job-check" aria-hidden="true">${done ? "✓" : ""}</span>
-                <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Job")}</span>
+                <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Task")}</span>
                 ${isGrab && !done ? `<span class="today-job-grab">Grab it →</span>` : ""}
               </button>
             </li>`).join("")}</ul>` : ""}
           </li>`;
         }).join("")}</ul>`
-      : `<p class="today-empty">No jobs today.</p>`;
+      : `<p class="today-empty">No tasks today.</p>`;
 
     // Next countdown
     const next = typeof window.getUpcomingCountdowns === "function" ? window.getUpcomingCountdowns()[0] : null;
@@ -303,15 +306,10 @@
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weatherLine}</p>
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
-          <div class="today-quick" role="group" aria-label="Quick add">
-            <button type="button" class="today-quick-btn" data-quick="list"><span aria-hidden="true">🛒</span> List item</button>
-            <button type="button" class="today-quick-btn" data-quick="event"><span aria-hidden="true">📅</span> Event</button>
-            <button type="button" class="today-quick-btn" data-quick="job"><span aria-hidden="true">✅</span> Job</button>
-          </div>
         </header>
         <div class="today-grid">
           <div class="today-col">
-            ${cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}</section>` : ""}
+            ${cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>` : ""}
             ${part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : "")}
             ${cardOn("countdown") ? countdownHtml : ""}
             ${cardOn("music") && window.Music ? window.Music.todayCardHtml() : ""}
@@ -319,7 +317,7 @@
           <div class="today-col">
             ${cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : ""}
             ${cardOn("groceries") ? groceriesHtml() : ""}
-            ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Jobs today</h3>${jobsHtml}</section>` : ""}
+            ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Tasks today</h3>${jobsHtml}<div class="today-card-foot">${addBtn('data-quick="job"', "Add task")}</div></section>` : ""}
           </div>
         </div>
         <button type="button" class="today-customise-link" data-customise><strong>Make it yours</strong> · choose what shows here</button>
