@@ -428,7 +428,7 @@ function renderSkylightTasksPage() {
     } else {
       let sectionsToShow = [];
       if (activeFilter === "all" || activeFilter === "morning") {
-        if (morningTasks.length > 0) sectionsToShow.push({ key: "morning", title: "Morning", emoji: "☀️", list: morningTasks });
+        if (morningTasks.length > 0) sectionsToShow.push({ key: "morning", title: "Morning", emoji: "🌤️", list: morningTasks });
       }
       if (activeFilter === "all" || activeFilter === "afternoon") {
         if (afternoonTasks.length > 0) sectionsToShow.push({ key: "afternoon", title: "Afternoon", emoji: "⛅", list: afternoonTasks });
