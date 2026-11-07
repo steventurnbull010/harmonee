@@ -2513,3 +2513,37 @@ body.theme-dark .drawer-emoji-group-title { background: #0f172a; color: #94a3b8;
 body.theme-dark .drawer-emoji-item { background: #1e293b; }
 body.theme-dark .drawer-emoji-item:hover { background: #334155; }
 body.theme-dark .drawer-emoji-item.is-selected { background: color-mix(in srgb, var(--accent, #3b82f6) 24%, #0f172a); }
+
+/* ==========================================================================
+   Dark mode, Tasks page: the cards' pastel backgrounds are for light mode.
+   In dark mode each card is a deep tint of its person's colour with light
+   text, and the column a fainter tint, so everything stays readable.
+   (The inline pastel styles need !important to override.)
+   ========================================================================== */
+body.theme-dark .skylight-tasks-col {
+  background: color-mix(in srgb, var(--card-color, #64748b) 8%, #0f172a) !important;
+  border-color: color-mix(in srgb, var(--card-color, #64748b) 55%, transparent) !important;
+}
+body.theme-dark .skylight-task-card {
+  background: color-mix(in srgb, var(--card-color, #64748b) 22%, #1e293b) !important;
+  border-color: color-mix(in srgb, var(--card-color, #64748b) 45%, transparent) !important;
+}
+body.theme-dark .skylight-task-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); }
+body.theme-dark .skylight-task-card-title { color: #f8fafc; }
+body.theme-dark .skylight-task-card-sub { color: #cbd5e1; }
+body.theme-dark .skylight-task-card.is-completed {
+  opacity: 1;
+  background: color-mix(in srgb, var(--card-color, #64748b) 8%, #1e293b) !important;
+}
+body.theme-dark .skylight-task-card.is-completed .skylight-task-card-title { color: #94a3b8; }
+body.theme-dark .skylight-task-card.is-completed .skylight-task-card-sub { color: #64748b; }
+body.theme-dark .skylight-task-check-circle {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+}
+body.theme-dark .skylight-task-card.is-completed .skylight-task-check-circle {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+body.theme-dark .skylight-task-grab-handle { color: #cbd5e1; }

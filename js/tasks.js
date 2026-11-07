@@ -336,7 +336,7 @@ function renderSkylightTasksPage() {
 
       return `
         <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''}"
-             style="background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
+             style="--card-color: ${pal.primary}; background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
              data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}">
           <div class="skylight-task-card-main">
             <span class="skylight-task-card-icon">${escapeHtml(tIcon)}</span>
@@ -391,7 +391,7 @@ function renderSkylightTasksPage() {
     const initialLetter = isGrabPool ? "⚡" : colMember.charAt(0).toUpperCase();
 
     columnsHtml += `
-      <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="background: ${pal.lightBg}22; border-color: ${pal.border};">
+      <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="--card-color: ${pal.primary}; background: ${pal.lightBg}22; border-color: ${pal.border};">
         <div class="tasks-col-header">
           <div class="tasks-col-top-row">
             <div class="tasks-col-profile-info">
