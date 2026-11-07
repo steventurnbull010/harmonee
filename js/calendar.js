@@ -137,7 +137,183 @@ function detectEmojiForTitle(text) {
   return null;
 }
 
-function openEventModal(evt = null, defaultDay = null, defaultDate = null) {
+// ---------------------------------------------------------------------------
+// Add an event straight from the hourly grid, like Google Calendar:
+//  - tap or click an empty spot: a 1-hour event starting at that half hour
+//  - mouse: press and drag down (or up) to pick the start and end
+//  - touch: press and hold for a moment, then drag; a quick swipe still scrolls
+// A shaded block follows your finger or mouse and shows the times, then the
+// Add Event panel opens with the date, start and length filled in.
+// ---------------------------------------------------------------------------
+function wireTimeGridCreate(gridContainer, geo) {
+  const { startHour, endHour, hourHeight, topPadding } = geo;
+  const SNAP = 15;                       // minutes, while dragging
+  const HOLD_MS = 350;                   // touch: hold this long to start a drag
+  const minMin = startHour * 60;
+  const maxMin = endHour * 60;
+
+  const fmt = (mins) => {
+    const h = Math.floor(mins / 60), m = mins % 60;
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}${m ? ":" + String(m).padStart(2, "0") : ""}${h >= 12 ? "pm" : "am"}`;
+  };
+  const hhmm = (mins) => `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+  const minutesAt = (col, clientY) => {
+    const y = clientY - col.getBoundingClientRect().top - topPadding;
+    return minMin + (y / hourHeight) * 60;
+  };
+  const snap = (mins, step) => Math.max(minMin, Math.min(maxMin, Math.round(mins / step) * step));
+  const isEmptySpot = (target) => !target.closest(".skylight-card, .skylight-timed-event-block, button, a, .skylight-box-meal");
+
+  let sel = null; // { col, anchor, start, end, ghost }
+
+  const draw = () => {
+    if (!sel) return;
+    const top = topPadding + ((sel.start - minMin) / 60) * hourHeight;
+    const height = Math.max(((sel.end - sel.start) / 60) * hourHeight, hourHeight / 4);
+    if (!sel.ghost) {
+      sel.ghost = document.createElement("div");
+      sel.ghost.className = "time-grid-new-event";
+      sel.col.appendChild(sel.ghost);
+    }
+    sel.ghost.style.top = `${top}px`;
+    sel.ghost.style.height = `${height}px`;
+    sel.ghost.innerHTML = `<span class="time-grid-new-event-title">New event</span><span class="time-grid-new-event-time">${fmt(sel.start)} – ${fmt(sel.end)}</span>`;
+  };
+  const begin = (col, clientY) => {
+    const anchor = snap(Math.floor(minutesAt(col, clientY) / SNAP) * SNAP, SNAP);
+    sel = { col, anchor, start: anchor, end: Math.min(maxMin, anchor + SNAP), ghost: null };
+    draw();
+  };
+  const extend = (clientY) => {
+    if (!sel) return;
+    const m = snap(minutesAt(sel.col, clientY), SNAP);
+    if (m >= sel.anchor) { sel.start = sel.anchor; sel.end = Math.max(m, sel.anchor + SNAP); }
+    else { sel.start = m; sel.end = sel.anchor + SNAP; }
+    sel.end = Math.min(maxMin, sel.end);
+    draw();
+  };
+  const open = (col, start, end) => {
+    const dateStr = col.getAttribute("data-date");
+    const dayName = col.getAttribute("data-day");
+    if (typeof openEventModal === "function") {
+      openEventModal(null, dayName, dateStr, { start: hhmm(start), duration: formatEventDuration(end - start) });
+    }
+  };
+  const finish = () => {
+    if (!sel) return;
+    const { col, start, end, ghost } = sel;
+    sel = null;
+    // keep the shaded block until the panel has slid in, then tidy it away
+    setTimeout(() => ghost && ghost.remove(), 400);
+    open(col, start, end);
+  };
+  const cancel = () => { if (sel && sel.ghost) sel.ghost.remove(); sel = null; };
+
+  gridContainer.querySelectorAll(".skylight-time-col").forEach(col => {
+    // Mouse and pen: press, drag, release. A plain click becomes a 1-hour event.
+    col.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "touch" || e.button !== 0 || !isEmptySpot(e.target)) return;
+      e.preventDefault();
+      const downY = e.clientY;
+      let dragged = false;
+      begin(col, downY);
+      const move = (ev) => {
+        if (!dragged && Math.abs(ev.clientY - downY) < 6) return;
+        dragged = true;
+        extend(ev.clientY);
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        if (!dragged && sel) {
+          // plain click: the half hour you clicked in, for an hour
+          const s = snap(Math.floor(minutesAt(col, downY) / 30) * 30, 30);
+          sel.start = Math.min(s, maxMin - 60);
+          sel.end = sel.start + 60;
+          draw();
+        }
+        finish();
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+
+    // Touch: a tap makes a 1-hour event; press and hold, then drag, to pick a
+    // range. Moving before the hold kicks in is a normal scroll or swipe.
+    let holdTimer = null, touchStartY = 0, touchStartX = 0, moved = false, holding = false;
+    col.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1 || !isEmptySpot(e.target)) return;
+      const t = e.touches[0];
+      touchStartY = t.clientY; touchStartX = t.clientX; moved = false; holding = false;
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => {
+        holding = true;
+        begin(col, touchStartY);
+        if (navigator.vibrate) { try { navigator.vibrate(10); } catch (err) {} }
+      }, HOLD_MS);
+    }, { passive: true });
+    col.addEventListener("touchmove", (e) => {
+      const t = e.touches[0];
+      if (holding) {
+        if (e.cancelable) e.preventDefault(); // drag the selection, don't scroll
+        extend(t.clientY);
+        return;
+      }
+      if (Math.abs(t.clientY - touchStartY) > 8 || Math.abs(t.clientX - touchStartX) > 8) {
+        moved = true;
+        clearTimeout(holdTimer);
+      }
+    }, { passive: false });
+    col.addEventListener("touchend", (e) => {
+      clearTimeout(holdTimer);
+      if (holding) {
+        holding = false;
+        if (e.cancelable) e.preventDefault(); // no click after a drag
+        finish();
+        return;
+      }
+      if (moved || !isEmptySpot(e.target)) return;
+      // Quick tap: an hour from the half hour you tapped
+      if (e.cancelable) e.preventDefault();
+      const s = snap(Math.floor(minutesAt(col, touchStartY) / 30) * 30, 30);
+      sel = { col, anchor: s, start: Math.min(s, maxMin - 60), end: Math.min(s, maxMin - 60) + 60, ghost: null };
+      draw();
+      finish();
+    });
+    col.addEventListener("touchcancel", () => { clearTimeout(holdTimer); holding = false; cancel(); });
+  });
+}
+
+// "8 hours", "1.5 hours", "45 mins": the same wording the duration list and
+// the calendar's height maths use
+function formatEventDuration(mins) {
+  if (mins < 60) return `${mins} mins`;
+  const h = Math.round((mins / 60) * 100) / 100;
+  return h === 1 ? "1 hour" : `${h} hours`;
+}
+window.formatEventDuration = formatEventDuration;
+
+// Lengths outside the fixed list (a 9 to 5 drag is "8 hours") get their own
+// option, so the panel can show and save them
+function setEventDurationValue(select, value) {
+  if (!select) return;
+  const v = value || "1 hour";
+  select.querySelectorAll("option[data-custom]").forEach(o => o.remove());
+  if (![...select.options].some(o => o.value === v)) {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    opt.setAttribute("data-custom", "true");
+    const allDay = [...select.options].find(o => o.value === "All Day");
+    select.insertBefore(opt, allDay || null);
+  }
+  select.value = v;
+}
+
+// slot (optional): { start: "09:00", duration: "8 hours" } from tapping or
+// dragging on the calendar grid
+function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null) {
   const modal = document.getElementById("event-modal");
   const form = document.getElementById("form-event");
   const modalTitle = document.getElementById("event-modal-title");
@@ -469,7 +645,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null) {
     if (modalTitle) modalTitle.textContent = "Edit Calendar Event";
     if (idInput) idInput.value = evt.id || "";
     if (titleInput) titleInput.value = evt.title || "";
-    if (durationSelect) durationSelect.value = evt.duration || "1 hour";
+    setEventDurationValue(durationSelect, evt.duration || "1 hour");
     if (repeatSelect) repeatSelect.value = evt.repeat || "none";
     if (descInput) descInput.value = evt.description || "";
     if (locationInput) locationInput.value = evt.location || "";
@@ -490,7 +666,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null) {
     if (modalTitle) modalTitle.textContent = "Add Calendar Event";
     if (idInput) idInput.value = "";
     if (titleInput) titleInput.value = "";
-    if (durationSelect) durationSelect.value = "1 hour";
+    setEventDurationValue(durationSelect, (slot && slot.duration) || "1 hour");
     if (repeatSelect) repeatSelect.value = "none"; // Defaults to One-Off
     if (descInput) descInput.value = "";
     if (locationInput) locationInput.value = "";
@@ -499,7 +675,12 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null) {
     isManualEmoji = false;
     setEmoji("📅");
 
-    setTime("16", "30"); // Defaults to 16:30 (4:30 PM)
+    if (slot && /^\d{2}:\d{2}$/.test(slot.start || "")) {
+      const [sh, sm] = slot.start.split(":");
+      setTime(sh, sm); // where you tapped or dragged on the calendar
+    } else {
+      setTime("16", "30"); // Defaults to 16:30 (4:30 PM)
+    }
 
     selectedEventMembers = ["Ava"];
     updateMemberChipsUI();
@@ -2031,6 +2212,8 @@ function renderWeekCalendar() {
   if (bodyScroll && showNowLine) {
     bodyScroll.scrollTop = Math.max(0, nowTopPx - 100);
   }
+
+  wireTimeGridCreate(gridContainer, { startHour, endHour, hourHeight, topPadding });
 
   // Wire day column navigation arrows (shifts by 1 day for smooth browsing)
   gridContainer.querySelectorAll(".col-nav-prev").forEach(btn => {

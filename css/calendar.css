@@ -5333,3 +5333,39 @@ body.theme-dark .fab-option-sub {
 }
 
 /* ==========================================================================
+
+/* ==========================================================================
+   Add an event from the hourly grid: the empty grid shows a pointer, and a
+   shaded "New event" block follows a tap or drag, showing the times.
+   ========================================================================== */
+.skylight-time-col { cursor: pointer; }
+.skylight-time-col .skylight-card,
+.skylight-time-col .skylight-timed-event-block { cursor: pointer; }
+
+.time-grid-new-event {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  z-index: 5;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 18%, #ffffff);
+  border: 2px solid var(--accent, #3b82f6);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  pointer-events: none;
+  animation: timeGridNewIn 0.12s ease-out;
+}
+.time-grid-new-event-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary, #0f172a); }
+.time-grid-new-event-time { font-size: 0.78rem; font-weight: 600; color: var(--accent, #3b82f6); }
+
+body.theme-dark .time-grid-new-event { background: color-mix(in srgb, var(--accent, #3b82f6) 28%, #0f172a); }
+body.theme-dark .time-grid-new-event-title { color: #f8fafc; }
+body.theme-dark .time-grid-new-event-time { color: #93c5fd; }
+
+@keyframes timeGridNewIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .time-grid-new-event { animation: none; } }
