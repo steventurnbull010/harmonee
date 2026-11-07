@@ -130,7 +130,7 @@
   }
 
   function dinnerHtml(d) {
-    if (!d) return `<div class="today-plan-row"><p class="today-empty">Not planned yet.</p>${addBtn("data-plan-dinner", "Plan dinner")}</div>`;
+    if (!d) return `<p class="today-empty">Not planned yet.</p><div class="today-card-foot">${addBtn("data-plan-dinner", "Plan dinner")}</div>`;
     // "Chef: Steven", "Chefs: Steven & Sorcha", "Chefs: Steven, Sorcha, Ava & Dara"
     const n = d.cooks.length;
     const names = n <= 1 ? d.cooks.join("") : `${d.cooks.slice(0, -1).join(", ")} & ${d.cooks[n - 1]}`;

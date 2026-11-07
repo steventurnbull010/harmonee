@@ -2565,3 +2565,7 @@ body.theme-dark .today-customise-link strong { color: #7dd3fc; }
 body.theme-dark .today-add-btn { background: rgba(2, 132, 199, 0.16); border-color: #0369a1; color: #e0f2fe; }
 body.theme-dark .today-add-btn:hover { background: rgba(2, 132, 199, 0.26); }
 @media (max-width: 600px) { .today-add-btn { height: 44px; } }
+/* Every add button sits at the bottom right of its card */
+.today-card-foot { display: flex; justify-content: flex-end; }
+.today-groc-actions { justify-content: space-between; }   /* Shop on the left, Add on the right */
+.today-groc-actions .today-add-btn { margin-left: auto; }  /* stays right when there's no Shop */
