@@ -79,10 +79,10 @@ service cloud.firestore {
     // every board. Any signed-in device can read it; the first device after
     // Sunday 6pm writes the new week's list. Writes must be the right shape and
     // at least 3 days apart, so the list can't be rewritten over and over.
-    match /streaming/{service} {
+    match /streaming/{serviceId} {
       allow read: if signedIn();
       allow create, update: if signedIn()
-        && service in ['netflix', 'prime', 'disney', 'apple', 'iplayer', 'itvx', 'all4', 'now', 'paramount']
+        && serviceId in ['netflix', 'prime', 'disney', 'apple', 'iplayer', 'itvx', 'all4', 'now', 'paramount']
         && request.resource.data.keys().hasOnly(['popular', 'latest', 'fetchedAt'])
         && request.resource.data.popular is list && request.resource.data.popular.size() <= 25
         && request.resource.data.latest is list && request.resource.data.latest.size() <= 25
