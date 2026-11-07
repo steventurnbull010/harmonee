@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="css/lists.css?v=12">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=27">
+  <link rel="stylesheet" href="css/modals.css?v=30">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
@@ -1409,6 +1409,7 @@
           <button type="button" class="settings-nav-chip" data-section="access">🔐 Access</button>
           <button type="button" class="settings-nav-chip" data-section="sleep">🌙 Sleep</button>
           <button type="button" class="settings-nav-chip" data-section="music">🎵 Music</button>
+          <button type="button" class="settings-nav-chip" data-section="films" hidden>🍿 Film night</button>
           <button type="button" class="settings-nav-chip" data-section="reset">⚠️ Reset</button>
         </nav>
 
@@ -1623,6 +1624,18 @@
               <p class="settings-section-desc">Your family playlists, one tap away on Today at a glance. They open in Spotify, so you can play on your phone or send to a speaker as usual. Saves straight away.</p>
             </div>
             <div class="settings-section-box music-settings" id="music-settings"></div>
+          </section>
+
+          <!-- FILM NIGHT: streaming services and age rating (js/film-night.js); hidden until it has a TMDB key -->
+          <section class="settings-section" id="settings-sec-films" aria-labelledby="settings-head-films" hidden>
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-films">
+                <span class="drawer-section-icon" aria-hidden="true">🍿</span>
+                <span class="drawer-section-label">Film night</span>
+              </h3>
+              <p class="settings-section-desc">Family films in UK cinemas and on the services you have, on Today at a glance. Saves straight away.</p>
+            </div>
+            <div class="settings-section-box film-settings" id="film-settings"></div>
           </section>
 
           <!-- RESET: last, and needs the word RESET typed -->
@@ -2753,7 +2766,7 @@
   <script src="js/reward-goals.js?v=4"></script>
   <script src="js/page-intro.js?v=4"></script>
   <script src="js/sticky-note.js?v=4"></script>
-  <script src="js/calendar.js?v=23"></script>
+  <script src="js/calendar.js?v=24"></script>
   <script src="js/date-picker.js?v=1"></script>
   <script src="js/tasks.js?v=30"></script>
   <script src="js/code-words.js?v=1"></script>
@@ -2766,10 +2779,11 @@
   <script src="js/voice.js?v=3"></script>
   <script src="js/meal-groceries.js?v=1"></script>
   <script src="js/weather-card.js?v=1"></script>
-  <script src="js/today-screen.js?v=20"></script>
+  <script src="js/film-night.js?v=1"></script>
+  <script src="js/today-screen.js?v=21"></script>
   <script src="js/side-panel.js?v=10"></script>
   <script type="module" src="js/meals.js?v=35"></script>
-  <script type="module" src="app.js?v=239"></script>
+  <script type="module" src="app.js?v=240"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

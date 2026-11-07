@@ -5302,6 +5302,7 @@ function setupEventListeners() {
     if (window.ParentPin) { window.ParentPin.renderSettingsBox(); window.ParentPin.renderOffer(); }
     if (window.syncTodayScreenSetting) window.syncTodayScreenSetting();
     if (window.Music) window.Music.renderSettings();
+    if (window.FilmNight) window.FilmNight.renderSettings();
     if (window.renderWeatherSettings) window.renderWeatherSettings();
     renderRosterModalList();
     wireSettingsSectionNav();

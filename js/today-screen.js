@@ -158,6 +158,7 @@
     { key: "countdown", label: "Countdown",            icon: "⏳" },
     { key: "music",     label: "Music",                icon: "🎵" },
     { key: "weather",   label: "Weather",              icon: "🌦️", note: "Uses the town in Settings › Display" },
+    { key: "films",     label: "Film night",           icon: "🍿", note: "In cinemas and on your services", when: () => !!(window.FilmNight && window.FilmNight.ready()) },
     { key: "dinner",    label: "Dinner tonight",       icon: "🍽️" },
     { key: "groceries", label: "Groceries",            icon: "🛒" },
     { key: "jobs",      label: "Tasks today",          icon: "✅" }
@@ -198,7 +199,7 @@
     dlg.innerHTML = `<div class="save-prompt-card today-customise-card">
       <h2 class="save-prompt-title" id="today-customise-title">Make it yours</h2>
       <p class="save-prompt-text">Choose what shows here. Tap to switch each one on or off. It changes on every device.</p>
-      <ul class="today-customise-list">${CARDS.map(c => `<li>
+      <ul class="today-customise-list">${CARDS.filter(c => !c.when || c.when()).map(c => `<li>
         <button type="button" class="today-customise-row" data-card="${c.key}" role="switch" aria-checked="${cardOn(c.key)}">
           <span class="today-customise-icon" aria-hidden="true">${c.icon}</span>
           <span class="today-customise-label">${esc(c.label)}${c.note ? `<span class="today-customise-note">${esc(c.note)}</span>` : ""}</span>
@@ -315,6 +316,7 @@
             ${part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : "")}
             ${cardOn("countdown") ? countdownHtml : ""}
             ${cardOn("music") && window.Music ? window.Music.todayCardHtml() : ""}
+            ${cardOn("films") && window.FilmNight ? window.FilmNight.cardHtml() : ""}
           </div>
           <div class="today-col">
             ${cardOn("weather") && window.WeatherCard ? window.WeatherCard.html(now) : ""}
@@ -450,7 +452,11 @@
       </form>`;
   }
 
-  // Fresh weather (every half hour): redraw the weather card
+  // Fresh weather (every half hour) or film listings: redraw
+  document.addEventListener("harmonee:films", () => {
+    const el = document.getElementById("today-screen");
+    if (el && !el.hidden) paint(el);
+  });
   document.addEventListener("harmonee:weather", () => {
     const el = document.getElementById("today-screen");
     if (el && !el.hidden) paint(el);

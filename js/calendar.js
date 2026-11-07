@@ -448,7 +448,7 @@ function setEventDurationValue(select, value) {
 
 // slot (optional): { start: "09:00", duration: "8 hours" } from tapping or
 // dragging on the calendar grid
-// prefill (new events only, e.g. from voice): { title, members: [names], repeat }
+// prefill (new events only, e.g. from voice or Film night): { title, members: [names], repeat, countdown }
 function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null, prefill = null) {
   const modal = document.getElementById("event-modal");
   const form = document.getElementById("form-event");
@@ -923,7 +923,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   const birthdayToggle = document.getElementById("event-birthday-toggle");
   const bornRow = document.getElementById("event-born-row");
   const bornInput = document.getElementById("event-born-year");
-  if (countdownToggle) countdownToggle.checked = !!(evt && evt.countdown);
+  if (countdownToggle) countdownToggle.checked = !!(evt && evt.countdown) || !!(!evt && prefill && prefill.countdown);
   if (birthdayToggle) birthdayToggle.checked = !!(evt && evt.birthday);
   if (bornInput) bornInput.value = (evt && evt.bornYear) ? String(evt.bornYear) : "";
   if (bornRow) bornRow.hidden = !(birthdayToggle && birthdayToggle.checked);
