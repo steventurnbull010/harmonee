@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=18">
-  <link rel="stylesheet" href="css/meals.css?v=9">
+  <link rel="stylesheet" href="css/meals.css?v=13">
   <link rel="stylesheet" href="css/calendar.css?v=10">
   <link rel="stylesheet" href="css/lists.css?v=4">
   <link rel="stylesheet" href="css/rewards.css?v=2">
@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="css/side-panel.css?v=7">
   <link rel="stylesheet" href="css/page-intro.css?v=5">
   <link rel="stylesheet" href="css/page-spacing.css?v=4">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=3">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=4">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
   <script>
@@ -412,51 +412,47 @@
 
           <!-- Slide-out Right Drawer: "Plan Meal" (Matching Photo 2) -->
           <aside class="skylight-plan-drawer" id="plan-meal-drawer" aria-label="Plan Meal Drawer" style="display: none;">
-            <div class="plan-drawer-header">
-              <button type="button" class="btn-drawer-back" id="btn-close-plan-drawer" title="Close drawer">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                <span>Plan Meal</span>
-              </button>
-              <div class="plan-drawer-target-slot" id="drawer-target-slot-label">
-                Thursday, Nov 5 • Dinner
+            <div class="task-drawer-header plan-drawer-header">
+              <button type="button" class="task-drawer-back-btn btn-drawer-back" id="btn-close-plan-drawer" aria-label="Back" title="Back">←</button>
+              <h2 class="task-drawer-title">Plan Meal</h2>
+            </div>
+            <p class="plan-drawer-target-slot" id="drawer-target-slot-label" hidden></p>
+
+            <!-- When: date and which meal -->
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">🗓️</span>
+                <span class="drawer-section-label">When</span>
               </div>
-              <!-- Plan for another day: opens the device's own date picker -->
-              <label class="plan-drawer-date-row" for="plan-meal-date-input">
-                <span class="plan-drawer-date-icon" aria-hidden="true">📅</span>
-                <span class="plan-drawer-date-label">Date</span>
-                <input type="date" id="plan-meal-date-input" class="plan-drawer-date-input" required>
-              </label>
+              <div class="ev-when-card">
+                <label class="ev-field" for="plan-meal-date-input">
+                  <span class="ev-field-label">Date</span>
+                  <input type="date" id="plan-meal-date-input" class="ev-native-input" aria-label="Meal date">
+                </label>
+                <div class="ev-field">
+                  <span class="ev-field-label">Meal</span>
+                  <div class="drawer-segmented-pills drawer-category-bubbles" role="group" aria-label="Meal">
+                    <button type="button" class="drawer-pill-segment cat-bubble" data-category="breakfast">Breakfast</button>
+                    <button type="button" class="drawer-pill-segment cat-bubble" data-category="lunch">Lunch</button>
+                    <button type="button" class="drawer-pill-segment cat-bubble active" data-category="dinner">Dinner</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- Segmented Toggle: [From Recipes] | [New Entry] -->
-            <div class="drawer-segmented-toggle">
-              <button type="button" class="toggle-segment active" id="tab-from-recipes">From Recipes</button>
-              <button type="button" class="toggle-segment" id="tab-new-entry">New Entry</button>
+            <!-- Choose a recipe | New meal -->
+            <div class="drawer-segmented-control drawer-segmented-toggle">
+              <button type="button" class="drawer-segment-btn toggle-segment active" id="tab-from-recipes">Choose a recipe</button>
+              <button type="button" class="drawer-segment-btn toggle-segment" id="tab-new-entry">New meal</button>
             </div>
 
             <!-- TAB 1: FROM RECIPES -->
             <div class="drawer-tab-pane" id="pane-from-recipes">
-              <!-- 3 Clean Category Filter Badges: Breakfast, Lunch, Dinner (Set Colors) -->
-              <div class="drawer-category-bubbles">
-                <button type="button" class="cat-bubble cat-bubble-b" data-category="breakfast" title="Breakfast Recipes">
-                  <span class="bubble-name">Breakfast</span>
-                </button>
-                <button type="button" class="cat-bubble cat-bubble-l" data-category="lunch" title="Lunch Recipes">
-                  <span class="bubble-name">Lunch</span>
-                </button>
-                <button type="button" class="cat-bubble cat-bubble-d active" data-category="dinner" title="Dinner Recipes">
-                  <span class="bubble-name">Dinner</span>
-                </button>
-              </div>
-
               <!-- Search Bar with Vertical Overlay Dropdown Filter & Add from Photo -->
               <div class="drawer-search-filter-row">
-                <div class="drawer-search-bar">
-                  <span class="search-icon">🔍</span>
-                  <input type="text" id="recipe-search-input" placeholder="Search recipes..." class="drawer-search-input">
+                <div class="drawer-input-row drawer-search-bar">
+                  <span class="drawer-input-icon search-icon" aria-hidden="true">🔍</span>
+                  <input type="text" id="recipe-search-input" placeholder="Search recipes" class="drawer-input-title drawer-search-input" autocomplete="off" aria-label="Search recipes">
                   <button type="button" class="btn-clear-search" id="btn-clear-recipe-search" style="display: none;">✕</button>
                 </div>
 
@@ -534,7 +530,7 @@
             <!-- TAB 2: NEW ENTRY (Custom Meal on the Fly) -->
             <div class="drawer-tab-pane" id="pane-new-entry" style="display: none;">
               <!-- Quick Photo Scan Prompt Card -->
-              <div class="pane-photo-prompt-card" id="btn-new-entry-photo-card" title="Scan a cookbook page or recipe photo">
+              <div class="pane-photo-prompt-card" id="btn-new-entry-photo-card" title="Scan a cookbook page or recipe photo" hidden>
                 <div class="photo-card-left">
                   <span class="photo-card-icon">📸</span>
                   <div class="photo-card-text">
@@ -546,61 +542,37 @@
               </div>
 
               <form id="form-custom-meal" class="drawer-custom-form">
-                <div class="form-group">
-                  <label for="custom-meal-title">Dish / Meal Title *</label>
-                  <input type="text" id="custom-meal-title" class="form-input" placeholder="e.g. Takeout Chinese, Leftover Pizza, Sunday Roast..." required>
+                <div class="drawer-input-row">
+                  <span class="drawer-input-icon" aria-hidden="true">≡</span>
+                  <input type="text" id="custom-meal-title" class="drawer-input-title" placeholder="What's for dinner?" required autocomplete="off" aria-label="Meal name">
                 </div>
 
-                <div class="form-group">
-                  <label>Meal Category</label>
-                  <div class="custom-category-select-group">
-                    <label class="custom-cat-radio">
-                      <input type="radio" name="custom-meal-category" value="breakfast">
-                      <span class="custom-cat-btn cat-b">Breakfast</span>
-                    </label>
-                    <label class="custom-cat-radio">
-                      <input type="radio" name="custom-meal-category" value="lunch">
-                      <span class="custom-cat-btn cat-l">Lunch</span>
-                    </label>
-                    <label class="custom-cat-radio">
-                      <input type="radio" name="custom-meal-category" value="dinner" checked>
-                      <span class="custom-cat-btn cat-d">Dinner</span>
-                    </label>
+                <!-- Which meal: set by the Meal pills above (kept for saving) -->
+                <div class="custom-category-select-group" hidden>
+                  <label class="custom-cat-radio"><input type="radio" name="custom-meal-category" value="breakfast"><span class="custom-cat-btn cat-b">Breakfast</span></label>
+                  <label class="custom-cat-radio"><input type="radio" name="custom-meal-category" value="lunch"><span class="custom-cat-btn cat-l">Lunch</span></label>
+                  <label class="custom-cat-radio"><input type="radio" name="custom-meal-category" value="dinner" checked><span class="custom-cat-btn cat-d">Dinner</span></label>
+                </div>
+
+                <div class="drawer-field-group">
+                  <div class="drawer-section-label-row">
+                    <span class="drawer-section-icon">👩‍🍳</span>
+                    <span class="drawer-section-label">Who's cooking</span>
                   </div>
+                  <div class="drawer-profiles-pills-row meal-chef-chips-select" id="drawer-chef-chips-select" role="group" aria-label="Who's cooking"></div>
+                  <p class="drawer-who-summary" id="drawer-chef-summary" aria-live="polite"></p>
+                  <input type="hidden" id="drawer-cook-input" value="">
                 </div>
 
-                <div class="form-group">
-                  <label>Who's Cooking? (Tap to select multiple)</label>
-                  <div class="meal-chef-chips-select" id="drawer-chef-chips-select">
-                    <button type="button" class="chef-select-chip is-selected" data-chef="Steve">
-                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
-                    </button>
-                    <button type="button" class="chef-select-chip" data-chef="Sorcha">
-                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
-                    </button>
-                    <button type="button" class="chef-select-chip" data-chef="Ava">
-                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
-                    </button>
-                    <button type="button" class="chef-select-chip" data-chef="Dara">
-                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
-                    </button>
-                    <button type="button" class="chef-select-chip" data-chef="Family">
-                      <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
-                    </button>
+                <div class="drawer-field-group">
+                  <div class="drawer-section-label-row">
+                    <span class="drawer-section-icon">📝</span>
+                    <span class="drawer-section-label">Notes</span>
                   </div>
-                  <input type="hidden" id="drawer-cook-input" value="Steve">
+                  <textarea id="custom-meal-notes" class="ev-native-input ev-notes" rows="3" placeholder="Ingredients to buy, cooking tips (optional)"></textarea>
                 </div>
 
-                <div class="form-group">
-                  <label for="custom-meal-notes">Notes or Ingredients</label>
-                  <textarea id="custom-meal-notes" class="form-input" rows="3" placeholder="Optional notes, ingredients to buy, or cooking tips..."></textarea>
-                </div>
-
-                <div class="drawer-form-actions">
-                  <button type="submit" class="btn-primary-action" style="width: 100%;">
-                    <span>Save to Plan</span>
-                  </button>
-                </div>
+                <button type="submit" class="btn-skylight-drawer-submit">Save to plan</button>
               </form>
             </div>
           </aside>
@@ -2676,7 +2648,7 @@
   <script src="js/tasks.js?v=25"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
-  <script type="module" src="js/meals.js?v=20"></script>
+  <script type="module" src="js/meals.js?v=22"></script>
   <script type="module" src="app.js?v=220"></script>
 </body>
 </html>

@@ -555,16 +555,15 @@ function renderDrawerChefChips() {
   const wrap = document.getElementById("drawer-chef-chips-select");
   if (!wrap) return;
   const people = [...getMealCookMembers(), "Family"];
+  // Same avatar picker as the Tasks and event panels
+  const tick = `<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
   wrap.innerHTML = people.map(name => {
-    let avatarStyle = "background: linear-gradient(135deg, #f59e0b, #ec4899);";
-    let avatar = "👥";
-    if (name !== "Family") {
-      const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : null;
-      avatarStyle = pal ? `background: ${pal.primary};` : "background: #0284c7;";
-      avatar = escapeHtml(name.charAt(0).toUpperCase());
-    }
-    return `<button type="button" class="chef-select-chip" data-chef="${escapeHtml(name)}">
-      <span class="chef-chip-avatar" style="${avatarStyle}">${avatar}</span> ${escapeHtml(name)}
+    const fam = name === "Family";
+    const pal = (!fam && typeof window.getMemberPalette === "function") ? window.getMemberPalette(name) : null;
+    const color = fam ? "#f59e0b" : (pal ? pal.primary : "#0284c7");
+    return `<button type="button" class="chef-select-chip drawer-profile-pill" data-chef="${escapeHtml(name)}" style="--profile-color: ${color};">
+      <span class="drawer-profile-avatar">${fam ? "👪" : escapeHtml(name.charAt(0).toUpperCase())}${tick}</span>
+      <span class="drawer-profile-name">${fam ? "Everyone" : escapeHtml(name)}</span>
     </button>`;
   }).join("");
   wrap.querySelectorAll(".chef-select-chip").forEach(chip => {
@@ -590,8 +589,18 @@ function onDrawerChefChipClick(chef) {
 function updateDrawerChefsUI() {
   document.querySelectorAll("#drawer-chef-chips-select .chef-select-chip").forEach(c => {
     const chef = c.getAttribute("data-chef");
-    c.classList.toggle("is-selected", drawerSelectedChefs.includes(chef));
+    const on = drawerSelectedChefs.includes(chef);
+    c.classList.toggle("is-selected", on);
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-pressed", String(on));
   });
+  const summary = document.getElementById("drawer-chef-summary");
+  if (summary) {
+    const cooks = drawerSelectedChefs.filter(c => c !== "Family");
+    summary.textContent = drawerSelectedChefs.includes("Family") || !cooks.length ? "Everyone's cooking together."
+      : cooks.length === 1 ? `${cooks[0]} is cooking.`
+      : `${cooks.slice(0, -1).join(", ")} & ${cooks[cooks.length - 1]} are cooking.`;
+  }
   const cookInput = document.getElementById("drawer-cook-input");
   if (cookInput) {
     cookInput.value = drawerSelectedChefs.length > 0 ? drawerSelectedChefs.join(" & ") : getDefaultMealCook();
@@ -617,6 +626,8 @@ function updatePlanDrawerTarget() {
   document.querySelectorAll("input[name='custom-meal-category']").forEach(radio => {
     radio.checked = radio.value === currentPlanningSlot;
   });
+  const customTitle = document.getElementById("custom-meal-title");
+  if (customTitle) customTitle.placeholder = `What's for ${currentPlanningSlot}?`;
 }
 
 // After planning a meal, show the week it's in (e.g. next Tuesday's)
@@ -1468,8 +1479,13 @@ function wireMealsHeaderAndDrawerListeners() {
       const drawer = document.getElementById("plan-meal-drawer");
       if (!drawer || drawer.style.display === "none") return;
 
-      // Ignore clicks inside the drawer
+      // Ignore clicks inside the drawer, or in a pop-up opened from it (the
+      // date picker, the recipe card)
       if (drawer.contains(e.target)) return;
+      // (it may have just closed, or redrawn the button you tapped, by the
+      // time this runs: a picker day redraws the month, Select closes it)
+      if (!document.contains(e.target)) return;
+      if (e.target.closest && e.target.closest("dialog, .skylight-task-quick-overlay")) return;
 
       // Ignore trigger buttons that open or switch the drawer
       if (e.target.closest("#btn-meals-plan-dinner") || e.target.closest(".matrix-meal-cell") || e.target.closest("#btn-popover-edit-meal")) {

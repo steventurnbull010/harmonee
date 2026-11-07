@@ -123,27 +123,23 @@ dialog.side-panel #btn-close-grocery-footer { padding: 8px 24px !important; }
 .skylight-task-drawer #btn-drawer-submit { padding: 16px !important; margin-top: 8px !important; margin-bottom: 0 !important; }
 
 /* Plan Meal drawer */
-.skylight-plan-drawer .plan-drawer-header { padding: 24px 24px 8px 24px !important; gap: 8px !important; }
-.skylight-plan-drawer #btn-close-plan-drawer { gap: 16px !important; }
-.skylight-plan-drawer .drawer-segmented-toggle { padding: 8px !important; margin-top: 16px !important; margin-bottom: 8px !important; gap: 8px !important; }
-.skylight-plan-drawer .drawer-category-bubbles { padding: 8px 24px 16px 24px !important; }
-.skylight-plan-drawer .cat-bubble { padding: 8px !important; }
-.skylight-plan-drawer .drawer-search-filter-row { padding: 0 16px 8px 16px !important; }
-.skylight-plan-drawer .drawer-search-bar { padding: 8px 16px !important; }
-.skylight-plan-drawer #btn-recipe-filter-dropdown { padding: 8px 16px !important; gap: 8px !important; }
+/* Plan Meal: same layout as the Tasks and event panels (24px edges, 24px
+   between sections, the whole panel scrolls) */
+.skylight-plan-drawer { width: 420px !important; max-width: 92vw !important; padding: 24px 24px 32px 24px !important; gap: 24px !important; overflow-y: auto !important; overflow-x: hidden !important; overscroll-behavior: contain; }
+.skylight-plan-drawer .plan-drawer-header { padding: 0 !important; gap: 16px !important; }
+.skylight-plan-drawer .drawer-segmented-toggle { margin: 0 !important; }
+.skylight-plan-drawer .drawer-tab-pane { gap: 16px !important; }
+.skylight-plan-drawer .drawer-search-filter-row { padding: 0 !important; gap: 8px !important; }
+.skylight-plan-drawer .drawer-search-bar { padding: 8px 16px !important; gap: 16px !important; min-height: 48px; }
+.skylight-plan-drawer #btn-recipe-filter-dropdown,
+.skylight-plan-drawer #btn-trigger-add-from-photo { padding: 8px 16px !important; gap: 8px !important; }
 .skylight-plan-drawer .drawer-filter-opt { padding: 8px !important; }
-.skylight-plan-drawer #btn-trigger-add-from-photo { padding: 8px !important; gap: 8px !important; }
 .skylight-plan-drawer #opt-photo-camera,
 .skylight-plan-drawer #opt-photo-gallery { padding: 8px !important; gap: 8px !important; }
 .skylight-plan-drawer .opt-text-wrap { gap: 0 !important; }
-.skylight-plan-drawer #drawer-recipes-list { padding: 8px 16px 120px 16px !important; gap: 8px !important; }
-.skylight-plan-drawer .drawer-recipe-card { padding: 8px 16px !important; gap: 16px !important; }
-.skylight-plan-drawer .recipe-row-arrow { padding: 8px !important; }
-.skylight-plan-drawer #btn-new-entry-photo-card { padding: 16px !important; margin-top: 0 !important; margin-bottom: 16px !important; gap: 16px !important; }
-.skylight-plan-drawer .photo-card-left { gap: 8px !important; }
-.skylight-plan-drawer .photo-card-text { gap: 0 !important; }
-.skylight-plan-drawer .btn-photo-card-action { padding: 8px !important; }
-.skylight-plan-drawer #form-custom-meal { padding: 8px 24px 24px 24px !important; }
-.skylight-plan-drawer .custom-cat-btn { padding: 8px 16px !important; }
-.skylight-plan-drawer #drawer-chef-chips-select { margin-top: 8px !important; margin-bottom: 0 !important; }
-.skylight-plan-drawer .chef-select-chip { padding: 8px 16px !important; }
+.skylight-plan-drawer #drawer-recipes-list { padding: 0 !important; gap: 8px !important; }
+.skylight-plan-drawer .drawer-recipe-card { padding: 16px !important; gap: 16px !important; }
+.skylight-plan-drawer .recipe-row-arrow { padding: 0 !important; }
+.skylight-plan-drawer #form-custom-meal { padding: 0 !important; gap: 24px !important; }
+.skylight-plan-drawer #drawer-chef-chips-select { padding: 8px 0 !important; margin: 0 !important; }
+.skylight-plan-drawer .chef-select-chip.drawer-profile-pill { padding: 0 !important; gap: 8px !important; }

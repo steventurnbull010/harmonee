@@ -3659,3 +3659,100 @@ body.theme-dark .plan-drawer-date-row {
 body.theme-dark .plan-drawer-date-input {
   color-scheme: dark;
 }
+
+/* ==========================================================================
+   Plan Meal panel, rebuilt to match the Tasks and event panels: serif header,
+   a When card (date picker + Breakfast / Lunch / Dinner), a Chore|Routine-
+   style switch, then recipes or a new meal. Colours and controls come from
+   the shared panel styles; this only adapts the Meals-specific parts.
+   ========================================================================== */
+.skylight-plan-drawer > * { flex-shrink: 0; }
+.skylight-plan-drawer .drawer-tab-pane { flex: none; overflow: visible; }
+.skylight-plan-drawer .drawer-recipes-list { flex: none; overflow: visible; }
+.skylight-plan-drawer .plan-drawer-header .task-drawer-back-btn { color: var(--text-primary); }
+
+/* Meal pills: the meal grid's colours, so Breakfast / Lunch / Dinner read the
+   same here as on the page */
+.skylight-plan-drawer .cat-bubble { min-height: 48px; padding: 8px !important; }
+.skylight-plan-drawer .cat-bubble[data-category="breakfast"] { --meal-color: #10b981; }
+.skylight-plan-drawer .cat-bubble[data-category="lunch"] { --meal-color: #06b6d4; }
+.skylight-plan-drawer .cat-bubble[data-category="dinner"] { --meal-color: #8b5cf6; }
+.skylight-plan-drawer .cat-bubble.active {
+  border-color: var(--meal-color);
+  background: color-mix(in srgb, var(--meal-color) 12%, #ffffff);
+  color: color-mix(in srgb, var(--meal-color) 70%, #0f172a);
+  font-weight: 700;
+}
+body.theme-dark .skylight-plan-drawer .cat-bubble.active {
+  background: color-mix(in srgb, var(--meal-color) 24%, #0f172a);
+  color: #f8fafc;
+}
+
+/* Choose a recipe | New meal: the Chore | Routine switch */
+.skylight-plan-drawer .drawer-segmented-toggle { padding: 4px; gap: 4px; }
+.skylight-plan-drawer .toggle-segment { min-height: 40px; font-size: 0.95rem; }
+
+/* Search, Filter and Add from photo: one height, quiet outline buttons */
+.skylight-plan-drawer .drawer-search-input { font-size: 1rem; }
+.skylight-plan-drawer .drawer-filter-actions-row { gap: 8px; }
+.skylight-plan-drawer .drawer-filter-dropdown-wrap,
+.skylight-plan-drawer .drawer-photo-dropdown-wrap { flex: 1; }
+.skylight-plan-drawer #btn-recipe-filter-dropdown,
+.skylight-plan-drawer #btn-trigger-add-from-photo {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+.skylight-plan-drawer #btn-trigger-add-from-photo:hover,
+.skylight-plan-drawer #btn-recipe-filter-dropdown:hover { border-color: #0284c7; transform: none; background: var(--card-bg, #ffffff); }
+body.theme-dark .skylight-plan-drawer #btn-recipe-filter-dropdown,
+body.theme-dark .skylight-plan-drawer #btn-trigger-add-from-photo { background: #0f172a; border-color: #334155; color: #f8fafc; }
+
+/* Recipe cards: same corners, border and spacing as the Tasks cards */
+.skylight-plan-drawer .drawer-recipe-card { border-radius: 16px; border: 1px solid rgba(15, 23, 42, 0.1); background: var(--card-bg, #ffffff); }
+.skylight-plan-drawer .drawer-recipe-card:hover { transform: none; border-color: #0284c7; }
+.skylight-plan-drawer .recipe-row-badge { width: 48px; height: 48px; border-radius: 16px; font-size: 1.5rem; overflow: hidden; }
+.skylight-plan-drawer .recipe-row-title { font-size: 1rem; }
+body.theme-dark .skylight-plan-drawer .drawer-recipe-card { background: #0f172a; border-color: #334155; }
+
+/* Save to plan sits flush with the form */
+.skylight-plan-drawer #form-custom-meal .btn-skylight-drawer-submit { margin-top: 0; min-height: 48px; }
+
+/* Undo the old Meals header and bubble layout inside the rebuilt panel */
+.skylight-plan-drawer .plan-drawer-header { flex-direction: row; align-items: center; justify-content: flex-start; border-bottom: none; }
+.skylight-plan-drawer .plan-drawer-header .btn-drawer-back { font-family: inherit; font-size: 1.5rem; font-weight: 400; padding: 4px; }
+.skylight-plan-drawer .drawer-category-bubbles { display: flex; gap: 8px; padding: 0 !important; }
+.skylight-plan-drawer .cat-bubble {
+  flex: 1;
+  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-secondary, #64748b);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+body.theme-dark .skylight-plan-drawer .cat-bubble { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+.skylight-plan-drawer .ev-native-input { padding: 8px 16px !important; }
+.skylight-plan-drawer textarea.ev-native-input { padding: 16px !important; }
+
+/* Pieces kept only for the code behind them stay hidden */
+.skylight-plan-drawer [hidden] { display: none !important; }
+/* Who's cooking: the Tasks avatar picker, without the old chip box */
+.skylight-plan-drawer .chef-select-chip.drawer-profile-pill,
+.skylight-plan-drawer .chef-select-chip.drawer-profile-pill.is-selected {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex-direction: column;
+  min-width: 56px;
+}
+.skylight-plan-drawer #drawer-chef-chips-select { display: flex; flex-wrap: nowrap; gap: 16px; overflow-x: auto; }
