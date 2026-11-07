@@ -2047,3 +2047,30 @@ body.theme-dark .today-avatar { box-shadow: 0 0 0 2px #1e293b; }
 
 /* Settings > Sleep: the two preview buttons side by side */
 #settings-modal .settings-preview-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Today at a glance: colours for the time of day, finished / next events */
+.today-screen.is-afternoon { background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 45%, #ecfccb 100%); }
+.today-screen.is-evening { background: linear-gradient(160deg, #ede9fe 0%, #fce7f3 45%, #fef3c7 100%); }
+body.theme-dark .today-screen.is-afternoon { background: linear-gradient(160deg, #0c4a6e 0%, #0f172a 60%, #14532d 100%); }
+body.theme-dark .today-screen.is-evening { background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 60%, #4c0519 100%); }
+.today-row.is-past { opacity: 0.45; }
+.today-row.is-past .today-row-title { text-decoration: line-through; text-decoration-thickness: 1px; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.today-badge.is-now { background: #16a34a; }
+.today-card-tomorrow .today-time { color: #7c3aed; }
+.today-tomorrow-dinner { margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
+body.theme-dark .today-tomorrow-dinner { border-top-color: #334155; }
+/* The family name opens Today at a glance */
+.skylight-single-header .calendar-family-title { cursor: pointer; }

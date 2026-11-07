@@ -121,7 +121,7 @@ function checkScheduledSleepWindow() {
     deactivateAmbientSleepScreen();
     // Morning: open on the day's summary (js/today-screen.js), unless switched off
     if (typeof window.showTodayScreen === "function" && (!window.isTodayScreenEnabled || window.isTodayScreenEnabled())) {
-      window.showTodayScreen();
+      window.showTodayScreen({ from: "wake" });
     } else if (typeof showCalendarToast === "function") {
       showCalendarToast("☀️ Good morning! Family board is awake.");
     }

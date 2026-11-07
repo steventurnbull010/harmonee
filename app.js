@@ -6380,9 +6380,7 @@ function initSkylightNavigation() {
   if (navItemRewards) {
     navItemRewards.addEventListener("click", () => switchSkylightView("rewards"));
   }
-  if (brandMark) {
-    brandMark.addEventListener("click", () => switchSkylightView("calendar"));
-  }
+  // The "h" opens Today at a glance (js/today-screen.js)
   if (btnMealsBackChores) {
     btnMealsBackChores.addEventListener("click", () => switchSkylightView("chores"));
   }
