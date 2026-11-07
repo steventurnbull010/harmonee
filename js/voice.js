@@ -11,7 +11,8 @@
 //   to confirm first, then can be put back with Undo
 // - Anything unclear: "I heard …" with Add as event / Add to shopping list / Plan for dinner / Try again
 //
-// Mic buttons: [data-voice] anywhere (Today at a glance), plus a small mic
+// Mic buttons: "Add by voice" on Today at a glance ([data-voice-intro]: a first
+// screen with examples, then "Tap to talk"), plus a small mic
 // added to the event, task and quick-list panels. They are hidden where the
 // browser can't do speech (Firefox) or the microphone is blocked.
 // ============================================================================
@@ -48,7 +49,7 @@
     sheet.addEventListener("cancel", (e) => { e.preventDefault(); stop(); });
     sheet.addEventListener("click", (e) => {
       if (e.target === sheet || e.target.closest("[data-voice-close]")) { stop(); return; }
-      if (e.target.closest("[data-voice-again]")) { start(mode); return; }
+      if (e.target.closest("[data-voice-again]") || e.target.closest("[data-voice-talk]")) { start(mode); return; }
       if (e.target.closest("[data-voice-done]")) { if (rec) { try { rec.stop(); } catch (err) {} } return; }
       const as = e.target.closest("[data-voice-as]");
       if (as) { act(window.VoiceIntent.parse(sheet._heard || "", ctx({ ...mode, want: as.getAttribute("data-voice-as") })), sheet._heard); return; }
@@ -76,6 +77,30 @@
       <h2 class="voice-title" id="voice-title">${words ? "Listening…" : "I'm listening"}</h2>
       <p class="voice-words${words ? "" : " is-hint"}" aria-live="polite">${words ? esc(words) : hint}</p>
       <div class="voice-actions"><button type="button" class="voice-btn is-primary" data-voice-done>Done</button></div>`);
+  }
+
+  // "Add by voice" on Today at a glance: a calm first screen with examples;
+  // nothing records until "Tap to talk" (panel mics start straight away)
+  function intro(opts = {}) {
+    clearTimeout(closeTimer);
+    if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
+    mode = opts || {};
+    const names = (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
+    const who = names.length ? names[names.length - 1] : "Ava";
+    const examples = [
+      ["Add milk and eggs to the shopping list", "Shopping list"],
+      ["Swimming every Saturday at 10", "Calendar"],
+      [`${who} needs to tidy their room on Saturday`, "Tasks"],
+      ["We're having tacos on Friday", "Meals"],
+      ["Cancel the dentist on Tuesday", "Removes it (asks first)"]
+    ];
+    draw(`${closeBtn}
+      <h2 class="voice-title is-intro" id="voice-title">Add by voice</h2>
+      <p class="voice-words is-hint">Tap the button, then say something like:</p>
+      <ul class="voice-examples">${examples.map(([say, where]) => `<li><span class="voice-ex-say">“${esc(say)}”</span><span class="voice-ex-where">${esc(where)}</span></li>`).join("")}</ul>
+      <button type="button" class="voice-talk" data-voice-talk><span class="voice-talk-icon" aria-hidden="true">${MIC_SVG}</span>Tap to talk</button>
+      <p class="voice-small voice-intro-foot">Events, tasks and meals open for you to check before they're saved.</p>`);
+    setTimeout(() => { try { sheet.querySelector("[data-voice-talk]").focus({ preventScroll: true }); } catch (e) {} }, 50);
   }
 
   function drawMessage(title, text, buttons) {
@@ -445,7 +470,8 @@
     if (!b) return;
     e.preventDefault();
     e.stopPropagation();
-    start({ want: b.getAttribute("data-voice") || null, listId: b.getAttribute("data-voice-list") || null });
+    const opts = { want: b.getAttribute("data-voice") || null, listId: b.getAttribute("data-voice-list") || null };
+    if (b.hasAttribute("data-voice-intro")) intro(opts); else start(opts);
   }, true);
 
   const micButton = (want, label) => `<button type="button" class="voice-mini" data-voice="${want}" aria-label="${label}" title="${label}">${MIC_SVG}</button>`;
@@ -461,5 +487,5 @@
 
   // heard(): runs a sentence as if it was spoken (for testing without a microphone)
   const heard = (text, opts = {}) => { mode = opts; handle(String(text || "")); };
-  window.Voice = { start, stop, supported, micButton, MIC_SVG, heard };
+  window.Voice = { start, intro, stop, supported, micButton, MIC_SVG, heard };
 })();

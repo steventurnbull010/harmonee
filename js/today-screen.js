@@ -307,7 +307,7 @@
           <p class="today-wordmark" aria-label="harmonee"><span aria-hidden="true">harmonee</span></p>
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weatherLine}</p>
-          ${window.Voice && window.Voice.supported() ? `<button type="button" class="today-say-it" data-voice aria-label="Say it: add to a list, the calendar or tasks by speaking">${window.Voice.MIC_SVG}<span>Say it</span></button>` : ""}
+          ${window.Voice && window.Voice.supported() ? `<button type="button" class="today-say-it" data-voice data-voice-intro aria-label="Add by voice: shopping, events, tasks and meals">${window.Voice.MIC_SVG}<span>Add by voice</span></button>` : ""}
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
         </header>
         <div class="today-grid">
