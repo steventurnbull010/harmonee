@@ -413,38 +413,65 @@ function renderListsView() {
     if (inp.value) drafts[inp.closest("[data-list-id]").getAttribute("data-list-id")] = inp.value;
   });
 
-  board.innerHTML = lists.map((list, index) => {
+  updateListsHeader();
+
+  // Which item was just ticked, so only that box plays the little pop
+  const justTicked = listsJustTicked;
+  listsJustTicked = null;
+
+  if (lists.length === 0) {
+    board.innerHTML = `
+      <div class="lists-page-empty">
+        <span class="lists-page-empty-icon" aria-hidden="true">📝</span>
+        <p class="lists-page-empty-title">No lists yet</p>
+        <p class="lists-page-empty-text">Make one for the food shop, packing or jobs for the weekend.</p>
+        <button type="button" class="btn-skylight-primary-pill" data-new-list>
+          <span class="pill-icon">＋</span>
+          <span class="pill-text">New List</span>
+        </button>
+      </div>`;
+  } else board.innerHTML = lists.map((list, index) => {
     const col = getListColor(list, index);
     const items = Array.isArray(list.items) ? list.items : [];
     const open = items.filter(i => !i.checked);
     const done = items.filter(i => i.checked);
     const countText = items.length === 0 ? "Empty" : `${open.length} to do${done.length ? ` · ${done.length} done` : ""}`;
-    const itemHtml = (item) => `
-      <li class="list-row ${item.checked ? "is-checked" : ""}" data-item-id="${escapeHtml(item.id)}">
-        <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(item.text)}">
-          <span class="list-row-box">${item.checked ? "✓" : ""}</span>
-          <span class="list-row-text">${escapeHtml(window.Grocery ? window.Grocery.displayText(item) : item.text)}${(window.Grocery && window.Grocery.sourcesLabel(item)) ? `<span class="list-row-for">${escapeHtml(window.Grocery.sourcesLabel(item))}</span>` : ""}</span>
+    const itemHtml = (item) => {
+      const text = window.Grocery ? window.Grocery.displayText(item) : item.text;
+      const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
+      const pop = justTicked === item.id ? " is-just-ticked" : "";
+      return `
+      <li class="list-row ${item.checked ? "is-checked" : ""}${pop}" data-item-id="${escapeHtml(item.id)}">
+        <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(text)}">
+          <span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+          <span class="list-row-text">
+            <span class="list-row-name">${escapeHtml(text)}</span>
+            ${forLine ? `<span class="list-row-for">${escapeHtml(forLine)}</span>` : ""}
+          </span>
         </button>
-        <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(item.text)}">✕</button>
+        <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(text)}">✕</button>
       </li>`;
+    };
     return `
       <section class="list-column" data-list-id="${escapeHtml(list.id)}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
         <header class="list-column-head">
-          <span class="list-column-emoji">${escapeHtml(list.emoji || "📋")}</span>
+          <span class="list-column-emoji" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
           <div class="list-column-titles">
             <h3 class="list-column-title">${escapeHtml(list.title)}</h3>
             <span class="list-column-count">${countText}</span>
           </div>
-          <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}">✎</button>
+          <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          </button>
         </header>
         <form class="list-column-add" data-add-item>
           <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
-          <button type="button" data-open-add-panel aria-label="Add items to ${escapeHtml(list.title)}">+</button>
+          <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
         </form>
         <ul class="list-column-items">
           ${open.map(itemHtml).join("")}
           ${done.map(itemHtml).join("")}
-          ${items.length === 0 ? `<li class="list-column-empty">Nothing here yet</li>` : ""}
+          ${items.length === 0 ? `<li class="list-column-empty">Nothing on this list yet. Add something above.</li>` : ""}
         </ul>
         ${done.length ? `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>` : ""}
       </section>`;
@@ -473,6 +500,21 @@ function renderListsView() {
 }
 window.renderListsView = renderListsView;
 
+// Same header as Tasks and Meals: family name and the time (the weather
+// badge is filled in by js/weather.js)
+function updateListsHeader() {
+  const famEl = document.getElementById("lists-family-name");
+  if (famEl) famEl.textContent = window.isDefaultTurnbullBoard ? "Turnbull Family" : ((window.boardSettings || {}).familyName || "Our Family");
+  const clockEl = document.getElementById("lists-live-clock");
+  if (clockEl) clockEl.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+setInterval(() => {
+  const view = document.getElementById("view-lists");
+  if (view && view.style.display !== "none") updateListsHeader();
+}, 30000);
+
+let listsJustTicked = null;
+
 function onListsBoardSubmit(e) {
   const form = e.target.closest("[data-add-item]");
   if (!form) return;
@@ -488,6 +530,7 @@ function onListsBoardSubmit(e) {
 }
 
 function onListsBoardClick(e) {
+  if (e.target.closest("[data-new-list]")) { openCreateListModal(); return; }
   const column = e.target.closest("[data-list-id]");
   if (!column) return;
   const listId = column.getAttribute("data-list-id");
@@ -496,7 +539,10 @@ function onListsBoardClick(e) {
   if (e.target.closest("[data-toggle-item]") && row) {
     const list = loadFamilyLists().find(l => l.id === listId);
     const item = list && (list.items || []).find(i => i.id === row.getAttribute("data-item-id"));
-    if (item) handleToggleListItem(listId, item.id, !item.checked);
+    if (item) {
+      if (!item.checked) listsJustTicked = item.id;
+      handleToggleListItem(listId, item.id, !item.checked);
+    }
     return;
   }
   if (e.target.closest("[data-delete-item]") && row) {
@@ -532,8 +578,9 @@ function renderAddPanelListPicker() {
   row.innerHTML = lists.map((l, i) => {
     const col = getListColor(l, i);
     const on = l.id === addPanelListId;
-    return `<button type="button" class="list-item-picker-pill ${on ? "is-selected" : ""}" data-pick-list="${escapeHtml(l.id)}" aria-pressed="${on}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
-      <span>${escapeHtml(l.emoji || "📋")}</span>${escapeHtml(l.title)}
+    return `<button type="button" class="drawer-profile-pill list-item-picker-pill ${on ? "active is-selected" : ""}" data-pick-list="${escapeHtml(l.id)}" aria-pressed="${on}" style="--profile-color: ${col.accent}; --list-accent: ${col.accent}; --list-light: ${col.light};">
+      <span class="drawer-profile-avatar list-item-picker-emoji">${escapeHtml(l.emoji || "📋")}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span></span>
+      <span class="drawer-profile-name">${escapeHtml(l.title)}</span>
     </button>`;
   }).join("");
   const list = lists.find(l => l.id === addPanelListId);
@@ -656,7 +703,7 @@ function renderListEmojiPicker(modal) {
   if (!row) return;
   const emojis = LIST_EMOJIS.includes(listPanelEmoji) ? LIST_EMOJIS : [listPanelEmoji, ...LIST_EMOJIS];
   row.innerHTML = emojis.map(e =>
-    `<button type="button" class="emoji-picker-btn ${e === listPanelEmoji ? "selected" : ""}" data-emoji="${e}" aria-label="Icon ${e}">${e}</button>`).join("");
+    `<button type="button" class="drawer-emoji-item emoji-picker-btn ${e === listPanelEmoji ? "is-selected selected" : ""}" data-emoji="${e}" aria-label="Icon ${e}" aria-pressed="${e === listPanelEmoji}">${e}</button>`).join("");
 }
 let listPanelColor = "sky";
 
@@ -666,7 +713,7 @@ function renderListColorPicker() {
   row.innerHTML = LIST_COLOR_ORDER.map(key => {
     const c = LIST_COLORS[key];
     const on = key === listPanelColor;
-    return `<button type="button" class="list-color-swatch ${on ? "is-selected" : ""}" data-color="${key}" aria-label="${c.label}" aria-pressed="${on}" style="background: ${c.light}; border-color: ${c.accent};"><span style="background: ${c.accent};"></span></button>`;
+    return `<button type="button" class="list-color-swatch ${on ? "is-selected" : ""}" data-color="${key}" aria-label="${c.label}" aria-pressed="${on}" style="--list-accent: ${c.accent}; --list-light: ${c.light};"><span></span></button>`;
   }).join("");
 }
 
@@ -699,7 +746,11 @@ function openCreateListModal(listId = null) {
       const btn = e.target.closest("[data-emoji]");
       if (!btn) return;
       listPanelEmoji = btn.getAttribute("data-emoji");
-      emojiRow.querySelectorAll(".emoji-picker-btn").forEach(b => b.classList.toggle("selected", b === btn));
+      emojiRow.querySelectorAll(".emoji-picker-btn").forEach(b => {
+        b.classList.toggle("selected", b === btn);
+        b.classList.toggle("is-selected", b === btn);
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
     };
   }
 
@@ -738,6 +789,11 @@ function openCreateListModal(listId = null) {
       }
     };
   }
+
+  // Return in the name box saves, like the other panels
+  if (input) input.onkeydown = (e) => {
+    if (e.key === "Enter" && !e.isComposing && btnSave) { e.preventDefault(); btnSave.click(); }
+  };
 
   if (btnDelete) {
     btnDelete.onclick = () => {

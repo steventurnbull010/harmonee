@@ -1,436 +1,28 @@
 /* ==========================================================================
-   FAMILY LISTS MODULE (css/lists.css)
-   Dedicated Family Lists Hub, Categories, Items, Checklists
-   ========================================================================== */
-
-/* ==========================================================================
-   SPRINT 2: DEDICATED FAMILY LISTS HUB
+   FAMILY LISTS (css/lists.css)
+   Every list side by side as a coloured column (js/lists.js), plus the
+   "Add items" and "New / Edit list" side panels. Columns follow the Tasks
+   columns (16px radius, 1px tinted border, serif name); the panels reuse
+   the Tasks drawer pieces (drawer-* classes in css/tasks.css).
+   All padding, margins and gaps are on the 8px grid.
    ========================================================================== */
 
 .lists-view-container {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 12px 20px 48px 20px;
+  padding: 16px 24px 48px 24px;
   box-sizing: border-box;
 }
 
-.lists-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.lists-header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.lists-header-icon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
-
-.lists-title {
+/* Header: the shared single-line header (.calendar-header), as on Tasks and Meals */
+.lists-page-header {
   margin: 0;
-  font-size: 1.55rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  font-family: inherit;
 }
 
-.lists-subtitle {
-  margin: 4px 0 0 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-/* Lists Tab Selector Bar */
-.lists-selector-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 4px 2px 14px 2px;
-  margin-bottom: 12px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.lists-selector-bar::-webkit-scrollbar {
-  height: 4px;
-}
-.lists-selector-bar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-}
-
-.list-tab-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 24px;
-  border: 1.5px solid var(--card-border, #e2e8f0);
-  background: var(--card-bg, #ffffff);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-}
-
-.list-tab-pill:hover {
-  background: var(--bg-secondary, #f8fafc);
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.list-tab-pill.active {
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #ffffff;
-  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35);
-}
-
-.list-tab-pill.active .tab-count-badge {
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-}
-
-.tab-count-badge {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 12px;
-  min-width: 14px;
-  text-align: center;
-}
-
-body.theme-dark .list-tab-pill {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-body.theme-dark .list-tab-pill:hover {
-  background: #334155;
-}
-body.theme-dark .list-tab-pill.active {
-  background: #6366f1;
-  border-color: #6366f1;
-}
-
-/* Active List Card */
-.active-list-card {
-  background: var(--card-bg, #ffffff);
-  border: 1.5px solid var(--card-border, #e2e8f0);
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  padding: 22px 24px;
-  box-sizing: border-box;
-}
-
-body.theme-dark .active-list-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
-.active-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-body.theme-dark .active-list-header {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.active-list-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.active-list-emoji {
-  font-size: 2.2rem;
-  line-height: 1;
-}
-
-.active-list-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.active-list-title {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  font-family: inherit;
-}
-
-.active-list-progress-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.active-list-progress-bar {
-  width: 140px;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-
-body.theme-dark .active-list-progress-bar {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.active-list-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4f46e5, #06b6d4);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.active-list-progress-text {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.active-list-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-subtle-action {
-  background: transparent;
-  border: 1px solid var(--card-border, #e2e8f0);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-subtle-action:hover {
-  background: var(--bg-secondary, #f1f5f9);
-  color: var(--text-primary);
-}
-
-.btn-delete-list {
-  color: #ef4444 !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
-}
-
-.btn-delete-list:hover {
-  background: rgba(239, 68, 68, 0.08) !important;
-}
-
-/* Quick Add Form */
-.list-quick-add-wrap {
-  margin: 18px 0;
-}
-
-.list-quick-add-input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.list-quick-input {
-  flex: 1 1 auto;
-  height: 46px;
-  padding: 0 16px;
-  border-radius: 12px;
-  border: 1.5px solid var(--card-border, #cbd5e1);
-  background: var(--bg-surface, #ffffff);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.list-quick-input:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-}
-
-body.theme-dark .list-quick-input {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f8fafc;
-}
-
-.btn-list-add-item {
-  height: 46px;
-  padding: 0 20px;
-  border-radius: 12px;
-  border: none;
-  background: #4f46e5;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.btn-list-add-item:hover {
-  background: #4338ca;
-  transform: translateY(-1px);
-}
-
-/* List Items List */
-.list-items-container {
-  min-height: 220px;
-  max-height: 520px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.list-items-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.list-item-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-radius: 10px;
-  transition: background 0.15s ease;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-body.theme-dark .list-item-row {
-  border-bottom-color: rgba(255, 255, 255, 0.04);
-}
-
-.list-item-row:hover {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-body.theme-dark .list-item-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.list-item-row.is-checked .list-item-text {
-  text-decoration: line-through;
-  opacity: 0.5;
-  color: var(--text-muted);
-}
-
-.list-item-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.list-item-checkbox {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  cursor: pointer;
-  accent-color: #4f46e5;
-  flex-shrink: 0;
-}
-
-.list-item-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.4;
-  word-break: break-word;
-  cursor: pointer;
-  user-select: none;
-}
-
-.btn-list-item-del {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  opacity: 0.7;
-  transition: all 0.15s ease;
-}
-
-.btn-list-item-del:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  opacity: 1;
-}
-
-/* Emoji Picker in New List Modal */
-.emoji-picker-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.emoji-picker-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1.5px solid var(--card-border, #e2e8f0);
-  background: var(--card-bg, #ffffff);
-  font-size: 1.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.emoji-picker-btn:hover {
-  transform: scale(1.1);
-  border-color: #cbd5e1;
-}
-
-.emoji-picker-btn.selected {
-  border-color: #4f46e5 !important;
-  background: rgba(79, 70, 229, 0.1) !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
-  transform: scale(1.1);
-}
-
-
-/* ==========================================================================
-   LISTS BOARD: every list side by side, Skylight style (js/lists.js)
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   The board: columns side by side, scrolling sideways when they don't fit.
+   At 1024px wide, three columns show with the fourth peeking in.
+   -------------------------------------------------------------------------- */
 .lists-board {
   display: flex;
   gap: 16px;
@@ -438,39 +30,46 @@ body.theme-dark .list-item-row:hover {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding: 4px 2px 18px;
+  padding: 16px 0 16px 0;
   -webkit-overflow-scrolling: touch;
 }
 
 .list-column {
-  flex: 0 0 300px;
-  max-width: 86vw;
+  flex: 0 0 288px;
+  max-width: calc(100vw - 48px);
   scroll-snap-align: start;
-  background: var(--list-light, #f1f5f9);
-  border: 1.5px solid color-mix(in srgb, var(--list-accent, #0284c7) 28%, transparent);
-  border-radius: 20px;
-  padding: 14px;
+  background: color-mix(in srgb, var(--list-light, #f1f5f9) 72%, var(--card-bg, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--list-accent, #0284c7) 32%, transparent);
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: calc(100dvh - 190px);
+  gap: 16px;
+  max-height: calc(100dvh - 176px);
   box-sizing: border-box;
 }
 
-body.theme-dark .list-column {
-  background: color-mix(in srgb, var(--list-accent) 14%, #0f172a);
-  border-color: color-mix(in srgb, var(--list-accent) 40%, transparent);
-}
-
+/* Column header: icon badge, name and count, edit button */
 .list-column-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .list-column-emoji {
-  font-size: 1.6rem;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--list-accent) 35%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
   line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 
 .list-column-titles {
@@ -482,8 +81,10 @@ body.theme-dark .list-column {
 
 .list-column-title {
   margin: 0;
-  font-size: 1.08rem;
-  font-weight: 800;
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.2;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -493,29 +94,33 @@ body.theme-dark .list-column {
 .list-column-count {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--list-accent);
-}
-
-body.theme-dark .list-column-count {
-  color: color-mix(in srgb, var(--list-accent) 60%, #fff);
+  color: color-mix(in srgb, var(--list-accent) 80%, #0f172a);
 }
 
 .list-column-edit {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--text-secondary);
-  font-size: 1rem;
-  cursor: pointer;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-body.theme-dark .list-column-edit {
-  background: rgba(255, 255, 255, 0.08);
+.list-column-edit:hover,
+.list-column-edit:focus-visible {
+  background: color-mix(in srgb, var(--list-accent) 12%, transparent);
+  color: var(--list-accent);
+  outline: none;
 }
 
+/* Quick add: type and press Return, or + for several at once */
 .list-column-add {
   display: flex;
   gap: 8px;
@@ -525,13 +130,19 @@ body.theme-dark .list-column-edit {
 .list-column-add input {
   flex: 1;
   min-width: 0;
+  height: 48px;
+  box-sizing: border-box;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 14px;
-  padding: 11px 14px;
+  border-radius: 12px;
+  padding: 8px 16px;
   font: inherit;
   font-size: 0.95rem;
-  background: var(--card-bg, #fff);
+  background: var(--card-bg, #ffffff);
   color: var(--text-primary);
+}
+
+.list-column-add input::placeholder {
+  color: #94a3b8;
 }
 
 .list-column-add input:focus {
@@ -540,30 +151,33 @@ body.theme-dark .list-column-edit {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--list-accent) 20%, transparent);
 }
 
-body.theme-dark .list-column-add input {
-  background: #0f172a;
-  border-color: #334155;
-}
-
 .list-column-add button {
-  width: 44px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
+  padding: 0;
   background: var(--list-accent);
-  color: #fff;
-  font-size: 1.4rem;
-  font-weight: 700;
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
 }
 
+.list-column-add button:hover { filter: brightness(1.08); }
+.list-column-add button:active { transform: scale(0.94); }
+
+/* Items */
 .list-column-items {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
@@ -572,13 +186,10 @@ body.theme-dark .list-column-add input {
 .list-row {
   display: flex;
   align-items: stretch;
-  background: var(--card-bg, #fff);
-  border-radius: 14px;
+  background: var(--card-bg, #ffffff);
+  border-radius: 12px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-
-body.theme-dark .list-row {
-  background: #1e293b;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .list-row-check {
@@ -586,8 +197,8 @@ body.theme-dark .list-row {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
+  gap: 16px;
+  padding: 8px 0 8px 16px;
   min-height: 48px;
   border: none;
   background: none;
@@ -595,167 +206,459 @@ body.theme-dark .list-row {
   font: inherit;
   color: var(--text-primary);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Round tick box: empty ring, then filled in the list's colour with a white tick */
 .list-row-box {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 2px solid var(--list-accent);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 900;
-  color: #fff;
+  color: #ffffff;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.list-row-box svg {
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.list-row-check:hover .list-row-box {
+  background: color-mix(in srgb, var(--list-accent) 12%, transparent);
 }
 
 .list-row.is-checked .list-row-box {
   background: var(--list-accent);
 }
 
-.list-row-text {
-  font-size: 0.96rem;
-  line-height: 1.3;
-  word-break: break-word;
+.list-row.is-checked .list-row-box svg {
+  opacity: 1;
+  transform: none;
 }
 
-.list-row.is-checked .list-row-text {
+.list-row-check:active .list-row-box {
+  transform: scale(0.88);
+}
+
+/* The item just ticked gets a short pop */
+.list-row.is-just-ticked .list-row-box {
+  animation: listTickPop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes listTickPop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.list-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.list-row-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* Which meals a grocery item is for ("For: Cumberland Pie, Lancashire hotpot"):
+   its own line under the item, wrapping rather than cut off */
+.list-row-for {
+  display: block;
+  margin-top: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary, #64748b);
+}
+
+/* Ticked: faded, struck through, and (already) sorted to the bottom */
+.list-row.is-checked {
+  background: color-mix(in srgb, var(--card-bg, #ffffff) 55%, transparent);
+  box-shadow: none;
+}
+
+.list-row.is-checked .list-row-name {
   text-decoration: line-through;
   color: var(--text-muted, #94a3b8);
 }
 
+.list-row.is-checked .list-row-for {
+  text-decoration: none;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Remove: always visible (no hover on a tablet), full row height to tap */
 .list-row-del {
-  width: 40px;
+  width: 48px;
   flex-shrink: 0;
   border: none;
+  padding: 0;
   background: none;
-  color: var(--text-muted, #94a3b8);
+  color: #94a3b8;
   font-size: 0.85rem;
   cursor: pointer;
-  border-radius: 0 14px 14px 0;
+  border-radius: 0 12px 12px 0;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.list-row-del:hover {
+.list-row-del:hover,
+.list-row-del:focus-visible {
   color: #e11d48;
+  background: rgba(225, 29, 72, 0.06);
+  outline: none;
 }
 
+/* An empty list */
 .list-column-empty {
   text-align: center;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  padding: 18px 8px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--text-secondary, #64748b);
+  padding: 16px 8px;
+  border: 1px dashed color-mix(in srgb, var(--list-accent) 35%, transparent);
+  border-radius: 12px;
 }
 
+/* Clear done: a quiet full-width text button at the foot of the column */
 .list-column-clear {
-  border: none;
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--text-secondary);
-  border-radius: 12px;
+  width: 100%;
   min-height: 40px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  font: inherit;
+  font-size: 0.875rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.list-column-clear:hover,
+.list-column-clear:focus-visible {
+  background: color-mix(in srgb, var(--list-accent) 12%, transparent);
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* No lists at all */
+.lists-page-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  border: 1px dashed var(--card-border, #cbd5e1);
+  border-radius: 16px;
+}
+
+.lists-page-empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.lists-page-empty-title {
+  margin: 0;
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.lists-page-empty-text {
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #64748b);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-row,
+  .list-row-box,
+  .list-row-box svg { transition: none; }
+  .list-row.is-just-ticked .list-row-box { animation: none; }
+  .list-row-check:active .list-row-box { transform: none; }
+}
+
+/* Dark mode: a deep tint of each list's colour instead of the light pastel */
+body.theme-dark .list-column {
+  background: color-mix(in srgb, var(--list-accent) 12%, #0f172a);
+  border-color: color-mix(in srgb, var(--list-accent) 45%, transparent);
+  box-shadow: none;
+}
+body.theme-dark .list-column-emoji {
+  background: color-mix(in srgb, var(--list-accent) 22%, #1e293b);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--list-accent) 50%, transparent);
+}
+body.theme-dark .list-column-title { color: #f8fafc; }
+body.theme-dark .list-column-count { color: color-mix(in srgb, var(--list-accent) 55%, #ffffff); }
+body.theme-dark .list-column-edit { color: #94a3b8; }
+body.theme-dark .list-column-edit:hover,
+body.theme-dark .list-column-edit:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+body.theme-dark .list-column-add input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+body.theme-dark .list-column-add input::placeholder { color: #64748b; }
+body.theme-dark .list-row {
+  background: #1e293b;
+  box-shadow: none;
+}
+body.theme-dark .list-row-check { color: #f1f5f9; }
+body.theme-dark .list-row-box { border-color: color-mix(in srgb, var(--list-accent) 70%, #ffffff); }
+body.theme-dark .list-row.is-checked { background: color-mix(in srgb, #1e293b 50%, transparent); }
+body.theme-dark .list-row.is-checked .list-row-box { background: var(--list-accent); border-color: var(--list-accent); }
+body.theme-dark .list-row.is-checked .list-row-name { color: #64748b; }
+body.theme-dark .list-row-for { color: #a3b1c6; }
+body.theme-dark .list-row.is-checked .list-row-for { color: #64748b; }
+body.theme-dark .list-row-del { color: #64748b; }
+body.theme-dark .list-row-del:hover,
+body.theme-dark .list-row-del:focus-visible { color: #fb7185; background: rgba(251, 113, 133, 0.08); }
+body.theme-dark .list-column-empty { color: #94a3b8; border-color: color-mix(in srgb, var(--list-accent) 40%, transparent); }
+body.theme-dark .list-column-clear { color: #94a3b8; }
+body.theme-dark .list-column-clear:hover,
+body.theme-dark .list-column-clear:focus-visible { background: rgba(255, 255, 255, 0.06); color: #f8fafc; }
+body.theme-dark .lists-page-empty { border-color: #334155; }
+body.theme-dark .lists-page-empty-title { color: #f8fafc; }
+body.theme-dark .lists-page-empty-text { color: #94a3b8; }
+
+/* Phones: columns nearly full width, one at a time */
+@media (max-width: 600px) {
+  .lists-view-container { padding: 16px 16px 48px 16px; }
+  .list-column { flex-basis: calc(100vw - 48px); }
+}
+
+
+/* ==========================================================================
+   SIDE PANELS: Add items (#list-item-modal) and New / Edit list
+   (#create-list-modal). Both are shared side panels (js/side-panel.js);
+   these fill in the parts that are the same as the Tasks drawer.
+   ========================================================================== */
+.list-panel-form {
+  display: flex !important;
+  flex-direction: column;
+  gap: 24px !important;
+}
+
+#list-item-form {
+  flex: 1;
+}
+
+.list-panel-form .drawer-section-label-row {
+  margin: 0 0 8px 0;
+}
+
+.list-panel-form label.drawer-section-label {
+  margin: 0;
+  cursor: default;
+}
+
+/* Several items, one per line */
+.list-panel-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 160px;
+  resize: vertical;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  padding: 16px;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.list-panel-textarea::placeholder { color: #94a3b8; }
+
+.list-panel-textarea:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+body.theme-dark .list-panel-textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.list-item-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+}
+
+body.theme-dark .list-item-hint { color: #94a3b8; }
+
+/* Which list: round icon pills like the Tasks drawer's people, filled in
+   the list's colour with a tick when picked */
+.list-item-picker {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 16px !important;
+  padding: 0 !important;
+}
+
+.list-item-picker-pill {
+  width: 72px;
+  min-width: 72px;
+}
+
+.list-item-picker-emoji {
+  font-size: 1.4rem;
+  font-weight: 400;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.list-item-picker-pill .drawer-profile-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Not picked: the list's own pale colour, so every list is recognisable */
+.list-item-picker-pill:not(.active) .drawer-profile-avatar {
+  background: var(--list-light);
+  border: 2px solid color-mix(in srgb, var(--list-accent) 35%, transparent);
+}
+
+body.theme-dark .list-item-picker-pill:not(.active) .drawer-profile-avatar {
+  background: color-mix(in srgb, var(--list-accent) 18%, #0f172a);
+  border-color: color-mix(in srgb, var(--list-accent) 45%, transparent);
+}
+
+/* Icon grid: the Tasks drawer's emoji tiles, about four rows tall, scrolling
+   inside the panel so Colour and Save stay in view */
+#new-list-emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 8px;
+  max-height: 232px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  background: var(--card-bg, #ffffff);
+  --accent: #0284c7;
+}
+
+#new-list-emoji-picker .drawer-emoji-item {
+  height: 48px;
+  border-radius: 12px;
+  font-size: 1.5rem;
   cursor: pointer;
 }
 
-body.theme-dark .list-column-clear {
-  background: rgba(255, 255, 255, 0.08);
+body.theme-dark #new-list-emoji-picker {
+  background: #0f172a;
+  border-color: #334155;
 }
 
-/* Colour picker in the list side panel */
+/* Colour: round swatches; the picked one fills in with a white dot and a ring */
 .list-color-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .list-color-swatch {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
   border-radius: 50%;
-  border: 2px solid;
+  border: 2px solid var(--list-accent);
+  background: var(--list-light);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .list-color-swatch span {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
+  background: var(--list-accent);
 }
 
 .list-color-swatch.is-selected {
-  box-shadow: 0 0 0 3px var(--card-bg, #fff), 0 0 0 5px var(--text-primary);
+  background: var(--list-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--list-accent) 25%, transparent);
 }
 
-/* Add items side panel */
-.list-item-hint {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+.list-color-swatch.is-selected span {
+  background: #ffffff;
 }
 
-.list-item-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.list-color-swatch:focus-visible {
+  outline: 2px solid var(--list-accent);
+  outline-offset: 4px;
 }
 
-.list-item-picker-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 6px 14px;
-  border-radius: 99px;
-  border: 1.5px solid color-mix(in srgb, var(--list-accent) 35%, transparent);
-  background: var(--card-bg, #fff);
-  color: var(--text-primary);
-  font-weight: 600;
-  cursor: pointer;
+body.theme-dark .list-color-swatch:not(.is-selected) {
+  background: color-mix(in srgb, var(--list-accent) 18%, #0f172a);
 }
 
-.list-item-picker-pill.is-selected {
-  background: var(--list-light);
-  border-color: var(--list-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--list-accent) 20%, transparent);
+/* Footer: one big pill Save button with Delete List as a quiet full-width
+   button under it, as css/side-panel.css intends. (Two stray comment ends
+   in side-panel.css stop its footer rules applying, so they're set here for
+   these two panels only.) */
+#list-item-modal.side-panel .modal-footer,
+#create-list-modal.side-panel .modal-footer {
+  display: flex !important;
+  flex-direction: column-reverse !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 0 24px 0 !important;
+  border: none !important;
+  background: none !important;
 }
 
-body.theme-dark .list-item-picker-pill {
-  background: #0f172a;
+#create-list-modal.side-panel .btn-sticky-save,
+#list-item-modal.side-panel .btn-primary-modal {
+  width: 100% !important;
+  min-height: 56px;
+  margin: 0 !important;
+  flex: none !important;
 }
 
-body.theme-dark .list-item-picker-pill.is-selected {
-  background: color-mix(in srgb, var(--list-accent) 25%, #0f172a);
+#create-list-modal.side-panel #btn-delete-list-panel {
+  width: 100% !important;
+  min-height: 48px;
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  border-radius: 28px !important;
+  flex: none !important;
 }
-
-/* Bigger icon choice for lists: a tidy grid, about four rows tall, that
-   scrolls inside the panel so Colour and Create stay in view */
-#new-list-emoji-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-  gap: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 8px;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.03);
-}
-
-body.theme-dark #new-list-emoji-picker {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#new-list-emoji-picker .emoji-picker-btn {
-  width: 100%;
-  aspect-ratio: 1;
-  height: auto;
-}
-
-/* Which meals a grocery item is for ("For: Cumberland Pie, Lancashire hotpot") */
-.list-row-for { display: block; margin-top: 2px; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary, #64748b); line-height: 1.3; }
-.list-row.is-checked .list-row-for { text-decoration: none; }
-body.theme-dark .list-row-for { color: #94a3b8; }

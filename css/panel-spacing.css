@@ -27,8 +27,9 @@ dialog.side-panel .side-panel-back { padding: 8px !important; }
 dialog.side-panel #list-item-text { padding: 16px !important; }
 dialog.side-panel #btn-save-list-item { padding: 16px !important; }
 dialog.side-panel .modal-body { gap: 16px !important; }
-dialog.side-panel #new-list-title-input { padding: 8px 16px !important; }
-dialog.side-panel #new-list-emoji-picker { margin-top: 8px !important; margin-bottom: 0 !important; }
+dialog.side-panel .list-panel-form .drawer-input-row { padding: 16px !important; gap: 16px !important; }
+dialog.side-panel #new-list-title-input { padding: 0 !important; }
+dialog.side-panel #new-list-emoji-picker { margin-top: 0 !important; margin-bottom: 0 !important; }
 dialog.side-panel #new-list-color-picker { gap: 8px !important; }
 dialog.side-panel .modal-footer.create-list-footer { gap: 8px !important; }
 dialog.side-panel #btn-save-new-list { padding: 16px !important; gap: 8px !important; }

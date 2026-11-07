@@ -107,16 +107,11 @@
 
 /* Lists */
 #view-lists .lists-view-container { padding: 16px 24px 48px 24px !important; }
-#view-lists .lists-header { margin-top: 0 !important; margin-bottom: 16px !important; }
-#view-lists .lists-header-title-row { gap: 8px !important; }
-#view-lists .lists-subtitle { margin-top: 8px !important; margin-bottom: 0 !important; }
-#view-lists #lists-board { padding: 8px 0 16px 0 !important; }
-#view-lists .list-column { padding: 16px !important; gap: 16px !important; }
-#view-lists .list-column-head { gap: 8px !important; }
-#view-lists .list-column-add > input { padding: 8px 16px !important; }
-#view-lists .list-column-items { gap: 8px !important; }
-#view-lists .list-row-check { padding: 8px 16px !important; gap: 16px !important; }
-#view-lists .list-column-empty { padding: 16px 8px !important; }
+#view-lists .calendar-header { padding: 8px 8px 16px 8px !important; }
+#view-lists .calendar-header-controls { gap: 8px !important; }
+#view-lists #lists-weather-badge { gap: 8px !important; }
+#view-lists #btn-create-new-list { padding: 8px 16px !important; gap: 8px !important; }
+/* Columns, rows and panels: on the 8px grid in css/lists.css */
 
 /* Rewards */
 #view-rewards .rewards-view-container { padding: 24px 32px 88px 32px !important; gap: 24px !important; }
