@@ -3762,3 +3762,102 @@ body.theme-dark .skylight-plan-drawer .cat-bubble { background: #0f172a; border-
 #plan-meal-drawer #pane-from-recipes,
 #plan-meal-drawer #pane-new-entry { flex: none !important; overflow: visible !important; min-height: auto !important; max-height: none !important; }
 #plan-meal-drawer #drawer-recipes-list { flex: none !important; overflow: visible !important; max-height: none !important; }
+
+/* ==========================================================================
+   Shared by Plan Meal and the recipe card: Breakfast / Lunch / Dinner pills
+   in the meal grid's colours, and the avatar "Who's cooking" picker.
+   ========================================================================== */
+.meal-pill { min-height: 48px; flex: 1; border: 1.5px solid rgba(15, 23, 42, 0.12); border-radius: 12px; background: var(--card-bg, #ffffff); color: var(--text-secondary, #64748b); font: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; }
+.meal-pill[data-category="breakfast"] { --meal-color: #10b981; }
+.meal-pill[data-category="lunch"] { --meal-color: #06b6d4; }
+.meal-pill[data-category="dinner"] { --meal-color: #8b5cf6; }
+.meal-pill.active {
+  border-color: var(--meal-color);
+  background: color-mix(in srgb, var(--meal-color) 12%, #ffffff);
+  color: color-mix(in srgb, var(--meal-color) 70%, #0f172a);
+  font-weight: 700;
+}
+body.theme-dark .meal-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+body.theme-dark .meal-pill.active { background: color-mix(in srgb, var(--meal-color) 24%, #0f172a); border-color: var(--meal-color); color: #f8fafc; }
+
+.chef-select-chip.drawer-profile-pill,
+.chef-select-chip.drawer-profile-pill.is-selected {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  flex-direction: column;
+  min-width: 56px;
+}
+.meal-block-cook-tag.is-unknown-cook,
+.is-unknown-cook { background: #f1f5f9 !important; color: #64748b !important; border: 1px dashed #cbd5e1 !important; }
+body.theme-dark .is-unknown-cook { background: #1e293b !important; color: #94a3b8 !important; border-color: #475569 !important; }
+
+/* ==========================================================================
+   Recipe card, tidied to match the panels and pop-ups: rounder card, a round
+   close button, serif title, a coloured recipe-type badge, roomier
+   ingredients and method, and a "Plan it" footer with the same date picker,
+   meal pills and cook avatars as the Plan Meal panel. 8px grid.
+   ========================================================================== */
+.cooking-recipe-dialog, .cooking-modal-content { max-width: min(800px, 94vw); }
+.cooking-modal-content { border-radius: 28px; border: 1px solid rgba(15, 23, 42, 0.08); }
+
+.cooking-modal-hero { min-height: 176px; max-height: 208px; padding: 24px; }
+.cooking-hero-overlay { padding: 24px; gap: 8px; background: linear-gradient(0deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.5) 55%, rgba(15, 23, 42, 0.1) 100%); }
+.btn-cooking-close { top: 16px; right: 16px; width: 40px; height: 40px; background: rgba(15, 23, 42, 0.55) !important; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.cooking-badge { margin: 0; padding: 4px 8px; border-radius: 999px; font-size: 0.7rem; letter-spacing: 0.04em; background: #ede9fe; color: #5b21b6; }
+.cooking-badge[data-kind="breakfast"] { background: #d1fae5; color: #065f46; }
+.cooking-badge[data-kind="lunch"] { background: #cffafe; color: #0e7490; }
+.cooking-badge[data-kind="dinner"] { background: #ede9fe; color: #5b21b6; }
+.cooking-modal-title { font-family: Georgia, 'Playfair Display', serif; font-weight: 500; font-size: 1.9rem; letter-spacing: -0.01em; margin: 0; }
+.cooking-modal-subtitle { margin: 0; font-size: 0.95rem; }
+.cooking-meta-pills { gap: 8px; margin-top: 8px; }
+.cooking-pill { padding: 4px 8px; border-radius: 999px; font-size: 0.78rem; background: rgba(255, 255, 255, 0.18); }
+
+.cooking-modal-body { padding: 24px; }
+.cooking-split-layout { gap: 32px; }
+.cooking-box-header { gap: 8px; margin-bottom: 8px; }
+.cooking-box-title { font-size: 1.1rem; }
+.cook-grocery-btn {
+  min-height: 32px;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  border: 1px solid #bae6fd !important;
+  background: #f0f9ff !important;
+  color: #0369a1 !important;
+  font-size: 0.82rem !important;
+}
+.cooking-subtle-hint { margin: 0 0 8px; font-size: 0.82rem; }
+.cooking-checklist { gap: 0; }
+.cooking-check-item { min-height: 40px; padding: 8px; gap: 16px; border-radius: 12px; font-size: 0.95rem; color: var(--text-primary); }
+.cooking-check-item:hover { background: rgba(15, 23, 42, 0.04); }
+.cooking-check-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #0284c7; flex-shrink: 0; cursor: pointer; }
+.cooking-check-item label { cursor: pointer; flex: 1; }
+.cooking-steps-list { gap: 8px; margin-top: 8px; }
+.cooking-step-row { padding: 16px; gap: 16px; border-radius: 16px; }
+.cooking-step-badge { width: 28px; height: 28px; }
+.cooking-step-text { font-size: 0.95rem; line-height: 1.5; color: var(--text-primary); }
+
+/* Plan it */
+.cooking-modal-footer.cook-plan { padding: 16px 24px 24px; gap: 16px; border-top: 1px solid rgba(15, 23, 42, 0.08); }
+.cook-plan-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+.cook-plan-date { flex: 1 1 240px; }
+.cook-plan-meal { flex: 1.3 1 280px; }
+.cook-plan-meal .meal-pills { display: flex; gap: 8px; }
+.cook-plan-who { flex: 1 1 360px; }
+.cook-plan-who .drawer-profiles-pills-row { display: flex; gap: 16px; padding: 8px 0 0; overflow-x: auto; }
+.cook-plan-submit { width: auto; min-width: 200px; min-height: 48px; margin: 0 0 8px auto; padding: 0 24px; }
+.cook-plan .ev-native-input { padding: 8px 16px !important; }
+@media (max-width: 680px) { .cook-plan-submit { width: 100%; margin: 0; } }
+
+body.theme-dark .cooking-modal-content { border-color: #334155; }
+body.theme-dark .cooking-modal-footer.cook-plan { border-top-color: #334155; background: #0f172a; }
+body.theme-dark .cook-grocery-btn { background: rgba(2, 132, 199, 0.15) !important; border-color: rgba(56, 189, 248, 0.35) !important; color: #7dd3fc !important; }
+body.theme-dark .cooking-check-item:hover { background: rgba(255, 255, 255, 0.05); }
+/* Recipe card: photo edge to edge, old footer Close stays hidden, all six
+   cook avatars fit beside the button */
+.cooking-modal-content.modal-content { padding: 0 !important; }
+.cooking-modal-hero { border-radius: 0; }
+.cook-plan [hidden], .cooking-modal-footer [hidden] { display: none !important; }
+.cook-plan-who .drawer-profiles-pills-row { gap: 8px; }

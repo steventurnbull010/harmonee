@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=18">
-  <link rel="stylesheet" href="css/meals.css?v=14">
+  <link rel="stylesheet" href="css/meals.css?v=16">
   <link rel="stylesheet" href="css/calendar.css?v=12">
   <link rel="stylesheet" href="css/lists.css?v=4">
   <link rel="stylesheet" href="css/rewards.css?v=2">
@@ -2025,7 +2025,7 @@
     <div class="modal-backdrop-blur"></div>
     <div class="modal-content cooking-modal-content">
       <div class="cooking-modal-hero" id="cooking-modal-hero">
-        <button type="button" class="btn-modal-close btn-cooking-close" id="btn-close-cooking-modal" aria-label="Close modal" title="Close">✕</button>
+        <button type="button" class="btn-modal-close btn-cooking-close" id="btn-close-cooking-modal" aria-label="Close" title="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         <div class="cooking-hero-overlay">
           <span class="cooking-badge" id="cooking-badge">Dinner Recipe</span>
           <h2 id="cooking-modal-title" class="cooking-modal-title">Skillet Lasagna</h2>
@@ -2043,10 +2043,10 @@
           <!-- Left: Ingredients Checklist -->
           <div class="cooking-ingredients-col">
             <div class="cooking-box-header">
-              <h4 class="cooking-box-title">🛒 Ingredients Checklist</h4>
-              <button type="button" class="btn-subtle-link" id="btn-cooking-add-grocery">＋ Add to Grocery List</button>
+              <h4 class="cooking-box-title">🛒 Ingredients</h4>
+              <button type="button" class="btn-subtle-link cook-grocery-btn" id="btn-cooking-add-grocery">＋ Add to grocery list</button>
             </div>
-            <p class="cooking-subtle-hint">Tap an ingredient to check it off as you prep</p>
+            <p class="cooking-subtle-hint">Tap to tick them off as you go</p>
             <ul class="cooking-checklist" id="cooking-checklist">
               <!-- Checklist items with checkable boxes -->
             </ul>
@@ -2054,7 +2054,7 @@
 
           <!-- Right: Step-by-Step Cooking Guide -->
           <div class="cooking-steps-col">
-            <h4 class="cooking-box-title">👨‍🍳 Cooking Method</h4>
+            <h4 class="cooking-box-title">👨‍🍳 Method</h4>
             <div class="cooking-steps-list" id="cooking-steps-list">
               <!-- Step items with tickable steps -->
             </div>
@@ -2062,52 +2062,34 @@
         </div>
       </div>
 
-      <div class="cooking-modal-footer">
-        <!-- Top Row: Scheduling Inputs on Left, Action Buttons on Right -->
-        <div class="cooking-footer-main-row">
-          <div class="cooking-footer-inputs">
-            <div class="cooking-plan-pill-field">
-              <span class="cooking-pill-icon">📅</span>
-              <input type="date" id="cooking-plan-date-input" class="cooking-pill-input" aria-label="Meal Date">
+      <!-- Plan it: same pieces as the Plan Meal panel -->
+      <div class="cooking-modal-footer cook-plan">
+        <div class="cook-plan-row">
+          <label class="ev-field cook-plan-date" for="cooking-plan-date-input">
+            <span class="ev-field-label">Date</span>
+            <input type="date" id="cooking-plan-date-input" class="ev-native-input" aria-label="Meal date">
+          </label>
+          <div class="ev-field cook-plan-meal">
+            <span class="ev-field-label">Meal</span>
+            <div class="drawer-segmented-pills meal-pills" id="cooking-plan-slot-pills" role="group" aria-label="Meal">
+              <button type="button" class="drawer-pill-segment meal-pill" data-category="breakfast">Breakfast</button>
+              <button type="button" class="drawer-pill-segment meal-pill" data-category="lunch">Lunch</button>
+              <button type="button" class="drawer-pill-segment meal-pill" data-category="dinner">Dinner</button>
             </div>
-            <div class="cooking-plan-pill-field">
-              <span class="cooking-pill-icon">🍽️</span>
-              <select id="cooking-plan-slot-select" class="cooking-pill-select" aria-label="Meal Category">
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="cooking-footer-actions">
-            <button type="button" class="btn-skylight-plan-confirm" id="btn-cooking-add-to-plan">
-              <span>📅 Add to Meal Plan</span>
-            </button>
-            <button type="button" class="btn-cancel" id="btn-cooking-close-footer">Close</button>
+            <select id="cooking-plan-slot-select" hidden aria-hidden="true" tabindex="-1">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+            </select>
           </div>
         </div>
-
-        <!-- Bottom Row: Who's Cooking? Multi-select Chef Chips -->
-        <div class="cooking-chefs-row">
-          <span class="cooking-chefs-label">Cook:</span>
-          <div class="cooking-chef-chips" id="cooking-chef-chips">
-            <button type="button" class="cooking-chef-chip is-selected" data-chef="Steve">
-              <span class="chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
-            </button>
-            <button type="button" class="cooking-chef-chip" data-chef="Sorcha">
-              <span class="chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
-            </button>
-            <button type="button" class="cooking-chef-chip" data-chef="Ava">
-              <span class="chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
-            </button>
-            <button type="button" class="cooking-chef-chip" data-chef="Dara">
-              <span class="chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
-            </button>
-            <button type="button" class="cooking-chef-chip" data-chef="Family">
-              <span class="chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
-            </button>
+        <div class="cook-plan-row cook-plan-bottom">
+          <div class="ev-field cook-plan-who">
+            <span class="ev-field-label">Who's cooking <span class="ev-day-name" id="cooking-chef-summary"></span></span>
+            <div class="drawer-profiles-pills-row" id="cooking-chef-chips" role="group" aria-label="Who's cooking"></div>
           </div>
+          <button type="button" class="btn-cancel" id="btn-cooking-close-footer" hidden>Close</button>
+          <button type="button" class="btn-skylight-drawer-submit cook-plan-submit" id="btn-cooking-add-to-plan">Add to meal plan</button>
         </div>
       </div>
     </div>
@@ -2648,7 +2630,7 @@
   <script src="js/tasks.js?v=25"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
-  <script type="module" src="js/meals.js?v=22"></script>
+  <script type="module" src="js/meals.js?v=23"></script>
   <script type="module" src="app.js?v=220"></script>
 </body>
 </html>
