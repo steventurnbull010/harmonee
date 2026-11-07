@@ -153,6 +153,7 @@ function detectEmojiForTitle(text) {
   if (t.includes("birth") || t.includes("party")) return "🎂";
   if (t.includes("dinner") || t.includes("lunch") || t.includes("restaur") || t.includes("meal")) return "🍽️";
   if (t.includes("cinema") || t.includes("movie") || t.includes("film")) return "🎬";
+  if (t.includes("theatre") || t.includes("theater") || t.includes("panto") || t.includes("musical") || t.includes("ballet") || t.includes("show")) return "🎭";
   if (t.includes("shop") || t.includes("grocer")) return "🛒";
   if (t.includes("dog") || t.includes("cat") || t.includes("vet")) return "🐕";
   if (t.includes("trip") || t.includes("flight") || t.includes("holiday") || t.includes("airport")) return "✈️";
@@ -447,7 +448,8 @@ function setEventDurationValue(select, value) {
 
 // slot (optional): { start: "09:00", duration: "8 hours" } from tapping or
 // dragging on the calendar grid
-function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null) {
+// prefill (new events only, e.g. from voice): { title, members: [names] }
+function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null, prefill = null) {
   const modal = document.getElementById("event-modal");
   const form = document.getElementById("form-event");
   const modalTitle = document.getElementById("event-modal-title");
@@ -860,8 +862,14 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     }
 
     selectedEventMembers = filtered.length ? [...filtered] : ["Family"];
+    if (prefill && Array.isArray(prefill.members) && prefill.members.length) selectedEventMembers = [...prefill.members];
     updateMemberChipsUI();
     if (btnDelete) btnDelete.style.display = "none";
+    if (prefill && prefill.title && titleInput) {
+      titleInput.value = prefill.title;
+      const detected = detectEmojiForTitle(prefill.title);
+      if (detected) setEmoji(detected);
+    }
   }
 
   // When: Starts and Ends (the device's own time pickers) and All day. Saving

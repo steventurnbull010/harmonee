@@ -1225,7 +1225,8 @@ function wireDrawerRota() {
   });
 }
 
-function openSkylightTaskDrawer(taskId = null) {
+// prefill (new tasks only, e.g. from voice): { title, people: [names], date, daily }
+function openSkylightTaskDrawer(taskId = null, prefill = null) {
   const overlay = document.getElementById("skylight-task-drawer-overlay");
   if (!overlay) return;
 
@@ -1284,6 +1285,16 @@ function openSkylightTaskDrawer(taskId = null) {
     if (timeToggle) timeToggle.checked = false;
     drawerRewardValue = 1;
     drawerRoutineSlot = "morning";
+    if (prefill) {
+      if (prefill.title) {
+        titleInput.value = prefill.title;
+        const guess = typeof detectEmojiForChore === "function" ? detectEmojiForChore(prefill.title) : null;
+        if (guess) drawerSelectedEmoji = guess;
+      }
+      if (Array.isArray(prefill.people) && prefill.people.length) drawerSelectedProfiles = [...prefill.people];
+      if (prefill.date instanceof Date && !isNaN(prefill.date)) drawerSelectedDate = new Date(prefill.date);
+      if (prefill.daily) { drawerSchedule = "daily"; drawerCurrentType = "routine"; drawerRoutineSlot = prefill.slot || "anytime"; }
+    }
   }
 
   // Rota (different person each day)

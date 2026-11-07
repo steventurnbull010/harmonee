@@ -305,6 +305,7 @@
           <p class="today-wordmark" aria-label="harmonee"><span aria-hidden="true">harmonee</span></p>
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weatherLine}</p>
+          ${window.Voice && window.Voice.supported() ? `<button type="button" class="today-say-it" data-voice aria-label="Say it: add to a list, the calendar or tasks by speaking">${window.Voice.MIC_SVG}<span>Say it</span></button>` : ""}
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
         </header>
         <div class="today-grid">
@@ -439,12 +440,21 @@
         ${lists.length > 1 ? `<div class="quick-list-pills" role="group" aria-label="Which list">${lists.map(l => `<button type="button" class="quick-list-pill${l.id === list.id ? " is-on" : ""}" data-quick-list="${esc(l.id)}" aria-pressed="${l.id === list.id}">${esc(l.emoji || "📋")} ${esc(l.title)}</button>`).join("")}</div>` : ""}
         <div class="quick-list-row">
           <input id="quick-list-input" class="quick-list-input" type="text" placeholder="Add to ${esc(list.title)}" aria-label="Add to ${esc(list.title)}" enterkeyhint="done" value="${esc(typed)}">
+          ${window.Voice && window.Voice.supported() ? window.Voice.micButton("list", "Say what to add").replace('data-voice="list"', `data-voice="list" data-voice-list="${esc(list.id)}"`) : ""}
           <button type="submit" class="quick-list-add">Add</button>
         </div>
         ${usuals.length ? `<div class="quick-list-usuals" role="group" aria-label="Usuals">${usuals.map(u => `<button type="button" class="quick-list-usual" data-quick-usual="${esc(u.text)}"><span aria-hidden="true">+</span> ${esc(u.text)}</button>`).join("")}</div>` : ""}
         ${(dlg._log || []).length ? `<ul class="quick-list-log" aria-live="polite">${dlg._log.map(l => `<li><span aria-hidden="true">${l.note === "added" ? "✓" : "•"}</span> ${esc(l.name)} <em>${esc(l.note)}</em></li>`).join("")}</ul>` : ""}
       </form>`;
   }
+
+  // Something added by voice: show it here straight away
+  document.addEventListener("harmonee:voice-list", () => {
+    const el = document.getElementById("today-screen");
+    if (el && !el.hidden) paint(el);
+    const dlg = document.getElementById("quick-list-dialog");
+    if (dlg && dlg.open) drawQuickList();
+  });
 
   function closeTodayScreen() {
     const el = document.getElementById("today-screen");
