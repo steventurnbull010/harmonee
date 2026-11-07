@@ -232,6 +232,14 @@ function applyListOp(lists, tomb, op, now) {
       list.items = list.items.filter(i => !tomb[i.id]);
       return res;
     }
+    case "groceryRemoveMeal": {
+      // A planned meal's ingredients coming back off (see Grocery.removeMealFromItems)
+      const list = findListForOp(lists, tomb, GROCERIES_LIST_ID);
+      if (!list || !window.Grocery || !window.Grocery.removeMealFromItems) return { removed: [], reduced: 0 };
+      const res = window.Grocery.removeMealFromItems(list.items, { sourceKey: op.sourceKey || "", title: op.title || "", lines: op.lines || [], keys: op.keys || null });
+      res.removed.forEach(id => { tomb[id] = now; });
+      return res;
+    }
     case "noteUsuals": {
       // "Your usuals": what gets added to this list, and how often, kept
       // with the list so every device sees the same ones

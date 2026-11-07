@@ -113,9 +113,10 @@
     take(/\bin (\d+) (day|days|week|weeks)\b/, (m) => addDays(today, Number(m[1]) * (m[2].startsWith("week") ? 7 : 1)));
     take(/\b(?:on )?(?:this )?weekend\b/, () => addDays(today, (6 - todayIdx + 7) % 7 || (todayIdx === 6 ? 0 : 7)));
     // "the 14th of november", "14th november", "november the 14th", "on the 14th"
-    take(new RegExp(`\\b(?:on )?(?:the )?(\\d{1,2})(?:st|nd|rd|th)?(?: of)? ${MONTH_RE}\\b`), (m) => dayMonth(Number(m[1]), monthIndex(m[2]), today));
-    take(new RegExp(`\\b(?:on )?${MONTH_RE} (?:the )?(\\d{1,2})(?:st|nd|rd|th)?\\b`), (m) => dayMonth(Number(m[2]), monthIndex(m[1]), today));
-    take(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th)\b/, (m) => dayOnly(Number(m[1]), today));
+    // (a weekday before it goes too: "monday the 16th", "friday 4th december")
+    take(new RegExp(`\\b(?:on )?(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday) )?(?:the )?(\\d{1,2})(?:st|nd|rd|th)?(?: of)? ${MONTH_RE}\\b`), (m) => dayMonth(Number(m[1]), monthIndex(m[2]), today));
+    take(new RegExp(`\\b(?:on )?(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday) )?${MONTH_RE} (?:the )?(\\d{1,2})(?:st|nd|rd|th)?\\b`), (m) => dayMonth(Number(m[2]), monthIndex(m[1]), today));
+    take(/\b(?:on )?(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday) )?(?:the )?(\d{1,2})(?:st|nd|rd|th)\b/, (m) => dayOnly(Number(m[1]), today));
     // "wednesday week", "next wednesday", "this wednesday", "on wednesday"
     take(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday) week\b/, (m) => addDays(nextWeekday(DAYS.indexOf(m[1]), today, false), 7));
     take(/\b(?:on |this |next |coming |this coming )?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b/, (m) => {

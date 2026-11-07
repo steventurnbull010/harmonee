@@ -249,6 +249,68 @@
     return result;
   }
 
+  // ---- Taking a meal's ingredients back off ---------------------------------------
+  // sourceKey is "Title|YYYY-MM-DD|slot" (how a planned meal's ingredients are
+  // added). Items only this meal needed go; on items another meal also needs,
+  // just this meal's amount comes off. Bought (ticked) items are left alone.
+  // keys: only these ingredients (the ones still ticked in the question).
+  // returns { removed: [item ids], reduced: n }
+  function removeMealFromItems(items, { sourceKey = "", title = "", lines = [], keys = null } = {}) {
+    const res = { removed: [], reduced: 0 };
+    if (!sourceKey) return res;
+    const only = Array.isArray(keys) ? new Set(keys) : null;
+    const mine = {}; // ingredient key -> the amounts this meal added
+    (lines || []).forEach(line => {
+      const p = parseLine(line);
+      if (!p) return;
+      mine[p.key] = mine[p.key] || {};
+      addAmount(mine[p.key], p);
+    });
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      const g = it && !it.checked && it.grocery;
+      if (!g || !Array.isArray(g.sourceKeys) || !g.sourceKeys.includes(sourceKey)) continue;
+      if (only && !only.has(g.key)) continue;
+      const others = g.sourceKeys.filter(k => k !== sourceKey);
+      // Typed in by hand before the meal added to it: that stays, just without the meal's share
+      if (!others.length && !byHand(it)) { res.removed.push(it.id); items.splice(i, 1); continue; }
+      const take = mine[g.key] || {};
+      Object.keys(take).forEach(dim => {
+        if (dim === "loose" || typeof g.amounts[dim] !== "number") return;
+        g.amounts[dim] = round(g.amounts[dim] - take[dim]);
+        if (g.amounts[dim] <= 0) delete g.amounts[dim];
+      });
+      if (!Object.keys(g.amounts).length) g.amounts.loose = true;
+      g.sourceKeys = others;
+      if (title && !others.some(k => k.split("|")[0] === title)) g.sources = (g.sources || []).filter(x => x !== title);
+      it.grocery = g;
+      it.text = describe(g);
+      res.reduced++;
+    }
+    return res;
+  }
+
+  // Put on the list by someone typing it (or a usual), not by a recipe
+  const byHand = (it) => !it.source || it.source === "Manual";
+
+  // A planned meal's ingredients still on the list (not yet bought), for the
+  // "take these off too?" question. others: the other meals that need it.
+  function mealItemsOnList(items, sourceKey) {
+    return (items || []).filter(it => it && !it.checked && it.grocery && (it.grocery.sourceKeys || []).includes(sourceKey)).map(it => {
+      const others = [...new Set(it.grocery.sourceKeys.filter(k => k !== sourceKey).map(k => k.split("|")[0]))];
+      return { id: it.id, key: it.grocery.key, text: displayText(it), others, byHand: byHand(it) };
+    });
+  }
+
+  // How one recipe line reads on its own ("500g Beef mince"), for the add question
+  function lineText(line) {
+    const p = parseLine(line);
+    if (!p) return null;
+    const amounts = {};
+    addAmount(amounts, p);
+    return { key: p.key, name: p.name, basic: !!p.basic, text: describe({ key: p.key, name: p.name, label: p.label, amounts }) };
+  }
+
   // "For: Cumberland Pie, Lancashire hotpot"
   function sourcesLabel(item) {
     const g = item && item.grocery;
@@ -280,5 +342,5 @@
     return item ? item.text : "";
   }
 
-  window.Grocery = { parseLine, addLinesToItems, describe, detailsOf, sourcesLabel, summary, displayText, includeBasics, setIncludeBasics };
+  window.Grocery = { parseLine, addLinesToItems, removeMealFromItems, mealItemsOnList, lineText, describe, detailsOf, sourcesLabel, summary, displayText, includeBasics, setIncludeBasics };
 })();

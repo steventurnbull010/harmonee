@@ -53,6 +53,7 @@
       const as = e.target.closest("[data-voice-as]");
       if (as) { act(window.VoiceIntent.parse(sheet._heard || "", ctx({ ...mode, want: as.getAttribute("data-voice-as") })), sheet._heard); return; }
       if (e.target.closest("[data-voice-undo]") && typeof sheet._undo === "function") { sheet._undo(); sheet._undo = null; return; }
+      if (e.target.closest("[data-voice-groc]") && sheet._groc) { const g = sheet._groc; sheet._groc = null; stop(); window.MealGroceries.askRemove(g.meal, g.dateStr, g.slot); return; }
       const pick = e.target.closest("[data-voice-pick]");
       if (pick) { clearTimeout(closeTimer); removePicked(pick.getAttribute("data-voice-pick")); return; }
     });
@@ -344,6 +345,7 @@
       out.push({
         type: "meal", score: sc, soon: d < today ? Infinity : d.getTime(), icon: meal.emoji || "🍽️", title: meal.title,
         when: `${SLOT_NAME[slot] || "Dinner"} · ${dayText(d)}`, note: "", where: "off the meal plan",
+        groc: { meal: saved, dateStr: dateKey(d), slot },
         remove: () => { window.setMealForDate(d, null, slot); if (window.renderMealsView) window.renderMealsView(); if (typeof renderWeekCalendar === "function") renderWeekCalendar(); },
         undo: () => { window.setMealForDate(d, saved, slot); if (window.renderMealsView) window.renderMealsView(); if (typeof renderWeekCalendar === "function") renderWeekCalendar(); }
       });
@@ -393,7 +395,10 @@
       clearTimeout(closeTimer);
       closeTimer = setTimeout(stop, 2500);
     };
-    drawMessage("Removed ✓", `<strong>${esc(c.title)}</strong> is ${esc(c.where)}`, `<button type="button" class="voice-btn" data-voice-undo>Undo</button><button type="button" class="voice-btn is-primary" data-voice-close>Done</button>`);
+    // A meal whose ingredients are still on the shopping list: offer to take them off too
+    const groc = c.groc && window.MealGroceries && window.MealGroceries.onList(c.groc.meal, c.groc.dateStr, c.groc.slot).length ? c.groc : null;
+    sheet._groc = groc;
+    drawMessage("Removed ✓", `<strong>${esc(c.title)}</strong> is ${esc(c.where)}`, `<button type="button" class="voice-btn" data-voice-undo>Undo</button>${groc ? `<button type="button" class="voice-btn" data-voice-groc>🛒 Its ingredients too</button>` : ""}<button type="button" class="voice-btn is-primary" data-voice-close>Done</button>`);
     clearTimeout(closeTimer);
     closeTimer = setTimeout(stop, 6000);
   }

@@ -312,7 +312,8 @@ function updateGroceryBadgeCount() {
 // js/grocery.js (amounts add up, bought items come back fresh, salt / pepper /
 // oil / water left out unless asked for). sourceKey stops the same planned
 // meal being added twice. Returns { added, combined, skipped, already }.
-function addIngredientsToGroceryList(ingredients, sourceTitle = "", sourceKey = "") {
+// includeBasics: null uses the device setting (salt, pepper, oil, water)
+function addIngredientsToGroceryList(ingredients, sourceTitle = "", sourceKey = "", includeBasics = null) {
   const empty = { added: 0, combined: 0, skipped: [], already: 0 };
   if (!ingredients || !ingredients.length || !window.Grocery) return empty;
   if (typeof window.mutateFamilyLists !== "function") return empty;
@@ -321,7 +322,7 @@ function addIngredientsToGroceryList(ingredients, sourceTitle = "", sourceKey = 
   // already on the list is skipped, so running it twice is harmless.
   const res = window.mutateFamilyLists({
     type: "groceryAddLines", lines: ingredients.slice(),
-    title: sourceTitle, sourceKey: sourceKey || sourceTitle, includeBasics: window.Grocery.includeBasics()
+    title: sourceTitle, sourceKey: sourceKey || sourceTitle, includeBasics: includeBasics === null ? window.Grocery.includeBasics() : !!includeBasics
   }) || empty;
   updateGroceryBadgeCount();
   return res;
@@ -363,6 +364,8 @@ function addWeekMealsToGroceryList() {
   return total;
 }
 window.addWeekMealsToGroceryList = addWeekMealsToGroceryList;
+window.getPlannedMealIngredients = getPlannedMealIngredients;
+window.showGroceryAddToast = showGroceryAddToast;
 
 // Returns array of 7 dates for the week (starting on Monday: Mon to Sun)
 function getMealsWeekDates(offsetWeeks = 0) {
@@ -1062,6 +1065,7 @@ function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
     btnDeleteMeal.onclick = () => {
       (window.setMealForDate || setMealForDate)(dateStr, null, slot);
       closeMealDetailsPopover();
+      if (window.MealGroceries) window.MealGroceries.afterRemove({ dateStr, slot, meal });
       renderMealsView();
       (window.renderWeekCalendar || renderWeekCalendar)();
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
@@ -1227,6 +1231,8 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       showMealsWeekFor(selectedDate);
       renderMealsView();
       (window.renderWeekCalendar || renderWeekCalendar)();
+      // Shopping list: take off what the replaced meal needed, add what this one needs
+      if (window.MealGroceries) window.MealGroceries.afterPlan({ dateStr: selectedDate, slot: selectedSlot, before: existing, meal: (window.getMealForDate || getMealForDate)(selectedDate, selectedSlot) });
     };
   }
 
@@ -1796,6 +1802,12 @@ function wireMealsHeaderAndDrawerListeners() {
 
       if (titleInput) titleInput.value = "";
       if (notesInput) notesInput.value = "";
+
+      // Shopping list: a typed meal that matches a recipe gets its ingredients too
+      if (window.MealGroceries) {
+        const plannedOn = currentPlanningDateStr;
+        setTimeout(() => window.MealGroceries.afterPlan({ dateStr: plannedOn, slot: category, before: existingMeal, meal: getMealForDate(plannedOn, category) }), 300);
+      }
 
       showMealsWeekFor(currentPlanningDateStr);
       renderMealsView();

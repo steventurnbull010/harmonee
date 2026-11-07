@@ -3911,3 +3911,45 @@ body.theme-dark #view-meals .meal-card-v2 .ev-block-avatar { box-shadow: 0 0 0 2
 .grocery-basics-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; font-size: 0.88rem; color: var(--text-secondary, #64748b); cursor: pointer; }
 .grocery-item-text .list-row-for { display: block; margin-top: 2px; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary, #64748b); }
 body.theme-dark .grocery-week-btn { background: rgba(2, 132, 199, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #7dd3fc; }
+
+/* ============================================================================
+   Meal ingredients ⇄ shopping list question (js/meal-groceries.js)
+   ============================================================================ */
+.meal-groc-dialog { border: none; padding: 0; background: transparent; margin: auto; max-width: none; max-height: none; }
+.meal-groc-dialog::backdrop { background: rgba(15, 23, 42, 0.5); }
+.meal-groc-card {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: 24px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.3);
+}
+.meal-groc-title { margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: 1.35rem; font-weight: 600; line-height: 1.25; }
+.meal-groc-sub { margin: 8px 0 0; color: #475569; font-weight: 600; }
+.meal-groc-all { align-self: flex-end; margin-top: 8px; padding: 8px 0; border: none; background: none; color: #0284c7; font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+.meal-groc-list { list-style: none; margin: 8px 0 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1 1 auto; border-top: 1px solid #e2e8f0; }
+.meal-groc-row { display: flex; align-items: center; gap: 16px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.meal-groc-row input { flex: 0 0 auto; width: 24px; height: 24px; margin: 0; accent-color: #0284c7; cursor: pointer; }
+.meal-groc-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+.meal-groc-text em { font-style: normal; font-size: 0.82rem; color: #64748b; }
+.meal-groc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.meal-groc-btn { height: 48px; padding: 0 24px; border: 1px solid #cbd5e1; border-radius: 999px; background: #ffffff; color: #0f172a; font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.meal-groc-btn.is-primary { border-color: #0284c7; background: #0284c7; color: #ffffff; }
+.meal-groc-btn.is-primary:disabled { opacity: 0.45; cursor: default; }
+.meal-groc-btn:focus-visible, .meal-groc-all:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+body.theme-dark .meal-groc-card { background: #1e293b; color: #f8fafc; }
+body.theme-dark .meal-groc-sub, body.theme-dark .meal-groc-text em { color: #94a3b8; }
+body.theme-dark .meal-groc-list { border-top-color: #334155; }
+body.theme-dark .meal-groc-row { border-bottom-color: #334155; }
+body.theme-dark .meal-groc-btn { background: #0f172a; border-color: #475569; color: #f8fafc; }
+body.theme-dark .meal-groc-btn.is-primary { background: #0284c7; border-color: #0284c7; }
+body.theme-dark .meal-groc-all { color: #7dd3fc; }
+@media (max-width: 600px) {
+  .meal-groc-actions { flex-direction: column-reverse; }
+  .meal-groc-btn { width: 100%; }
+}
