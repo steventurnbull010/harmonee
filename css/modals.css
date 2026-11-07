@@ -2470,3 +2470,61 @@ body.theme-dark .today-dinner-photo { background: #0f172a; }
 @media (max-width: 600px) {
   .today-chefs { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
+
+/* Today at a glance: Tomorrow's first thing, Groceries, Customise */
+.today-next-line { margin: 0; font-size: 1.02rem; line-height: 1.4; }
+.today-next-more { margin-left: 4px; font-size: 0.85rem; font-weight: 700; color: #64748b; white-space: nowrap; }
+.today-groc-count { margin: 0; font-size: 1.05rem; }
+.today-groc-count strong { font-size: 1.3rem; }
+.today-groc-preview { margin: 4px 0 0; color: #64748b; font-size: 0.9rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.today-groc-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.today-groc-btn {
+  height: 40px; padding: 0 16px;
+  border: 1px solid #e2e8f0; border-radius: 999px;
+  background: #ffffff; color: #0f172a;
+  font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+}
+.today-groc-btn span { color: #0284c7; font-weight: 800; }
+.today-groc-btn.is-primary { background: #0284c7; border-color: #0284c7; color: #ffffff; }
+body.theme-dark .today-groc-btn { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .today-groc-btn.is-primary { background: #0284c7; border-color: #0284c7; }
+body.theme-dark .today-groc-preview, body.theme-dark .today-next-more { color: #94a3b8; }
+
+.today-customise-link {
+  align-self: center;
+  margin-top: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+body.theme-dark .today-customise-link { color: #94a3b8; }
+
+.today-customise-card { text-align: left; width: min(420px, calc(100vw - 32px)); }
+.today-customise-list { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.today-customise-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 52px; padding: 8px 12px;
+  border: none; border-radius: 12px;
+  background: transparent; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.today-customise-row:hover { background: #f8fafc; }
+.today-customise-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+.today-customise-label { flex: 1; min-width: 0; font-weight: 600; display: flex; flex-direction: column; }
+.today-customise-note { font-size: 0.8rem; font-weight: 500; color: #64748b; }
+.today-customise-switch { flex-shrink: 0; position: relative; width: 44px; height: 26px; border-radius: 999px; background: #cbd5e1; transition: background 0.2s ease; }
+.today-customise-switch span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); transition: transform 0.2s ease; }
+.today-customise-switch.is-on { background: #0284c7; }
+.today-customise-switch.is-on span { transform: translateX(18px); }
+.today-customise-done { width: 100%; margin-top: 16px; }
+body.theme-dark .today-customise-row:hover { background: #0f172a; }
+body.theme-dark .today-customise-switch { background: #475569; }
+body.theme-dark .today-customise-switch.is-on { background: #0284c7; }
+body.theme-dark .today-customise-note { color: #94a3b8; }

@@ -148,6 +148,98 @@
     </div>`;
   }
 
+  // ---- Which cards show (Customise; saved for the whole board) ----------------
+  const CARDS = [
+    { key: "events",    label: "Today's plans",        icon: "📅" },
+    { key: "tomorrow",  label: "Tomorrow's first thing", icon: "🌅", note: "Mornings and afternoons" },
+    { key: "countdown", label: "Countdown",            icon: "⏳" },
+    { key: "music",     label: "Music",                icon: "🎵" },
+    { key: "dinner",    label: "Dinner tonight",       icon: "🍽️" },
+    { key: "groceries", label: "Groceries",            icon: "🛒" },
+    { key: "jobs",      label: "Jobs today",           icon: "✅" }
+  ];
+  const cardOn = (key) => (((window.boardSettings || {}).todayCards) || {})[key] !== false;
+
+  function openCustomise() {
+    let dlg = document.getElementById("today-customise");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "today-customise";
+      dlg.className = "save-prompt-dialog today-customise-dialog";
+      dlg.setAttribute("aria-labelledby", "today-customise-title");
+      document.body.appendChild(dlg);
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); });
+      dlg.addEventListener("close", () => { const el = document.getElementById("today-screen"); if (el && !el.hidden) paint(el); });
+      dlg.addEventListener("click", async (e) => {
+        if (e.target === dlg || e.target.closest("[data-customise-done]")) { dlg.close(); return; }
+        const sw = e.target.closest("[data-card]");
+        if (!sw) return;
+        const key = sw.getAttribute("data-card");
+        const cards = { ...(((window.boardSettings || {}).todayCards) || {}) };
+        // Save on or off explicitly: the board's settings are merged, so a
+        // removed "off" would come straight back from the board
+        cards[key] = !cardOn(key);
+        if (typeof window.saveBoardSettingsNow === "function") await window.saveBoardSettingsNow({ todayCards: cards });
+        drawCustomise();
+        // Show the change on the screen behind straight away
+        const el = document.getElementById("today-screen");
+        if (el && !el.hidden) paint(el);
+      });
+    }
+    drawCustomise();
+    if (!dlg.open) dlg.showModal();
+  }
+  function drawCustomise() {
+    const dlg = document.getElementById("today-customise");
+    dlg.innerHTML = `<div class="save-prompt-card today-customise-card">
+      <h2 class="save-prompt-title" id="today-customise-title">Customise this screen</h2>
+      <p class="save-prompt-text">Choose the cards your family wants. This changes it on every device.</p>
+      <ul class="today-customise-list">${CARDS.map(c => `<li>
+        <button type="button" class="today-customise-row" data-card="${c.key}" role="switch" aria-checked="${cardOn(c.key)}">
+          <span class="today-customise-icon" aria-hidden="true">${c.icon}</span>
+          <span class="today-customise-label">${esc(c.label)}${c.note ? `<span class="today-customise-note">${esc(c.note)}</span>` : ""}</span>
+          <span class="today-customise-switch${cardOn(c.key) ? " is-on" : ""}" aria-hidden="true"><span></span></span>
+        </button>
+      </li>`).join("")}</ul>
+      <button type="button" class="save-prompt-btn is-primary today-customise-done" data-customise-done>Done</button>
+    </div>`;
+  }
+
+  // ---- Tomorrow's first thing (mornings and afternoons) ---------------------------
+  function tomorrowFirstHtml(tomorrow) {
+    const evs = eventsOn(tomorrow);
+    if (!evs.length) return "";
+    const timed = evs.filter(e => !e.allDay);
+    const first = timed[0] || evs[0];
+    const more = evs.length - 1;
+    const when = first.allDay ? "all day" : clockText(first.evt);
+    return `<section class="today-card today-card-next">
+      <h3 class="today-card-title">🌅 Tomorrow · ${DAY_NAMES[tomorrow.getDay()]}</h3>
+      <p class="today-next-line">${esc(first.evt.icon || "📅")} <strong>${esc(first.evt.title || "Event")}</strong>, ${esc(when)}${more ? ` <span class="today-next-more">+${more} more</span>` : ""}</p>
+    </section>`;
+  }
+
+  // ---- Groceries: how many, the first few, Shop / Add ---------------------------------
+  function groceriesHtml() {
+    const lists = typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : [];
+    const list = lists.find(l => l.id === "groceries");
+    if (!list) return "";
+    const left = (list.items || []).filter(i => !i.checked);
+    const name = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
+    const preview = left.slice(0, 4).map(name);
+    return `<section class="today-card today-card-groceries">
+      <h3 class="today-card-title">🛒 Groceries</h3>
+      ${left.length
+        ? `<p class="today-groc-count"><strong>${left.length}</strong> ${left.length === 1 ? "item" : "items"} to get</p>
+           <p class="today-groc-preview">${esc(preview.join(", "))}${left.length > preview.length ? "…" : ""}</p>`
+        : `<p class="today-empty">Nothing on the list.</p>`}
+      <div class="today-groc-actions">
+        ${left.length ? `<button type="button" class="today-groc-btn is-primary" data-groc="shop">🛒 Shop</button>` : ""}
+        <button type="button" class="today-groc-btn" data-groc="add"><span aria-hidden="true">+</span> Add</button>
+      </div>
+    </section>`;
+  }
+
   function render() {
     const now = new Date();
     const today = new Date(now); today.setHours(0, 0, 0, 0);
@@ -198,7 +290,7 @@
       tomorrowHtml = `<section class="today-card today-card-tomorrow">
         <h3 class="today-card-title">🌅 Tomorrow · ${DAY_NAMES[tomorrow.getDay()]}</h3>
         ${eventsListHtml(tEvents, 0, false)}
-        <p class="today-sub today-tomorrow-dinner">🍽️ ${tDinner ? `${esc(tDinner.meal.title)}${tDinner.cooks.length ? ` · ${esc(tDinner.cooks.join(" & "))} cooking` : ""}` : "Dinner not planned yet"}</p>
+        <p class="today-sub today-tomorrow-dinner">🍽️ ${tDinner ? `${esc(tDinner.meal.title)}${tDinner.cooks.length ? ` · ${tDinner.cooks.length === 1 ? "Chef" : "Chefs"}: ${esc(tDinner.cooks.length === 1 ? tDinner.cooks[0] : `${tDinner.cooks.slice(0, -1).join(", ")} & ${tDinner.cooks[tDinner.cooks.length - 1]}`)}` : ""}` : "Dinner not planned yet"}</p>
       </section>`;
     }
 
@@ -219,16 +311,18 @@
         </header>
         <div class="today-grid">
           <div class="today-col">
-            <section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}</section>
-            ${tomorrowHtml}
-            ${countdownHtml}
-            ${window.Music ? window.Music.todayCardHtml() : ""}
+            ${cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}</section>` : ""}
+            ${part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : "")}
+            ${cardOn("countdown") ? countdownHtml : ""}
+            ${cardOn("music") && window.Music ? window.Music.todayCardHtml() : ""}
           </div>
           <div class="today-col">
-            <section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>
-            <section class="today-card"><h3 class="today-card-title">✅ Jobs today</h3>${jobsHtml}</section>
+            ${cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : ""}
+            ${cardOn("groceries") ? groceriesHtml() : ""}
+            ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Jobs today</h3>${jobsHtml}</section>` : ""}
           </div>
         </div>
+        <button type="button" class="today-customise-link" data-customise>Customise this screen</button>
       </div>
       <button type="button" class="today-close-btn" id="btn-today-start" aria-label="${buttonText}" title="${buttonText}">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
@@ -380,6 +474,18 @@
           const name = job.getAttribute("data-job");
           if (expandedJobs.has(name)) expandedJobs.delete(name); else expandedJobs.add(name);
           paint(el);
+          return;
+        }
+        if (e.target.closest("[data-customise]")) { openCustomise(); return; }
+        const groc = e.target.closest("[data-groc]");
+        if (groc) {
+          if (groc.getAttribute("data-groc") === "shop") {
+            closeTodayScreen();
+            if (typeof window.openShopMode === "function") window.openShopMode("groceries");
+          } else {
+            quickListId = "groceries";
+            openQuickList();
+          }
           return;
         }
         // Quick add
