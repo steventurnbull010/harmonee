@@ -204,9 +204,15 @@ function wireTimeGridCreate(gridContainer, geo) {
     if (!sel) return;
     const { col, start, end, ghost } = sel;
     sel = null;
-    // keep the shaded block until the panel has slid in, then tidy it away
-    setTimeout(() => ghost && ghost.remove(), 400);
+    // Keep the shaded block on the calendar while the panel is open, so you
+    // can see the slot you picked; it goes when the panel closes (saving
+    // redraws the calendar with the real event in its place)
     open(col, start, end);
+    const modal = document.getElementById("event-modal");
+    if (ghost) {
+      if (modal && modal.open) modal.addEventListener("close", () => ghost.remove(), { once: true });
+      else ghost.remove();
+    }
   };
   const cancel = () => { if (sel && sel.ghost) sel.ghost.remove(); sel = null; };
 
