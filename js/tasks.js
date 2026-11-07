@@ -978,6 +978,9 @@ let drawerTaskHadRota = false;
 // Emojis for chores and routines, grouped by the kind of job. Kept to emojis
 // that every tablet from the last few years can show.
 const TASK_EMOJI_GROUPS = [
+  // First, because these are what routines are made of. Some also appear in
+  // their own group further down.
+  { name: "Daily routines", items: [["🛏️","Make your bed"],["🪥","Brush teeth"],["👕","Get dressed"],["🪟","Open the curtains"],["🥣","Breakfast"],["🎒","Get your bag ready"],["🧸","Tidy your room"],["🧺","Clothes in the wash"],["⏰","Wake up"],["🛀","Bath time"],["📚","Reading"],["😴","Bedtime"]] },
   { name: "Cleaning", items: [["🧹","Sweep"],["🧽","Scrub"],["🧼","Soap"],["🪣","Mop"],["🧴","Spray"],["🫧","Bubbles"],["🪟","Windows"],["🛁","Bath"],["🚿","Shower"],["🚽","Toilet"],["🧻","Toilet roll"],["🗑️","Bins"],["♻️","Recycling"],["✨","Tidy up"]] },
   { name: "Kitchen & meals", items: [["🍽️","Dishes"],["🍴","Set the table"],["🍳","Cook"],["🥣","Breakfast"],["🥪","Packed lunch"],["🍱","Lunchbox"],["🥗","Salad"],["🍲","Dinner"],["☕","Tea or coffee"],["🥛","Milk"],["🛒","Shopping"],["🥕","Veg"],["🍎","Fruit"],["🧊","Fridge"]] },
   { name: "Laundry & bedroom", items: [["🧺","Laundry"],["👕","Clothes"],["👖","Trousers"],["🧦","Socks"],["👟","Shoes"],["🧥","Coat"],["👔","Ironing"],["🛏️","Make the bed"],["🧸","Toys"],["🎒","School bag"],["🪞","Mirror"],["🧷","Mending"]] },
