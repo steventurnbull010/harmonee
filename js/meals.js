@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=148";
+} from "../recipes-data.js?v=149";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -1209,14 +1209,12 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
     metaPillsEl.style.display = metaPillsEl.textContent.trim() ? "" : "none";
   }
 
-  const ingredients = recipe.ingredients || [
-    "Fresh ingredients for " + recipe.title,
-    "Olive oil, salt & pepper",
-    "Seasoning to taste"
-  ];
+  // Only what's saved: no made-up ingredients or steps
+  const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
 
   if (checklistEl) {
-    checklistEl.innerHTML = ingredients.map((ing, idx) => {
+    checklistEl.innerHTML = ingredients.length ? "" : `<li class="cooking-empty-note">No ingredients saved for this meal.</li>`;
+    if (ingredients.length) checklistEl.innerHTML = ingredients.map((ing, idx) => {
       const clean = ing.replace(/^-\s*/, '').trim();
       return `
         <li class="cooking-check-item" data-idx="${idx}">
@@ -1237,14 +1235,11 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
     });
   }
 
-  const instructions = recipe.instructions || [
-    "Prepare ingredients on your cutting board.",
-    "Cook gently until fragrant, simmering to let flavors meld.",
-    "Serve piping hot to the family!"
-  ];
+  const instructions = Array.isArray(recipe.instructions) ? recipe.instructions : [];
 
   if (stepsListEl) {
-    stepsListEl.innerHTML = instructions.map((step, idx) => {
+    stepsListEl.innerHTML = instructions.length ? "" : `<p class="cooking-empty-note">No method saved for this meal.</p>`;
+    if (instructions.length) stepsListEl.innerHTML = instructions.map((step, idx) => {
       return `
         <div class="cooking-step-row">
           <span class="cooking-step-badge">${idx + 1}</span>
@@ -1268,6 +1263,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
     }
   }
 
+  if (btnAddGrocery) btnAddGrocery.style.display = ingredients.length ? "" : "none";
   if (btnAddGrocery) {
     btnAddGrocery.onclick = () => {
       addIngredientsToGroceryList(ingredients, recipe.title);

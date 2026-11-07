@@ -917,33 +917,9 @@ function loadDateMeals() {
 
   dateMealsStore = {};
 
-  // Only auto-seed if this device has NEVER been seeded before
-  const hasSeeded = localStorage.getItem(boardCacheKey("turnbull_meals_has_seeded_v4"));
-  if (!hasSeeded && isDefaultTurnbullBoard) {
-    localStorage.setItem(boardCacheKey("turnbull_meals_has_seeded_v4"), "true");
-    const todayKey = getLocalDateKey(new Date());
-    dateMealsStore[todayKey] = {
-      title: "Easy Peasy Spinach & Ricotta Tortelloni",
-      cook: "Steve",
-      notes: "with Creamy Basil Pesto Sauce, Peas & Broccoli",
-      tags: "HelloFresh #47 • Veggie",
-      hasRecipe: true,
-      recipeId: "rec-spinach-tortelloni",
-      date: todayKey,
-      dinner: {
-        title: "Easy Peasy Spinach & Ricotta Tortelloni",
-        emoji: "🥟",
-        cook: "Steve",
-        notes: "with Creamy Basil Pesto Sauce, Peas & Broccoli",
-        tags: "HelloFresh #47 • Veggie",
-        hasRecipe: true,
-        recipeId: "rec-spinach-tortelloni",
-        category: "dinner",
-        date: todayKey
-      }
-    };
-    saveDateMeals(dateMealsStore);
-  }
+  // (A new device used to get a made-up "Spinach & Ricotta Tortelloni"
+  // dinner for today, saved to the board. Removed: meals start empty and
+  // load from the board.)
 
   return dateMealsStore;
 }
