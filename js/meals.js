@@ -703,7 +703,9 @@ function showMealsWeekFor(dateStr) {
   window.mealsWeekOffset = mealsWeekOffset;
 }
 
-function openPlanMealDrawer(dateStr, slot = "dinner") {
+// prefill (e.g. from voice): { title, cooks: [names] }. A recipe with that name
+// shows in the list to tap; otherwise "New meal" opens with the name typed in.
+function openPlanMealDrawer(dateStr, slot = "dinner", prefill = null) {
   currentPlanningDateStr = dateStr || (window.getLocalDateKey || getLocalDateKey)(new Date());
   currentPlanningSlot = slot || "dinner";
   currentDrawerCategory = currentPlanningSlot;
@@ -774,6 +776,29 @@ function openPlanMealDrawer(dateStr, slot = "dinner") {
   }
   if (paneFromRecipes) paneFromRecipes.style.display = "flex";
   if (paneNewEntry) paneNewEntry.style.display = "none";
+
+  // Voice: the chef(s) and the meal's name
+  const searchInput = document.getElementById("recipe-search-input");
+  if (searchInput && prefill) searchInput.value = "";
+  if (prefill && Array.isArray(prefill.cooks) && prefill.cooks.length) {
+    drawerSelectedChefs = [...prefill.cooks];
+    renderDrawerChefChips();
+    updateDrawerChefsUI();
+  }
+  if (prefill && prefill.title) {
+    const want = prefill.title.toLowerCase();
+    const words = want.split(/\s+/).filter(w => w.length > 2);
+    const hits = getAllFamilyRecipes().filter(r => {
+      const t = String(r.title || "").toLowerCase();
+      return t.includes(want) || want.includes(t) || (words.length && words.every(w => t.includes(w)));
+    });
+    if (hits.length && searchInput) {
+      searchInput.value = hits.some(r => String(r.title).toLowerCase().includes(want)) ? prefill.title : hits[0].title;
+    } else {
+      if (tabNewEntry) tabNewEntry.click();
+      if (customTitleInput) customTitleInput.value = prefill.title;
+    }
+  }
 
   // Render recipes list
   renderDrawerRecipeList();

@@ -3527,6 +3527,32 @@ function openDeleteTaskModal(taskId) {
   });
 }
 
+// Voice: remove a task straight away (after its own confirm), and put it back on Undo
+window.deleteTaskById = async (taskId) => {
+  const task = currentTasks.find(t => t.id === taskId);
+  if (!task) return null;
+  const copy = JSON.parse(JSON.stringify({ ...task, createdAt: null }));
+  delete copy.createdAt;
+  if (db) {
+    try { await deleteDoc(getTaskDocRef(taskId)); return copy; } catch (err) { console.warn("Failed to delete task from Firestore, deleting locally:", err); }
+  }
+  currentTasks = currentTasks.filter(t => t.id !== taskId);
+  saveLocalCache(currentTasks);
+  renderApp();
+  renderSkylightTasksPage();
+  return copy;
+};
+window.restoreTask = async (task) => {
+  if (!task || !task.id) return;
+  if (db) {
+    try { await setDoc(getTaskDocRef(task.id), { ...task, createdAt: serverTimestamp() }); return; } catch (err) { console.warn("Failed to restore task in Firestore, restoring locally:", err); }
+  }
+  if (!currentTasks.some(t => t.id === task.id)) currentTasks.push(task);
+  saveLocalCache(currentTasks);
+  renderApp();
+  renderSkylightTasksPage();
+};
+
 function closeDeleteModal() {
   taskToDelete = null;
   pendingDeleteAction = null;

@@ -9,9 +9,13 @@
 //     -> { kind: "event", title: "Trip to the theatre", date, start: "19:30", end: "20:30", allDay: false, members: [] }
 //   VoiceIntent.parse("ava needs to tidy her room on saturday", ctx)
 //     -> { kind: "task", title: "Tidy her room", people: ["Ava"], date, daily: false }
+//   VoiceIntent.parse("we're having tacos tonight", ctx)
+//     -> { kind: "meal", title: "Tacos", date, slot: "dinner", cooks: [] }
+//   VoiceIntent.parse("cancel the dentist on tuesday", ctx)
+//     -> { kind: "remove", target: null, words: ["dentist"], date, ... }
 //   anything else -> { kind: "unknown", text }
 //
-// ctx = { now: Date, members: [names], lists: [{ id, title }], want: "list" | "event" | "task" | null }
+// ctx = { now: Date, members: [names], lists: [{ id, title }], want: "list" | "event" | "task" | "meal" | null }
 // "want" is set when the mic was tapped inside a panel, so a bare "vinegar"
 // in the shopping panel is a list item and "dentist friday" there is an event.
 //
@@ -276,6 +280,97 @@
     return null;
   }
 
+  // ---------------------------------------------------------------- repeats --
+  // "every thursday", "on mondays", "every day", "monthly" -> { repeat, rest }
+  // (the day stays in the sentence so the date is still found)
+  const WEEKDAY = "(monday|tuesday|wednesday|thursday|friday|saturday|sunday)";
+  function findRepeat(s) {
+    let repeat = null;
+    const take = (re, value, put = " ") => { if (repeat) return; if (re.test(s)) { repeat = value; s = squash(s.replace(re, put)); } };
+    take(/\b(?:every|each) (?:week ?day|weekday)s?\b|\bweekdays\b|\bmonday to friday\b/, "weekdays");
+    take(new RegExp(`\\b(?:every|each) ${WEEKDAY}\\b`), "weekly", " on $1 ");
+    take(new RegExp(`\\bon ${WEEKDAY}s\\b`), "weekly", " on $1 ");
+    take(/\b(?:every day|everyday|each day|daily)\b/, "daily");
+    take(/\b(?:every week|each week|weekly|once a week)\b/, "weekly");
+    take(/\b(?:every month|each month|monthly|once a month)\b/, "monthly");
+    take(/\b(?:every year|each year|yearly|annually|once a year)\b/, "annually");
+    return { repeat, rest: s };
+  }
+
+  // ------------------------------------------------------------------ meals --
+  // "we're having tacos tonight", "lasagne for dinner on friday",
+  // "dad's cooking curry on saturday", "add fish pie to the meal plan for tuesday"
+  const SLOT = "(breakfast|brunch|lunch|dinner|tea|supper|snack|snacks)";
+  const slotKey = (w) => ({ brunch: "lunch", tea: "dinner", supper: "dinner", snacks: "snack" }[w] || w);
+  function findMeal(s, members, now) {
+    if (/\bat \d|\d(?:am|pm)\b|\d:\d\d/.test(s)) return null; // a time: that's an event
+    const { NAME, who } = names(members);
+    let title = null, cooks = [], slot = null, m;
+    const slotIn = (x) => { const k = x.match(new RegExp(`\\b(?:for |as )?(?:our |the )?${SLOT}\\b`)); return k ? slotKey(k[1]) : null; };
+    if ((m = s.match(new RegExp(`^(${NAME})(?: is| will be| will|'s)? (?:cooking|making|doing) (.+)$`))) && who(m[1])) {
+      cooks = [who(m[1])]; title = m[2];
+    } else if ((m = s.match(/^(?:we're|we are|we'll be|we will be|we'll|we will|let's|lets|shall we|i'm|i am|i'll|i will)\s+(having|have|eating|eat|cooking|cook|making|make|doing|do)\s+(.+)$/))) {
+      if (/^do/.test(m[1]) && !slotIn(m[2])) return null; // "we're doing the school run": not a meal
+      title = m[2];
+    } else if ((m = s.match(/^(?:please )?(?:add|put|plan|pop|stick|schedule)\s+(.+?)\s+(?:to|on|in|into) (?:the |our |my )?(?:meal plan|meal planner|meals|menu)\b(.*)$/))) {
+      title = `${m[1]} ${m[2]}`;
+    } else if ((m = s.match(new RegExp(`^(?:the |our )?${SLOT} (.*?)\\s*(?:is|will be|is going to be)\\s+(.+)$`)))) {
+      slot = slotKey(m[1]); title = `${m[3]} ${m[2]}`;
+    } else if ((m = s.match(new RegExp(`^(?:please )?(?:(?:add|put|plan|pop|have|make|do)\\s+)?(.+?)\\s+(?:for|as) (?:our |the )?${SLOT}\\b(.*)$`)))) {
+      title = `${m[1]} ${m[3]}`; slot = slotKey(m[2]);
+    }
+    if (title === null) return null;
+    slot = slot || slotIn(title) || "dinner";
+    title = title.replace(new RegExp(`\\b(?:for |as )?(?:our |the )?${SLOT}\\b`, "g"), " ");
+    const d = findDate(squash(title), now);
+    let t = d.rest
+      .replace(new RegExp(`(?:,? )?(?:and )?(?:with )?(${NAME})(?: is)? (?:cooking|making it|making)\\b`), (all, n) => { const c = who(n); if (c) { cooks.push(c); return " "; } return all; })
+      .replace(/\b(?:cooked|made) by (\S+)/, (all, n) => { const c = who(n); if (c) { cooks.push(c); return " "; } return all; });
+    t = squash(t).replace(/^(?:a|an|some|the|our|my)\s+/, "").replace(/\s+(?:on|for|please|tonight|then)$/g, "");
+    if (!t || t.length > 60) return null;
+    t = t.split(" ").map(w => (caseOf && caseOf[w]) || w).join(" ");
+    return { kind: "meal", title: cap(t), date: d.date || startOfDay(now), dateSaid: !!d.date, slot, cooks };
+  }
+
+  // --------------------------------------------------------------- removing --
+  // "take milk off the list", "cancel the dentist on tuesday", "clear dinner on
+  // friday", "delete the task to tidy her room". Finding the actual thing is
+  // done in js/voice.js, against the board.
+  const REMOVE = "(?:please )?(?:can you |could you )?(?:delete|remove|cancel|scrap|get rid of|erase|unplan|call off|take|cross|clear|rub out)";
+  const STOP = new Set(["the", "a", "an", "my", "our", "on", "at", "for", "to", "of", "from", "in", "please", "event", "appointment", "task", "job", "chore", "it", "this", "that"]);
+  function findRemove(s, lists, members, now) {
+    if (!new RegExp(`^${REMOVE}\\b`).test(s)) return null;
+    // "take milk off the list", "cross eggs off", "remove bread from the shopping list"
+    let m = s.match(new RegExp(`^${REMOVE}\\s+(.+?)\\s+(?:off|from|out of)\\s*(?:of\\s+)?(.*)$`));
+    if (m) {
+      const id = m[2] ? listFor(m[2], lists) : "groceries";
+      if (id && !/\b(?:meal plan|menu|meals|calendar|diary|tasks?|jobs?|chores?)\b/.test(m[2])) return { kind: "remove", target: "list", listId: id, items: splitItems(m[1]) };
+    }
+    // "take" and "clear" only ever mean removing in the forms above, or with a meal
+    const verbless = s.replace(new RegExp(`^${REMOVE}\\s+`), "")
+      .replace(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)'s\b/g, "$1");
+    const loose = /^(?:please )?(?:can you |could you )?(?:take|cross|clear|rub out)\b/.test(s);
+    let target = null, slot = null;
+    const fromMeals = /\b(?:from|off) (?:the |our )?(?:meal plan|meal planner|menu|meals)\b/;
+    const slotHit = verbless.match(new RegExp(`\\b${SLOT}\\b`));
+    let rest = verbless.replace(fromMeals, () => { target = "meal"; return " "; })
+      .replace(/\b(?:from|off) (?:the |our |my )?(?:calendar|diary)\b/, () => { target = target || "event"; return " "; })
+      .replace(/\b(?:from|off) (?:the |our |my )?(?:tasks?|jobs?|chores?)(?: list)?\b/, () => { target = target || "task"; return " "; });
+    if (/^(?:the )?(?:task|job|chore)s?\b/.test(rest)) { target = "task"; rest = rest.replace(/^(?:the )?(?:task|job|chore)s?\s*(?:to |called |for )?/, ""); }
+    if (/^(?:the )?(?:event|appointment)\b/.test(rest)) { target = "event"; rest = rest.replace(/^(?:the )?(?:event|appointment)\s*(?:called |for )?/, ""); }
+    const d = findDate(squash(rest), now);
+    rest = d.rest;
+    if (slotHit && (!target || target === "meal")) {
+      const left = squash(rest.replace(new RegExp(`\\b${SLOT}\\b`, "g"), " ").replace(/\b(?:the|for|on|our|meal|plan|planned)\b/g, " "));
+      if (!left) return { kind: "remove", target: "meal", slot: slotKey(slotHit[1]), date: d.date || startOfDay(now), dateSaid: !!d.date, words: [] };
+    }
+    if (loose && target !== "meal") return null;
+    const { people } = findPeople(rest, members);
+    const words = rest.split(/\s+/).map(w => w.replace(/'s$/, "")).filter(w => w && !STOP.has(w) && !/^\d+$/.test(w) && !members.some(n => n.toLowerCase() === w));
+    if (!words.length && !d.date) return null;
+    return { kind: "remove", target, date: d.date, dateSaid: !!d.date, slot: slotHit ? slotKey(slotHit[1]) : null, words, people };
+  }
+
   // ------------------------------------------------------------------ title --
   // Keeps "MOT", "GP", "Nandos" as the speech engine wrote them (not the first word,
   // which is only capitalised because it starts the sentence)
@@ -289,13 +384,14 @@
       caseOf[w.toLowerCase()] = w;
     });
   }
-  function tidyTitle(s) {
+  // forTask: "make his bed" keeps its "make"
+  function tidyTitle(s, forTask = false) {
     let t = squash(s.replace(/\s+,\s+/g, " "));
     // Lead-in words: "i need to add", "can you put", "add an event for"
     const leads = [
       /^(?:okay|ok|right|so|hey|please|um|erm)\s+/,
       /^(?:i need to|i want to|i'd like to|we need to|can you|could you|can we|please|let's|lets)\s+/,
-      /^(?:add|create|make|put|schedule|set up|pop|stick|enter)\s+(?:in\s+)?/,
+      forTask ? /^(?:add|create|put|pop|stick|enter)\s+(?:in\s+)?/ : /^(?:add|create|make|put|schedule|set up|pop|stick|enter)\s+(?:in\s+)?/,
       /^book\s+(?=(?:a|an|the|in)\s)/,
       /^(?:a new|a|an|the)\s+(?:event|appointment|calendar event|entry)\s*(?:(?:for|called|of)\s+)*/,
       /^(?:an? )?(?:event|appointment)\s*(?:(?:for|called)\s+)*/,
@@ -323,6 +419,10 @@
     rememberCase(text);
     if (!s) return { kind: "unknown", text: "" };
 
+    // 0. Removing ("take milk off the list", "cancel the dentist on tuesday")
+    const gone = findRemove(s, lists, members, now);
+    if (gone) return gone;
+
     // 1. Lists ("add vinegar to my shopping list", "we're out of milk")
     if (want !== "event" && want !== "task") {
       const l = findList(s, lists);
@@ -334,27 +434,42 @@
       }
     }
 
-    // 2. Tasks ("ava needs to tidy her room on saturday", "remind dara to feed the cat")
+    // 2. Meals ("we're having tacos tonight", "dad's cooking curry on friday")
+    if (want !== "event" && want !== "task" && want !== "list") {
+      const meal = findMeal(s, members, now);
+      if (meal) return meal;
+    }
+    if (want === "meal") {
+      const meal = findMeal(`${s} for dinner`, members, now);
+      if (meal) return meal;
+    }
+
+    // 3. Tasks ("ava needs to tidy her room on saturday", "remind dara to feed the cat")
     let task = want === "event" ? null : findTask(s, members);
     if (!task && want === "task") task = { person: null, rest: s };
     if (task) {
       let rest = task.rest;
-      const daily = /\b(every day|everyday|each day|daily|every morning|every evening|every night)\b/.test(rest);
       const slot = /\bmorning\b/.test(rest) ? "morning" : /\b(evening|night|bedtime)\b/.test(rest) ? "evening" : /\bafternoon\b/.test(rest) ? "afternoon" : null;
-      rest = squash(rest.replace(/\b(every day|everyday|each day|daily|every morning|every evening|every night)\b/, " "));
+      let daily = /\b(every morning|every evening|every night)\b/.test(rest);
+      rest = squash(rest.replace(/\b(every morning|every evening|every night)\b/, " "));
+      const rep = findRepeat(rest);
+      rest = rep.rest;
+      if (rep.repeat === "daily" || rep.repeat === "weekdays") daily = true;
+      const weekly = rep.repeat === "weekly";
       const d = findDate(rest, now);
       rest = d.rest;
       const ppl = findPeople(rest, members);
       const people = [task.person, ...ppl.people].filter((p, i, a) => p && a.indexOf(p) === i);
-      return { kind: "task", title: tidyTitle(ppl.rest.replace(/\b(?:in the|this|tomorrow|each|every)\s+(?:morning|afternoon|evening)\b/g, " ")), people, date: d.date, daily, slot };
+      return { kind: "task", title: tidyTitle(ppl.rest.replace(/\b(?:in the|this|tomorrow|each|every)\s+(?:morning|afternoon|evening)\b/g, " "), true), people, date: d.date, daily, weekly, slot };
     }
 
-    // 3. Events: anything with a day or a time, or that says "event" / "appointment"
-    const d = findDate(s, now);
+    // 4. Events: anything with a day or a time, or that says "event" / "appointment"
+    const rep = findRepeat(s);
+    const d = findDate(rep.rest, now);
     const eveningHint = EVENING_HINTS.test(s);
     const t = findTime(d.rest, d.part, eveningHint);
     const saidEvent = /\b(event|appointment|calendar|diary)\b/.test(s);
-    if (d.date || t.start !== null || saidEvent || want === "event") {
+    if (d.date || t.start !== null || saidEvent || rep.repeat || want === "event") {
       const ppl = findPeople(t.rest, members);
       const title = tidyTitle(ppl.rest.replace(/\b(?:in the |this |tomorrow )?(?:morning|afternoon|evening)\b/g, " "));
       return {
@@ -365,7 +480,8 @@
         start: t.start !== null ? hhmm(t.start) : null,
         end: t.start !== null ? hhmm(t.end) : null,
         allDay: t.start === null,
-        members: ppl.family ? ["Family"] : ppl.people
+        members: ppl.family ? ["Family"] : ppl.people,
+        repeat: rep.repeat || "none"
       };
     }
 

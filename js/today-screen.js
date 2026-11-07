@@ -448,8 +448,8 @@
       </form>`;
   }
 
-  // Something added by voice: show it here straight away
-  document.addEventListener("harmonee:voice-list", () => {
+  // Something added or removed by voice: show it here straight away
+  document.addEventListener("harmonee:voice-change", () => {
     const el = document.getElementById("today-screen");
     if (el && !el.hidden) paint(el);
     const dlg = document.getElementById("quick-list-dialog");

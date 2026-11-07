@@ -1225,7 +1225,7 @@ function wireDrawerRota() {
   });
 }
 
-// prefill (new tasks only, e.g. from voice): { title, people: [names], date, daily }
+// prefill (new tasks only, e.g. from voice): { title, people: [names], date, daily, slot, weekly }
 function openSkylightTaskDrawer(taskId = null, prefill = null) {
   const overlay = document.getElementById("skylight-task-drawer-overlay");
   if (!overlay) return;
@@ -1294,6 +1294,11 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
       if (Array.isArray(prefill.people) && prefill.people.length) drawerSelectedProfiles = [...prefill.people];
       if (prefill.date instanceof Date && !isNaN(prefill.date)) drawerSelectedDate = new Date(prefill.date);
       if (prefill.daily) { drawerSchedule = "daily"; drawerCurrentType = "routine"; drawerRoutineSlot = prefill.slot || "anytime"; }
+      else if (prefill.weekly && repeatToggle) {
+        repeatToggle.checked = true;
+        const repeatSelect = document.getElementById("drawer-chore-repeat-select");
+        if (repeatSelect) repeatSelect.value = "weekly";
+      }
     }
   }
 

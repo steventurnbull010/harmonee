@@ -448,7 +448,7 @@ function setEventDurationValue(select, value) {
 
 // slot (optional): { start: "09:00", duration: "8 hours" } from tapping or
 // dragging on the calendar grid
-// prefill (new events only, e.g. from voice): { title, members: [names] }
+// prefill (new events only, e.g. from voice): { title, members: [names], repeat }
 function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null, prefill = null) {
   const modal = document.getElementById("event-modal");
   const form = document.getElementById("form-event");
@@ -870,6 +870,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       const detected = detectEmojiForTitle(prefill.title);
       if (detected) setEmoji(detected);
     }
+    if (prefill && prefill.repeat && repeatSelect && [...repeatSelect.options].some(o => o.value === prefill.repeat)) repeatSelect.value = prefill.repeat;
   }
 
   // When: Starts and Ends (the device's own time pickers) and All day. Saving
