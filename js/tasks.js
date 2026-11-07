@@ -121,9 +121,73 @@ let tasksColumnFilters = {};
 // Active filter in Tasks Filter Dropdown (member visibility)
 let tasksActiveMemberFilter = null; // null = all visible, or array of member names
 
+// Tick-to-sink: finished cards sit at the bottom of their own section, and a
+// section where everything is done folds into one "all done" line.
+// Everything here is page-view memory only; nothing is saved to the board.
+const tasksExpandedDoneSections = new Set();   // "date|member|section" keys the user opened
+const tasksSectionCollapseHold = new Map();    // key -> Date.now() when it may fold up
+let tasksCollapseHoldTimer = null;
+const tasksFlipMembers = new Map();            // member (lower case) -> Date.now() deadline for slide animations
+const TASKS_FLIP_MS = 300;
+const TASKS_COLLAPSE_HOLD_MS = 700;
+let tasksLastRenderedDateKey = null;           // slides only run when the day shown hasn't changed
+
+function tasksReducedMotion() {
+  try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; }
+}
+
+// Called just before a card is ticked or unticked, so the next renders slide
+// the cards of that column to their new places. If this tick finishes its
+// section, the section stays open for a moment so the tick is seen landing.
+function markTasksToggle(taskId, member, cardEl) {
+  const mLower = String(member || "").toLowerCase();
+  if (!mLower) return;
+  tasksFlipMembers.set(mLower, Date.now() + 450);
+  const group = cardEl && cardEl.closest ? cardEl.closest("[data-section-key]") : null;
+  if (!group || tasksReducedMotion()) return;
+  const open = group.querySelectorAll(".skylight-task-card:not(.is-completed)");
+  if (open.length === 1 && open[0].getAttribute("data-task-id") === String(taskId)) {
+    tasksSectionCollapseHold.set(group.getAttribute("data-section-key"), Date.now() + TASKS_COLLAPSE_HOLD_MS);
+  }
+}
+
+function findTasksCard(taskId, member) {
+  const container = document.getElementById("tasks-columns-grid");
+  if (!container) return null;
+  const mLower = String(member || "").toLowerCase();
+  return Array.from(container.querySelectorAll(".skylight-task-card")).find(c =>
+    c.getAttribute("data-task-id") === String(taskId) && (c.getAttribute("data-member") || "").toLowerCase() === mLower) || null;
+}
+
 function renderSkylightTasksPage() {
   const container = document.getElementById("tasks-columns-grid");
   if (!container) return;
+
+  // Before the cards are rebuilt: remember each column's scroll, and where
+  // each card sits in a column that has just had a tick (for the slide).
+  const nowMs = Date.now();
+  const reduceMotion = tasksReducedMotion();
+  const savedScroll = new Map();
+  const flipTops = new Map();
+  tasksFlipMembers.forEach((until, m) => { if (until <= nowMs) tasksFlipMembers.delete(m); });
+  const renderDateKey = getLocalDateKey(tasksSelectedDate);
+  const sameDayShown = renderDateKey === tasksLastRenderedDateKey;
+  tasksLastRenderedDateKey = renderDateKey;
+  container.querySelectorAll(".skylight-tasks-col").forEach(col => {
+    const m = (col.getAttribute("data-col-member") || "").toLowerCase();
+    const body = col.querySelector(".tasks-col-body");
+    if (body) savedScroll.set(m, body.scrollTop);
+    if (!reduceMotion && sameDayShown && tasksFlipMembers.has(m)) {
+      const tops = new Map();
+      col.querySelectorAll(".skylight-task-card").forEach(c => tops.set(c.getAttribute("data-task-id"), c.getBoundingClientRect().top));
+      flipTops.set(m, tops);
+    }
+  });
+  // Sections showing their cards right now: if one folds up in this render,
+  // its "all done" line fades in (and only then, not on every refresh)
+  const prevOpenSections = new Set();
+  container.querySelectorAll(".tasks-section-group[data-section-key]:not(.is-collapsed)").forEach(g => prevOpenSections.add(g.getAttribute("data-section-key")));
+  let nextHoldMs = Infinity;
 
   const clockEl = document.getElementById("tasks-live-clock");
   if (clockEl) {
@@ -364,27 +428,71 @@ function renderSkylightTasksPage() {
     } else {
       let sectionsToShow = [];
       if (activeFilter === "all" || activeFilter === "morning") {
-        if (morningTasks.length > 0) sectionsToShow.push({ title: "Morning", list: morningTasks });
+        if (morningTasks.length > 0) sectionsToShow.push({ key: "morning", title: "Morning", emoji: "☀️", list: morningTasks });
       }
       if (activeFilter === "all" || activeFilter === "afternoon") {
-        if (afternoonTasks.length > 0) sectionsToShow.push({ title: "Afternoon", list: afternoonTasks });
+        if (afternoonTasks.length > 0) sectionsToShow.push({ key: "afternoon", title: "Afternoon", emoji: "⛅", list: afternoonTasks });
       }
       if (activeFilter === "all" || activeFilter === "evening") {
-        if (eveningTasks.length > 0) sectionsToShow.push({ title: "Evening", list: eveningTasks });
+        if (eveningTasks.length > 0) sectionsToShow.push({ key: "evening", title: "Evening", emoji: "🌙", list: eveningTasks });
       }
       if (activeFilter === "all" || activeFilter === "anytime") {
-        if (anytimeTasks.length > 0) sectionsToShow.push({ title: "Anytime", list: anytimeTasks });
+        if (anytimeTasks.length > 0) sectionsToShow.push({ key: "anytime", title: "Anytime", emoji: "🕑", list: anytimeTasks });
       }
       if (activeFilter === "all" || activeFilter === "chores") {
-        if (generalChores.length > 0) sectionsToShow.push({ title: "Chores", list: generalChores });
+        if (generalChores.length > 0) sectionsToShow.push({ key: "chores", title: "Chores", emoji: "🧹", list: generalChores });
       }
 
-      bodySectionsHtml = sectionsToShow.map(sec => `
-        <div class="tasks-section-group">
-          <h4 class="tasks-section-heading">${sec.title}</h4>
-          ${sec.list.map(renderCard).join("")}
-        </div>
-      `).join("");
+      bodySectionsHtml = sectionsToShow.map(sec => {
+        // To-do cards first, finished ones after, each keeping its own order
+        const todo = [], done = [];
+        sec.list.forEach(t => (isTaskDoneOnDate(t, tasksSelectedDate, mLower) ? done : todo).push(t));
+        const ordered = todo.concat(done);
+        const secKey = `${selectedDateStr}|${mLower}|${sec.key}`;
+        const keyAttr = escapeHtml(secKey);
+        const allDone = !isFutureDay && todo.length === 0 && done.length > 0;
+        const countText = `${done.length}/${sec.list.length}`;
+
+        if (!allDone) {
+          tasksExpandedDoneSections.delete(secKey);
+          tasksSectionCollapseHold.delete(secKey);
+        } else {
+          const hold = tasksSectionCollapseHold.get(secKey);
+          if (hold && hold > Date.now()) {
+            // Just finished: stay open briefly so the last tick is seen
+            nextHoldMs = Math.min(nextHoldMs, hold - Date.now());
+          } else {
+            tasksSectionCollapseHold.delete(secKey);
+            if (!tasksExpandedDoneSections.has(secKey)) {
+              return `
+                <div class="tasks-section-group is-all-done is-collapsed" data-section-key="${keyAttr}">
+                  <button type="button" class="tasks-section-done-chip${prevOpenSections.has(secKey) ? " is-fresh" : ""}" data-section-key="${keyAttr}" aria-expanded="false" aria-label="${escapeHtml(sec.title)}: all done, ${done.length} of ${sec.list.length}. Tap to show them." title="Show the finished ${escapeHtml(sec.title.toLowerCase())} jobs">
+                    <span class="chip-emoji" aria-hidden="true">${escapeHtml(sec.emoji)}</span>
+                    <span class="chip-label"><span class="chip-title">${escapeHtml(sec.title)}</span><span class="chip-note"> — all done!</span></span>
+                    <span class="chip-count">${countText} ✓</span>
+                  </button>
+                </div>
+              `;
+            }
+            return `
+              <div class="tasks-section-group is-all-done is-expanded" data-section-key="${keyAttr}">
+                <button type="button" class="tasks-section-heading tasks-section-done-toggle" data-section-key="${keyAttr}" aria-expanded="true" title="Fold up">
+                  <span class="toggle-title">${escapeHtml(sec.title)}</span>
+                  <span class="toggle-note"><span class="note-word">all done </span>${countText} ✓</span>
+                  <span class="toggle-chevron" aria-hidden="true">▴</span>
+                </button>
+                ${ordered.map(renderCard).join("")}
+              </div>
+            `;
+          }
+        }
+        return `
+          <div class="tasks-section-group" data-section-key="${keyAttr}">
+            <h4 class="tasks-section-heading">${escapeHtml(sec.title)}</h4>
+            ${ordered.map(renderCard).join("")}
+          </div>
+        `;
+      }).join("");
     }
 
     const isAllDone = totalCount > 0 && completedCount === totalCount;
@@ -412,6 +520,52 @@ function renderSkylightTasksPage() {
   });
 
   container.innerHTML = columnsHtml;
+
+  // Put each column back where it was scrolled to, then slide the cards of a
+  // just-ticked column from their old places to their new ones (FLIP).
+  container.querySelectorAll(".skylight-tasks-col").forEach(col => {
+    const m = (col.getAttribute("data-col-member") || "").toLowerCase();
+    const body = col.querySelector(".tasks-col-body");
+    if (body && savedScroll.has(m)) body.scrollTop = savedScroll.get(m);
+    const tops = flipTops.get(m);
+    if (!tops) return;
+    col.querySelectorAll(".skylight-task-card").forEach(c => {
+      const oldTop = tops.get(c.getAttribute("data-task-id"));
+      if (oldTop === undefined || typeof c.animate !== "function") return;
+      const dy = oldTop - c.getBoundingClientRect().top;
+      if (Math.abs(dy) > 1) {
+        c.animate([{ transform: `translateY(${dy}px)` }, { transform: "translateY(0)" }],
+          { duration: TASKS_FLIP_MS, easing: "cubic-bezier(.2,.8,.2,1)" });
+      }
+    });
+  });
+
+  // A just-finished section folds up once its short pause is over
+  if (tasksCollapseHoldTimer) { clearTimeout(tasksCollapseHoldTimer); tasksCollapseHoldTimer = null; }
+  if (nextHoldMs !== Infinity) {
+    tasksCollapseHoldTimer = setTimeout(() => {
+      tasksCollapseHoldTimer = null;
+      // Let the cards below the folding section slide up into place
+      if (!tasksReducedMotion()) {
+        tasksSectionCollapseHold.forEach((until, key) => {
+          if (until <= Date.now() + 20) tasksFlipMembers.set(key.split("|")[1], Date.now() + 450);
+        });
+      }
+      renderSkylightTasksPage();
+    }, Math.max(0, nextHoldMs) + 20);
+  }
+
+  // Wire the "all done" line (open it) and its header (fold it up again)
+  container.querySelectorAll(".tasks-section-done-chip, .tasks-section-done-toggle").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const key = btn.getAttribute("data-section-key");
+      if (tasksExpandedDoneSections.has(key)) tasksExpandedDoneSections.delete(key);
+      else tasksExpandedDoneSections.add(key);
+      tasksSectionCollapseHold.delete(key);
+      renderSkylightTasksPage();
+    };
+  });
 
   // Wire filter pill buttons
   container.querySelectorAll(".routine-filter-circle-btn").forEach(btn => {
@@ -444,6 +598,7 @@ function renderSkylightTasksPage() {
       const dName = btn.getAttribute("data-day");
       const mem = btn.getAttribute("data-member") || null;
       const isComp = btn.getAttribute("data-completed") === "true";
+      markTasksToggle(tid, mem, btn.closest(".skylight-task-card"));
       if (isComp) {
         handleUndoTask(tid, dName, null, mem);
       } else {
@@ -942,6 +1097,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
 
   compBtn.onclick = () => {
     close();
+    if (colMember) markTasksToggle(taskId, colMember, findTasksCard(taskId, colMember));
     if (isDone) handleUndoTask(taskId, targetDay, null, colMember);
     else handleCompleteTaskWithCelebration(taskId, targetDay, colMember);
   };
