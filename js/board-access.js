@@ -25,7 +25,7 @@ function showJoinBoardScreen({ familyName = "", hadWrongLinkCode = false, tryCod
         <label class="board-join-label" for="board-join-code">Family code</label>
         <input id="board-join-code" class="board-join-input" type="text" inputmode="text"
                autocomplete="one-time-code" autocapitalize="characters" spellcheck="false"
-               maxlength="9" placeholder="ABCD-EFGH" aria-describedby="board-join-error">
+               maxlength="14" placeholder="MINT-FROG-LAMP" aria-describedby="board-join-error">
         <p id="board-join-error" class="board-join-error" role="alert">${hadWrongLinkCode ? "That link's code didn't work. Check it and try again." : ""}</p>
         <button type="submit" class="board-join-btn">Join board</button>
         <p class="board-join-help">Find the code in <strong>Settings → Family access</strong> on a device that's already set up.</p>
@@ -40,10 +40,11 @@ function showJoinBoardScreen({ familyName = "", hadWrongLinkCode = false, tryCod
     const btn = overlay.querySelector(".board-join-btn");
     setTimeout(() => input.focus(), 50);
 
-    // Auto-format as ABCD-EFGH while typing
+    // Auto-format in groups of 4 while typing: MINT-FROG-LAMP (new codes)
+    // or ABCD-EFGH (codes from before Nov 2026)
     input.addEventListener("input", () => {
-      const raw = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-      input.value = raw.length > 4 ? `${raw.slice(0, 4)}-${raw.slice(4)}` : raw;
+      const raw = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+      input.value = (raw.match(/.{1,4}/g) || []).join("-");
       errorEl.textContent = "";
     });
 
@@ -51,7 +52,7 @@ function showJoinBoardScreen({ familyName = "", hadWrongLinkCode = false, tryCod
       e.preventDefault();
       const code = input.value.replace(/[^A-Z0-9]/gi, "");
       if (code.length < 8) {
-        errorEl.textContent = "The code has 8 letters and numbers.";
+        errorEl.textContent = "Enter all of the code, like MINT-FROG-LAMP.";
         return;
       }
       btn.disabled = true;

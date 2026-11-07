@@ -1344,20 +1344,35 @@ async function initializeDataSource() {
 const PENDING_NEW_BOARD_KEY = "harmonee_pending_new_board";
 const FAMILY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
 
-function generateFamilyCode() {
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, b => FAMILY_CODE_ALPHABET[b % FAMILY_CODE_ALPHABET.length]).join("");
+// New codes are three random everyday words, e.g. MINT-FROG-LAMP, stored as
+// "MINTFROGLAMP". Boards made before Nov 2026 keep their 8-character codes
+// (HX4P-9KTB), which still work everywhere.
+function randomIndex(n) {
+  // Unbiased: throw away the top slice of the range that doesn't divide by n
+  const limit = Math.floor(0x100000000 / n) * n;
+  const buf = new Uint32Array(1);
+  do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+  return buf[0] % n;
 }
 
-// "hx4p-9ktb " -> "HX4P9KTB"
+function generateFamilyCode() {
+  const words = window.FAMILY_CODE_WORDS;
+  if (Array.isArray(words) && words.length >= 500) {
+    return [0, 1, 2].map(() => words[randomIndex(words.length)]).join("").toUpperCase();
+  }
+  // Word list didn't load: fall back to 8 random letters and numbers
+  return Array.from({ length: 8 }, () => FAMILY_CODE_ALPHABET[randomIndex(FAMILY_CODE_ALPHABET.length)]).join("");
+}
+
+// "mint-frog lamp " -> "MINTFROGLAMP", "hx4p-9ktb " -> "HX4P9KTB"
 function normalizeFamilyCode(raw) {
   return String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+// Split into groups of 4: MINT-FROG-LAMP or HX4P-9KTB
 function formatFamilyCode(code) {
   const c = normalizeFamilyCode(code);
-  return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
+  return c.length === 8 || c.length === 12 ? c.match(/.{4}/g).join("-") : c;
 }
 
 function describeThisDevice() {
@@ -4813,7 +4828,7 @@ function setupEventListeners() {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
-      const slug = `${baseSlug}-${generateFamilyCode().slice(0, 4).toLowerCase()}`;
+      const slug = `${baseSlug}-${Array.from({ length: 4 }, () => FAMILY_CODE_ALPHABET[randomIndex(FAMILY_CODE_ALPHABET.length)]).join("").toLowerCase()}`;
       // Tells ensureBoardAccess to create the board (with a family code) on arrival
       localStorage.setItem(PENDING_NEW_BOARD_KEY, slug);
 

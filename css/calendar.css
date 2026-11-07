@@ -5509,7 +5509,7 @@ body.theme-dark .ev-block-inline-time { color: #cbd5e1; }
 .ev-block.is-tiny .ev-block-head { align-items: center; }
 .ev-block.is-tiny .ev-block-title { display: block; -webkit-line-clamp: unset; white-space: nowrap; text-overflow: ellipsis; font-size: 0.8rem; }
 .ev-block.is-tiny .ev-block-avatar { width: 20px; height: 20px; font-size: 0.62rem; }
-.ev-block.is-short .ev-block-title { -webkit-line-clamp: 1; }
+.ev-block.is-short .ev-block-title { -webkit-line-clamp: 2; } /* 2 lines + time fit from 56px up */
 
 body.theme-dark .ev-block-title { color: #f8fafc; }
 body.theme-dark .ev-block-time { color: #cbd5e1; }
