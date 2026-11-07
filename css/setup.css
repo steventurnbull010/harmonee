@@ -283,3 +283,60 @@ body.theme-dark .wx-note, body.theme-dark .wx-link.is-quiet { color: #94a3b8; }
 .setup-join-title { font-weight: 800; color: #0f172a; margin-bottom: 4px !important; }
 body.theme-dark .setup-join-note { background: #0f172a; color: #cbd5e1; }
 body.theme-dark .setup-join-title { color: #f8fafc; }
+
+/* ==========================================================================
+   "Welcome to harmonee": the name written in by hand (Parisienne), in the
+   sky blue of the "h" icon, with a few stars twinkling in at the end
+   ========================================================================== */
+.setup-hello { line-height: 1.2; }
+.hw { position: relative; display: inline-block; white-space: nowrap; color: #0284c7; margin-left: 0.18em; }
+.hw-ink {
+  display: inline-block;
+  font-family: "Parisienne", "Great Vibes", cursive;
+  font-weight: 400;
+  font-size: 1.75em;
+  line-height: 1;
+  /* room so the swashes aren't cut off while it's being revealed */
+  padding: 0.12em 0.18em 0.2em 0.08em;
+  margin: -0.12em -0.18em -0.2em -0.08em;
+  vertical-align: -0.08em;
+  clip-path: inset(-20% 100% -20% 0);
+}
+.setup-hello.is-writing .hw-ink { animation: hw-write 1.9s cubic-bezier(0.55, 0.1, 0.35, 1) 0.25s forwards; }
+@keyframes hw-write {
+  0%   { clip-path: inset(-20% 100% -20% 0); }
+  100% { clip-path: inset(-20% -6% -20% 0); }
+}
+
+/* Three small four-point stars just after the last "e" */
+.hw-stars { position: absolute; top: -0.15em; right: -0.95em; width: 1em; height: 1em; pointer-events: none; }
+.hw-star { position: absolute; display: block; color: #38bdf8; opacity: 0; transform: scale(0) rotate(-30deg); }
+.hw-star svg { display: block; width: 100%; height: 100%; }
+.hw-star.is-1 { width: 0.42em; height: 0.42em; top: 0.05em; left: 0.2em; color: #0284c7; }
+.hw-star.is-2 { width: 0.24em; height: 0.24em; top: -0.12em; left: 0.62em; }
+.hw-star.is-3 { width: 0.18em; height: 0.18em; top: 0.48em; left: 0.68em; color: #7dd3fc; }
+.setup-hello.is-writing .hw-star { animation: hw-star-in 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) forwards, hw-twinkle 3.6s ease-in-out infinite; }
+.setup-hello.is-writing .hw-star.is-1 { animation-delay: 2s, 2.7s; }
+.setup-hello.is-writing .hw-star.is-2 { animation-delay: 2.2s, 3.4s; }
+.setup-hello.is-writing .hw-star.is-3 { animation-delay: 2.35s, 4.1s; }
+@keyframes hw-star-in {
+  0%   { opacity: 0; transform: scale(0) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.25) rotate(8deg); }
+  100% { opacity: 0.95; transform: scale(1) rotate(0deg); }
+}
+@keyframes hw-twinkle {
+  0%, 100% { opacity: 0.95; transform: scale(1) rotate(0deg); }
+  45%      { opacity: 0.25; transform: scale(0.55) rotate(20deg); }
+  60%      { opacity: 1; transform: scale(1.1) rotate(0deg); }
+}
+
+/* No motion wanted: the word and stars are simply there */
+@media (prefers-reduced-motion: reduce) {
+  .hw-ink, .setup-hello.is-writing .hw-ink { clip-path: none; animation: none; }
+  .hw-star, .setup-hello.is-writing .hw-star { animation: none; opacity: 0.9; transform: none; }
+}
+body.theme-dark .hw { color: #38bdf8; }
+body.theme-dark .hw-star.is-1 { color: #38bdf8; }
+body.theme-dark .hw-star { color: #7dd3fc; }
+/* Narrow phones: keep the stars inside the card */
+@media (max-width: 420px) { .hw-stars { right: -0.7em; } }

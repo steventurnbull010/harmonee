@@ -70,7 +70,7 @@
   function stepHtml() {
     const s = state;
     if (s.step === 0) return `
-      <h1 class="setup-title" id="setup-title">Welcome to harmonee</h1>
+      <h1 class="setup-title setup-hello" id="setup-title">Welcome to <span class="hw" role="img" aria-label="harmonee"><span class="hw-ink" aria-hidden="true">harmonee</span><span class="hw-stars" aria-hidden="true"><span class="hw-star is-1"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span><span class="hw-star is-2"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span><span class="hw-star is-3"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span></span></span></h1>
       <p class="setup-lead">Family life in sync: your calendar, jobs and routines, meals and shopping lists, shared by the whole family on a kitchen tablet and everyone's phones.</p>
       <button type="button" class="setup-btn is-primary setup-start" data-act="start">Set up our family board</button>
       <div class="setup-join-note">
@@ -176,6 +176,12 @@
         current: s.weather,
         onPick: (place) => { state.weather = place; }
       });
+    }
+    if (s.step === 0) {
+      const hello = el.querySelector(".setup-hello");
+      const go = () => { if (hello) hello.classList.add("is-writing"); };
+      try { Promise.race([document.fonts.load('400 48px "Parisienne"'), new Promise(r => setTimeout(r, 1500))]).then(go, go); }
+      catch (e) { go(); }
     }
     const focus = el.querySelector(s.step === 1 ? "#setup-family" : s.step === 2 ? "#setup-person" : s.step === 0 ? ".setup-start" : ".setup-btn.is-primary");
     if (focus && !(s.step === 2 && s.people.length >= MAX_PEOPLE)) setTimeout(() => { try { focus.focus({ preventScroll: true }); } catch (e) {} }, 30);
