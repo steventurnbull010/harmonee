@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css?v=144">
-  <link rel="stylesheet" href="css/navigation.css?v=2">
+  <link rel="stylesheet" href="css/navigation.css?v=3">
   <link rel="stylesheet" href="css/tasks.css?v=18">
   <link rel="stylesheet" href="css/meals.css?v=21">
   <link rel="stylesheet" href="css/calendar.css?v=12">
@@ -83,7 +83,7 @@
   <div class="skylight-app-wrapper">
     <!-- Skylight Left Navigation Menu (15" Calendar Max Style) -->
     <aside class="skylight-sidebar" id="skylight-sidebar" aria-label="Main Navigation">
-      <div class="skylight-brand-mark" id="sidebar-brand-mark" title="Turnbull Family Command Center" onclick="window.switchSkylightView && window.switchSkylightView('calendar')">S</div>
+      <div class="skylight-brand-mark" id="sidebar-brand-mark" title="harmonee" aria-label="harmonee home" role="button" tabindex="0" onclick="window.switchSkylightView && window.switchSkylightView('calendar')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">h</div>
       
       <nav class="skylight-nav-group" id="skylight-nav-group">
         <button type="button" class="skylight-nav-item active" id="nav-item-calendar" data-view="calendar" title="Week Calendar" onclick="window.switchSkylightView && window.switchSkylightView('calendar')">
