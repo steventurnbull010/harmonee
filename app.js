@@ -4849,7 +4849,7 @@ function setupEventListeners() {
 
       row.innerHTML = `
         <div class="roster-member-info">
-          <button type="button" class="roster-color-trigger-btn" data-member="${escapeHtml(member)}" title="Change ${escapeHtml(member)}'s Profile Color" style="background: ${pal.primary}; border: 2px solid ${pal.border};">
+          <button type="button" class="roster-color-trigger-btn" data-member="${escapeHtml(member)}" title="Change ${escapeHtml(member)}'s colour" aria-label="Change ${escapeHtml(member)}'s colour" style="--profile-color: ${pal.primary};">
             ${escapeHtml(initial)}
           </button>
           <div class="roster-member-names-wrap">
@@ -4858,10 +4858,10 @@ function setupEventListeners() {
           </div>
         </div>
         <div class="roster-member-actions">
-          <button type="button" class="btn-change-member-color" data-member="${escapeHtml(member)}" title="Change Color">
-            Palette 🎨
+          <button type="button" class="btn-change-member-color" data-member="${escapeHtml(member)}" title="Change colour">
+            🎨 Colour
           </button>
-          <button type="button" class="btn-remove-member" data-member-index="${idx}" title="Remove ${escapeHtml(member)}">
+          <button type="button" class="btn-remove-member" data-member-index="${idx}" title="Remove ${escapeHtml(member)}" aria-label="Remove ${escapeHtml(member)}">
             ✕
           </button>
         </div>

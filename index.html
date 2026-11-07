@@ -19,13 +19,13 @@
   <link rel="stylesheet" href="css/lists.css?v=7">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=4">
+  <link rel="stylesheet" href="css/modals.css?v=5">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
   <link rel="stylesheet" href="css/page-intro.css?v=5">
   <link rel="stylesheet" href="css/page-spacing.css?v=6">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=5">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=6">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
   <script>
@@ -1398,153 +1398,176 @@
         </nav>
 
         <!-- PROFILES: family members (saved as soon as you change them) -->
-        <section class="settings-section" id="settings-sec-profiles">
-          <h3 class="settings-section-title">👥 Profiles</h3>
-          <p class="settings-section-desc">Everyone on this board. Changes here save straight away.</p>
+        <section class="settings-section" id="settings-sec-profiles" aria-labelledby="settings-head-profiles">
+          <div class="settings-section-head">
+            <h3 class="drawer-section-label-row" id="settings-head-profiles">
+              <span class="drawer-section-icon" aria-hidden="true">👥</span>
+              <span class="drawer-section-label">Profiles</span>
+            </h3>
+            <p class="settings-section-desc">Everyone on this board. Changes here save straight away.</p>
+          </div>
           <div class="roster-members-list" id="roster-members-list">
-          <!-- Member rows injected dynamically -->
-        </div>
+            <!-- Member rows injected dynamically -->
+          </div>
 
-        <form id="add-member-form" class="add-member-form">
-          <div class="form-group">
-            <label for="new-member-name">Add New Member Name</label>
-            <div class="add-member-input-row">
-              <input type="text" id="new-member-name" placeholder="e.g. Jack, Sarah, Grandma">
-              <button type="submit" class="btn-primary-action" id="btn-add-member">Add</button>
+          <form id="add-member-form" class="add-member-form ev-when-card">
+            <label class="ev-field" for="new-member-name">
+              <span class="ev-field-label">Add someone</span>
+              <span class="add-member-input-row">
+                <input type="text" id="new-member-name" class="ev-native-input" placeholder="e.g. Jack, Sarah, Grandma">
+                <button type="submit" class="btn-primary-action" id="btn-add-member">Add</button>
+              </span>
+            </label>
+            <!-- Skylight 20-Swatch Color Palette for New Member -->
+            <div class="ev-field">
+              <span class="ev-field-label">Their colour</span>
+              <div class="skylight-color-picker-grid" id="new-member-color-grid">
+                <!-- Injected dynamically: 20 circular color swatches -->
+              </div>
+              <input type="hidden" id="new-member-selected-color" value="sky-blue">
             </div>
-          </div>
-          <!-- Skylight 20-Swatch Color Palette for New Member -->
-          <div class="form-group" style="margin-top: 10px;">
-            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Choose Profile Color</label>
-            <div class="skylight-color-picker-grid" id="new-member-color-grid">
-              <!-- Injected dynamically: 20 circular color swatches -->
-            </div>
-            <input type="hidden" id="new-member-selected-color" value="sky-blue">
-          </div>
-        </form>
+          </form>
         </section>
 
         <form id="settings-form" class="settings-form">
-          <section class="settings-section" id="settings-sec-display">
-            <h3 class="settings-section-title">🎨 Display</h3>
-          <!-- Theme & Appearance (Light / Dark) -->
-          <div class="form-group settings-theme-group">
-            <label>Theme & Appearance</label>
-            <div class="theme-selector-grid">
-              <div class="theme-option-card selected" id="opt-theme-light" data-theme="light" role="button" tabindex="0">
-                <span class="theme-option-icon">☀️</span>
+          <!-- DISPLAY: light / dark (applies straight away) -->
+          <section class="settings-section" id="settings-sec-display" aria-labelledby="settings-head-display">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-display">
+                <span class="drawer-section-icon" aria-hidden="true">🎨</span>
+                <span class="drawer-section-label">Display</span>
+              </h3>
+              <p class="settings-section-desc">Changes straight away on this device.</p>
+            </div>
+            <div class="drawer-segmented-pills settings-choice-row" role="group" aria-label="Theme">
+              <button type="button" class="drawer-pill-segment settings-choice theme-option-card selected" id="opt-theme-light" data-theme="light">
+                <span class="theme-option-icon" aria-hidden="true">☀️</span>
                 <span class="theme-option-title">Pastel Light</span>
-                <span class="theme-option-desc">Clean, bright daytime colors</span>
-              </div>
-              <div class="theme-option-card" id="opt-theme-dark" data-theme="dark" role="button" tabindex="0">
-                <span class="theme-option-icon">🌙</span>
+                <span class="theme-option-desc">Clean, bright daytime colours</span>
+              </button>
+              <button type="button" class="drawer-pill-segment settings-choice theme-option-card" id="opt-theme-dark" data-theme="dark">
+                <span class="theme-option-icon" aria-hidden="true">🌙</span>
                 <span class="theme-option-title">Midnight Dark</span>
                 <span class="theme-option-desc">Sleek, low-glare dark mode</span>
-              </div>
-            </div>
-          </div>
-
-          </section>
-
-          <section class="settings-section" id="settings-sec-rewards">
-            <h3 class="settings-section-title">🏆 Rewards</h3>
-          <div class="form-group">
-            <label>Reward / Game Mode</label>
-            <div class="mode-selector-grid">
-              <div class="mode-option-card selected" id="opt-mode-points" data-mode="points">
-                <span class="mode-option-icon">🏆</span>
-                <span class="mode-option-title">Points & Trophy</span>
-                <span class="mode-option-desc">Earn points to win the crown on the leaderboard</span>
-              </div>
-              <div class="mode-option-card" id="opt-mode-money" data-mode="money">
-                <span class="mode-option-icon">💰</span>
-                <span class="mode-option-title">Pocket Money</span>
-                <span class="mode-option-desc">Assign currency amounts to chores for kids</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group" id="currency-select-group" style="display: none;">
-            <label>Currency Symbol</label>
-            <div class="currency-row">
-              <button type="button" class="currency-btn selected" data-currency="£">£ (Pound)</button>
-              <button type="button" class="currency-btn" data-currency="$">$ (Dollar)</button>
-              <button type="button" class="currency-btn" data-currency="€">€ (Euro)</button>
-            </div>
-          </div>
-
-          <!-- Weekly History & Payout Ledger -->
-          <div class="settings-section-box">
-            <div class="settings-box-header">
-              <h4 class="settings-box-title">📜 Weekly Payout History</h4>
-              <span class="settings-box-badge">Auto-resets Sun Midnight</span>
-            </div>
-            <p class="settings-box-desc">Each week's points are saved here at Sunday midnight, then the week starts fresh. Unspent points carry over for reward goals.</p>
-            
-            <div class="weekly-history-list" id="weekly-history-container">
-              <div class="history-empty-note">No archived weeks yet. First weekly snapshot records this Sunday at midnight!</div>
-            </div>
-          </div>
-
-          </section>
-
-          <section class="settings-section" id="settings-sec-access">
-          <!-- Family Access: code, join link, joined devices -->
-          <div class="settings-section-box" id="family-access-box">
-            <div class="settings-box-header">
-              <h4 class="settings-box-title">🔐 Family Access</h4>
-              <span class="settings-box-badge">Private board</span>
-            </div>
-            <p class="settings-box-desc">Only devices that have entered this code can see or change your board. Use it on a new phone or tablet, or send the join link.</p>
-            <div id="family-access-content" class="family-access-content">
-              <p class="settings-box-desc">Loading…</p>
-            </div>
-          </div>
-
-          </section>
-
-          <section class="settings-section" id="settings-sec-sleep">
-          <!-- Scheduled Sleep Window (Lights-Out Overnight) -->
-          <div class="settings-section-box">
-            <div class="settings-box-header">
-              <h4 class="settings-box-title">🌙 Scheduled Sleep Window</h4>
-              <span class="settings-box-badge">Overnight Display Off</span>
-            </div>
-            <p class="settings-box-desc">Automatically blanks the tablet display into a deep, OLED pure-black ambient night clock overnight so it doesn't disturb anyone in the kitchen.</p>
-            
-            <div class="form-group checkbox-group" style="margin-top: 10px;">
-              <label class="custom-checkbox-label">
-                <input type="checkbox" id="settings-sleep-enabled" checked>
-                <span class="checkbox-custom"></span>
-                <span class="checkbox-text">Enable automatic overnight sleep schedule</span>
-              </label>
-            </div>
-
-            <div class="sleep-schedule-times-row" id="sleep-schedule-times-row" style="display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap;">
-              <div class="form-group" style="flex: 1; min-width: 130px;">
-                <label for="settings-sleep-start" style="font-size: 0.82rem; font-weight: 600;">Sleep Starts (Bedtime)</label>
-                <input type="time" id="settings-sleep-start" value="22:00" class="form-input" style="height: 40px; border-radius: 8px;">
-              </div>
-              <div class="form-group" style="flex: 1; min-width: 130px;">
-                <label for="settings-sleep-end" style="font-size: 0.82rem; font-weight: 600;">Wake Up (Morning)</label>
-                <input type="time" id="settings-sleep-end" value="07:00" class="form-input" style="height: 40px; border-radius: 8px;">
-              </div>
-            </div>
-
-            <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
-              <button type="button" class="btn-secondary-action" id="btn-preview-sleep-screen" style="height: 36px; font-size: 0.82rem; padding: 0 14px; border-radius: 8px; border: 1.5px solid var(--card-border); background: var(--bg-surface); cursor: pointer; font-family: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                <span>🌙 Preview Night Clock</span>
               </button>
             </div>
-          </div>
+          </section>
 
+          <!-- REWARDS: points or pocket money, plus banked weeks -->
+          <section class="settings-section" id="settings-sec-rewards" aria-labelledby="settings-head-rewards">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-rewards">
+                <span class="drawer-section-icon" aria-hidden="true">🏆</span>
+                <span class="drawer-section-label">Rewards</span>
+              </h3>
+              <p class="settings-section-desc">How chores are counted on the Rewards page.</p>
+            </div>
+            <div class="ev-field">
+              <span class="ev-field-label">Game mode</span>
+              <div class="drawer-segmented-pills settings-choice-row" role="group" aria-label="Game mode">
+                <button type="button" class="drawer-pill-segment settings-choice mode-option-card selected" id="opt-mode-points" data-mode="points">
+                  <span class="mode-option-icon" aria-hidden="true">🏆</span>
+                  <span class="mode-option-title">Points &amp; Trophy</span>
+                  <span class="mode-option-desc">Earn points to win the crown on the leaderboard</span>
+                </button>
+                <button type="button" class="drawer-pill-segment settings-choice mode-option-card" id="opt-mode-money" data-mode="money">
+                  <span class="mode-option-icon" aria-hidden="true">💰</span>
+                  <span class="mode-option-title">Pocket Money</span>
+                  <span class="mode-option-desc">Assign currency amounts to chores for kids</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="ev-field" id="currency-select-group" style="display: none;">
+              <span class="ev-field-label">Currency</span>
+              <div class="drawer-segmented-pills" role="group" aria-label="Currency">
+                <button type="button" class="drawer-pill-segment currency-btn selected" data-currency="£">£ Pound</button>
+                <button type="button" class="drawer-pill-segment currency-btn" data-currency="$">$ Dollar</button>
+                <button type="button" class="drawer-pill-segment currency-btn" data-currency="€">€ Euro</button>
+              </div>
+            </div>
+
+            <!-- Weekly History & Payout Ledger -->
+            <div class="ev-field">
+              <span class="settings-field-head">
+                <span class="ev-field-label">📜 Weekly payout history</span>
+                <span class="settings-box-badge">Resets Sunday midnight</span>
+              </span>
+              <div class="settings-section-box">
+                <p class="settings-box-desc">Each week's points are saved here at Sunday midnight, then the week starts fresh. Unspent points carry over for reward goals.</p>
+                <div class="weekly-history-list" id="weekly-history-container">
+                  <div class="history-empty-note">No archived weeks yet. First weekly snapshot records this Sunday at midnight!</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ACCESS: family code, join link, joined devices -->
+          <section class="settings-section" id="settings-sec-access" aria-labelledby="settings-head-access">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-access">
+                <span class="drawer-section-icon" aria-hidden="true">🔐</span>
+                <span class="drawer-section-label">Family access</span>
+                <span class="settings-box-badge">Private board</span>
+              </h3>
+              <p class="settings-section-desc">Only devices that have entered this code can see or change your board. Use it on a new phone or tablet, or send the join link.</p>
+            </div>
+            <div class="settings-section-box" id="family-access-box">
+              <div id="family-access-content" class="family-access-content">
+                <p class="settings-box-desc">Loading…</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SLEEP: scheduled lights-out overnight -->
+          <section class="settings-section" id="settings-sec-sleep" aria-labelledby="settings-head-sleep">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-sleep">
+                <span class="drawer-section-icon" aria-hidden="true">🌙</span>
+                <span class="drawer-section-label">Sleep</span>
+              </h3>
+              <p class="settings-section-desc">Blanks the tablet into a dark night clock overnight so it doesn't light up the kitchen.</p>
+            </div>
+            <div class="ev-when-card settings-sleep-card">
+              <label class="drawer-toggle-row ev-allday-row" for="settings-sleep-enabled">
+                <span class="drawer-toggle-left">
+                  <span class="drawer-toggle-texts">
+                    <span class="drawer-toggle-title">Sleep overnight</span>
+                    <span class="drawer-toggle-sub">Turns on and off by itself each day</span>
+                  </span>
+                </span>
+                <span class="skylight-switch">
+                  <input type="checkbox" id="settings-sleep-enabled" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+
+              <div class="ev-time-row sleep-schedule-times-row" id="sleep-schedule-times-row">
+                <label class="ev-field" for="settings-sleep-start">
+                  <span class="ev-field-label">Bedtime</span>
+                  <input type="time" id="settings-sleep-start" value="22:00" class="ev-native-input">
+                </label>
+                <span class="ev-time-arrow" aria-hidden="true">→</span>
+                <label class="ev-field" for="settings-sleep-end">
+                  <span class="ev-field-label">Wake up</span>
+                  <input type="time" id="settings-sleep-end" value="07:00" class="ev-native-input">
+                </label>
+              </div>
+
+              <button type="button" class="settings-outline-btn" id="btn-preview-sleep-screen">
+                <span>🌙 Preview night clock</span>
+              </button>
+            </div>
           </section>
 
           <!-- RESET: last, and needs the word RESET typed -->
-          <section class="settings-section settings-danger-zone" id="settings-sec-reset">
-            <h4 class="danger-zone-title">⚠️ Reset chores</h4>
+          <section class="settings-section settings-danger-zone" id="settings-sec-reset" aria-labelledby="settings-head-reset">
+            <h3 class="drawer-section-label-row danger-zone-title" id="settings-head-reset">
+              <span class="drawer-section-icon" aria-hidden="true">⚠️</span>
+              <span class="drawer-section-label">Reset chores</span>
+            </h3>
             <p class="danger-zone-desc">Replaces every chore on this board with the starter list and clears all ticks and this week's points. Profiles, lists, meals and events are kept. This can't be undone.</p>
-            <button type="button" class="btn-danger-outline" id="btn-trigger-reset-modal">
+            <button type="button" class="ev-delete" id="btn-trigger-reset-modal">
               <span>Reset chores to the starter list…</span>
             </button>
           </section>
@@ -2631,6 +2654,6 @@
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=32"></script>
-  <script type="module" src="app.js?v=222"></script>
+  <script type="module" src="app.js?v=223"></script>
 </body>
 </html>

@@ -17,9 +17,11 @@ dialog.side-panel .side-panel-body { padding: 24px 24px 0 24px !important; gap: 
 dialog.side-panel .modal-footer,
 dialog.side-panel .modal-actions { padding: 16px 0 24px 0 !important; gap: 8px !important; }
 dialog.side-panel .modal-subtitle { margin: -8px 0 0 0 !important; }
-dialog.side-panel .settings-section-desc { margin: -8px 0 0 0 !important; }
+dialog.side-panel .settings-section-desc { margin: 0 !important; }
 /* Settings menu pins flush with the new 24px top padding */
 dialog.side-panel #settings-section-nav { top: -24px !important; padding: 8px 24px 8px 24px !important; margin: -8px -24px 0 -24px !important; }
+/* Phones use 16px panel padding, so the menu bleeds 16px (not 24px) and doesn't scroll the panel sideways */
+@media (max-width: 520px) { dialog.side-panel #settings-section-nav { top: -16px !important; padding: 8px 16px !important; margin: -8px -16px 0 -16px !important; } }
 
 /* Shared side panel */
 dialog.side-panel .side-panel-header { padding: 0 !important; gap: 16px !important; }
@@ -55,7 +57,7 @@ dialog.side-panel .sticky-footer-right { gap: 8px !important; }
 dialog.side-panel #btn-save-sticky { padding: 16px !important; gap: 8px !important; }
 dialog.side-panel .settings-nav-chip { padding: 8px 16px !important; }
 dialog.side-panel #settings-sec-profiles { gap: 16px !important; }
-dialog.side-panel #add-member-form { margin-top: 8px !important; margin-bottom: 0 !important; gap: 8px !important; }
+dialog.side-panel #add-member-form { margin-top: 0 !important; margin-bottom: 0 !important; gap: 16px !important; padding: 16px !important; }
 dialog.side-panel #new-member-name { padding: 8px 16px !important; }
 dialog.side-panel .form-group { margin-top: 8px !important; margin-bottom: 0 !important; }
 dialog.side-panel .form-group > label { margin-top: 0 !important; margin-bottom: 8px !important; }
@@ -71,16 +73,14 @@ dialog.side-panel #opt-mode-money { padding: 16px !important; }
 dialog.side-panel .currency-btn { padding: 8px 16px !important; }
 dialog.side-panel .settings-section-box { padding: 16px !important; }
 dialog.side-panel .settings-box-badge { padding: 0 8px !important; }
-dialog.side-panel #weekly-history-container { margin-top: 8px !important; margin-bottom: 0 !important; }
+dialog.side-panel #weekly-history-container { margin-top: 0 !important; margin-bottom: 0 !important; }
 dialog.side-panel .history-empty-note { padding: 8px !important; }
 dialog.side-panel #family-access-box { padding: 16px !important; }
-dialog.side-panel .form-group.checkbox-group { margin-top: 8px !important; margin-bottom: 0 !important; }
-dialog.side-panel #sleep-schedule-times-row { margin-top: 8px !important; margin-bottom: 0 !important; gap: 16px !important; }
+dialog.side-panel #sleep-schedule-times-row { margin-top: 0 !important; margin-bottom: 0 !important; gap: 8px !important; }
 dialog.side-panel #settings-sleep-start,
 dialog.side-panel #settings-sleep-end { padding: 8px 16px !important; }
-dialog.side-panel .settings-section-box > div { margin-top: 16px !important; margin-bottom: 0 !important; }
-dialog.side-panel #btn-preview-sleep-screen { padding: 0 16px !important; gap: 8px !important; }
-dialog.side-panel #settings-sec-reset { padding: 24px 16px 16px 16px !important; gap: 16px !important; }
+dialog.side-panel #btn-preview-sleep-screen { padding: 8px 16px !important; gap: 8px !important; }
+dialog.side-panel #settings-sec-reset { padding: 16px !important; gap: 16px !important; }
 dialog.side-panel #btn-save-settings { padding: 16px !important; }
 dialog.side-panel #reward-goal-name { padding: 8px 16px !important; }
 dialog.side-panel .reward-goal-cost-row { gap: 8px !important; }

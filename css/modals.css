@@ -1420,13 +1420,6 @@ body.theme-dark #settings-sec-profiles + .settings-form .settings-section:first-
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 
-.settings-section-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
 .settings-section-desc {
   margin: -8px 0 0;
   font-size: 0.85rem;
@@ -1518,3 +1511,313 @@ body.theme-dark #settings-sec-profiles + .settings-form .settings-section:first-
   gap: 10px;
   margin-top: 4px;
 }
+
+/* ==========================================================================
+   SETTINGS PANEL: matches the Tasks drawer / event panel
+   Section headers use .drawer-section-label-row, groups sit in
+   .ev-when-card-style cards, choices are .drawer-pill-segment buttons
+   (app.js marks the picked one with .selected), the sleep switch is a
+   .skylight-switch. 8px grid: 16px inside cards, 24px between sections.
+   ========================================================================== */
+#settings-modal .settings-section { gap: 16px; }
+
+#settings-modal .settings-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#settings-modal h3.drawer-section-label-row {
+  margin: 0;
+  font: inherit;
+}
+
+#settings-modal .settings-section-head .drawer-section-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+#settings-modal .settings-section-head .settings-box-badge { margin-left: auto; }
+
+#settings-modal .settings-section-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Jump-to chips: same look as the Tasks drawer pills */
+#settings-modal .settings-nav-chip {
+  min-height: 40px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+#settings-modal .settings-nav-chip.is-active {
+  border-color: #0284c7;
+  background: #ffffff;
+  color: #0284c7;
+  font-weight: 700;
+  box-shadow: 0 1px 5px rgba(2, 132, 199, 0.18);
+}
+body.theme-dark #settings-modal .settings-nav-chip {
+  background: #0f172a;
+  border-color: #334155;
+  color: #94a3b8;
+}
+body.theme-dark #settings-modal .settings-nav-chip.is-active {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+/* Cards (profile rows, add-someone form, history, access, sleep) */
+#settings-modal .settings-section-box,
+#settings-sec-profiles .roster-member-row {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  gap: 8px;
+}
+body.theme-dark #settings-modal .settings-section-box,
+body.theme-dark #settings-sec-profiles .roster-member-row {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Profiles: filled colour circle like the Tasks "who" avatars */
+#settings-sec-profiles .roster-member-row {
+  padding: 8px 16px;
+  gap: 8px 16px;
+  min-height: 64px;
+  box-sizing: border-box;
+}
+#settings-sec-profiles .roster-member-info { gap: 16px; }
+#settings-sec-profiles .roster-member-names-wrap { gap: 0; }
+#settings-sec-profiles .roster-color-trigger-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--profile-color);
+  border: 2px solid var(--profile-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--profile-color) 22%, transparent);
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+#settings-sec-profiles .roster-color-trigger-btn:hover { transform: none; }
+#settings-sec-profiles .roster-color-trigger-btn:focus-visible {
+  outline: 2px solid var(--profile-color);
+  outline-offset: 4px;
+}
+#settings-sec-profiles .roster-member-name { color: var(--text-primary); }
+#settings-sec-profiles .roster-member-actions { gap: 8px; }
+#settings-sec-profiles .btn-change-member-color {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-secondary, #64748b);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+#settings-sec-profiles .btn-remove-member {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#settings-sec-profiles .roster-inline-color-picker {
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+#settings-sec-profiles .skylight-color-picker-grid {
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+  padding: 0;
+}
+body.theme-dark #settings-sec-profiles .btn-change-member-color {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+body.theme-dark #settings-sec-profiles .roster-inline-color-picker { border-top-color: rgba(255, 255, 255, 0.08); }
+
+#settings-sec-profiles .add-member-form { gap: 16px; margin: 0; }
+#settings-sec-profiles .add-member-input-row { display: flex; gap: 8px; }
+#settings-sec-profiles .add-member-input-row .ev-native-input { flex: 1; min-width: 0; }
+#settings-sec-profiles #btn-add-member {
+  min-height: 48px;
+  padding: 8px 24px;
+  border-radius: 16px;
+}
+
+/* Theme and game mode: two big pill buttons */
+#settings-modal .settings-choice-row { align-items: stretch; }
+#settings-modal .settings-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 16px;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: none;
+  font: inherit;
+}
+#settings-modal .settings-choice .theme-option-icon,
+#settings-modal .settings-choice .mode-option-icon { font-size: 1.5rem; line-height: 1; }
+#settings-modal .settings-choice .theme-option-title,
+#settings-modal .settings-choice .mode-option-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+#settings-modal .settings-choice .theme-option-desc,
+#settings-modal .settings-choice .mode-option-desc {
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary, #64748b);
+}
+#settings-modal .settings-choice:hover { border-color: rgba(2, 132, 199, 0.4); background: #ffffff; }
+
+#settings-modal .settings-choice.selected,
+#settings-modal .drawer-pill-segment.currency-btn.selected {
+  border-color: #0284c7;
+  background: #ffffff;
+  color: #0284c7;
+  font-weight: 700;
+  box-shadow: 0 1px 5px rgba(2, 132, 199, 0.18);
+}
+#settings-modal .settings-choice.selected .theme-option-title,
+#settings-modal .settings-choice.selected .mode-option-title { color: #0284c7; }
+
+#settings-modal .drawer-pill-segment.currency-btn {
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+}
+
+body.theme-dark #settings-modal .settings-choice,
+body.theme-dark #settings-modal .drawer-pill-segment.currency-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #94a3b8;
+}
+body.theme-dark #settings-modal .settings-choice:hover { border-color: rgba(56, 189, 248, 0.5); }
+body.theme-dark #settings-modal .settings-choice.selected,
+body.theme-dark #settings-modal .drawer-pill-segment.currency-btn.selected {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: none;
+}
+body.theme-dark #settings-modal .settings-choice .theme-option-title,
+body.theme-dark #settings-modal .settings-choice .mode-option-title { color: #f8fafc; }
+body.theme-dark #settings-modal .settings-choice.selected .theme-option-title,
+body.theme-dark #settings-modal .settings-choice.selected .mode-option-title { color: #38bdf8; }
+
+/* Weekly history */
+#settings-modal .settings-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#settings-modal .settings-box-desc { margin: 0; font-size: 0.82rem; line-height: 1.5; }
+#settings-modal .weekly-history-list { margin: 0; }
+
+/* Family access */
+#settings-modal .family-access-content { display: flex; flex-direction: column; gap: 8px; }
+#settings-modal .family-access-content > .settings-box-desc { margin: 0 !important; }
+#settings-modal .family-access-row { gap: 16px; }
+#settings-modal .family-access-devices { margin: 0; }
+#settings-modal .family-access-small-btn {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+body.theme-dark #settings-modal .family-access-small-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+/* Sleep: switch row, bedtime -> wake up, preview */
+#settings-modal .settings-sleep-card .drawer-toggle-row { cursor: pointer; }
+#settings-modal .settings-sleep-card .drawer-toggle-left { gap: 16px; }
+#settings-modal .settings-sleep-card .drawer-toggle-texts { gap: 0; }
+#settings-modal .settings-sleep-card:has(#settings-sleep-enabled:not(:checked)) .sleep-schedule-times-row { opacity: 0.45; }
+#settings-modal .settings-sleep-card .ev-native-input { padding: 8px 16px; }
+#settings-modal .settings-outline-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+#settings-modal .settings-outline-btn:hover { border-color: #0284c7; color: #0284c7; }
+body.theme-dark #settings-modal .settings-outline-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+body.theme-dark #settings-modal .settings-outline-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+
+/* Reset: last, red-tinted card */
+#settings-modal .settings-section.settings-danger-zone {
+  margin-top: 0;
+  padding: 16px;
+  gap: 16px;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.05);
+}
+#settings-modal .danger-zone-title .drawer-section-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #b91c1c;
+  text-transform: none;
+  letter-spacing: normal;
+}
+#settings-modal .danger-zone-desc { margin: 0; font-size: 0.85rem; line-height: 1.5; }
+body.theme-dark #settings-modal .settings-section.settings-danger-zone {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+}
+body.theme-dark #settings-modal .danger-zone-title .drawer-section-label { color: #fca5a5; }
+/* The shared dark switch rule outranks its "on" colour, so an on switch
+   looked off in dark mode; keep it blue here */
+body.theme-dark #settings-modal .skylight-switch input:checked + .switch-slider { background: #38bdf8; }
