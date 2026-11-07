@@ -159,7 +159,7 @@
     const intro = s.step === 0;
     const nextLabel = s.step === STEPS ? "Create our board" : "Continue";
     el.innerHTML = `
-      <div class="setup-card" role="document">
+      <div class="setup-card${intro ? " is-intro" : ""}" role="document">
         <div class="setup-top">
           <span class="setup-brand" aria-hidden="true">h</span>
           ${intro ? "" : `<ol class="setup-dots" aria-label="Step ${s.step} of ${STEPS}">${Array.from({ length: STEPS }, (_, i) => `<li class="${i + 1 === s.step ? "is-now" : (i + 1 < s.step ? "is-done" : "")}"></li>`).join("")}</ol>`}

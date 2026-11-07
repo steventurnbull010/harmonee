@@ -344,3 +344,8 @@ body.theme-dark .hw-star { color: #7dd3fc; }
 .setup-hello .hw { display: block; width: fit-content; margin: 0.05em 0 0 -0.04em; }
 .setup-hello .hw-ink { font-size: 2.1em; }
 .setup-hello + .setup-lead { margin-top: 16px; }
+/* Welcome screen: the "h", the title and the line under it centred */
+.setup-card.is-intro .setup-top { justify-content: center; }
+.setup-card.is-intro .setup-hello,
+.setup-card.is-intro .setup-hello + .setup-lead { text-align: center; }
+.setup-card.is-intro .setup-hello .hw { margin-left: auto; margin-right: auto; }
