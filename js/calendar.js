@@ -108,9 +108,9 @@ const EVENT_EMOJI_LIST = [
 const EVENT_EMOJI_GROUPS = [
   { name: "General", items: [["📅","Event"],["⏰","Reminder"],["📌","Important"],["🔔","Alert"],["⭐","Special"],["✅","To do"],["🗑️","Bin day"],["♻️","Recycling"]] },
   { name: "School & learning", items: [["🏫","School"],["📚","Homework"],["🎓","Exam"],["✏️","Tutor"],["🔬","Science"],["🧮","Maths"],["💻","Computer"],["🎒","School trip"],["🗣️","Parents' evening"],["📝","Test"]] },
-  { name: "Sport & clubs", items: [["⚽","Football"],["🏀","Basketball"],["🎾","Tennis"],["🏊","Swimming"],["🥋","Martial arts"],["🩰","Dance"],["🏃","Running"],["🚴","Cycling"],["🏋️","Gym"],["🏐","Volleyball"],["⛳","Golf"],["🧗","Climbing"],["🤸","Gymnastics"],["🏉","Rugby"],["🏑","Hockey"],["🐴","Riding"]] },
+  { name: "Sport & clubs", items: [["⚽","Football"],["🏀","Basketball"],["🎾","Tennis"],["🏓","Padel"],["🧘","Yoga"],["🏊","Swimming"],["🥋","Martial arts"],["🩰","Dance"],["🏃","Running"],["🚴","Cycling"],["🏋️","Gym"],["🏐","Volleyball"],["⛳","Golf"],["🧗","Climbing"],["🤸","Gymnastics"],["🏉","Rugby"],["🏑","Hockey"],["🐴","Riding"]] },
   { name: "Music & arts", items: [["🎹","Piano"],["🎸","Guitar"],["🎻","Violin"],["🥁","Drums"],["🎤","Singing"],["🎨","Art"],["🎭","Drama"],["📷","Photography"],["🎼","Music lesson"]] },
-  { name: "Health & appointments", items: [["🩺","Doctor"],["🏥","Hospital"],["🦷","Dentist"],["💊","Pharmacy"],["💉","Vaccine"],["👓","Optician"],["💇","Haircut"],["🧘","Yoga"],["🐾","Vet"]] },
+  { name: "Health & appointments", items: [["🩺","Doctor"],["🏥","Hospital"],["🦷","Dentist"],["💊","Pharmacy"],["💉","Vaccine"],["👓","Optician"],["💇","Haircut"],["🐾","Vet"]] },
   { name: "Family & friends", items: [["👨‍👩‍👧‍👦","Family"],["🎂","Birthday"],["🎉","Party"],["🎁","Present"],["🍽️","Dinner"],["☕","Coffee"],["🍕","Pizza"],["🏡","Visit"],["👶","Baby"],["💒","Wedding"],["🛌","Sleepover"],["📞","Call"]] },
   { name: "Days out", items: [["🎬","Cinema"],["🍿","Film night"],["🎳","Bowling"],["🎡","Fair"],["🏟️","Match"],["🛍️","Shopping"],["🌳","Park"],["🏖️","Beach"],["⛺","Camping"],["🦁","Zoo"],["🏰","Day trip"],["🎢","Theme park"]] },
   { name: "Travel", items: [["✈️","Flight"],["🚆","Train"],["🚗","Drive"],["🚌","Bus"],["⛴️","Ferry"],["🧳","Holiday"],["🏨","Hotel"],["🗺️","Trip"]] },
@@ -138,6 +138,8 @@ function detectEmojiForTitle(text) {
   if (t.includes("swim")) return "🏊";
   if (t.includes("football") || t.includes("soccer")) return "⚽";
   if (t.includes("basket")) return "🏀";
+  if (t.includes("padel")) return "🏓";
+  if (t.includes("yoga") || t.includes("pilates")) return "🧘";
   if (t.includes("tennis")) return "🎾";
   if (t.includes("karate") || t.includes("judo") || t.includes("martial") || t.includes("taekwondo")) return "🥋";
   if (t.includes("gym") || t.includes("fit") || t.includes("workout")) return "🏋️";
