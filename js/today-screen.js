@@ -192,8 +192,8 @@
   function drawCustomise() {
     const dlg = document.getElementById("today-customise");
     dlg.innerHTML = `<div class="save-prompt-card today-customise-card">
-      <h2 class="save-prompt-title" id="today-customise-title">Customise this screen</h2>
-      <p class="save-prompt-text">Choose the cards your family wants. This changes it on every device.</p>
+      <h2 class="save-prompt-title" id="today-customise-title">Make it yours</h2>
+      <p class="save-prompt-text">Choose what shows here. Tap to switch each one on or off. It changes on every device.</p>
       <ul class="today-customise-list">${CARDS.map(c => `<li>
         <button type="button" class="today-customise-row" data-card="${c.key}" role="switch" aria-checked="${cardOn(c.key)}">
           <span class="today-customise-icon" aria-hidden="true">${c.icon}</span>
@@ -322,7 +322,7 @@
             ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Jobs today</h3>${jobsHtml}</section>` : ""}
           </div>
         </div>
-        <button type="button" class="today-customise-link" data-customise>Customise this screen</button>
+        <button type="button" class="today-customise-link" data-customise><strong>Make it yours</strong> · choose what shows here</button>
       </div>
       <button type="button" class="today-close-btn" id="btn-today-start" aria-label="${buttonText}" title="${buttonText}">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>

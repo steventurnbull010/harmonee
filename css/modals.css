@@ -2528,3 +2528,6 @@ body.theme-dark .today-customise-row:hover { background: #0f172a; }
 body.theme-dark .today-customise-switch { background: #475569; }
 body.theme-dark .today-customise-switch.is-on { background: #0284c7; }
 body.theme-dark .today-customise-note { color: #94a3b8; }
+.today-customise-link { text-decoration: none; }
+.today-customise-link strong { color: #0369a1; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+body.theme-dark .today-customise-link strong { color: #7dd3fc; }
