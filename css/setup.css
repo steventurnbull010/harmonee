@@ -275,3 +275,11 @@ body.theme-dark .wx-input, body.theme-dark .wx-result { background: #0f172a; bor
 body.theme-dark .wx-find { background: rgba(2, 132, 199, 0.2); color: #e0f2fe; }
 body.theme-dark .wx-or::before, body.theme-dark .wx-or::after { background: #334155; }
 body.theme-dark .wx-note, body.theme-dark .wx-link.is-quiet { color: #94a3b8; }
+
+/* Welcome (plain address, no board yet) */
+.setup-start { display: block; width: 100%; margin-top: 24px; }
+.setup-join-note { margin-top: 24px; padding: 16px; border-radius: 16px; background: #f8fafc; color: #475569; font-size: 0.92rem; line-height: 1.5; }
+.setup-join-note p { margin: 0; }
+.setup-join-title { font-weight: 800; color: #0f172a; margin-bottom: 4px !important; }
+body.theme-dark .setup-join-note { background: #0f172a; color: #cbd5e1; }
+body.theme-dark .setup-join-title { color: #f8fafc; }

@@ -48,7 +48,9 @@
   function freshState() {
     const params = new URLSearchParams(window.location.search);
     return {
-      step: 1,
+      // Arrived at the plain address (no board, none before): say hello first.
+      // A "?new=true" link goes straight to step 1.
+      step: params.get("new") === "true" ? 1 : 0,
       familyName: (params.get("family") || "").slice(0, 40),
       people: [],          // { name, colour, child }
       openColour: null,    // index of the person whose colour row is open
@@ -67,6 +69,14 @@
   // ---- Steps ---------------------------------------------------------------------
   function stepHtml() {
     const s = state;
+    if (s.step === 0) return `
+      <h1 class="setup-title" id="setup-title">Welcome to harmonee</h1>
+      <p class="setup-lead">Family life in sync: your calendar, jobs and routines, meals and shopping lists, shared by the whole family on a kitchen tablet and everyone's phones.</p>
+      <button type="button" class="setup-btn is-primary setup-start" data-act="start">Set up our family board</button>
+      <div class="setup-join-note">
+        <p class="setup-join-title">Joining your family's board?</p>
+        <p>Ask someone who already uses it to open <strong>Settings › Access</strong> and send you the <strong>join link</strong>. Open that link on this device and you're in.</p>
+      </div>`;
     if (s.step === 1) return `
       <h1 class="setup-title" id="setup-title">Let's set up your family board</h1>
       <p class="setup-lead">It takes about a minute, and you can change anything later.</p>
@@ -146,19 +156,20 @@
     const el = document.getElementById("setup-wizard");
     const s = state;
     const canBack = s.step > 1;
+    const intro = s.step === 0;
     const nextLabel = s.step === STEPS ? "Create our board" : "Continue";
     el.innerHTML = `
       <div class="setup-card" role="document">
         <div class="setup-top">
           <span class="setup-brand" aria-hidden="true">h</span>
-          <ol class="setup-dots" aria-label="Step ${s.step} of ${STEPS}">${Array.from({ length: STEPS }, (_, i) => `<li class="${i + 1 === s.step ? "is-now" : (i + 1 < s.step ? "is-done" : "")}"></li>`).join("")}</ol>
+          ${intro ? "" : `<ol class="setup-dots" aria-label="Step ${s.step} of ${STEPS}">${Array.from({ length: STEPS }, (_, i) => `<li class="${i + 1 === s.step ? "is-now" : (i + 1 < s.step ? "is-done" : "")}"></li>`).join("")}</ol>`}
         </div>
         <div class="setup-body">${stepHtml()}</div>
         <p class="setup-error" role="alert">${esc(s.error || "")}</p>
-        <div class="setup-foot">
-          ${canBack ? `<button type="button" class="setup-btn is-ghost" data-act="back">Back</button>` : `<span></span>`}
+        ${intro ? "" : `<div class="setup-foot">
+          ${canBack || s.step === 1 && state.cameFromIntro ? `<button type="button" class="setup-btn is-ghost" data-act="back">Back</button>` : `<span></span>`}
           <button type="button" class="setup-btn is-primary" data-act="next">${nextLabel}</button>
-        </div>
+        </div>`}
       </div>`;
     if (s.step === 1 && window.WeatherPlace) {
       window.WeatherPlace.renderWeatherPlacePicker(document.getElementById("setup-weather"), {
@@ -166,7 +177,7 @@
         onPick: (place) => { state.weather = place; }
       });
     }
-    const focus = el.querySelector(s.step === 1 ? "#setup-family" : s.step === 2 ? "#setup-person" : ".setup-btn.is-primary");
+    const focus = el.querySelector(s.step === 1 ? "#setup-family" : s.step === 2 ? "#setup-person" : s.step === 0 ? ".setup-start" : ".setup-btn.is-primary");
     if (focus && !(s.step === 2 && s.people.length >= MAX_PEOPLE)) setTimeout(() => { try { focus.focus({ preventScroll: true }); } catch (e) {} }, 30);
   }
 
@@ -267,7 +278,8 @@
     const i = parseInt(b.getAttribute("data-i"), 10);
     const s = state;
     if (act === "next") return next();
-    if (act === "back") { s.error = ""; s.step = Math.max(1, s.step - 1); return render(); }
+    if (act === "start") { s.step = 1; s.cameFromIntro = true; return render(); }
+    if (act === "back") { s.error = ""; s.step = Math.max(s.cameFromIntro ? 0 : 1, s.step - 1); return render(); }
     if (act === "add-person") return addPerson();
     if (act === "remove") { s.people.splice(i, 1); s.openColour = null; return render(); }
     if (act === "adult" || act === "child") { s.people[i].child = act === "child"; return render(); }

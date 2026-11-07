@@ -53,16 +53,18 @@ function getBoardIdFromUrl() {
   const saved = localStorage.getItem("harmonee_active_board_id") || localStorage.getItem("chore_active_board_id");
   if (saved) return saved;
 
-  // Turnbull is the safe primary family household board
-  localStorage.setItem("harmonee_active_board_id", "turnbull");
-  localStorage.setItem("chore_active_board_id", "turnbull");
+  // No board in the link and none used on this device before: a new visitor.
+  // They get the welcome + guided setup (isFirstTimeVisitor), never somebody
+  // else's board. "turnbull" is only a stand-in id here; nothing is saved and
+  // nothing is loaded from it.
+  window.__harmoneeNoBoard = true;
   return "turnbull";
 }
 
 function isFirstTimeVisitor() {
   const params = new URLSearchParams(window.location.search);
-  // Only trigger new visitor onboarding if explicitly requested via query parameter
-  return params.get("new") === "true" || params.get("onboarding") === "true";
+  // ?new=true (a "make a new board" link), or nobody's board at all yet
+  return params.get("new") === "true" || params.get("onboarding") === "true" || window.__harmoneeNoBoard === true;
 }
 
 const currentBoardId = getBoardIdFromUrl();
