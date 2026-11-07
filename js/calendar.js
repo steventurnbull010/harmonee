@@ -152,7 +152,7 @@ function detectEmojiForTitle(text) {
   if (t.includes("family") || t.includes("cousin") || t.includes("grand") || t.includes("roast")) return "👨‍👩‍👧‍👦";
   if (t.includes("birth") || t.includes("party")) return "🎂";
   if (t.includes("dinner") || t.includes("lunch") || t.includes("restaur") || t.includes("meal")) return "🍽️";
-  // Film night at home (from Film night on Today at a glance): popcorn
+  // A night in on the sofa (from Watch together on Today at a glance): popcorn
   if (t.includes("film night") || t.includes("movie night") || t.startsWith("watch together")) return "🍿";
   if (t.includes("cinema") || t.includes("movie") || t.includes("film")) return "🎬";
   if (t.includes("theatre") || t.includes("theater") || t.includes("panto") || t.includes("musical") || t.includes("ballet") || t.includes("show")) return "🎭";

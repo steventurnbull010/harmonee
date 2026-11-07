@@ -158,7 +158,7 @@
     { key: "countdown", label: "Countdown",            icon: "⏳" },
     { key: "music",     label: "Music",                icon: "🎵" },
     { key: "weather",   label: "Weather",              icon: "🌦️", note: "Uses the town in Settings › Display" },
-    { key: "films",     label: "Film night",           icon: "🍿", note: "Family films on your streaming services", when: () => !!(window.FilmNight && window.FilmNight.ready()) },
+    { key: "films",     label: "Watch together",       icon: "🍿", note: "Films and series on your streaming services", when: () => !!(window.FilmNight && window.FilmNight.ready()) },
     { key: "dinner",    label: "Dinner tonight",       icon: "🍽️" },
     { key: "groceries", label: "Groceries",            icon: "🛒" },
     { key: "jobs",      label: "Tasks today",          icon: "✅" }

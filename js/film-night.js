@@ -1,9 +1,9 @@
 // ============================================================================
-// FAMILY FILM NIGHT (js/film-night.js)
-// A "🍿 Film night" card on Today at a glance: popular and latest family films
+// WATCH TOGETHER (js/film-night.js; it began as "Film night")
+// A "🍿 Watch together" card on Today at a glance: popular and latest family films
 // and series on the streaming services this family has ticked in Settings.
 // Tap a poster: what it is, which of your services it's on, "New" if it
-// arrived in the last two weeks, and "Plan film night" (the event panel,
+// arrived in the last two weeks, and "Plan when to watch" (the event panel,
 // filled in). No links out of harmonee.
 //
 // Data: Streaming Availability API by Movie of the Night (free plan, 1,000
@@ -159,7 +159,7 @@
       saveLocal(svc, { ...fresh, fetchedAt: Date.now() });
       if (typeof root.streamingListSave === "function") { try { await root.streamingListSave(svc, fresh); } catch (e) {} }
     } catch (e) {
-      console.warn("Film night:", e);
+      console.warn("Watch together:", e);
       failedAt[svc] = Date.now();
     } finally {
       busy.delete(svc);
@@ -192,8 +192,8 @@
     const s = settings();
     if (!s.services.length) {
       return `<section class="today-card today-films" aria-labelledby="today-films-title">
-        <h3 class="today-card-title" id="today-films-title">🍿 Film night</h3>
-        <p class="today-empty">Family films and series on your streaming services. Choose which ones you have.</p>
+        <h3 class="today-card-title" id="today-films-title">🍿 Watch together</h3>
+        <p class="today-empty">Family films and series to watch together, from your streaming services. Choose which ones you have.</p>
         <div class="today-card-foot"><button type="button" class="today-add-btn" data-film-setup><span class="today-add-plus" aria-hidden="true">+</span> Choose services</button></div>
       </section>`;
     }
@@ -208,7 +208,7 @@
       : `<p class="today-empty">${waiting ? "Finding family films…" : "Nothing to show just now. It'll look again soon."}</p>`;
     return `<section class="today-card today-films" aria-labelledby="today-films-title">
       <div class="film-head">
-        <h3 class="today-card-title" id="today-films-title">🍿 Film night</h3>
+        <h3 class="today-card-title" id="today-films-title">🍿 Watch together</h3>
         <div class="film-tabs" role="tablist" aria-label="Which films">${[["popular", "Popular"], ["latest", "Latest"]].map(([k, label]) => `<button type="button" role="tab" class="film-tab${k === tab ? " is-on" : ""}" aria-selected="${k === tab}" data-film-tab="${k}">${label}</button>`).join("")}</div>
       </div>
       ${body}
@@ -255,7 +255,7 @@
       ${f.overview ? `<p class="film-overview">${esc(f.overview)}</p>` : ""}
       <div class="film-actions">
         <button type="button" class="film-btn" data-film-hide>🙈 Hide this</button>
-        <button type="button" class="film-btn is-primary" data-film-plan>🗓️ Plan film night</button>
+        <button type="button" class="film-btn is-primary" data-film-plan>🗓️ Plan when to watch</button>
       </div>
     </div>`;
     if (!d.open) d.showModal();
@@ -266,7 +266,7 @@
     const slot = planSlot(new Date(), current.type === "movie" ? current.runtime : 60);
     const pad = (n) => String(n).padStart(2, "0");
     const key = `${slot.date.getFullYear()}-${pad(slot.date.getMonth() + 1)}-${pad(slot.date.getDate())}`;
-    const title = current.type === "series" ? `Watch together: ${current.title}` : `Film night: ${current.title}`;
+    const title = `Watch together: ${current.title}`;
     const len = typeof root.formatEventDuration === "function" ? root.formatEventDuration(slot.mins) : "2 hours";
     sheet.close();
     root.openEventModal(null, null, key, { start: slot.start, duration: len }, { title, members: ["Family"] });
