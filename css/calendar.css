@@ -5460,9 +5460,21 @@ body.theme-dark .ev-delete { color: #f87171; border-color: rgba(248, 113, 113, 0
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 .ev-block-icon { margin-right: 4px; }
+
+/* Three or more events side by side: just the title and time (who and the
+   icon are in the pop-up) */
+.ev-block.is-narrow { padding: 8px 4px 8px 8px !important; }
+.ev-block.is-narrow .ev-block-icon,
+.ev-block.is-narrow .ev-block-avatars,
+.ev-block.is-narrow .ev-block-people { display: none; }
+.ev-block.is-narrow .ev-block-title { font-size: 0.78rem; display: block; -webkit-line-clamp: unset; white-space: nowrap; text-overflow: ellipsis; }
+.ev-block.is-narrow .ev-block-time,
+.ev-block.is-narrow .ev-block-inline-time { font-size: 0.72rem; }
 .ev-block-inline-time { flex-shrink: 0; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary, #475569); white-space: nowrap; }
 body.theme-dark .ev-block-inline-time { color: #cbd5e1; }
 .ev-block-time {

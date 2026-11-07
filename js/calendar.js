@@ -2286,6 +2286,41 @@ function renderWeekCalendar() {
 
     // Timed Events in the hourly track
     let timedBlocksHtml = "";
+
+    // Events at the same time sit side by side, like Google Calendar: events
+    // that overlap form a group, each takes the first free lane, and the
+    // group's width is shared between its lanes.
+    const lenOf = (evt) => {
+      const dm = String(evt.duration || "").match(/(\d+(?:\.\d+)?)\s*(?:h|hour|hr|min|m)/i);
+      if (!dm) return 60;
+      const val = parseFloat(dm[1]);
+      return (/min|m/i.test(evt.duration) && !/h/i.test(evt.duration)) ? val : val * 60;
+    };
+    const lanes = new Map(); // evt -> { lane, lanes }
+    {
+      const items = col.timedEvents
+        .map(evt => ({ evt, start: getEventMinutes(evt), end: getEventMinutes(evt) + Math.max(lenOf(evt), 15) }))
+        .sort((a, b) => a.start - b.start || b.end - a.end);
+      let group = [], groupEnd = -1, laneEnds = [];
+      const closeGroup = () => { group.forEach(it => lanes.set(it.evt, { lane: it.lane, lanes: laneEnds.length })); group = []; laneEnds = []; };
+      items.forEach(it => {
+        if (group.length && it.start >= groupEnd) closeGroup();
+        let lane = laneEnds.findIndex(end => end <= it.start);
+        if (lane === -1) { lane = laneEnds.length; laneEnds.push(it.end); } else laneEnds[lane] = it.end;
+        it.lane = lane;
+        group.push(it);
+        groupEnd = Math.max(groupEnd, it.end);
+      });
+      closeGroup();
+    }
+    const laneStyle = (evt) => {
+      const l = lanes.get(evt);
+      if (!l || l.lanes < 2) return "";
+      const w = 1 / l.lanes;
+      // 8px edges as before, 4px gap between side-by-side events
+      return ` left: calc(8px + (100% - 16px) * ${(l.lane * w).toFixed(4)}); right: auto; width: calc((100% - 16px) * ${w.toFixed(4)} - ${l.lane < l.lanes - 1 ? 4 : 0}px);`;
+    };
+
     col.timedEvents.forEach(evt => {
       const minutes = getEventMinutes(evt);
       const startMinFromGutter = minutes - (startHour * 60);
@@ -2312,10 +2347,10 @@ function renderWeekCalendar() {
       if (membersList.length >= 2) {
         const pal1 = getMemberPalette(membersList[0]);
         const pal2 = getMemberPalette(membersList[1]);
-        inlineStyleAttr = `style="--c1: ${pal1.primary}; --c2: ${pal2.primary}; background: linear-gradient(135deg, ${pal1.lightBg} 0%, ${pal1.lightBg} 48%, ${pal2.lightBg} 52%, ${pal2.lightBg} 100%); border: 1.5px solid ${pal1.border}; color: ${pal1.text}; top: ${topPx}px; height: ${heightPx}px;"`;
+        inlineStyleAttr = `style="--c1: ${pal1.primary}; --c2: ${pal2.primary}; background: linear-gradient(135deg, ${pal1.lightBg} 0%, ${pal1.lightBg} 48%, ${pal2.lightBg} 52%, ${pal2.lightBg} 100%); border: 1.5px solid ${pal1.border}; color: ${pal1.text}; top: ${topPx}px; height: ${heightPx}px;${laneStyle(evt)}"`;
       } else {
         const pal = getMemberPalette(membersList[0] || "Family");
-        inlineStyleAttr = `style="--c1: ${pal.primary}; --c2: ${pal.primary}; background: ${pal.lightBg}; border: 1.5px solid ${pal.border}; color: ${pal.text}; top: ${topPx}px; height: ${heightPx}px;"`;
+        inlineStyleAttr = `style="--c1: ${pal.primary}; --c2: ${pal.primary}; background: ${pal.lightBg}; border: 1.5px solid ${pal.border}; color: ${pal.text}; top: ${topPx}px; height: ${heightPx}px;${laneStyle(evt)}"`;
       }
 
       // Who's going: small overlapping avatars. Under the time on taller
@@ -2346,7 +2381,7 @@ function renderWeekCalendar() {
       const inlineTime = sizeClass === "is-tiny" ? `<span class="ev-block-inline-time">${escapeHtml(clock(startMins, true))}</span>` : "";
 
       timedBlocksHtml += `
-        <div class="skylight-timed-event-block skylight-card ev-block ${sizeClass}" ${inlineStyleAttr} data-event-id="${evt.id}" title="${escapeHtml(evt.title)}, ${escapeHtml(timeRange)}">
+        <div class="skylight-timed-event-block skylight-card ev-block ${sizeClass}${(lanes.get(evt) || {}).lanes >= 3 ? " is-narrow" : ""}" ${inlineStyleAttr} data-event-id="${evt.id}" title="${escapeHtml(evt.title)}, ${escapeHtml(timeRange)}">
           <div class="ev-block-head">
             ${titleHtml}
             ${inlineTime}
