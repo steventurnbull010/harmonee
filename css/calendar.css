@@ -5563,44 +5563,149 @@ dialog.skylight-datepicker-overlay::backdrop { background: transparent; }
 .date-field-button-icon { flex-shrink: 0; opacity: 0.7; }
 
 /* ==========================================================================
-   COUNTDOWN CHIPS (js/countdowns.js)
-   "🎄 Christmas · 47 sleeps" beside the weather at the top of every page.
+   COUNTDOWN TILE (js/countdowns.js)
+   Beside the weather at the top of every page: the soonest countdown as a
+   little tile (big "3 sleeps" on the left, icon + name on the right, wrapping
+   to two lines rather than being cut), plus "+2" when there are more, which
+   opens a "Coming up" list of them all.
    ========================================================================== */
-.header-countdowns { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.skylight-single-header .calendar-header-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.skylight-single-header .calendar-header-controls { flex-shrink: 0; }
+.header-countdowns { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-width: 0; }
 .header-countdowns:empty { display: none; }
+
 .header-countdown-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  max-width: 260px;
-  height: 32px;
-  padding: 0 16px 0 8px;
+  max-width: 360px;
+  height: 48px;
+  padding: 4px 16px 4px 4px;
   border: 1px solid #fde68a;
-  border-radius: 999px;
+  border-radius: 14px;
   background: #fffbeb;
   color: #78350f;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  white-space: nowrap;
 }
-.header-countdown-icon { font-size: 1.05rem; line-height: 1; }
-.header-countdown-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.header-countdown-sleeps { flex-shrink: 0; font-weight: 800; }
-.header-countdown-sleeps::before { content: "·"; margin-right: 8px; font-weight: 600; opacity: 0.6; }
-.header-countdown-chip.is-today {
-  border-color: #f9a8d4;
-  background: linear-gradient(90deg, #fdf2f8, #fef3c7);
-  color: #831843;
+.header-countdown-num {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 40px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #f59e0b;
+  color: #ffffff;
+  line-height: 1;
 }
-body.theme-dark .header-countdown-chip { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
-body.theme-dark .header-countdown-chip.is-today { background: rgba(236, 72, 153, 0.18); border-color: rgba(236, 72, 153, 0.45); color: #fbcfe8; }
-/* Room for one on tablets, two on wide screens; phones show just the sleeps */
-/* The chips never push the page's buttons off screen: the left side gives
-   way first (the title shortens; a second chip only shows from 1440px) */
-.calendar-header-left { min-width: 0; }
-.header-countdowns { flex-shrink: 1; overflow: hidden; }
-@media (max-width: 1439px) { .header-countdown-chip + .header-countdown-chip { display: none; } }
-@media (max-width: 600px) { .header-countdown-title { display: none; } .header-countdown-sleeps::before { content: none; } }
+.header-countdown-num b { font-size: 1.15rem; font-weight: 800; }
+.header-countdown-num small { margin-top: 2px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.header-countdown-name {
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+.header-countdown-icon { margin-right: 4px; }
+
+/* On the day: a warmer, celebratory tile with a soft glow */
+.header-countdown-chip.is-today { border-color: #f9a8d4; background: linear-gradient(90deg, #fdf2f8, #fef3c7); color: #831843; animation: countdown-glow 2.4s ease-in-out infinite; }
+.header-countdown-chip.is-today .header-countdown-num { background: linear-gradient(135deg, #ec4899, #f59e0b); }
+@keyframes countdown-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.18); }
+}
+@media (prefers-reduced-motion: reduce) { .header-countdown-chip.is-today { animation: none; } }
+
+/* "+2": the others */
+.header-countdown-more {
+  flex-shrink: 0;
+  height: 32px;
+  min-width: 40px;
+  padding: 0 8px;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #92400e;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* "Coming up" list */
+.countdown-list-pop {
+  position: fixed;
+  z-index: 1200;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(420px, calc(100dvh - 120px));
+  overflow-y: auto;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+.countdown-list-pop[hidden] { display: none; }
+.countdown-list-head { margin: 8px 8px 8px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+.countdown-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.countdown-list-item:hover, .countdown-list-item:focus-visible { background: #f8fafc; }
+.countdown-list-item .header-countdown-num { min-width: 52px; }
+.countdown-list-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.countdown-list-title { font-weight: 700; line-height: 1.25; overflow-wrap: break-word; }
+.countdown-list-date { font-size: 0.8rem; color: #64748b; }
+
+body.theme-dark .header-countdown-chip { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+body.theme-dark .header-countdown-chip.is-today { background: rgba(236, 72, 153, 0.16); border-color: rgba(236, 72, 153, 0.45); color: #fbcfe8; }
+body.theme-dark .header-countdown-more { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+body.theme-dark .countdown-list-pop { background: #1e293b; border-color: #334155; }
+body.theme-dark .countdown-list-item { color: #f8fafc; }
+body.theme-dark .countdown-list-item:hover { background: #0f172a; }
+body.theme-dark .countdown-list-date, body.theme-dark .countdown-list-head { color: #94a3b8; }
+
+/* Compact (header too full, or a phone): the number tile and icon only;
+   tapping opens the Coming up list, which has the names and dates */
+.header-countdown-chip.is-compact { padding-right: 8px; }
+.header-countdown-chip.is-compact .header-countdown-title { display: none; }
+.header-countdown-chip.is-compact .header-countdown-icon { margin-right: 0; font-size: 1.2rem; }
+@media (max-width: 600px) {
+  .header-countdown-title { display: none; }
+  .header-countdown-icon { margin-right: 0; font-size: 1.2rem; }
+  .header-countdown-chip { padding-right: 8px; height: 44px; }
+  .header-countdown-num { height: 36px; min-width: 44px; }
+}
+/* The family name never wraps to make room for the countdown */
+.skylight-single-header .calendar-family-title,
+.skylight-single-header .calendar-time-indicator,
+.skylight-single-header .calendar-weather-badge { flex-shrink: 0; white-space: nowrap; }
