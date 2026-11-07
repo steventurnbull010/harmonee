@@ -200,3 +200,11 @@
 /* Rewards "Saving up for" cards: 20px names clipped "Grandma" to "Grand…".
    A touch smaller fits most names whole; very long ones still end in "…". */
 #view-rewards .reward-goals-member-name { font-size: 1.05rem; }
+
+/* --- Tasks with 6 people ----------------------------------------------------
+   6 people + Grab it = 7 columns. At 168px each they were 86px too wide for a
+   1280px tablet, so Grab it hung off the edge. Columns can now go down to
+   148px, so 6 people fit with no sideways scrolling. 7+ still scroll. */
+@media (min-width: 861px) and (orientation: landscape), (min-width: 1025px) {
+  #view-chores .skylight-tasks-col { min-width: 148px; }
+}
