@@ -99,6 +99,12 @@
   max-height: 70vh;
   max-height: 70dvh;
 }
+/* Phones: one list under another, so each list is as long as it needs and
+   the page scrolls (no scrolling box inside a scrolling page) */
+@media (max-width: 600px) {
+  #view-lists .list-column { max-height: none; }
+  #view-lists .list-column-items { max-height: none; overflow: visible; }
+}
 
 /* --- Recipe card, landscape tablets (short screens) -----------------------
    With the photo and the plan-it section fixed, only ~285px was left for the

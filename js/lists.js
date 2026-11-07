@@ -429,6 +429,7 @@ function applyBoardFamilyLists(lists, deleted) {
     if (typeof window.updateGroceryBadgeCount === "function") window.updateGroceryBadgeCount();
     const view = document.getElementById("view-lists");
     if (view && view.style.display !== "none") renderListsView();
+    if (typeof window.refreshShopMode === "function") window.refreshShopMode(); // js/shop-mode.js
   }
   if (loadPendingOps().length) scheduleListsFlush(0);
 }
@@ -497,6 +498,7 @@ function renderListsView() {
             <h3 class="list-column-title">${escapeHtml(list.title)}</h3>
             <span class="list-column-count">${countText}</span>
           </div>
+          ${open.length ? `<button type="button" class="list-column-shop" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>` : ""}
           <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
           </button>
