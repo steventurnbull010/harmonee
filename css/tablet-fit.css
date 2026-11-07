@@ -1,0 +1,124 @@
+/* ==========================================================================
+   TABLET FIT (css/tablet-fit.css)
+   Fixes from the small-tablet walkthrough (Blackview 10", 1280x800 landscape
+   and 800x1280 portrait). Loaded last; every rule is scoped to the screen
+   sizes where the problem showed up.
+   ========================================================================== */
+
+/* --- Bottom tab bar (portrait tablets, and anything under 860px wide) ----
+   The round + buttons sat behind the 64px tab bar. Lift them clear of it. */
+@media (max-width: 1024px) and (orientation: portrait), (max-width: 860px) {
+  .skylight-tasks-fab-container,
+  .calendar-fab-container {
+    bottom: calc(64px + 24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* --- Tasks, portrait tablet ----------------------------------------------
+   Five columns at 168px didn't fit 800px, so Grab it was cut off. In
+   portrait the columns sit three to a row, as tall as their cards, and the
+   page scrolls down instead of sideways. */
+@media (max-width: 1024px) and (min-width: 601px) and (orientation: portrait) {
+  #view-chores .skylight-tasks-columns-grid {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 0;
+    padding-bottom: 96px !important;
+  }
+  #view-chores .skylight-tasks-col {
+    flex: 0 0 calc((100% - 16px) / 3);
+    min-width: 0;
+    max-width: none;
+  }
+  #view-chores .tasks-col-body {
+    flex: none;
+    overflow: visible;
+  }
+}
+
+/* --- Meals, portrait tablet ----------------------------------------------
+   The week only filled the top half of the screen. Like landscape, the three
+   meal rows now share the whole height (above the tab bar). */
+@media (max-width: 860px) and (min-width: 601px), (max-width: 1024px) and (min-width: 601px) and (orientation: portrait) {
+  #view-meals .skylight-meals-layout { min-height: 0; }
+  #view-meals .skylight-meals-main {
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
+  }
+  #view-meals .skylight-meals-matrix-wrapper {
+    flex: 1;
+    min-height: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    display: flex;
+  }
+  body.theme-dark #view-meals .skylight-meals-matrix-wrapper { background: transparent; }
+  #view-meals .skylight-meals-matrix {
+    flex: 1;
+    grid-template-rows: auto repeat(3, minmax(96px, 1fr));
+  }
+  #view-meals .matrix-meal-cell { min-height: 0; }
+}
+
+/* Meal names in narrow cells break between syllables ("Cumber-land"), not
+   at any letter ("Cumberla / nd") */
+#view-meals .meal-card-v2 .meal-card-title {
+  overflow-wrap: break-word; /* only if a word still can't fit after hyphenating */
+  word-break: normal;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+/* Portrait cells are ~90px wide: a touch smaller so most names fit whole */
+@media (max-width: 1024px) and (min-width: 601px) and (orientation: portrait) {
+  #view-meals .meal-block-card.meal-card-v2 { padding: 8px 6px !important; }
+  #view-meals .meal-card-v2 .meal-card-title { font-size: 0.78rem; }
+  #view-meals .meal-card-v2 .meal-card-cooks { font-size: 0.72rem; }
+  #view-meals .meal-card-v2 .ev-block-icon { display: block; margin: 0 0 4px; }
+}
+
+/* --- Lists ----------------------------------------------------------------
+   Lists were fixed 288px columns, leaving most of a tablet screen empty.
+   They now share the width (up to 480px each) and still scroll sideways
+   when there are many. */
+#view-lists .list-column {
+  flex: 1 1 288px;
+  max-width: 480px;
+}
+
+/* --- Recipe card, landscape tablets (short screens) -----------------------
+   With the photo and the plan-it section fixed, only ~285px was left for the
+   ingredients and method on an 800px-tall screen. On short screens the
+   photo is shorter and the whole card scrolls as one, so the recipe gets the
+   room and the plan-it section follows it. */
+@media (max-height: 860px) and (min-width: 861px) {
+  #cooking-recipe-modal .cooking-modal-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #cooking-recipe-modal .cooking-modal-hero {
+    min-height: 128px;
+    max-height: 128px;
+  }
+  #cooking-recipe-modal .cooking-modal-body {
+    flex: none;
+    overflow: visible;
+  }
+}
+
+/* --- Groceries panel -------------------------------------------------------
+   The list was capped at 320px with Clear / Done floating halfway down the
+   panel. The list now uses the panel's height, Clear sits at the bottom, and
+   "Done" goes (the back arrow closes the panel, like every other panel). */
+#grocery-list-modal .grocery-items-scroll-area {
+  max-height: none;
+  flex: 1 1 auto;
+  overflow: visible;
+}
+#grocery-list-modal .grocery-modal-footer { margin-top: auto !important; }
+#grocery-list-modal #btn-close-grocery-footer { display: none; }
+#grocery-list-modal .btn-grocery-clear { flex: 1; }
