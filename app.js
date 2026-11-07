@@ -5230,7 +5230,7 @@ function setupEventListeners() {
     tempSelectedMode = boardSettings.gameMode || "points";
     tempSelectedCurrency = boardSettings.currency || "£";
 
-    updateSettingsModalUI();
+    updateSettingsModalUI(true);
     renderFamilyAccessSection();
     if (window.ParentPin) { window.ParentPin.renderSettingsBox(); window.ParentPin.renderOffer(); }
     if (window.syncTodayScreenSetting) window.syncTodayScreenSetting();
@@ -5324,6 +5324,61 @@ function setupEventListeners() {
     }
   }
 
+  // Settings that only take effect after "Save Settings" (game mode, money,
+  // sleep times). Everything else in Settings saves the moment it changes.
+  function settingsHaveUnsavedChanges() {
+    const v = (id) => document.getElementById(id);
+    if (tempSelectedMode !== (boardSettings.gameMode || "points")) return true;
+    if (tempSelectedCurrency !== (boardSettings.currency || "£")) return true;
+    if (v("settings-sleep-enabled") && v("settings-sleep-enabled").checked !== (boardSettings.sleepScheduleEnabled !== false)) return true;
+    if (v("settings-sleep-start") && v("settings-sleep-start").value && v("settings-sleep-start").value !== (boardSettings.sleepStartTime || "22:00")) return true;
+    if (v("settings-sleep-end") && v("settings-sleep-end").value && v("settings-sleep-end").value !== (boardSettings.sleepEndTime || "07:00")) return true;
+    return false;
+  }
+
+  // Closing Settings (←, Esc, tapping outside) with unsaved changes asks first
+  function askToSaveSettings() {
+    let dlg = document.getElementById("settings-save-prompt");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "settings-save-prompt";
+      dlg.className = "save-prompt-dialog";
+      dlg.setAttribute("aria-labelledby", "settings-save-prompt-title");
+      dlg.innerHTML = `
+        <div class="save-prompt-card">
+          <h2 class="save-prompt-title" id="settings-save-prompt-title">Save your changes?</h2>
+          <p class="save-prompt-text">You've changed some settings but haven't saved them yet.</p>
+          <div class="save-prompt-actions">
+            <button type="button" class="save-prompt-btn is-primary" data-choice="save">Save</button>
+            <button type="button" class="save-prompt-btn" data-choice="discard">Don't save</button>
+          </div>
+          <button type="button" class="save-prompt-link" data-choice="keep">Keep editing</button>
+        </div>`;
+      document.body.appendChild(dlg);
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); }); // Esc = keep editing
+    }
+    dlg.onclick = (e) => {
+      const btn = e.target.closest("[data-choice]");
+      if (!btn && e.target !== dlg) return;
+      const choice = btn ? btn.getAttribute("data-choice") : "keep"; // tap outside = keep editing
+      dlg.close();
+      if (choice === "save" && settingsForm) settingsForm.requestSubmit();
+      if (choice === "discard") { settingsCloseConfirmed = true; closeSettingsModal(); }
+    };
+    if (!dlg.open) dlg.showModal();
+    setTimeout(() => { try { dlg.querySelector('[data-choice="save"]').focus({ preventScroll: true }); } catch (e) {} }, 30);
+  }
+  let settingsCloseConfirmed = false;
+  if (settingsModal) {
+    // Called by js/side-panel.js before the panel slides shut
+    settingsModal.beforeClose = () => {
+      if (settingsCloseConfirmed) { settingsCloseConfirmed = false; return true; }
+      if (!settingsHaveUnsavedChanges()) return true;
+      askToSaveSettings();
+      return false;
+    };
+  }
+
   function renderWeeklyHistoryList() {
     const container = document.getElementById("weekly-history-container");
     if (!container) return;
@@ -5378,7 +5433,7 @@ function setupEventListeners() {
     });
   }
 
-  function updateSettingsModalUI() {
+  function updateSettingsModalUI(fromOpen = false) {
     renderWeeklyHistoryList();
 
     if (optModePoints && optModeMoney) {
@@ -5404,9 +5459,13 @@ function setupEventListeners() {
     const sleepEnabledEl = document.getElementById("settings-sleep-enabled");
     const sleepStartEl = document.getElementById("settings-sleep-start");
     const sleepEndEl = document.getElementById("settings-sleep-end");
-    if (sleepEnabledEl) sleepEnabledEl.checked = boardSettings.sleepScheduleEnabled !== false;
-    if (sleepStartEl) sleepStartEl.value = boardSettings.sleepStartTime || "22:00";
-    if (sleepEndEl) sleepEndEl.value = boardSettings.sleepEndTime || "07:00";
+    // Only when Settings opens: tapping a game mode or currency redraws the
+    // panel too, and that mustn't undo a sleep time you've just changed
+    if (fromOpen) {
+      if (sleepEnabledEl) sleepEnabledEl.checked = boardSettings.sleepScheduleEnabled !== false;
+      if (sleepStartEl) sleepStartEl.value = boardSettings.sleepStartTime || "22:00";
+      if (sleepEndEl) sleepEndEl.value = boardSettings.sleepEndTime || "07:00";
+    }
 
     // Theme selector inside settings
     const activeTheme = localStorage.getItem("chore_theme") || "light";

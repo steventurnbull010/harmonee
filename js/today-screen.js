@@ -174,15 +174,17 @@
           <div class="today-col">
             <section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}</section>
             ${tomorrowHtml}
+            ${countdownHtml}
           </div>
           <div class="today-col">
             <section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>
             <section class="today-card"><h3 class="today-card-title">✅ Jobs today</h3>${jobsHtml}</section>
-            ${countdownHtml}
           </div>
         </div>
-        <button type="button" class="today-start-btn" id="btn-today-start">${buttonText}</button>
-      </div>`;
+      </div>
+      <button type="button" class="today-close-btn" id="btn-today-start" aria-label="${buttonText}" title="${buttonText}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+      </button>`;
   }
 
   function paint(el) {

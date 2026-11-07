@@ -2114,3 +2114,63 @@ body.theme-dark .today-job + .today-job { border-top-color: #334155; }
 .today-job-item.is-done .today-job-name { color: #94a3b8; text-decoration: line-through; }
 .today-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #settings-modal .settings-idle-field { display: block; margin-top: 16px; }
+
+/* Today at a glance: a quiet grey ✕ in the corner instead of a big button
+   (tapping outside the cards closes it too) */
+.today-start-btn { display: none; }
+.today-close-btn {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.06);
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.today-close-btn:hover, .today-close-btn:focus-visible { background: rgba(15, 23, 42, 0.12); color: #334155; }
+body.theme-dark .today-close-btn { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
+body.theme-dark .today-close-btn:hover { background: rgba(255, 255, 255, 0.16); color: #e2e8f0; }
+/* With the big button gone there's room to breathe less at the top */
+.today-inner { padding-top: 24px; gap: 16px; }
+
+/* "Save your changes?" (Settings) */
+.save-prompt-dialog { border: none; padding: 0; background: transparent; margin: auto; max-width: none; max-height: none; }
+.save-prompt-dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+.save-prompt-card {
+  width: min(360px, calc(100vw - 32px));
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.3);
+  text-align: center;
+  color: #0f172a;
+}
+.save-prompt-title { margin: 0; font-size: 1.2rem; font-weight: 800; }
+.save-prompt-text { margin: 8px 0 0; font-size: 0.92rem; color: #475569; line-height: 1.4; }
+.save-prompt-actions { display: flex; gap: 8px; margin-top: 24px; }
+.save-prompt-btn {
+  flex: 1;
+  height: 48px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.save-prompt-btn.is-primary { background: #0284c7; border-color: #0284c7; color: #ffffff; }
+.save-prompt-link { margin-top: 16px; border: none; background: none; color: #64748b; font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+body.theme-dark .save-prompt-card { background: #1e293b; color: #f8fafc; }
+body.theme-dark .save-prompt-text, body.theme-dark .save-prompt-link { color: #cbd5e1; }
+body.theme-dark .save-prompt-btn { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .save-prompt-btn.is-primary { background: #0284c7; border-color: #0284c7; }

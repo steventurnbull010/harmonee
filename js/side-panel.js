@@ -72,6 +72,8 @@ function addSmoothClose(dialog) {
 
   dialog.close = (returnValue) => {
     if (!dialog.open || closeTimer) return;
+    // A panel can stop itself closing, e.g. Settings asking "Save your changes?"
+    if (typeof dialog.beforeClose === "function" && dialog.beforeClose() === false) return;
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) { nativeClose(returnValue); return; }
     dialog.classList.add("is-closing");
