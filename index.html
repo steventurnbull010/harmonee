@@ -25,10 +25,10 @@
   <link rel="stylesheet" href="css/tasks.css?v=19">
   <link rel="stylesheet" href="css/meals.css?v=21">
   <link rel="stylesheet" href="css/calendar.css?v=17">
-  <link rel="stylesheet" href="css/lists.css?v=7">
+  <link rel="stylesheet" href="css/lists.css?v=8">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=7">
+  <link rel="stylesheet" href="css/modals.css?v=9">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
@@ -1568,9 +1568,27 @@
                 </label>
               </div>
 
-              <button type="button" class="settings-outline-btn" id="btn-preview-sleep-screen">
-                <span>🌙 Preview night clock</span>
-              </button>
+              <label class="drawer-toggle-row ev-allday-row" for="settings-today-enabled">
+                <span class="drawer-toggle-left">
+                  <span class="drawer-toggle-texts">
+                    <span class="drawer-toggle-title">Morning summary</span>
+                    <span class="drawer-toggle-sub">When it wakes: today's plans, dinner and jobs</span>
+                  </span>
+                </span>
+                <span class="skylight-switch">
+                  <input type="checkbox" id="settings-today-enabled" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+
+              <div class="settings-preview-btns">
+                <button type="button" class="settings-outline-btn" id="btn-preview-sleep-screen">
+                  <span>🌙 Preview night clock</span>
+                </button>
+                <button type="button" class="settings-outline-btn" id="btn-preview-today-screen">
+                  <span>☀️ Preview morning summary</span>
+                </button>
+              </div>
             </div>
           </section>
 
@@ -2692,9 +2710,9 @@
   <script src="js/seed-data.js?v=3"></script>
   <script src="js/audio.js?v=3"></script>
   <script src="js/weather.js?v=3"></script>
-  <script src="js/sleep.js?v=6"></script>
+  <script src="js/sleep.js?v=7"></script>
   <script src="js/grocery.js?v=5"></script>
-  <script src="js/lists.js?v=14"></script>
+  <script src="js/lists.js?v=15"></script>
   <script src="js/magic-scanner.js?v=6"></script>
   <script src="js/rewards.js?v=7"></script>
   <script src="js/reward-goals.js?v=4"></script>
@@ -2702,13 +2720,20 @@
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=21"></script>
   <script src="js/date-picker.js?v=1"></script>
-  <script src="js/tasks.js?v=27"></script>
+  <script src="js/tasks.js?v=28"></script>
   <script src="js/code-words.js?v=1"></script>
   <script src="js/board-access.js?v=2"></script>
   <script src="js/countdowns.js?v=4"></script>
   <script src="js/parent-pin.js?v=2"></script>
+  <script src="js/today-screen.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=32"></script>
-  <script type="module" src="app.js?v=230"></script>
+  <script type="module" src="app.js?v=231"></script>
+  <script>
+    // Offline support and "Install app" (sw.js)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+  </script>
 </body>
 </html>

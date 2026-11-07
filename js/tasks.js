@@ -159,6 +159,66 @@ function findTasksCard(taskId, member) {
     c.getAttribute("data-task-id") === String(taskId) && (c.getAttribute("data-member") || "").toLowerCase() === mLower) || null;
 }
 
+// The tasks in one column of the Tasks page on a given day: a person's, or
+// "Up for grabs". Shared by the Tasks page and the morning Today screen.
+function getTasksForColumn(colMember, date) {
+  const isGrabPool = colMember === "Up for grabs";
+  const mLower = String(colMember).toLowerCase();
+  const selectedDateStr = getLocalDateKey(date);
+  const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
+  const isSelectedCurrentWeek = (getIsoWeekKey(date) === getIsoWeekKey(new Date()));
+  const tasksSelectedDate = date;
+  return (window.currentTasks || []).filter(task => {
+      if (!task || typeof task !== "object") return false;
+      const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+      const assigned = task.assignedTo || "Up for grabs";
+
+      // A daily task's owner for the selected day: a swap for this date, else
+      // its rota entry for this weekday, else its main assignee.
+      const dailyAssignee = isDaily ? getEffectiveAssignee(task, dayName, getIsoWeekKey(tasksSelectedDate)) : task.assignedTo;
+
+      if (isGrabPool) {
+        if (isDaily) {
+          // Daily tasks with nobody assigned for this day land here, so a
+          // daily chore never silently drops off the board.
+          return isUnassignedValue(dailyAssignee);
+        }
+        // Unassigned or assigned to Anyone / Up for grabs
+        if (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family") {
+          if (task.date) return task.date === selectedDateStr;
+          if (task.repeat === "weekly") return task.day === dayName;
+          return isSelectedCurrentWeek; // a one-off is up for grabs all this week, not in future weeks
+        }
+        return false;
+      }
+
+      // Helper: check if task is assigned to this member (handles single string, comma-separated, or array)
+      const isAssignedToThisMember = (assignedVal) => {
+        if (!assignedVal) return false;
+        if (Array.isArray(assignedVal)) {
+          return assignedVal.some(v => String(v).trim().toLowerCase() === mLower);
+        }
+        if (typeof assignedVal === "string") {
+          return assignedVal.split(",").map(v => v.trim().toLowerCase()).includes(mLower);
+        }
+        return false;
+      };
+
+      // Member column:
+      if (isDaily) {
+        return isAssignedToThisMember(dailyAssignee);
+      }
+
+      if (isAssignedToThisMember(task.assignedTo)) {
+        if (task.date) return task.date === selectedDateStr;
+        if (task.repeat === "weekly") return task.day === dayName;
+        return isSelectedCurrentWeek && task.day === dayName;
+      }
+      return false;
+  });
+}
+window.getTasksForColumn = getTasksForColumn;
+
 function renderSkylightTasksPage() {
   const container = document.getElementById("tasks-columns-grid");
   if (!container) return;
@@ -239,55 +299,8 @@ function renderSkylightTasksPage() {
       ? { primary: "#ef4444", lightBg: "#fef2f2", border: "#fca5a5", text: "#991b1b", solid: "#ef4444" }
       : getMemberPalette(colMember);
 
-    // Filter tasks belonging to this profile for today
-    let memberTasks = (window.currentTasks || []).filter(task => {
-      if (!task || typeof task !== "object") return false;
-      const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-      const assigned = task.assignedTo || "Up for grabs";
-
-      // A daily task's owner for the selected day: a swap for this date, else
-      // its rota entry for this weekday, else its main assignee.
-      const dailyAssignee = isDaily ? getEffectiveAssignee(task, dayName, getIsoWeekKey(tasksSelectedDate)) : task.assignedTo;
-
-      if (isGrabPool) {
-        if (isDaily) {
-          // Daily tasks with nobody assigned for this day land here, so a
-          // daily chore never silently drops off the board.
-          return isUnassignedValue(dailyAssignee);
-        }
-        // Unassigned or assigned to Anyone / Up for grabs
-        if (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family") {
-          if (task.date) return task.date === selectedDateStr;
-          if (task.repeat === "weekly") return task.day === dayName;
-          return isSelectedCurrentWeek; // a one-off is up for grabs all this week, not in future weeks
-        }
-        return false;
-      }
-
-      // Helper: check if task is assigned to this member (handles single string, comma-separated, or array)
-      const isAssignedToThisMember = (assignedVal) => {
-        if (!assignedVal) return false;
-        if (Array.isArray(assignedVal)) {
-          return assignedVal.some(v => String(v).trim().toLowerCase() === mLower);
-        }
-        if (typeof assignedVal === "string") {
-          return assignedVal.split(",").map(v => v.trim().toLowerCase()).includes(mLower);
-        }
-        return false;
-      };
-
-      // Member column:
-      if (isDaily) {
-        return isAssignedToThisMember(dailyAssignee);
-      }
-
-      if (isAssignedToThisMember(task.assignedTo)) {
-        if (task.date) return task.date === selectedDateStr;
-        if (task.repeat === "weekly") return task.day === dayName;
-        return isSelectedCurrentWeek && task.day === dayName;
-      }
-      return false;
-    });
+    // This profile's tasks for the selected day (shared with the Today screen)
+    let memberTasks = getTasksForColumn(colMember, tasksSelectedDate);
 
     // Check completed count
     const totalCount = memberTasks.length;

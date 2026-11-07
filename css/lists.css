@@ -662,3 +662,26 @@ body.theme-dark .list-color-swatch:not(.is-selected) {
   border-radius: 28px !important;
   flex: none !important;
 }
+
+/* Shown when this device has lost access to the board (js/lists.js) */
+.lists-access-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+.lists-access-icon { font-size: 1.4rem; }
+.lists-access-text { flex: 1 1 280px; min-width: 0; font-size: 0.92rem; line-height: 1.4; }
+.lists-access-btn {
+  height: 44px; padding: 0 16px;
+  border: none; border-radius: 12px;
+  background: #b91c1c; color: #ffffff;
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+body.theme-dark .lists-access-banner { background: rgba(239, 68, 68, 0.14); border-color: rgba(248, 113, 113, 0.4); color: #fecaca; }

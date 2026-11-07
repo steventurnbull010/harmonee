@@ -277,9 +277,41 @@ function scheduleListsFlush(delay) {
 // Errors worth waiting out (offline, not joined yet, contention)
 const LISTS_TRANSIENT_ERRORS = ["unavailable", "deadline-exceeded", "aborted", "failed-precondition", "permission-denied", "unauthenticated", "resource-exhausted", "cancelled", "internal", "unknown"];
 
+// "No access" errors: one can happen while the device is still signing in,
+// but several in a row means this device has lost access to the board (for
+// example it was removed in Settings). Then we stop retrying every 30 seconds,
+// keep the unsent changes on this device, and say so on the Lists page.
+const LISTS_ACCESS_ERRORS = ["permission-denied", "unauthenticated"];
+const LISTS_ACCESS_GIVE_UP = 3;
+let listsAccessFailures = 0;
+let listsAccessLost = false;
+
+function showListsAccessLost(on) {
+  listsAccessLost = on;
+  const view = document.getElementById("view-lists");
+  let banner = document.getElementById("lists-access-banner");
+  if (!on) { if (banner) banner.remove(); return; }
+  if (!view || banner) return;
+  const n = loadPendingOps().length;
+  banner = document.createElement("div");
+  banner.id = "lists-access-banner";
+  banner.className = "lists-access-banner";
+  banner.setAttribute("role", "alert");
+  banner.innerHTML = `
+    <span class="lists-access-icon" aria-hidden="true">🔐</span>
+    <span class="lists-access-text"><strong>This device can't save to the board any more.</strong>
+      ${n ? `Your last ${n === 1 ? "change is" : `${n} changes are`} kept here and will save once it's back in.` : ""}
+      Enter the family code again to reconnect.</span>
+    <button type="button" class="lists-access-btn">Enter family code</button>`;
+  // Reloading runs the normal check, which asks for the family code
+  banner.querySelector("button").onclick = () => window.location.reload();
+  view.insertBefore(banner, view.firstChild);
+}
+
 async function flushListOps() {
   const queue = loadPendingOps();
   if (!queue.length) return;
+  if (listsAccessLost) return; // waiting for the family code (see showListsAccessLost)
   if (!window.db || typeof window.runTransaction !== "function" || !listsBoardSeen) return;
   if (listsFlushing) { listsFlushAgain = true; return; }
   listsFlushing = true;
@@ -305,9 +337,14 @@ async function flushListOps() {
     const sent = new Set(batch.map(op => op.opId));
     listsPending = loadPendingOps().filter(op => !sent.has(op.opId));
     savePendingOps();
+    listsAccessFailures = 0;
   } catch (err) {
     const code = (err && err.code) || "";
-    if (LISTS_TRANSIENT_ERRORS.includes(code) || !code) {
+    if (LISTS_ACCESS_ERRORS.includes(code)) listsAccessFailures++; else listsAccessFailures = 0;
+    if (listsAccessFailures >= LISTS_ACCESS_GIVE_UP) {
+      console.warn("Lists: this device has lost access to the board; keeping changes and waiting for the family code");
+      showListsAccessLost(true);
+    } else if (LISTS_TRANSIENT_ERRORS.includes(code) || !code) {
       scheduleListsFlush(30000);
     } else {
       // Something the board will never accept: give up on these changes
@@ -318,7 +355,7 @@ async function flushListOps() {
       savePendingOps();
       if (listsPending.length) scheduleListsFlush(30000);
     }
-    console.warn("Lists: couldn't sync yet, will retry:", code || err);
+    if (!listsAccessLost) console.warn("Lists: couldn't sync yet, will retry:", code || err);
   } finally {
     listsFlushing = false;
     if (listsFlushAgain) {

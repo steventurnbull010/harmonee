@@ -5233,6 +5233,7 @@ function setupEventListeners() {
     updateSettingsModalUI();
     renderFamilyAccessSection();
     if (window.ParentPin) { window.ParentPin.renderSettingsBox(); window.ParentPin.renderOffer(); }
+    if (window.syncTodayScreenSetting) window.syncTodayScreenSetting();
     renderRosterModalList();
     wireSettingsSectionNav();
 

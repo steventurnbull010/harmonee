@@ -1950,3 +1950,100 @@ body.theme-dark .parent-pin-code-input { background: #0f172a; border-color: #334
 body.theme-dark #settings-modal .parent-pin-offer { background: rgba(2, 132, 199, 0.14); border-color: rgba(56, 189, 248, 0.35); }
 body.theme-dark .parent-pin-offer-title { color: #f8fafc; }
 body.theme-dark .parent-pin-offer-text { color: #cbd5e1; }
+
+/* ==========================================================================
+   GOOD MORNING / TODAY SCREEN (js/today-screen.js)
+   ========================================================================== */
+.today-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100000; /* above the bottom tab bar and side dock; below the night clock */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: linear-gradient(160deg, #fff7ed 0%, #fef3c7 35%, #e0f2fe 100%);
+  color: #0f172a;
+}
+.today-screen[hidden] { display: none; }
+.today-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.today-greeting { margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 600; }
+.today-date { margin: 8px 0 0; font-size: 1.1rem; font-weight: 600; color: #475569; }
+.today-preview-note { margin: 8px 0 0; font-size: 0.85rem; color: #92400e; }
+.today-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+.today-col { display: flex; flex-direction: column; gap: 16px; }
+.today-card {
+  padding: 16px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.today-card-title { margin: 0 0 8px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+.today-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.today-row { display: flex; align-items: center; gap: 16px; padding: 8px 0; border-top: 1px solid #f1f5f9; min-height: 40px; }
+.today-row:first-child { border-top: none; }
+.today-time { flex: 0 0 72px; font-weight: 700; color: #0284c7; font-size: 0.95rem; }
+.today-row-title { flex: 1; min-width: 0; font-size: 1.05rem; font-weight: 600; overflow-wrap: break-word; }
+.today-avatars { display: inline-flex; flex-shrink: 0; }
+.today-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  color: #ffffff; font-size: 0.8rem; font-weight: 800;
+  box-shadow: 0 0 0 2px #ffffff;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.today-avatar + .today-avatar { margin-left: -6px; }
+.today-avatar.is-grab { background: #ef4444; }
+.today-count { flex-shrink: 0; font-weight: 700; color: #334155; }
+.today-count.is-done { color: #16a34a; }
+.today-dinner { margin: 0; font-size: 1.2rem; font-weight: 700; }
+.today-sub { margin: 8px 0 0; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #475569; }
+.today-countdown .today-sub { display: inline; margin: 0; }
+.today-empty { margin: 0; color: #64748b; }
+.today-countdown { display: flex; align-items: center; gap: 16px; }
+.today-countdown-num {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 56px; height: 56px; padding: 0 8px; box-sizing: border-box;
+  border-radius: 16px;
+  background: #f59e0b; color: #ffffff;
+  font-size: 1.6rem; font-weight: 800;
+}
+.today-start-btn {
+  align-self: center;
+  margin-top: auto;
+  position: sticky; /* always in reach, even when the cards run long */
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  height: 56px;
+  padding: 0 40px;
+  border: none;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #ffffff;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.3);
+}
+@media (max-width: 860px), (orientation: portrait) {
+  .today-grid { grid-template-columns: 1fr; }
+}
+body.theme-dark .today-screen { background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 60%, #082f49 100%); color: #f8fafc; }
+body.theme-dark .today-card { background: rgba(30, 41, 59, 0.85); }
+body.theme-dark .today-date, body.theme-dark .today-sub { color: #cbd5e1; }
+body.theme-dark .today-card-title, body.theme-dark .today-empty { color: #94a3b8; }
+body.theme-dark .today-row { border-top-color: #334155; }
+body.theme-dark .today-count { color: #e2e8f0; }
+body.theme-dark .today-avatar { box-shadow: 0 0 0 2px #1e293b; }
+
+/* Settings > Sleep: the two preview buttons side by side */
+#settings-modal .settings-preview-btns { display: flex; flex-wrap: wrap; gap: 8px; }

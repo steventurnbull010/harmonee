@@ -119,7 +119,10 @@ function checkScheduledSleepWindow() {
     activateAmbientSleepScreen(false);
   } else if (!isBedtime && isSleepScreenActive) {
     deactivateAmbientSleepScreen();
-    if (typeof showCalendarToast === "function") {
+    // Morning: open on the day's summary (js/today-screen.js), unless switched off
+    if (typeof window.showTodayScreen === "function" && (!window.isTodayScreenEnabled || window.isTodayScreenEnabled())) {
+      window.showTodayScreen();
+    } else if (typeof showCalendarToast === "function") {
       showCalendarToast("☀️ Good morning! Family board is awake.");
     }
   } else if (isSleepScreenActive) {
