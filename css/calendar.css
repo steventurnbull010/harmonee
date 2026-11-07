@@ -5432,3 +5432,82 @@ body.theme-dark .ev-when-card { background: rgba(255, 255, 255, 0.03); border-co
 body.theme-dark .ev-native-input { background: #0f172a; border-color: #334155; color: #f8fafc; color-scheme: dark; }
 body.theme-dark .ev-day-name { color: #93c5fd; }
 body.theme-dark .ev-delete { color: #f87171; border-color: rgba(248, 113, 113, 0.35); }
+
+/* ==========================================================================
+   Timed events in the hourly grid: text at the top like Google Calendar.
+   Title (with its icon), then the time range, then who's going as small
+   overlapping avatars. Short events put the avatars beside the title; tiny
+   ones squeeze to one line ("Swimming, 4pm").
+   ========================================================================== */
+#view-calendar .skylight-timed-event-block.ev-block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 8px !important;
+  border-radius: 8px;
+}
+.ev-block-head { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.ev-block-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary, #0f172a);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.ev-block-icon { margin-right: 4px; }
+.ev-block-inline-time { flex-shrink: 0; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary, #475569); white-space: nowrap; }
+body.theme-dark .ev-block-inline-time { color: #cbd5e1; }
+.ev-block-time {
+  margin-top: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-secondary, #475569);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-block-people { margin-top: 8px; }
+.ev-block-avatars { display: inline-flex; flex-shrink: 0; }
+.ev-block-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+.ev-block-avatar + .ev-block-avatar { margin-left: -6px; }
+
+/* One line: title and start time, no wrapping */
+.ev-block.is-tiny { padding: 4px 8px !important; justify-content: center; }
+.ev-block.is-tiny .ev-block-head { align-items: center; }
+.ev-block.is-tiny .ev-block-title { display: block; -webkit-line-clamp: unset; white-space: nowrap; text-overflow: ellipsis; font-size: 0.8rem; }
+.ev-block.is-tiny .ev-block-avatar { width: 20px; height: 20px; font-size: 0.62rem; }
+.ev-block.is-short .ev-block-title { -webkit-line-clamp: 1; }
+
+body.theme-dark .ev-block-title { color: #f8fafc; }
+body.theme-dark .ev-block-time { color: #cbd5e1; }
+body.theme-dark .ev-block-avatar { box-shadow: 0 0 0 2px #1e293b; }
+/* Dark mode: deep tints of each person's colour instead of the pastels */
+body.theme-dark #view-calendar .skylight-timed-event-block.ev-block {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--c1, #64748b) 30%, #1e293b) 0%,
+    color-mix(in srgb, var(--c1, #64748b) 30%, #1e293b) 48%,
+    color-mix(in srgb, var(--c2, #64748b) 30%, #1e293b) 52%,
+    color-mix(in srgb, var(--c2, #64748b) 30%, #1e293b) 100%) !important;
+  border-color: color-mix(in srgb, var(--c1, #64748b) 60%, transparent) !important;
+}

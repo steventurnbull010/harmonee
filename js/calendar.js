@@ -2207,29 +2207,48 @@ function renderWeekCalendar() {
       if (membersList.length >= 2) {
         const pal1 = getMemberPalette(membersList[0]);
         const pal2 = getMemberPalette(membersList[1]);
-        inlineStyleAttr = `style="background: linear-gradient(135deg, ${pal1.lightBg} 0%, ${pal1.lightBg} 48%, ${pal2.lightBg} 52%, ${pal2.lightBg} 100%); border: 1.5px solid ${pal1.border}; color: ${pal1.text}; top: ${topPx}px; height: ${heightPx}px;"`;
+        inlineStyleAttr = `style="--c1: ${pal1.primary}; --c2: ${pal2.primary}; background: linear-gradient(135deg, ${pal1.lightBg} 0%, ${pal1.lightBg} 48%, ${pal2.lightBg} 52%, ${pal2.lightBg} 100%); border: 1.5px solid ${pal1.border}; color: ${pal1.text}; top: ${topPx}px; height: ${heightPx}px;"`;
       } else {
         const pal = getMemberPalette(membersList[0] || "Family");
-        inlineStyleAttr = `style="background: ${pal.lightBg}; border: 1.5px solid ${pal.border}; color: ${pal.text}; top: ${topPx}px; height: ${heightPx}px;"`;
+        inlineStyleAttr = `style="--c1: ${pal.primary}; --c2: ${pal.primary}; background: ${pal.lightBg}; border: 1.5px solid ${pal.border}; color: ${pal.text}; top: ${topPx}px; height: ${heightPx}px;"`;
       }
 
-      const memberAvatarsHtml = membersList.map(m => {
-        const pal = getMemberPalette(m);
-        const isMini = membersList.length > 1;
-        return `<span class="skylight-avatar ${isMini ? 'avatar-mini' : ''}" style="background: ${pal.primary}; color: #ffffff;" title="${escapeHtml(m)}">${escapeHtml(m.charAt(0).toUpperCase())}</span>`;
-      }).join("");
+      // Who's going: small overlapping avatars. Under the time on taller
+      // events (title, then when, then who); beside the title on short ones.
+      const isFamilyName = (m) => /^(family|whole family|everyone)$/i.test(m);
+      const memberAvatarsHtml = `<span class="ev-block-avatars">${membersList.map(m => {
+        const fam = isFamilyName(m);
+        const pal = fam ? { primary: "#f59e0b" } : getMemberPalette(m);
+        return `<span class="ev-block-avatar" style="background: ${pal.primary};" title="${escapeHtml(fam ? "Everyone" : m)}">${fam ? "👪" : escapeHtml(m.charAt(0).toUpperCase())}</span>`;
+      }).join("")}</span>`;
+
+      // "9am – 5pm", "12:30 – 1:30pm", like Google Calendar
+      const startMins = minutes;
+      const endMins = startMins + durMinutes;
+      const clock = (mins, withPeriod) => {
+        const h = Math.floor(mins / 60) % 24, m = Math.round(mins % 60);
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        return `${h12}${m ? ":" + String(m).padStart(2, "0") : ""}${withPeriod ? (h >= 12 ? "pm" : "am") : ""}`;
+      };
+      const samePeriod = (Math.floor(startMins / 60) % 24 >= 12) === (Math.floor(endMins / 60) % 24 >= 12);
+      const timeRange = `${clock(startMins, !samePeriod)} – ${clock(endMins, true)}`;
+
+      // Size classes: tiny (one line), short (avatars beside the title), tall
+      // (two lines need about 56px: padding, title, time)
+      const sizeClass = heightPx < 56 ? "is-tiny" : heightPx < 80 ? "is-short" : "is-tall";
+      const titleHtml = `<span class="ev-block-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(evt.icon || "📅")}</span>${escapeHtml(evt.title)}</span>`;
+      // On one line the start time sits after the title and never gets cut
+      const inlineTime = sizeClass === "is-tiny" ? `<span class="ev-block-inline-time">${escapeHtml(clock(startMins, true))}</span>` : "";
 
       timedBlocksHtml += `
-        <div class="skylight-timed-event-block skylight-card" ${inlineStyleAttr} data-event-id="${evt.id}" title="Tap to view/edit ${escapeHtml(evt.title)}">
-          <div class="skylight-card-main">
-            <div class="skylight-card-title-row">
-              <span class="skylight-card-title">${escapeHtml(evt.icon || "📅")} ${escapeHtml(evt.title)}</span>
-            </div>
-            <span class="skylight-card-sub">${escapeHtml(evt.time || "")}${evt.duration ? ` (${escapeHtml(evt.duration)})` : ""}</span>
+        <div class="skylight-timed-event-block skylight-card ev-block ${sizeClass}" ${inlineStyleAttr} data-event-id="${evt.id}" title="${escapeHtml(evt.title)}, ${escapeHtml(timeRange)}">
+          <div class="ev-block-head">
+            ${titleHtml}
+            ${inlineTime}
+            ${sizeClass !== "is-tall" ? memberAvatarsHtml : ""}
           </div>
-          <div class="skylight-card-avatar-wrap">
-            ${memberAvatarsHtml}
-          </div>
+          ${sizeClass !== "is-tiny" ? `<span class="ev-block-time">${escapeHtml(timeRange)}</span>` : ""}
+          ${sizeClass === "is-tall" ? `<div class="ev-block-people">${memberAvatarsHtml}</div>` : ""}
         </div>
       `;
     });
