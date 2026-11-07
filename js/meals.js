@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=147";
+} from "../recipes-data.js?v=148";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -836,12 +836,15 @@ function renderDrawerRecipeList() {
     // Smart total & prep time display with hours formatting for >= 60 mins
     const cookMin = parseInt(recipe.cookTime, 10) || 0;
     const prepMin = parseInt(recipe.prepTime, 10) || 0;
-    const totalMin = recipe.totalMinutes || (prepMin + cookMin) || cookMin || prepMin || 15;
+    const knownMin = recipe.totalMinutes || (prepMin + cookMin) || 0;
+    // Recipes with no time given (TheMealDB's) show none rather than a guess
     let timeDisplay = "";
-    if (cookMin === 0) {
-      timeDisplay = `${formatMinutesToDuration(prepMin || totalMin)} prep`;
+    if (!knownMin) {
+      timeDisplay = "";
+    } else if (cookMin === 0) {
+      timeDisplay = `${formatMinutesToDuration(prepMin || knownMin)} prep`;
     } else {
-      timeDisplay = formatMinutesToDuration(totalMin);
+      timeDisplay = formatMinutesToDuration(knownMin);
     }
     const emoji = recipe.emoji || (mealType === 'breakfast' ? '🥞' : mealType === 'lunch' ? '🥪' : mealType === 'dinner' ? '🥘' : '🍫');
     const badgeContent = (recipe.image || recipe.imageUrl)
@@ -853,7 +856,7 @@ function renderDrawerRecipeList() {
         <span class="recipe-row-badge ${badgeClass}">${badgeContent}</span>
         <div class="recipe-row-info">
           <div class="recipe-row-title">${escapeHtml(recipe.title)}</div>
-          <div class="recipe-row-time">⏱️ ${timeDisplay} • ${escapeHtml(recipe.subtitle || "Household Favorite")}</div>
+          <div class="recipe-row-time">${timeDisplay ? `⏱️ ${timeDisplay} • ` : ""}${escapeHtml(recipe.subtitle || "")}</div>
         </div>
         <div class="recipe-row-arrow" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -1179,10 +1182,13 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
   if (metaPillsEl) {
     const cookMin = parseInt(recipe.cookTime, 10) || 0;
     const prepMin = parseInt(recipe.prepTime, 10) || 0;
-    const totalMin = recipe.totalMinutes || (prepMin + cookMin) || 15;
+    const totalMin = recipe.totalMinutes || (prepMin + cookMin) || 0;
 
+    // Only what the recipe actually says: no made-up times or calories
     let timePills = "";
-    if (cookMin === 0) {
+    if (!totalMin) {
+      timePills = "";
+    } else if (cookMin === 0) {
       timePills = `
         <span class="cooking-pill">⏱️ ${formatMinutesToDuration(prepMin || totalMin)} prep</span>
         <span class="cooking-pill">🥗 No cooking</span>
@@ -1197,9 +1203,10 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
 
     metaPillsEl.innerHTML = `
       ${timePills}
-      <span class="cooking-pill">👥 ${recipe.servings || 4} Servings</span>
-      <span class="cooking-pill">🔥 ${recipe.calories || "520 kcal"}</span>
+      ${recipe.servings ? `<span class="cooking-pill">👥 ${recipe.servings} Servings</span>` : ""}
+      ${recipe.calories ? `<span class="cooking-pill">🔥 ${escapeHtml(recipe.calories)}</span>` : ""}
     `;
+    metaPillsEl.style.display = metaPillsEl.textContent.trim() ? "" : "none";
   }
 
   const ingredients = recipe.ingredients || [
@@ -1245,6 +1252,20 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
         </div>
       `;
     }).join("");
+  }
+
+  // Where the recipe comes from
+  const creditEl = document.getElementById("cooking-credit");
+  if (creditEl) {
+    if (recipe.source === "TheMealDB") {
+      const original = recipe.sourceUrl && recipe.sourceUrl !== recipe.mealdbUrl
+        ? ` · <a href="${escapeHtml(recipe.sourceUrl)}" target="_blank" rel="noopener noreferrer">Original recipe on ${escapeHtml(recipe.sourceName)}</a>` : "";
+      creditEl.innerHTML = `Recipe from <a href="${escapeHtml(recipe.mealdbUrl)}" target="_blank" rel="noopener noreferrer">TheMealDB</a>${original}`;
+      creditEl.hidden = false;
+    } else {
+      creditEl.hidden = true;
+      creditEl.textContent = "";
+    }
   }
 
   if (btnAddGrocery) {

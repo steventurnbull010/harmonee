@@ -3,6 +3,8 @@
 // Covering Breakfast, Lunch, Dinner, and Snack — Aligned with Skylight implementation
 // ============================================================================
 
+import { MEALDB_RECIPES } from "./recipes-themealdb.js?v=1";
+
 export const PRELOADED_RECIPES = [
   // --------------------------------------------------------------------------
   // BREAKFAST FAVORITES (B)
@@ -999,7 +1001,8 @@ export function getAllFamilyRecipes() {
   } catch (e) {
     console.warn("Could not load custom recipes from localStorage:", e);
   }
-  const all = [...custom, ...PRELOADED_RECIPES];
+  // Real recipes from TheMealDB, after the starter set (see recipes-themealdb.js)
+  const all = [...custom, ...PRELOADED_RECIPES, ...MEALDB_RECIPES];
 
   try {
     if (typeof localStorage !== "undefined") {

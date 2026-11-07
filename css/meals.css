@@ -3861,3 +3861,9 @@ body.theme-dark .cooking-check-item:hover { background: rgba(255, 255, 255, 0.05
 .cooking-modal-hero { border-radius: 0; }
 .cook-plan [hidden], .cooking-modal-footer [hidden] { display: none !important; }
 .cook-plan-who .drawer-profiles-pills-row { gap: 8px; }
+
+/* Recipe credit (TheMealDB and the original source) */
+.cooking-credit { margin: 16px 0 0; font-size: 0.82rem; color: var(--text-secondary, #64748b); }
+.cooking-credit a { color: #0284c7; font-weight: 600; text-decoration: none; }
+.cooking-credit a:hover { text-decoration: underline; }
+body.theme-dark .cooking-credit a { color: #7dd3fc; }
