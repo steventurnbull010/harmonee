@@ -3527,6 +3527,25 @@ function openDeleteTaskModal(taskId) {
   });
 }
 
+// Film night (js/film-night.js): one list per streaming service, shared by every
+// board, so the weekly refresh costs the same however many families there are
+window.streamingListGet = async (service) => {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, "streaming", service));
+    if (!snap.exists()) return null;
+    const d = snap.data() || {};
+    const at = d.fetchedAt && typeof d.fetchedAt.toMillis === "function" ? d.fetchedAt.toMillis() : 0;
+    return { popular: Array.isArray(d.popular) ? d.popular : [], latest: Array.isArray(d.latest) ? d.latest : [], fetchedAt: at };
+  } catch (e) {
+    return null;
+  }
+};
+window.streamingListSave = async (service, data) => {
+  if (!db) return;
+  await setDoc(doc(db, "streaming", service), { popular: (data.popular || []).slice(0, 25), latest: (data.latest || []).slice(0, 25), fetchedAt: serverTimestamp() });
+};
+
 // Voice: remove a task straight away (after its own confirm), and put it back on Undo
 window.deleteTaskById = async (taskId) => {
   const task = currentTasks.find(t => t.id === taskId);

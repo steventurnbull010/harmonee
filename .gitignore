@@ -15,3 +15,6 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+
+# API keys used by the page (deployed with the site, never committed)
+js/secret-keys.js

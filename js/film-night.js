@@ -1,216 +1,218 @@
 // ============================================================================
 // FAMILY FILM NIGHT (js/film-night.js)
-// A "🍿 Film night" card on Today at a glance: what's in UK cinemas, what's
-// coming soon, and family films and series on the streaming services this
-// family has. Tap a poster: rating, summary, trailer, and "Plan film night"
-// (opens the event panel filled in) or "Count down to it".
+// A "🍿 Film night" card on Today at a glance: popular and latest family films
+// and series on the streaming services this family has ticked in Settings.
+// Tap a poster: what it is, which of your services it's on, "New" if it
+// arrived in the last two weeks, and "Plan film night" (the event panel,
+// filled in). No links out of harmonee.
 //
-// Film information comes from TMDB (themoviedb.org), free for non-commercial
-// use. "Where to watch" comes from JustWatch, through TMDB. Both are credited
-// in Settings > Film night. No showtimes: UK cinema chains don't share them,
-// so cinema films offer a "Find showtimes" search instead.
+// Data: Streaming Availability API by Movie of the Night (free plan, 1,000
+// requests a month, commercial use allowed, credit required: Settings).
+// The key lives in js/secret-keys.js, which is never committed.
 //
-//   boardSettings.filmNight = { services: [providerIds], maxCert: "PG" }
+// Only English-language titles tagged Family, and nothing also tagged horror,
+// thriller, crime, war, reality, news or talk. Anything else that isn't right
+// for a family can be hidden for the whole board ("Hide this").
 //
-// Needs a TMDB API key (below). Without one, Film night doesn't appear.
+// One list per service, shared by every harmonee family: the first device to
+// open after Sunday 6pm fetches the new week's list (2 requests per service)
+// and saves it to streaming/{service}; everyone else reads that copy. So the
+// requests don't grow with the number of families.
+//
+//   boardSettings.filmNight = { services: ["netflix", "prime"], hidden: [showIds] }
 // ============================================================================
 (function (root) {
-  // The free TMDB API key (themoviedb.org > Settings > API > "API Key").
-  // Read-only, so it's fine in the page; regenerate it there if ever needed.
-  let TMDB_KEY = "";
-
-  const API = "https://api.themoviedb.org/3";
-  const IMG = "https://image.tmdb.org/t/p/";
-  const CERTS = ["U", "PG", "12A", "12", "15"]; // BBFC, mildest first
-  const CERT_NOTE = { U: "Suitable for all", PG: "Parental guidance", "12A": "12 and over, or with an adult", "12": "12 and over", "15": "15 and over" };
-  // UK streaming services (TMDB / JustWatch provider ids)
+  const KEY = () => ((root.HARMONEE_KEYS || {}).motn) || "";
+  const API = "https://api.movieofthenight.com/v4";
+  const CDN = "https://cdn.movieofthenight.com/";
+  const CREDIT_URL = "https://www.movieofthenight.com/about/api";
+  // UK subscription services (Movie of the Night ids)
   const SERVICES = [
-    { id: 8, name: "Netflix" },
-    { id: 337, name: "Disney+" },
-    { id: 9, name: "Prime Video" },
-    { id: 350, name: "Apple TV+" },
-    { id: 38, name: "BBC iPlayer" },
-    { id: 41, name: "ITVX" },
-    { id: 103, name: "Channel 4" },
-    { id: 39, name: "NOW" }
+    { id: "netflix", name: "Netflix" },
+    { id: "prime", name: "Prime Video" },
+    { id: "disney", name: "Disney+" },
+    { id: "apple", name: "Apple TV" },
+    { id: "iplayer", name: "BBC iPlayer" },
+    { id: "itvx", name: "ITVX" },
+    { id: "all4", name: "Channel 4" },
+    { id: "now", name: "NOW" },
+    { id: "paramount", name: "Paramount+" }
   ];
-  const TTL = 12 * 3600 * 1000; // lists are kept for 12 hours
-  const pad = (n) => String(n).padStart(2, "0");
-  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const NOT_FOR_FAMILIES = ["horror", "thriller", "crime", "war", "reality", "news", "talk"];
+  const GENRE_NAMES = { action: "Action", adventure: "Adventure", animation: "Animation", comedy: "Comedy", documentary: "Documentary", drama: "Drama", family: "Family", fantasy: "Fantasy", history: "History", music: "Music", mystery: "Mystery", romance: "Romance", scifi: "Sci-fi", western: "Western" };
+  const NEW_DAYS = 14;
   const esc = (s) => (root.escapeHtml ? root.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
 
-  const ready = () => !!TMDB_KEY;
+  const ready = () => !!KEY();
   function settings() {
     const s = ((root.boardSettings || {}).filmNight) || {};
     return {
       services: Array.isArray(s.services) ? s.services.filter(id => SERVICES.some(x => x.id === id)) : [],
-      maxCert: CERTS.includes(s.maxCert) ? s.maxCert : "PG"
+      hidden: Array.isArray(s.hidden) ? s.hidden.map(String) : []
     };
   }
 
-  // ---- What to ask TMDB (pure, tested in scripts/test-films.js) --------------------
-  function query(path, params) {
-    const q = Object.keys(params).filter(k => params[k] !== undefined && params[k] !== "").map(k => `${k}=${encodeURIComponent(params[k])}`).join("&");
-    return `${API}${path}?${q}`;
+  // ---- The week ("Sunday 6pm" is when a new list is due) ------------------------------
+  function weekStart(now = new Date()) {
+    const d = new Date(now);
+    d.setHours(18, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // this week's Sunday, 6pm
+    if (d > now) d.setDate(d.getDate() - 7);
+    return d;
   }
-  // kind: "cinema" | "soon" | "films" | "series"
-  function urlFor(kind, s, today = new Date()) {
-    const base = { api_key: TMDB_KEY, language: "en-GB", include_adult: "false", page: 1 };
-    if (kind === "cinema") return query("/discover/movie", { ...base, region: "GB", with_release_type: "2|3", "release_date.gte": ymd(addDays(today, -42)), "release_date.lte": ymd(today), certification_country: "GB", "certification.lte": s.maxCert, sort_by: "popularity.desc" });
-    if (kind === "soon") return query("/discover/movie", { ...base, region: "GB", with_release_type: "2|3", "release_date.gte": ymd(addDays(today, 1)), "release_date.lte": ymd(addDays(today, 120)), with_genres: "10751|16", sort_by: "popularity.desc" });
-    const providers = s.services.join("|");
-    if (kind === "films") return query("/discover/movie", { ...base, watch_region: "GB", with_watch_providers: providers, with_watch_monetization_types: "flatrate", certification_country: "GB", "certification.lte": s.maxCert, sort_by: "popularity.desc" });
-    if (kind === "series") return query("/discover/tv", { ...base, watch_region: "GB", with_watch_providers: providers, with_watch_monetization_types: "flatrate", with_genres: "10762|10751", sort_by: "popularity.desc" });
-    return null;
-  }
-  const detailsUrl = (item) => item.type === "tv"
-    ? query(`/tv/${item.id}`, { api_key: TMDB_KEY, language: "en-GB", append_to_response: "videos,watch/providers,content_ratings" })
-    : query(`/movie/${item.id}`, { api_key: TMDB_KEY, language: "en-GB", append_to_response: "videos,watch/providers,release_dates" });
-  const datesUrl = (id) => query(`/movie/${id}/release_dates`, { api_key: TMDB_KEY });
+  const isStale = (fetchedAt, now = new Date()) => !fetchedAt || fetchedAt < weekStart(now).getTime();
 
-  // A film or series from a TMDB list
-  function normalise(r, type) {
-    const date = type === "tv" ? r.first_air_date : r.release_date;
+  // ---- What to ask for (pure, tested in scripts/test-films.js) -------------------------
+  function urlFor(service, order) {
+    const q = {
+      country: "gb",
+      catalogs: `${service}.subscription`,
+      genres: "family",
+      show_original_language: "en",
+      order_by: order === "latest" ? "release_date" : "popularity_1month",
+      order_direction: "desc",
+      output_language: "en"
+    };
+    return `${API}/shows/search/filters?${Object.keys(q).map(k => `${k}=${encodeURIComponent(q[k])}`).join("&")}`;
+  }
+  // A show from the API, trimmed to what the card needs (kept small: it's shared)
+  function slim(show, service) {
+    const genres = (show.genres || []).map(g => g.id).filter(Boolean);
+    if (genres.some(g => NOT_FOR_FAMILIES.includes(g))) return null;
+    const subs = (((show.streamingOptions || {}).gb) || []).filter(o => o.type === "subscription" && o.service && o.service.id === service);
+    const since = subs.map(o => o.availableSince || 0).filter(Boolean);
+    const posters = (show.imageSet || {}).verticalPoster || {};
+    const safe = (u) => (typeof u === "string" && u.startsWith(CDN) ? u : null);
     return {
-      id: r.id, type,
-      title: (type === "tv" ? r.name : r.title) || "",
-      year: date ? String(date).slice(0, 4) : "",
-      date: date || "",
-      poster: r.poster_path || null,
-      backdrop: r.backdrop_path || null,
-      overview: r.overview || "",
-      popularity: r.popularity || 0
+      id: String(show.id || ""),
+      type: show.showType === "series" ? "series" : "movie",
+      title: String(show.title || "").slice(0, 120),
+      year: show.releaseYear || show.firstAirYear || null,
+      genres,
+      overview: String(show.overview || "").slice(0, 500),
+      runtime: show.runtime || null,
+      seasons: show.seasonCount || null,
+      poster: safe(posters.w240),
+      posterBig: safe(posters.w360) || safe(posters.w240),
+      since: since.length ? Math.min(...since) * 1000 : null
     };
   }
-  // The UK certificate and cinema date, from /release_dates
-  function gbRelease(json) {
-    const gb = ((json && json.results) || []).find(r => r.iso_3166_1 === "GB");
-    if (!gb) return { cert: "", date: "" };
-    const rows = (gb.release_dates || []).slice().sort((a, b) => (a.type === 3 ? -1 : 0) - (b.type === 3 ? -1 : 0));
-    const cert = (rows.find(r => r.certification) || {}).certification || "";
-    const cinema = rows.find(r => r.type === 3 || r.type === 2);
-    return { cert, date: cinema && cinema.release_date ? cinema.release_date.slice(0, 10) : "" };
+  function slimList(json, service) {
+    return ((json && json.shows) || []).map(s => slim(s, service)).filter(x => x && x.id && x.title);
   }
-  const gbTvRating = (json) => ((((json || {}).results) || []).find(r => r.iso_3166_1 === "GB") || {}).rating || "";
-  // The best YouTube trailer: official trailers first, then teasers
-  function trailer(videos) {
-    const yt = (((videos || {}).results) || []).filter(v => v.site === "YouTube" && v.key);
-    const rank = (v) => (v.type === "Trailer" ? 0 : v.type === "Teaser" ? 1 : 2) + (v.official ? 0 : 0.5) + (v.iso_639_1 === "en" ? 0 : 0.25);
-    const best = yt.sort((a, b) => rank(a) - rank(b))[0];
-    return best ? `https://www.youtube.com/watch?v=${encodeURIComponent(best.key)}` : null;
+  // The family's services merged: one entry per show, with every service it's on
+  function merge(byService, which, chosen, hidden) {
+    const out = new Map();
+    chosen.forEach(svc => {
+      const list = ((byService[svc] || {})[which]) || [];
+      list.forEach((item, rank) => {
+        if (!item || hidden.includes(item.id)) return;
+        const have = out.get(item.id);
+        if (have) {
+          if (!have.on.includes(svc)) have.on.push(svc);
+          if (item.since && (!have.since || item.since < have.since)) have.since = item.since;
+          have.rank = Math.min(have.rank, rank);
+        } else out.set(item.id, { ...item, on: [svc], rank });
+      });
+    });
+    const items = [...out.values()];
+    // Popular: each service's own order, taking turns; Latest: newest first
+    items.sort((a, b) => which === "latest" ? ((b.year || 0) - (a.year || 0)) || (a.rank - b.rank) : (a.rank - b.rank));
+    return items.slice(0, 24);
   }
-  // Which of the family's services it's on in the UK (theirs first, then others)
-  function whereToWatch(json, mine) {
-    const gb = (((json || {}).results) || {}).GB || {};
-    const names = (gb.flatrate || []).map(p => ({ id: p.provider_id, name: (SERVICES.find(x => x.id === p.provider_id) || {}).name || p.provider_name }));
-    return { ours: names.filter(n => mine.includes(n.id)).map(n => n.name), others: names.filter(n => !mine.includes(n.id)).map(n => n.name) };
-  }
-  const allowed = (cert, max) => !cert || CERTS.indexOf(cert) < 0 || CERTS.indexOf(cert) <= CERTS.indexOf(max);
-  const prettyDate = (s) => { if (!s) return ""; const [y, m, d] = s.split("-").map(Number); return `${d} ${MONTHS[m - 1]}`; };
-  const runtimeText = (mins) => (mins ? (mins >= 60 ? `${Math.floor(mins / 60)}h ${pad(mins % 60)}m` : `${mins}m`) : "");
+  const isNew = (item, now = Date.now()) => !!item.since && now - item.since < NEW_DAYS * 86400000;
 
-  // When "Plan film night" suggests: cinema the coming Saturday afternoon,
-  // streaming tonight (or tomorrow once it's late)
-  function planSlot(kind, now = new Date(), runtime = 0) {
-    const today = new Date(now); today.setHours(0, 0, 0, 0);
-    const len = Math.max(60, Math.ceil(((runtime || 100) + (kind === "cinema" ? 30 : 0)) / 15) * 15);
-    if (kind === "cinema") {
-      const toSat = (6 - today.getDay() + 7) % 7;
-      return { date: addDays(today, toSat), start: "14:00", mins: len };
-    }
-    const late = now.getHours() * 60 + now.getMinutes() > 19 * 60 + 30;
-    return { date: late ? addDays(today, 1) : today, start: "19:00", mins: len };
+  // When "Plan film night" suggests: tonight at 7 (tomorrow once it's late)
+  function planSlot(now = new Date(), runtime = 0) {
+    const day = new Date(now); day.setHours(0, 0, 0, 0);
+    if (now.getHours() * 60 + now.getMinutes() > 19 * 60 + 30) day.setDate(day.getDate() + 1);
+    return { date: day, start: "19:00", mins: Math.max(60, Math.ceil((runtime || 100) / 15) * 15) };
   }
 
-  // ---- Fetching, with a 12-hour cache per device ---------------------------------------
-  const cacheKey = (kind, s) => `harmonee_films_${kind}_${s.maxCert}_${kind === "films" || kind === "series" ? s.services.join("-") : ""}`;
-  const loading = new Set();
-  function cached(kind, s) {
-    try { const c = JSON.parse(localStorage.getItem(cacheKey(kind, s)) || "null"); return c && Array.isArray(c.items) ? c : null; } catch (e) { return null; }
+  // ---- Lists: this device's copy, the shared copy, or a fresh fetch ----------------------
+  const LOCAL = "harmonee_streaming_";
+  const local = (svc) => { try { return JSON.parse(localStorage.getItem(LOCAL + svc) || "null"); } catch (e) { return null; } };
+  const saveLocal = (svc, data) => { try { localStorage.setItem(LOCAL + svc, JSON.stringify(data)); } catch (e) {} };
+  const busy = new Set();
+  const failedAt = {};
+
+  async function fetchService(svc) {
+    const get = async (order) => {
+      const res = await fetch(urlFor(svc, order), { headers: { "X-API-Key": KEY() } });
+      if (!res.ok) throw new Error(`Streaming list ${res.status}`);
+      return slimList(await res.json(), svc);
+    };
+    const [popular, latest] = await Promise.all([get("popular"), get("latest")]);
+    return { popular, latest };
   }
-  async function getJson(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`TMDB ${res.status}`);
-    return res.json();
-  }
-  async function load(kind, s) {
-    const key = cacheKey(kind, s);
-    if (loading.has(key)) return;
-    loading.add(key);
+
+  // Makes sure a service's list is this week's; tells the card when it changes
+  async function refresh(svc) {
+    if (busy.has(svc) || !ready()) return;
+    if (failedAt[svc] && Date.now() - failedAt[svc] < 3600000) return; // after a failure, wait an hour
+    busy.add(svc);
     try {
-      let items;
-      if (kind === "films" || kind === "series") {
-        items = ((await getJson(urlFor(kind, s))).results || []).map(r => normalise(r, kind === "series" ? "tv" : "movie")).slice(0, 16);
-      } else {
-        // Cinema lists: the UK certificate and UK date for each (one small request each)
-        const list = ((await getJson(urlFor(kind, s))).results || []).map(r => normalise(r, "movie")).slice(0, 12);
-        await Promise.all(list.map(async (f) => {
-          try { const gb = gbRelease(await getJson(datesUrl(f.id))); f.cert = gb.cert; if (gb.date) f.date = gb.date; } catch (e) {}
-        }));
-        items = list.filter(f => allowed(f.cert, s.maxCert));
-        if (kind === "soon") items.sort((a, b) => a.date.localeCompare(b.date));
-      }
-      if (kind === "films") items.forEach(f => { f.cert = ""; });
-      try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (e) {}
+      // Another family's device may already have fetched it this week
+      const shared = typeof root.streamingListGet === "function" ? await root.streamingListGet(svc) : null;
+      if (shared && !isStale(shared.fetchedAt)) { saveLocal(svc, shared); return; }
+      const fresh = await fetchService(svc);
+      saveLocal(svc, { ...fresh, fetchedAt: Date.now() });
+      if (typeof root.streamingListSave === "function") { try { await root.streamingListSave(svc, fresh); } catch (e) {} }
     } catch (e) {
       console.warn("Film night:", e);
-      try { if (!cached(kind, s)) localStorage.setItem(key, JSON.stringify({ at: Date.now() - TTL + 15 * 60000, items: [], failed: true })); } catch (err) {}
+      failedAt[svc] = Date.now();
     } finally {
-      loading.delete(key);
+      busy.delete(svc);
       document.dispatchEvent(new CustomEvent("harmonee:films"));
     }
   }
-  // Items for a tab, loading in the background when missing or old
-  function items(tab, s) {
-    const kinds = tab === "stream" ? ["films", "series"] : [tab];
-    let out = [], waiting = false, failed = false;
-    kinds.forEach(k => {
-      const c = cached(k, s);
-      if (!c || Date.now() - c.at > TTL) { load(k, s); if (!c) waiting = true; }
-      if (c) { out = out.concat(c.items); if (c.failed) failed = true; }
+
+  function lists(s) {
+    const byService = {};
+    let waiting = false;
+    s.services.forEach(svc => {
+      const l = local(svc);
+      if (l) byService[svc] = l;
+      if (!l || isStale(l.fetchedAt)) { refresh(svc); if (!l && !failedAt[svc]) waiting = true; }
     });
-    if (tab === "stream") out.sort((a, b) => b.popularity - a.popularity);
-    return { list: out, waiting, failed };
+    return { byService, waiting };
   }
 
   // ---- The card ------------------------------------------------------------------------
   const TAB_KEY = "harmonee_film_tab";
-  function tabNow(s) {
-    let t = "cinema";
-    try { t = localStorage.getItem(TAB_KEY) || "cinema"; } catch (e) {}
-    if (t === "stream" && !s.services.length) t = "cinema";
-    return t;
-  }
-  const poster = (f, size = "w185") => f.poster
-    ? `<img class="film-poster-img" src="${IMG}${size}${esc(f.poster)}" alt="" loading="lazy">`
-    : `<span class="film-poster-img is-blank" aria-hidden="true">🎬</span>`; // no poster yet
+  const tabNow = () => { try { return localStorage.getItem(TAB_KEY) === "latest" ? "latest" : "popular"; } catch (e) { return "popular"; } };
+  let shown = [];
+  const poster = (f, big) => (big ? f.posterBig : f.poster)
+    ? `<img class="film-poster-img" src="${esc(big ? f.posterBig : f.poster)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+    : `<span class="film-poster-img is-blank" aria-hidden="true">🎬</span>`;
+  const serviceNames = (ids) => ids.map(id => (SERVICES.find(x => x.id === id) || {}).name).filter(Boolean);
 
   function cardHtml() {
     if (!ready()) return "";
     const s = settings();
-    const tab = tabNow(s);
-    const { list, waiting, failed } = items(tab, s);
-    const tabs = [["cinema", "In cinemas"], ["soon", "Coming soon"]].concat(s.services.length ? [["stream", "Streaming"]] : []);
-    const body = list.length
-      ? `<div class="film-row">${list.map((f, i) => `<button type="button" class="film-tile" data-film="${i}" aria-label="${esc(f.title)}${f.cert ? `, ${esc(f.cert)}` : ""}">
-          <span class="film-poster">${poster(f)}${f.cert ? `<span class="film-cert is-${esc(f.cert.toLowerCase())}">${esc(f.cert)}</span>` : ""}${f.type === "tv" ? `<span class="film-kind">Series</span>` : ""}</span>
+    if (!s.services.length) {
+      return `<section class="today-card today-films" aria-labelledby="today-films-title">
+        <h3 class="today-card-title" id="today-films-title">🍿 Film night</h3>
+        <p class="today-empty">Family films and series on your streaming services. Choose which ones you have.</p>
+        <div class="today-card-foot"><button type="button" class="today-add-btn" data-film-setup><span class="today-add-plus" aria-hidden="true">+</span> Choose services</button></div>
+      </section>`;
+    }
+    const tab = tabNow();
+    const { byService, waiting } = lists(s);
+    shown = merge(byService, tab, s.services, s.hidden);
+    const body = shown.length
+      ? `<div class="film-row">${shown.map((f, i) => `<button type="button" class="film-tile" data-film="${i}" aria-label="${esc(f.title)}${isNew(f) ? ", new" : ""}">
+          <span class="film-poster">${poster(f)}${isNew(f) ? `<span class="film-new">New</span>` : ""}${f.type === "series" ? `<span class="film-kind">Series</span>` : ""}</span>
           <span class="film-name">${esc(f.title)}</span>
-          ${tab === "soon" && f.date ? `<span class="film-when">${prettyDate(f.date)}</span>` : ""}
         </button>`).join("")}</div>`
-      : `<p class="today-empty">${waiting ? "Finding films…" : failed ? "Couldn't reach the film listings. It'll try again soon." : tab === "stream" ? "Nothing family-friendly found on your services just now." : "Nothing showing that fits your age setting."}</p>`;
+      : `<p class="today-empty">${waiting ? "Finding family films…" : "Nothing to show just now. It'll look again soon."}</p>`;
     return `<section class="today-card today-films" aria-labelledby="today-films-title">
       <div class="film-head">
         <h3 class="today-card-title" id="today-films-title">🍿 Film night</h3>
-        <div class="film-tabs" role="tablist" aria-label="Which films">${tabs.map(([k, label]) => `<button type="button" role="tab" class="film-tab${k === tab ? " is-on" : ""}" aria-selected="${k === tab}" data-film-tab="${k}">${label}</button>`).join("")}</div>
+        <div class="film-tabs" role="tablist" aria-label="Which films">${[["popular", "Popular"], ["latest", "Latest"]].map(([k, label]) => `<button type="button" role="tab" class="film-tab${k === tab ? " is-on" : ""}" aria-selected="${k === tab}" data-film-tab="${k}">${label}</button>`).join("")}</div>
       </div>
       ${body}
     </section>`;
-  }
-  function itemAt(i) {
-    const s = settings();
-    return items(tabNow(s), s).list[Number(i)] || null;
   }
 
   // ---- Details sheet ---------------------------------------------------------------------
@@ -226,81 +228,57 @@
     sheet.addEventListener("click", (e) => {
       if (e.target === sheet || e.target.closest("[data-film-close]")) { sheet.close(); return; }
       if (e.target.closest("[data-film-plan]")) { plan(); return; }
-      if (e.target.closest("[data-film-countdown]")) { countdown(); }
+      if (e.target.closest("[data-film-hide]")) { hide(); }
     });
     return sheet;
   }
 
-  async function open(f, tab) {
+  function open(f) {
     if (!f) return;
-    current = { f, tab, runtime: 0, cert: f.cert || "", date: f.date };
+    current = f;
     const d = getSheet();
-    draw(null);
-    if (!d.open) d.showModal();
-    let info = null;
-    try { info = await getJson(detailsUrl(f)); } catch (e) {}
-    if (!current || current.f !== f) return;
-    draw(info);
-  }
-
-  function draw(info) {
-    const { f, tab } = current;
-    const s = settings();
-    let cert = current.cert, runtime = 0, genres = [], where = { ours: [], others: [] }, video = null;
-    if (info) {
-      if (f.type === "tv") { cert = gbTvRating(info.content_ratings) || cert; runtime = (info.episode_run_time || [])[0] || 0; }
-      else { const gb = gbRelease(info.release_dates); cert = gb.cert || cert; if (gb.date) current.date = gb.date; runtime = info.runtime || 0; }
-      genres = (info.genres || []).map(g => g.name).slice(0, 3);
-      where = whereToWatch(info["watch/providers"], s.services);
-      video = trailer(info.videos);
-      current.runtime = runtime;
-      current.cert = cert;
-    }
-    const today = ymd(new Date());
-    const status = tab === "stream"
-      ? (where.ours.length ? `On ${where.ours.join(", ")}` : where.others.length ? `On ${where.others.join(", ")}` : "")
-      : current.date && current.date > today ? `In cinemas ${prettyDate(current.date)}` : "In cinemas now";
-    const certBadge = cert ? `<span class="film-cert is-${esc(cert.toLowerCase())}">${esc(cert)}</span>` : "";
-    const meta = [f.year, runtimeText(runtime), genres.join(", ")].filter(Boolean).map(esc).join(" · ");
-    const showtimes = `https://www.google.com/search?q=${encodeURIComponent(`${f.title} showtimes near me`)}`;
-    sheet.innerHTML = `<div class="film-card">
+    const length = f.type === "series"
+      ? (f.seasons ? `${f.seasons} season${f.seasons === 1 ? "" : "s"}` : "Series")
+      : (f.runtime ? (f.runtime >= 60 ? `${Math.floor(f.runtime / 60)}h ${String(f.runtime % 60).padStart(2, "0")}m` : `${f.runtime}m`) : "Film");
+    const meta = [f.year, length, f.genres.filter(g => g !== "family").map(g => GENRE_NAMES[g]).filter(Boolean).slice(0, 3).join(", ")].filter(Boolean).map(esc).join(" · ");
+    const on = serviceNames(f.on || []);
+    d.innerHTML = `<div class="film-card">
       <button type="button" class="film-x" data-film-close aria-label="Close">✕</button>
       <div class="film-top">
-        <span class="film-big-poster">${poster(f, "w342")}</span>
+        <span class="film-big-poster">${poster(f, true)}</span>
         <div class="film-info">
           <h2 class="film-title" id="film-title">${esc(f.title)}</h2>
-          <p class="film-meta">${certBadge}<span>${meta || "&nbsp;"}</span></p>
-          ${cert && CERT_NOTE[cert] ? `<p class="film-cert-note">${esc(CERT_NOTE[cert])}</p>` : ""}
-          ${status ? `<p class="film-status">${esc(status)}</p>` : ""}
+          <p class="film-meta"><span>${meta || "&nbsp;"}</span></p>
+          ${on.length ? `<p class="film-status">On ${esc(on.join(" and "))}${isNew(f) ? ` <span class="film-new is-inline">New</span>` : ""}</p>` : ""}
         </div>
       </div>
       ${f.overview ? `<p class="film-overview">${esc(f.overview)}</p>` : ""}
       <div class="film-actions">
-        ${video ? `<a class="film-btn" href="${esc(video)}" target="_blank" rel="noopener">▶ Trailer</a>` : ""}
-        ${tab === "cinema" ? `<a class="film-btn" href="${esc(showtimes)}" target="_blank" rel="noopener">🎟️ Find showtimes</a>` : ""}
-        ${tab === "soon" ? `<button type="button" class="film-btn" data-film-countdown>⏳ Count down to it</button>` : ""}
+        <button type="button" class="film-btn" data-film-hide>🙈 Hide this</button>
         <button type="button" class="film-btn is-primary" data-film-plan>🗓️ Plan film night</button>
       </div>
-      ${tab === "stream" ? `<p class="film-credit">Where to watch: JustWatch</p>` : ""}
     </div>`;
+    if (!d.open) d.showModal();
   }
 
   function plan() {
     if (!current || typeof root.openEventModal !== "function") return;
-    const { f, tab } = current;
-    const kind = tab === "stream" ? "stream" : "cinema";
-    const slot = planSlot(kind, new Date(), current.runtime);
-    let date = slot.date;
-    if (tab === "soon" && current.date) { const [y, m, d] = current.date.split("-").map(Number); date = new Date(y, m - 1, d); if (date.getDay() !== 6) date = addDays(date, (6 - date.getDay() + 7) % 7); }
-    const title = kind === "cinema" ? `Cinema: ${f.title}` : f.type === "tv" ? `Watch together: ${f.title}` : `Film night: ${f.title}`;
-    sheet.close();
+    const slot = planSlot(new Date(), current.type === "movie" ? current.runtime : 60);
+    const pad = (n) => String(n).padStart(2, "0");
+    const key = `${slot.date.getFullYear()}-${pad(slot.date.getMonth() + 1)}-${pad(slot.date.getDate())}`;
+    const title = current.type === "series" ? `Watch together: ${current.title}` : `Film night: ${current.title}`;
     const len = typeof root.formatEventDuration === "function" ? root.formatEventDuration(slot.mins) : "2 hours";
-    root.openEventModal(null, null, ymd(date), { start: slot.start, duration: len }, { title, members: ["Family"] });
-  }
-  function countdown() {
-    if (!current || typeof root.openEventModal !== "function" || !current.date) return;
     sheet.close();
-    root.openEventModal(null, null, current.date, { duration: "All Day" }, { title: `${current.f.title} in cinemas`, members: ["Family"], countdown: true });
+    root.openEventModal(null, null, key, { start: slot.start, duration: len }, { title, members: ["Family"] });
+  }
+
+  async function hide() {
+    if (!current) return;
+    const s = settings();
+    const title = current.title;
+    sheet.close();
+    await saveSettings({ services: s.services, hidden: [...new Set([...s.hidden, current.id])].slice(-300) });
+    if (typeof root.showCalendarToast === "function") root.showCalendarToast(`🙈 ${title} won't show again`);
   }
 
   // ---- Settings > Film night -------------------------------------------------------------
@@ -313,37 +291,45 @@
     if (!box || !ready()) return;
     const s = settings();
     box.innerHTML = `
-      <p class="settings-box-desc">Streaming services you have (for the Streaming tab)</p>
+      <p class="settings-box-desc">Which streaming services do you have?</p>
       <div class="film-set-services" role="group" aria-label="Your streaming services">${SERVICES.map(x => `<button type="button" class="film-set-chip${s.services.includes(x.id) ? " is-on" : ""}" aria-pressed="${s.services.includes(x.id)}" data-film-service="${x.id}">${esc(x.name)}</button>`).join("")}</div>
-      <p class="settings-box-desc film-set-label">Show films rated up to</p>
-      <div class="film-set-certs" role="group" aria-label="Highest age rating">${CERTS.map(c => `<button type="button" class="film-set-chip is-cert${c === s.maxCert ? " is-on" : ""}" aria-pressed="${c === s.maxCert}" data-film-cert="${c}">${c}</button>`).join("")}</div>
-      <p class="settings-box-desc film-set-help">${esc(CERT_NOTE[s.maxCert])}. Series are from the Kids and Family sections.</p>
-      <p class="film-set-credit">Film information from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. Where to watch from <a href="https://www.justwatch.com" target="_blank" rel="noopener">JustWatch</a>.</p>`;
+      <p class="settings-box-desc film-set-help">Only family films and series in English. ${s.hidden.length ? `${s.hidden.length} hidden. <button type="button" class="film-set-link" data-film-unhide>Show them again</button>` : `Tap a poster, then "Hide this", to take anything off.`}</p>
+      <p class="film-set-credit">Streaming availability and images provided by <a href="${CREDIT_URL}" target="_blank" rel="noopener">Streaming Availability API by Movie of the Night</a>.</p>`;
   }
   async function saveSettings(next) {
-    if (typeof root.saveBoardSettingsNow === "function") await root.saveBoardSettingsNow({ filmNight: next });
+    // Explicit values (board settings merge, so a missing key would come back)
+    if (typeof root.saveBoardSettingsNow === "function") await root.saveBoardSettingsNow({ filmNight: { services: next.services, hidden: next.hidden } });
     renderSettings();
     document.dispatchEvent(new CustomEvent("harmonee:films"));
   }
 
   if (typeof document !== "undefined") {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest && e.target.closest("[data-film-tab]");
+      const at = (sel) => e.target.closest && e.target.closest(sel);
+      const t = at("[data-film-tab]");
       if (t) { try { localStorage.setItem(TAB_KEY, t.getAttribute("data-film-tab")); } catch (err) {} document.dispatchEvent(new CustomEvent("harmonee:films")); return; }
-      const tile = e.target.closest && e.target.closest("[data-film]");
-      if (tile) { const s = settings(); open(itemAt(tile.getAttribute("data-film")), tabNow(s)); return; }
-      const svc = e.target.closest && e.target.closest("[data-film-service]");
-      if (svc) { const s = settings(); const id = Number(svc.getAttribute("data-film-service")); saveSettings({ ...s, services: s.services.includes(id) ? s.services.filter(x => x !== id) : [...s.services, id] }); return; }
-      const cert = e.target.closest && e.target.closest("[data-film-cert]");
-      if (cert) { const s = settings(); saveSettings({ ...s, maxCert: cert.getAttribute("data-film-cert") }); }
+      const tile = at("[data-film]");
+      if (tile) { open(shown[Number(tile.getAttribute("data-film"))]); return; }
+      if (at("[data-film-setup]")) {
+        if (typeof root.closeTodayScreen === "function") root.closeTodayScreen();
+        const btn = document.getElementById("nav-item-settings");
+        if (btn) btn.click();
+        setTimeout(() => { const c = document.querySelector('#settings-section-nav [data-section="films"]'); if (c) c.click(); }, 500);
+        return;
+      }
+      const svc = at("[data-film-service]");
+      if (svc) {
+        const s = settings(); const id = svc.getAttribute("data-film-service");
+        saveSettings({ services: s.services.includes(id) ? s.services.filter(x => x !== id) : [...s.services, id], hidden: s.hidden });
+        return;
+      }
+      if (at("[data-film-unhide]")) { const s = settings(); saveSettings({ services: s.services, hidden: [] }); }
     });
-    const hideSettings = () => renderSettings();
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hideSettings); else hideSettings();
+    const first = () => renderSettings();
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", first); else first();
   }
 
-  // Tests only (scripts/test-films.js and the test board): a stand-in key
-  const _testKey = (k) => { TMDB_KEY = String(k || ""); };
-  const api = { _testKey, ready, cardHtml, renderSettings, open, urlFor, normalise, gbRelease, trailer, whereToWatch, planSlot, allowed, SERVICES, CERTS };
+  const api = { ready, cardHtml, renderSettings, open, urlFor, slim, slimList, merge, isNew, isStale, weekStart, planSlot, SERVICES };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.FilmNight = api;
 })(typeof window !== "undefined" ? window : globalThis);
