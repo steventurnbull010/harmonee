@@ -3869,3 +3869,34 @@ body.theme-dark .cooking-check-item:hover { background: rgba(255, 255, 255, 0.05
 body.theme-dark .cooking-credit a { color: #7dd3fc; }
 
 .cooking-empty-note { list-style: none; padding: 8px 0; font-size: 0.9rem; color: var(--text-secondary, #64748b); }
+
+/* ==========================================================================
+   Meal cards on the grid: same look as the calendar's event cards. Icon and
+   title in the event title style (0.85rem bold, dark text), the cooks' names
+   where an event shows its time, then small overlapping circle avatars. The
+   card keeps its meal colour.
+   ========================================================================== */
+#view-meals .meal-block-card.meal-card-v2 {
+  justify-content: flex-start;
+  gap: 0;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+#view-meals .meal-card-v2 .meal-card-title {
+  flex: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  -webkit-line-clamp: 4;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+}
+#view-meals .meal-card-v2 .meal-card-cooks { margin-top: 0; }
+#view-meals .meal-card-v2 .ev-block-people { margin-top: 8px; }
+.meal-cook-unknown { background: #94a3b8; }
+body.theme-dark #view-meals .meal-card-v2 .meal-card-title { color: #f8fafc; }
+body.theme-dark #view-meals .meal-card-v2 .meal-card-cooks { color: #cbd5e1; }
+body.theme-dark #view-meals .meal-card-v2 .ev-block-avatar { box-shadow: 0 0 0 2px #1e293b; }

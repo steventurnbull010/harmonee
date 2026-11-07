@@ -84,6 +84,23 @@ function renderMealCookTagHtml(cookStr, className) {
   return `<span class="${className}"${style}>${escapeHtml(cooks.join(" & "))}</span>`;
 }
 
+// Meal cards on the grid: overlapping circle avatars like the event cards,
+// plus a plain line of names ("Steven & Ava", "Everyone", "No cook yet")
+function renderMealCardCooksHtml(cookStr) {
+  const cooks = splitMealCooks(cookStr);
+  if (!cooks.length) return { names: "", avatars: "" };
+  const avatars = cooks.map(n => {
+    if (n === MEAL_COOK_UNKNOWN) return `<span class="ev-block-avatar meal-cook-unknown" title="Not sure who's cooking yet">?</span>`;
+    if (n === "Family") return `<span class="ev-block-avatar" style="background:#f59e0b" title="Everyone">👪</span>`;
+    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(n) : null;
+    return `<span class="ev-block-avatar" style="background:${pal ? pal.primary : "#0284c7"}" title="${escapeHtml(n)}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`;
+  }).join("");
+  const names = cooks.includes(MEAL_COOK_UNKNOWN) ? "No cook yet"
+    : cooks.includes("Family") ? "Everyone"
+    : cooks.length === 1 ? cooks[0] : `${cooks.slice(0, -1).join(", ")} & ${cooks[cooks.length - 1]}`;
+  return { names, avatars: `<span class="ev-block-avatars">${avatars}</span>` };
+}
+
 function renderChefAvatarsHtml(cookStr) {
   if (!cookStr) return "";
   const chefs = cookStr.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
@@ -415,14 +432,9 @@ function renderMealsView() {
         const emoji = meal.emoji || cat.emoji;
         matrixHtml += `
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
-            <div class="meal-block-card meal-cat-${cat.key}" role="button" tabindex="0" title="Tap to view meal details: ${escapeHtml(meal.title)}">
-              <div class="meal-block-title-row">
-                <span class="meal-block-emoji">${emoji}</span>
-                <span class="meal-block-title">${escapeHtml(meal.title)}</span>
-              </div>
-              <div class="meal-block-meta-row">
-                ${renderMealCookTagHtml(meal.cook, "meal-block-cook-tag")}
-              </div>
+            <div class="meal-block-card meal-cat-${cat.key} meal-card-v2" role="button" tabindex="0" title="${escapeHtml(meal.title)}">
+              <span class="ev-block-title meal-card-title"><span class="ev-block-icon" aria-hidden="true">${emoji}</span>${escapeHtml(meal.title)}</span>
+              ${(() => { const c = renderMealCardCooksHtml(meal.cook); return c.names ? `<span class="ev-block-time meal-card-cooks">${escapeHtml(c.names)}</span><div class="ev-block-people">${c.avatars}</div>` : ""; })()}
             </div>
           </div>
         `;
