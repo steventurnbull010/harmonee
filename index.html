@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="css/lists.css?v=8">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=10">
+  <link rel="stylesheet" href="css/modals.css?v=11">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
@@ -1464,6 +1464,17 @@
                 <span class="theme-option-desc">Sleek, low-glare dark mode</span>
               </button>
             </div>
+            <label class="ev-field settings-idle-field" for="settings-today-idle">
+              <span class="ev-field-label">When the board is left alone</span>
+              <div class="select-chevron-wrapper">
+                <select id="settings-today-idle" class="ev-native-input form-select-with-chevron">
+                  <option value="0">Stay on the same page</option>
+                  <option value="5">Show Today at a glance after 5 minutes</option>
+                  <option value="15">Show Today at a glance after 15 minutes</option>
+                  <option value="30">Show Today at a glance after 30 minutes</option>
+                </select>
+              </div>
+            </label>
           </section>
 
           <!-- REWARDS: points or pocket money, plus banked weeks -->
@@ -2725,7 +2736,7 @@
   <script src="js/board-access.js?v=2"></script>
   <script src="js/countdowns.js?v=4"></script>
   <script src="js/parent-pin.js?v=2"></script>
-  <script src="js/today-screen.js?v=2"></script>
+  <script src="js/today-screen.js?v=3"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=32"></script>
   <script type="module" src="app.js?v=232"></script>

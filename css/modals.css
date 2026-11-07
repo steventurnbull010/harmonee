@@ -2074,3 +2074,43 @@ body.theme-dark .today-screen.is-evening { background: linear-gradient(160deg, #
 body.theme-dark .today-tomorrow-dinner { border-top-color: #334155; }
 /* The family name opens Today at a glance */
 .skylight-single-header .calendar-family-title { cursor: pointer; }
+
+/* Today at a glance: plan dinner, expandable jobs */
+.today-plan-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.today-plan-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 16px;
+  border: 1.5px dashed #f59e0b; border-radius: 999px;
+  background: #fffbeb; color: #92400e;
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.today-plan-btn span { font-size: 1.2rem; line-height: 1; }
+body.theme-dark .today-plan-btn { background: rgba(245, 158, 11, 0.14); color: #fde68a; }
+
+.today-job + .today-job { border-top: 1px solid #f1f5f9; }
+body.theme-dark .today-job + .today-job { border-top-color: #334155; }
+.today-job-toggle {
+  width: 100%;
+  border: none;
+  border-top: none !important;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.today-chevron { flex-shrink: 0; color: #94a3b8; transition: transform 0.2s ease; }
+.today-job.is-open .today-chevron { transform: rotate(180deg); }
+.today-job-list { list-style: none; margin: 0 0 8px; padding: 0 0 0 44px; display: flex; flex-direction: column; gap: 4px; }
+.today-job-item { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 0.98rem; }
+.today-job-check {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  font-size: 0.7rem; font-weight: 800; color: #ffffff;
+}
+.today-job-item.is-done .today-job-check { background: #16a34a; border-color: #16a34a; }
+.today-job-item.is-done .today-job-name { color: #94a3b8; text-decoration: line-through; }
+.today-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#settings-modal .settings-idle-field { display: block; margin-top: 16px; }

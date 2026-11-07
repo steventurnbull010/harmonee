@@ -7,10 +7,11 @@
 //   afternoon  "Good afternoon": finished events fade, the next is marked
 //   evening    "Good evening", dusk colours, plus a Tomorrow card
 // It opens by itself when the night clock wakes up, and any time from the
-// "h" logo or the family name at the top of a page. It keeps itself up to
-// date every minute while open, and closes by itself after an hour.
+// "h" logo or the family name at the top of a page, and (if a family turns
+// it on in Settings > Display) after the board has been left alone. It keeps
+// itself up to date every minute while open.
 //
-//   showTodayScreen({ from: "wake" | "logo" | "preview" })
+//   showTodayScreen({ from: "wake" | "logo" | "idle" | "preview" })
 // ============================================================================
 (function () {
   const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -19,6 +20,7 @@
   let autoCloseTimer = null;
   let refreshTimer = null;
   let openedFrom = "wake";
+  const expandedJobs = new Set(); // people whose jobs are shown (kept across refreshes)
 
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
   const palette = (name) => (typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" });
@@ -66,8 +68,10 @@
     return cols.map(name => {
       const tasks = window.getTasksForColumn(name, day);
       const lower = name.toLowerCase();
-      const left = tasks.filter(t => !(typeof window.isTaskDoneOnDate === "function" && window.isTaskDoneOnDate(t, day, lower))).length;
-      return { name, total: tasks.length, left };
+      const isDone = (t) => typeof window.isTaskDoneOnDate === "function" && window.isTaskDoneOnDate(t, day, lower);
+      const items = tasks.map(t => ({ task: t, done: isDone(t) })).sort((a, b) => a.done - b.done); // to do first
+      const left = items.filter(i => !i.done).length;
+      return { name, total: tasks.length, left, items };
     }).filter(r => r.total > 0);
   }
 
@@ -103,7 +107,7 @@
   }
 
   function dinnerHtml(d) {
-    if (!d) return `<p class="today-empty">Not planned yet.</p>`;
+    if (!d) return `<div class="today-plan-row"><p class="today-empty">Not planned yet.</p><button type="button" class="today-plan-btn" data-plan-dinner><span aria-hidden="true">+</span> Plan dinner</button></div>`;
     return `<p class="today-dinner">${esc(d.meal.emoji || "🍽️")} ${esc(d.meal.title)}</p>${d.cooks.length ? `<p class="today-sub">${d.cooks.map(avatar).join("")} ${esc(d.cooks.join(" & "))} cooking</p>` : ""}`;
   }
 
@@ -121,10 +125,20 @@
       ? `<ul class="today-list">${jobs.map(j => {
           const isGrab = j.name === "Up for grabs";
           const label = j.left === 0 ? "All done ✓" : `${j.left} ${j.left === 1 ? "job" : "jobs"} left`;
-          return `<li class="today-row">
-            ${isGrab ? `<span class="today-avatar is-grab" aria-hidden="true">+</span>` : avatar(j.name)}
-            <span class="today-row-title">${isGrab ? "Grab it" : esc(j.name)}</span>
-            <span class="today-count${j.left === 0 ? " is-done" : ""}">${label}</span>
+          const open = expandedJobs.has(j.name);
+          const icon = (t) => t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
+          return `<li class="today-job${open ? " is-open" : ""}">
+            <button type="button" class="today-row today-job-toggle" data-job="${esc(j.name)}" aria-expanded="${open}">
+              ${isGrab ? `<span class="today-avatar is-grab" aria-hidden="true">+</span>` : avatar(j.name)}
+              <span class="today-row-title">${isGrab ? "Grab it" : esc(j.name)}</span>
+              <span class="today-count${j.left === 0 ? " is-done" : ""}">${label}</span>
+              <svg class="today-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            ${open ? `<ul class="today-job-list">${j.items.map(({ task, done }) => `<li class="today-job-item${done ? " is-done" : ""}">
+              <span class="today-job-check" aria-hidden="true">${done ? "✓" : ""}</span>
+              <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Job")}</span>
+              ${done ? `<span class="today-visually-hidden">done</span>` : ""}
+            </li>`).join("")}</ul>` : ""}
           </li>`;
         }).join("")}</ul>`
       : `<p class="today-empty">No jobs today.</p>`;
@@ -147,7 +161,7 @@
       </section>`;
     }
 
-    const buttonText = openedFrom === "wake" ? "Start the day" : openedFrom === "preview" ? "Close preview" : "Back to the board";
+    const buttonText = openedFrom === "wake" ? "Start the day" : openedFrom === "preview" ? "Close preview" : "Open the board";
 
     return `
       <div class="today-inner">
@@ -200,6 +214,22 @@
       el.setAttribute("aria-labelledby", "today-screen-title");
       document.body.appendChild(el);
       el.addEventListener("click", (e) => {
+        // Show / hide a person's jobs
+        const job = e.target.closest("[data-job]");
+        if (job) {
+          const name = job.getAttribute("data-job");
+          if (expandedJobs.has(name)) expandedJobs.delete(name); else expandedJobs.add(name);
+          paint(el);
+          return;
+        }
+        // No dinner yet: go to Meals with the Plan Meal panel open for tonight
+        if (e.target.closest("[data-plan-dinner]")) {
+          closeTodayScreen();
+          if (typeof window.switchSkylightView === "function") window.switchSkylightView("meals");
+          const key = window.getLocalDateKey(new Date());
+          setTimeout(() => { if (typeof window.openPlanMealDrawer === "function") window.openPlanMealDrawer(key, "dinner"); }, 350);
+          return;
+        }
         // The button, or a tap outside the cards
         if (e.target.closest("#btn-today-start") || !e.target.closest(".today-card")) closeTodayScreen();
       });
@@ -211,7 +241,9 @@
     paint(el);
     el.hidden = false;
     clearTimeout(autoCloseTimer);
-    autoCloseTimer = setTimeout(closeTodayScreen, AUTO_CLOSE_MS);
+    // The morning one gives way to the board after an hour; opened from the
+    // "h" or after the board was left alone, it stays until someone taps
+    if (openedFrom === "wake") autoCloseTimer = setTimeout(closeTodayScreen, AUTO_CLOSE_MS);
     clearInterval(refreshTimer);
     refreshTimer = setInterval(() => { if (!el.hidden) paint(el); }, 60000); // times, "Next", jobs left
     setTimeout(() => { try { document.getElementById("btn-today-start").focus({ preventScroll: true }); } catch (err) {} }, 50);
@@ -223,14 +255,41 @@
   const isEnabled = () => (window.boardSettings || {}).todayScreenEnabled !== false;
   window.isTodayScreenEnabled = isEnabled;
 
-  // Settings: keep the switch in step when Settings opens, save on change
+  // ---- When the board is left alone (Settings > Display, this device only) ----
+  // 0 = stay where it is (default). Otherwise show Today at a glance after that
+  // many minutes with nobody touching the screen. Per device, so the kitchen
+  // tablet can do it without phones ever doing it.
+  const IDLE_KEY = "harmonee_today_idle_minutes";
+  const idleMinutes = () => { try { return parseInt(localStorage.getItem(IDLE_KEY), 10) || 0; } catch (e) { return 0; } };
+  let lastActivity = Date.now();
+  ["pointerdown", "keydown", "wheel", "touchstart"].forEach(type =>
+    document.addEventListener(type, () => { lastActivity = Date.now(); }, { capture: true, passive: true }));
+  const shown = (id) => { const x = document.getElementById(id); return !!(x && x.offsetParent !== null && getComputedStyle(x).display !== "none" && !x.hidden); };
+  setInterval(() => {
+    const mins = idleMinutes();
+    if (!mins || document.hidden) return;
+    if (Date.now() - lastActivity < mins * 60000) return;
+    const today = document.getElementById("today-screen");
+    if (today && !today.hidden) return;
+    if (document.querySelector("dialog[open]")) return;             // a panel is open: someone's mid-task
+    if (shown("ambient-sleep-overlay") || shown("board-join-screen")) return;
+    showTodayScreen({ from: "idle" });
+  }, 20000);
+
+  // Settings: keep the controls in step when Settings opens, save on change
   window.syncTodayScreenSetting = () => {
     const box = document.getElementById("settings-today-enabled");
     if (box) box.checked = isEnabled();
+    const sel = document.getElementById("settings-today-idle");
+    if (sel) sel.value = String(idleMinutes());
   };
   document.addEventListener("change", (e) => {
     if (e.target && e.target.id === "settings-today-enabled" && typeof window.saveBoardSettingsNow === "function") {
       window.saveBoardSettingsNow({ todayScreenEnabled: e.target.checked });
+    }
+    if (e.target && e.target.id === "settings-today-idle") {
+      try { localStorage.setItem(IDLE_KEY, e.target.value); } catch (err) {}
+      lastActivity = Date.now();
     }
   });
 
