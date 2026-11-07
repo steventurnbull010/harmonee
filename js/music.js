@@ -10,7 +10,17 @@
 // The cover and title come from Spotify's public link preview (oEmbed), and
 // are kept with the board so every device shows them.
 //
-//   boardSettings.musicTiles = [{ id, url, name, cover }]
+// Spotify's Design & Branding Guidelines (developer.spotify.com/documentation
+// /design), which apply because we show their artwork and names:
+// - their official full logo with the content (black on light, white on dark,
+//   at least 70px wide, with clear space; never inside a sentence)
+// - artwork untouched: no overlays, no animation, no cropping, corners 8px on
+//   larger screens and 4px on phones
+// - names exactly as Spotify gives them (so only private playlists without a
+//   cover, which show no Spotify content, can be renamed)
+// - links open the Spotify app; labelled "Play on Spotify"
+//
+//   boardSettings.musicTiles = [{ id, url, title, name, cover }]
 // ============================================================================
 (function () {
   const MAX_TILES = 8;
@@ -50,6 +60,14 @@
     ? `<img class="${cls}" src="${esc(t.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : `<span class="${cls} is-fallback" style="${fallbackStyle(t.id)}" aria-hidden="true">♪</span>`;
 
+  // The official Spotify logo files (icons/spotify), black or white to suit the theme
+  const logoHtml = (cls) => `<span class="spotify-logo ${cls}" role="img" aria-label="Spotify">
+    <img class="spotify-logo-img is-on-light" src="icons/spotify/spotify-logo-black.svg" alt="" width="80" height="22">
+    <img class="spotify-logo-img is-on-dark" src="icons/spotify/spotify-logo-white.svg" alt="" width="80" height="22">
+  </span>`;
+  // What a tile is called: Spotify's own title when it shows their artwork
+  const nameOf = (t) => (t.cover ? (t.title || t.name) : t.name) || "Playlist";
+
   // ---- Today at a glance --------------------------------------------------------
   function todayCardHtml() {
     const list = tiles();
@@ -57,12 +75,12 @@
     return `<section class="today-card today-music" aria-labelledby="today-music-title">
       <div class="today-music-head">
         <h3 class="today-card-title" id="today-music-title">🎵 Music</h3>
-        <span class="today-music-source"><span class="today-music-dot" aria-hidden="true"></span>Opens in Spotify</span>
+        ${logoHtml("is-card")}
       </div>
       <div class="today-music-row">
-        ${list.map(t => `<a class="music-tile" href="${esc(t.url)}" target="_blank" rel="noopener" aria-label="Play ${esc(t.name || "playlist")} in Spotify">
-          <span class="music-tile-art">${art(t, "music-tile-img")}<span class="music-tile-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span></span>
-          <span class="music-tile-name">${esc(t.name || "Playlist")}</span>
+        ${list.map(t => `<a class="music-tile" href="${esc(t.url)}" target="_blank" rel="noopener" aria-label="${esc(nameOf(t))}: Play on Spotify" title="${esc(nameOf(t))}">
+          <span class="music-tile-art">${art(t, "music-tile-img")}</span>
+          <span class="music-tile-name">${esc(nameOf(t))}</span>
         </a>`).join("")}
       </div>
     </section>`;
@@ -76,7 +94,9 @@
     box.innerHTML = `
       ${list.length ? `<ul class="music-set-list">${list.map((t, i) => `<li class="music-set-row" data-music-id="${esc(t.id)}">
         <span class="music-set-art">${art(t, "music-set-img")}</span>
-        <input class="music-set-name ev-native-input" type="text" value="${esc(t.name || "")}" maxlength="40" aria-label="Name for this playlist" data-music-name>
+        ${t.cover
+          ? `<span class="music-set-title" title="${esc(nameOf(t))}">${esc(nameOf(t))}</span>`
+          : `<input class="music-set-name ev-native-input" type="text" value="${esc(t.name || "")}" maxlength="40" aria-label="Name for this playlist" data-music-name>`}
         <button type="button" class="music-set-btn is-remove" data-music-remove aria-label="Remove ${esc(t.name)}">✕</button>
       </li>`).join("")}</ul>` : `<p class="settings-box-desc music-set-empty">No playlists yet. Add your family's favourites below.</p>`}
       ${list.length < MAX_TILES ? `<div class="music-set-add">
@@ -100,6 +120,7 @@
     const tile = {
       id: `m-${Date.now().toString(36)}`,
       url,
+      title: (info && info.title) || "",
       name: (info && info.title) || ({ album: "Album", artist: "Artist", show: "Podcast", episode: "Episode", track: "Song" }[kind] || "Playlist"),
       cover: (info && info.cover) || null
     };
@@ -142,6 +163,13 @@
     if (e.target.id === "music-link-input") addFromInput();
     else e.target.blur();
   });
+
+  // Settings > Music header: the Spotify logo beside the section title
+  const markSettingsHeader = () => {
+    const head = document.getElementById("settings-head-music");
+    if (head && !head.querySelector(".spotify-logo")) head.insertAdjacentHTML("beforeend", logoHtml("is-settings"));
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", markSettingsHeader); else markSettingsHeader();
 
   window.Music = { todayCardHtml, renderSettings, cleanLink };
 })();

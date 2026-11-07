@@ -2359,3 +2359,40 @@ body.theme-dark .music-set-msg { color: #5eead4; }
 @media (max-width: 860px), (orientation: portrait) {
   .today-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Music tiles, following Spotify's Design & Branding Guidelines:
+   artwork untouched (no overlays, no movement), 8px corners on larger
+   screens and 4px on phones; the official logo for attribution */
+.music-tile-art { border-radius: 8px; transition: none; }
+.music-tile:hover .music-tile-art,
+.music-tile:focus-visible .music-tile-art,
+.music-tile:active .music-tile-art { transform: none; }
+.music-tile:hover .music-tile-art { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.12); }
+.music-tile:focus-visible .music-tile-art { outline: 3px solid #0284c7; outline-offset: 3px; }
+.music-tile:hover .music-tile-name,
+.music-tile:focus-visible .music-tile-name { color: #0284c7; }
+.music-tile:active .music-tile-name { opacity: 0.7; }
+.music-tile-name { transition: color 0.15s ease; }
+@media (max-width: 600px) { .music-tile-art { border-radius: 4px; } }
+body.theme-dark .music-tile:hover .music-tile-name,
+body.theme-dark .music-tile:focus-visible .music-tile-name { color: #7dd3fc; }
+
+/* The Spotify logo: black on light, white on dark; 80px wide (minimum is
+   70px); clear space of at least half the icon's height around it */
+.spotify-logo { display: inline-flex; align-items: center; flex-shrink: 0; padding: 6px 0 6px 12px; line-height: 0; }
+.spotify-logo-img { display: block; width: 80px; height: auto; }
+.spotify-logo .is-on-dark { display: none; }
+body.theme-dark .spotify-logo .is-on-light { display: none; }
+body.theme-dark .spotify-logo .is-on-dark { display: block; }
+.today-music-head { align-items: center; }
+#settings-head-music .spotify-logo { margin-left: auto; padding: 0 0 0 12px; }
+
+/* Settings: Spotify's own names are shown as they are (not editable) */
+.music-set-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
