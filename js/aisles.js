@@ -89,5 +89,8 @@
     return key;
   }
 
-  window.Aisles = { AISLES, aisleFor };
+  // Lists that get aisle groups: the Groceries list, or any shopping-type list
+  const isGroceryList = (list) => !!list && (list.id === "groceries" || list.emoji === "🛒" || /grocer|shopping|food shop/i.test(list.title || ""));
+
+  window.Aisles = { AISLES, aisleFor, isGroceryList };
 })();

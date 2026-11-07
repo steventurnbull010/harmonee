@@ -22,7 +22,7 @@
   const textOf = (item) => (window.Grocery ? window.Grocery.displayText(item) : item.text) || "";
   const forOf = (item) => (window.Grocery ? window.Grocery.sourcesLabel(item) : "");
   const getList = () => (typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : (window.familyLists || [])).find(l => l.id === (shop && shop.listId));
-  const isGroceries = (list) => list && (list.id === "groceries" || list.emoji === "🛒" || /grocer|shopping|food shop/i.test(list.title || ""));
+  const isGroceries = (list) => !!(window.Aisles && window.Aisles.isGroceryList(list));
 
   // ---- Keep the screen on while shopping --------------------------------------
   async function holdScreenOn() {

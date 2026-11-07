@@ -232,9 +232,57 @@ function applyListOp(lists, tomb, op, now) {
       list.items = list.items.filter(i => !tomb[i.id]);
       return res;
     }
+    case "noteUsuals": {
+      // "Your usuals": what gets added to this list, and how often, kept
+      // with the list so every device sees the same ones
+      const list = findListForOp(lists, tomb, op.listId);
+      if (!list) return null;
+      const usuals = (list.usuals && typeof list.usuals === "object") ? list.usuals : {};
+      (op.texts || []).forEach(text => {
+        const key = listItemKey(text);
+        if (!key) return;
+        const prev = usuals[key] || { n: 0 };
+        usuals[key] = { text: String(text).trim().slice(0, 80), n: (prev.n || 0) + 1, at: op.at || now };
+      });
+      // Keep the 150 most used
+      const keys = Object.keys(usuals);
+      if (keys.length > LISTS_USUALS_LIMIT) {
+        keys.sort((a, b) => (usuals[b].n - usuals[a].n) || (usuals[b].at - usuals[a].at));
+        keys.slice(LISTS_USUALS_LIMIT).forEach(k => { delete usuals[k]; });
+      }
+      list.usuals = usuals;
+      return null;
+    }
     default:
       return null; // "noop": just rewrite the cleaned lists
   }
+}
+
+// What makes two items "the same thing": "Milk" = "milk", "eggs" = "egg",
+// "Toilet rolls" = "toilet roll" (the shared grocery rules), else plain text
+function listItemKey(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return "";
+  try {
+    const p = window.Grocery && window.Grocery.parseLine(raw);
+    if (p && p.key) return p.key;
+  } catch (e) {}
+  return raw.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+window.listItemKey = listItemKey;
+const LISTS_USUALS_LIMIT = 150;
+const LISTS_USUALS_SHOWN = 12;
+
+// The usuals to offer for a list: most used first, leaving out anything
+// that's already on the list waiting to be bought
+function getListUsuals(list) {
+  const usuals = (list && list.usuals) || {};
+  const onList = new Set((list.items || []).filter(i => !i.checked).map(i => listItemKey(window.Grocery ? window.Grocery.displayText(i) : i.text)));
+  return Object.entries(usuals)
+    .filter(([k]) => !onList.has(k))
+    .sort((a, b) => (b[1].n - a[1].n) || (b[1].at - a[1].at))
+    .slice(0, LISTS_USUALS_SHOWN)
+    .map(([key, u]) => ({ key, text: u.text, n: u.n }));
 }
 
 // Rebuilds what this device shows: the board's lists plus anything still queued
@@ -478,8 +526,9 @@ function renderListsView() {
       const text = window.Grocery ? window.Grocery.displayText(item) : item.text;
       const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
       const pop = justTicked === item.id ? " is-just-ticked" : "";
+      const flash = listsFlashIds.has(item.id) ? " is-flash" : "";
       return `
-      <li class="list-row ${item.checked ? "is-checked" : ""}${pop}" data-item-id="${escapeHtml(item.id)}">
+      <li class="list-row ${item.checked ? "is-checked" : ""}${pop}${flash}" data-item-id="${escapeHtml(item.id)}">
         <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(text)}">
           <span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           <span class="list-row-text">
@@ -507,8 +556,25 @@ function renderListsView() {
           <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
           <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
         </form>
+        ${(() => {
+          // "Your usuals": tap to add again
+          const usuals = getListUsuals(list);
+          return usuals.length ? `<div class="list-usuals" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
+            <span class="list-usuals-label">Usuals</span>
+            ${usuals.map(u => `<button type="button" class="list-usual" data-add-usual="${escapeHtml(u.text)}" aria-label="Add ${escapeHtml(u.text)}"><span aria-hidden="true">+</span> ${escapeHtml(u.text)}</button>`).join("")}
+          </div>` : "";
+        })()}
         <ul class="list-column-items">
-          ${open.map(itemHtml).join("")}
+          ${(() => {
+            // Groceries: grouped by aisle, in shop order (js/aisles.js)
+            if (!(window.Aisles && window.Aisles.isGroceryList(list)) || open.length < 2) return open.map(itemHtml).join("");
+            const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
+            const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
+            open.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i))).push(i));
+            return window.Aisles.AISLES.filter(a => groups.get(a.key).length).map(a =>
+              `<li class="list-aisle-head" aria-hidden="true">${a.icon} ${escapeHtml(a.label)}</li>${groups.get(a.key).map(itemHtml).join("")}`).join("");
+          })()}
+          ${done.length && open.length ? `<li class="list-aisle-head is-done-head" aria-hidden="true">✓ Done</li>` : ""}
           ${done.map(itemHtml).join("")}
           ${items.length === 0 ? `<li class="list-column-empty">Nothing on this list yet. Add something above.</li>` : ""}
         </ul>
@@ -523,6 +589,12 @@ function renderListsView() {
   if (typingListId) {
     const inp = board.querySelector(`[data-list-id="${CSS.escape(typingListId)}"] .list-column-add input`);
     if (inp) inp.focus();
+  }
+
+  if (listsFlashIds.size) {
+    const first = board.querySelector(".list-row.is-flash");
+    if (first) { try { first.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }
+    listsFlashIds = new Set();
   }
 
   if (!board.hasAttribute("data-wired")) {
@@ -573,6 +645,8 @@ function onListsBoardClick(e) {
   const column = e.target.closest("[data-list-id]");
   if (!column) return;
   const listId = column.getAttribute("data-list-id");
+  const usual = e.target.closest("[data-add-usual]");
+  if (usual) { handleAddItemToList(listId, usual.getAttribute("data-add-usual")); return; }
   const row = e.target.closest("[data-item-id]");
 
   if (e.target.closest("[data-toggle-item]") && row) {
@@ -650,16 +724,12 @@ function openAddListItemPanel(listId, draft = "") {
         .split("\n").map(s => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
       if (lines.length === 0) { document.getElementById("list-item-text").focus(); return; }
       if (!loadFamilyLists().some(l => l.id === addPanelListId)) return;
-      const stamp = Date.now();
-      // Keep the order they were typed in, at the top of the list
-      mutateFamilyLists({ type: "addItems", listId: addPanelListId, items: lines.map((text, i) => ({
-        id: `item-${stamp}-${i}-${Math.random().toString(36).slice(2, 5)}`,
-        text,
-        checked: false,
-        addedAt: new Date().toISOString()
-      })) });
+      // Keep the order they were typed in, at the top of the list (and no
+      // doubling up with what's already there)
+      const res = addTextsToList(addPanelListId, lines);
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
       modal.close();
+      reportListAdd(addPanelListId, res);
       renderListsView();
     });
   }
@@ -672,15 +742,63 @@ window.openAddListItemPanel = openAddListItemPanel;
 // ---------------------------------------------------------------------------
 // Item changes
 // ---------------------------------------------------------------------------
+// Adds typed items to a list, without doubling up: something already on the
+// list is just highlighted, and something ticked off is put back. Returns
+// { added, already, back } (arrays of item texts) for the toast.
+function addTextsToList(listId, texts) {
+  const list = loadFamilyLists().find(l => l.id === listId);
+  if (!list) return { added: [], already: [], back: [] };
+  const res = { added: [], already: [], back: [] };
+  const byKey = new Map();
+  (list.items || []).forEach(i => {
+    const k = listItemKey(window.Grocery ? window.Grocery.displayText(i) : i.text);
+    if (k && (!byKey.has(k) || !i.checked)) byKey.set(k, i); // prefer one still to buy
+  });
+  const fresh = [];
+  const stamp = Date.now();
+  texts.forEach((text, n) => {
+    const key = listItemKey(text);
+    const existing = key && byKey.get(key);
+    if (existing && !existing.checked) { res.already.push(existing); return; }
+    if (existing && existing.checked) {
+      mutateFamilyLists({ type: "toggleItem", listId, itemId: existing.id, checked: false });
+      res.back.push(existing);
+      return;
+    }
+    const item = { id: `item-${stamp}-${n}-${Math.random().toString(36).slice(2, 6)}`, text, checked: false, addedAt: new Date().toISOString() };
+    fresh.push(item);
+    if (key) byKey.set(key, item); // "milk" twice in one go counts once
+  });
+  if (fresh.length) mutateFamilyLists({ type: "addItems", listId, items: fresh });
+  res.added = fresh;
+  const noted = [...fresh.map(i => i.text), ...res.back.map(i => i.text)];
+  if (noted.length) mutateFamilyLists({ type: "noteUsuals", listId, texts: noted });
+  return res;
+}
+window.addTextsToList = addTextsToList;
+
+// After an add: highlight items that were already there (or put back), and
+// say what happened
+function reportListAdd(listId, res) {
+  const name = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
+  const bits = [];
+  if (res.added.length > 1) bits.push(`Added ${res.added.length}`);
+  if (res.already.length) bits.push(res.already.length === 1 && !res.added.length && !res.back.length
+    ? `${name(res.already[0])} is already on the list`
+    : `${res.already.length} already on the list`);
+  if (res.back.length) bits.push(res.back.length === 1 && !res.added.length && !res.already.length
+    ? `${name(res.back[0])} is back on the list`
+    : `${res.back.length} put back on the list`);
+  if (bits.length && typeof window.showCalendarToast === "function" && (res.already.length || res.back.length || res.added.length > 1)) window.showCalendarToast(bits.join(" · "));
+  listsFlashIds = new Set([...res.already, ...res.back].map(i => i.id));
+}
+var listsFlashIds = new Set(); // var: read by renderListsView, which can run before this line
+
 function handleAddItemToList(listId, text) {
   if (!loadFamilyLists().some(l => l.id === listId) && listId !== GROCERIES_LIST_ID) return;
-  mutateFamilyLists({ type: "addItems", listId, items: [{
-    id: "item-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-    text,
-    checked: false,
-    addedAt: new Date().toISOString()
-  }] });
+  const res = addTextsToList(listId, [text]);
   if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+  reportListAdd(listId, res);
   renderListsView();
 }
 

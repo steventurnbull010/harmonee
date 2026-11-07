@@ -850,3 +850,59 @@ body.theme-dark .shop-progress { background: #334155; }
   #view-lists .list-column { max-height: none; }
   #view-lists .list-column-items { max-height: none; overflow: visible; }
 }
+
+/* "Your usuals": tap to add again (js/lists.js) */
+.list-usuals {
+  display: flex;
+  flex-shrink: 0; /* the list column is a flex column: don't let it squash the chips */
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0 0 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.list-usuals::-webkit-scrollbar { display: none; }
+.list-usuals-label { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
+.list-usual {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 36px; padding: 0 16px 0 12px;
+  border: 1px solid color-mix(in srgb, var(--list-accent, #0284c7) 35%, #ffffff);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit; font-size: 0.88rem; font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.list-usual span { color: var(--list-accent, #0284c7); font-weight: 800; }
+.list-usual:active { background: var(--list-light, #f0f9ff); }
+body.theme-dark .list-usual { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .list-usuals-label { color: #94a3b8; }
+
+/* Aisle headings on the Groceries list */
+.list-aisle-head {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+.list-aisle-head:first-child { margin-top: 0; }
+.list-aisle-head.is-done-head { margin-top: 16px; }
+body.theme-dark .list-aisle-head { color: #94a3b8; }
+
+/* Already on the list (or just put back): a short glow on that item */
+.list-row.is-flash { animation: list-row-flash 1.6s ease; }
+@keyframes list-row-flash {
+  0%, 30% { box-shadow: 0 0 0 3px var(--list-accent, #0284c7); background: var(--list-light, #f0f9ff); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .list-row.is-flash { animation: none; outline: 3px solid var(--list-accent, #0284c7); } }
