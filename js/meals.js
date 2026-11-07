@@ -304,28 +304,57 @@ function updateGroceryBadgeCount() {
   badge.textContent = unbought;
 }
 
-function addIngredientsToGroceryList(ingredients, sourceTitle = "") {
-  if (!ingredients || !ingredients.length) return 0;
+// Adds a recipe's ingredients to the Groceries list using the shared rules in
+// js/grocery.js (amounts add up, bought items come back fresh, salt / pepper /
+// oil / water left out unless asked for). sourceKey stops the same planned
+// meal being added twice. Returns { added, combined, skipped, already }.
+function addIngredientsToGroceryList(ingredients, sourceTitle = "", sourceKey = "") {
+  const empty = { added: 0, combined: 0, skipped: [], already: 0 };
+  if (!ingredients || !ingredients.length || !window.Grocery) return empty;
   const list = loadFamilyGroceryList();
-  let addedCount = 0;
-  ingredients.forEach(item => {
-    const cleanText = item.replace(/^-\s*/, '').trim();
-    if (!cleanText) return;
-    const exists = list.some(g => g.text.toLowerCase() === cleanText.toLowerCase());
-    if (!exists) {
-      list.push({
-        id: "g-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5),
-        text: cleanText,
-        checked: false,
-        source: sourceTitle || "Recipe",
-        addedAt: new Date().toISOString()
-      });
-      addedCount++;
-    }
+  const res = window.Grocery.addLinesToItems(list, ingredients, {
+    title: sourceTitle, sourceKey: sourceKey || sourceTitle, includeBasics: window.Grocery.includeBasics()
   });
-  saveFamilyGroceryList(list);
-  return addedCount;
+  if (res.added || res.combined) saveFamilyGroceryList(list);
+  return res;
 }
+
+// One toast for any "add to list" action
+function showGroceryAddToast(res, title) {
+  const msg = window.Grocery ? window.Grocery.summary(res, title) : `Added ingredients for ${title}`;
+  if (typeof showCalendarToast === "function") (window.showCalendarToast || showCalendarToast)(`🛒 ${msg}`);
+}
+
+// Ingredients for a planned meal: saved with it, or from its recipe
+function getPlannedMealIngredients(meal) {
+  if (!meal) return [];
+  if (Array.isArray(meal.ingredients) && meal.ingredients.length) return meal.ingredients;
+  const recipe = (meal.recipeId || meal.title) ? findRecipeByIdOrTitle(meal.recipeId || meal.title) : null;
+  return recipe && Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+}
+
+// "Add this week's meals": every planned breakfast, lunch and dinner in the
+// week the Meals page is showing. Each meal and day goes on once, however
+// many times this is pressed.
+function addWeekMealsToGroceryList() {
+  const dates = getMealsWeekDates(window.mealsWeekOffset || 0);
+  const total = { added: 0, combined: 0, skipped: [], already: 0, meals: 0 };
+  dates.forEach(d => {
+    const dateKey = (window.getLocalDateKey || getLocalDateKey)(d);
+    ["breakfast", "lunch", "dinner"].forEach(slot => {
+      const meal = (window.getMealForDate || getMealForDate)(d, slot);
+      if (!meal || !meal.title) return;
+      const ings = getPlannedMealIngredients(meal);
+      if (!ings.length) return;
+      const r = addIngredientsToGroceryList(ings, meal.title, `${meal.title}|${dateKey}|${slot}`);
+      total.meals++;
+      total.added += r.added; total.combined += r.combined; total.already += r.already;
+      r.skipped.forEach(n => { if (!total.skipped.includes(n)) total.skipped.push(n); });
+    });
+  });
+  return total;
+}
+window.addWeekMealsToGroceryList = addWeekMealsToGroceryList;
 
 // Returns array of 7 dates for the week (starting on Monday: Mon to Sun)
 function getMealsWeekDates(offsetWeeks = 0) {
@@ -971,13 +1000,11 @@ function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
     btnAddGrocery.classList.remove("is-added");
     btnAddGrocery.innerHTML = `<span class="btn-pill-icon">🛒</span> <span class="btn-pill-label">Add to List</span>`;
     btnAddGrocery.onclick = () => {
-      const added = addIngredientsToGroceryList(fullIngredients, meal.title);
+      const res = addIngredientsToGroceryList(fullIngredients, meal.title, `${meal.title}|${dateStr}|${slot}`);
       btnAddGrocery.classList.add("is-added");
-      btnAddGrocery.innerHTML = `<span class="btn-pill-icon">✓</span> <span class="btn-pill-label">Added to List!</span>`;
+      btnAddGrocery.innerHTML = `<span class="btn-pill-icon">✓</span> <span class="btn-pill-label">On the list</span>`;
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
-      if (typeof showCalendarToast === "function") {
-        (window.showCalendarToast || showCalendarToast)(`🛒 Added ingredients for ${meal.title} to Grocery List!`);
-      }
+      showGroceryAddToast(res, meal.title);
     };
   }
 
@@ -1277,13 +1304,19 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
 
   if (btnAddGrocery) btnAddGrocery.style.display = ingredients.length ? "" : "none";
   if (btnAddGrocery) {
+    // Fresh for each recipe (it used to keep saying "Added" on the next one)
+    btnAddGrocery.textContent = "＋ Add to grocery list";
+    btnAddGrocery.classList.remove("is-added");
     btnAddGrocery.onclick = () => {
-      addIngredientsToGroceryList(ingredients, recipe.title);
-      btnAddGrocery.textContent = "✓ Added to Grocery List!";
+      // Keyed to the card's date and meal, like a planned meal, so adding from
+      // here and from the plan doesn't double up
+      const cardDate = (document.getElementById("cooking-plan-date-input") || {}).value || "";
+      const cardSlot = (document.getElementById("cooking-plan-slot-select") || {}).value || "";
+      const res = addIngredientsToGroceryList(ingredients, recipe.title, `${recipe.title}|${cardDate}|${cardSlot}`);
+      btnAddGrocery.textContent = "✓ On the list";
+      btnAddGrocery.classList.add("is-added");
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
-      if (typeof showCalendarToast === "function") {
-        (window.showCalendarToast || showCalendarToast)(`🛒 Added ingredients for ${recipe.title} to Grocery List!`);
-      }
+      showGroceryAddToast(res, recipe.title);
     };
   }
 
@@ -1336,7 +1369,7 @@ function openGroceryListModal() {
         <li class="grocery-item-row ${item.checked ? 'is-bought' : ''}" data-id="${item.id}">
           <div class="grocery-item-left">
             <input type="checkbox" id="chk-${item.id}" ${item.checked ? 'checked' : ''}>
-            <label for="chk-${item.id}" class="grocery-item-text">${escapeHtml(item.text)}</label>
+            <label for="chk-${item.id}" class="grocery-item-text">${escapeHtml(window.Grocery ? window.Grocery.displayText(item) : item.text)}${(window.Grocery && window.Grocery.sourcesLabel(item)) ? `<span class="list-row-for">${escapeHtml(window.Grocery.sourcesLabel(item))}</span>` : ""}</label>
           </div>
           <button type="button" class="btn-grocery-item-del" data-id="${item.id}" title="Remove item">✕</button>
         </li>
@@ -1398,6 +1431,23 @@ function openGroceryListModal() {
   };
 
   if (btnAdd) btnAdd.onclick = handleAddItem;
+
+  // Add every planned meal in the week the Meals page is showing
+  const btnWeek = document.getElementById("btn-grocery-add-week");
+  if (btnWeek) btnWeek.onclick = () => {
+    const t = addWeekMealsToGroceryList();
+    if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+    const msg = !t.meals ? "No planned meals with ingredients this week"
+      : window.Grocery.summary(t, `${t.meals} meal${t.meals === 1 ? "" : "s"}`);
+    if (typeof showCalendarToast === "function") (window.showCalendarToast || showCalendarToast)(`🛒 ${msg}`);
+    renderItems();
+  };
+  // Salt, pepper, oil and water: left out of recipes unless switched on here
+  const basicsToggle = document.getElementById("grocery-include-basics");
+  if (basicsToggle && window.Grocery) {
+    basicsToggle.checked = window.Grocery.includeBasics();
+    basicsToggle.onchange = () => window.Grocery.setIncludeBasics(basicsToggle.checked);
+  }
   if (quickInput) {
     quickInput.onkeydown = (e) => {
       if (e.key === "Enter") {

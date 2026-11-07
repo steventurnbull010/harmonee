@@ -130,7 +130,7 @@ function renderListsView() {
       <li class="list-row ${item.checked ? "is-checked" : ""}" data-item-id="${escapeHtml(item.id)}">
         <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(item.text)}">
           <span class="list-row-box">${item.checked ? "✓" : ""}</span>
-          <span class="list-row-text">${escapeHtml(item.text)}</span>
+          <span class="list-row-text">${escapeHtml(window.Grocery ? window.Grocery.displayText(item) : item.text)}${(window.Grocery && window.Grocery.sourcesLabel(item)) ? `<span class="list-row-for">${escapeHtml(window.Grocery.sourcesLabel(item))}</span>` : ""}</span>
         </button>
         <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(item.text)}">✕</button>
       </li>`;

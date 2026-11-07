@@ -3900,3 +3900,14 @@ body.theme-dark .cooking-credit a { color: #7dd3fc; }
 body.theme-dark #view-meals .meal-card-v2 .meal-card-title { color: #f8fafc; }
 body.theme-dark #view-meals .meal-card-v2 .meal-card-cooks { color: #cbd5e1; }
 body.theme-dark #view-meals .meal-card-v2 .ev-block-avatar { box-shadow: 0 0 0 2px #1e293b; }
+
+/* Groceries panel: this week's meals, basics switch, and "For:" lines */
+.grocery-week-row { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 0; }
+.grocery-week-btn {
+  min-height: 48px; border-radius: 16px; border: 1px solid #bae6fd; background: #f0f9ff; color: #0369a1;
+  font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+}
+.grocery-week-btn:hover { border-color: #0284c7; }
+.grocery-basics-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; font-size: 0.88rem; color: var(--text-secondary, #64748b); cursor: pointer; }
+.grocery-item-text .list-row-for { display: block; margin-top: 2px; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary, #64748b); }
+body.theme-dark .grocery-week-btn { background: rgba(2, 132, 199, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #7dd3fc; }

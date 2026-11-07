@@ -14,9 +14,9 @@
   <link rel="stylesheet" href="style.css?v=144">
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=18">
-  <link rel="stylesheet" href="css/meals.css?v=20">
+  <link rel="stylesheet" href="css/meals.css?v=21">
   <link rel="stylesheet" href="css/calendar.css?v=12">
-  <link rel="stylesheet" href="css/lists.css?v=4">
+  <link rel="stylesheet" href="css/lists.css?v=5">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=2">
   <link rel="stylesheet" href="css/modals.css?v=4">
@@ -2185,8 +2185,8 @@
       <div class="modal-header">
         <button type="button" class="btn-modal-close" id="btn-close-grocery-modal" aria-label="Close modal" title="Close">✕</button>
         <div class="modal-trophy">🛒</div>
-        <h2 id="grocery-modal-title" class="modal-title">Family Grocery List</h2>
-        <p class="modal-subtitle" id="grocery-modal-subtitle">Auto-synced with planned family meals & recipes</p>
+        <h2 id="grocery-modal-title" class="modal-title">Groceries</h2>
+        <p class="modal-subtitle" id="grocery-modal-subtitle">The same list as Lists → Groceries, on every device</p>
       </div>
 
       <div class="grocery-quick-add-bar">
@@ -2194,6 +2194,14 @@
         <button type="button" class="btn-primary-action" id="btn-grocery-add-item">
           <span>Add</span>
         </button>
+      </div>
+
+      <div class="grocery-week-row">
+        <button type="button" class="grocery-week-btn" id="btn-grocery-add-week">🗓️ Add this week's meals</button>
+        <label class="grocery-basics-toggle">
+          <span>Include salt, pepper, oil &amp; water</span>
+          <span class="skylight-switch"><input type="checkbox" id="grocery-include-basics"><span class="switch-slider"></span></span>
+        </label>
       </div>
 
       <div class="grocery-items-scroll-area">
@@ -2612,7 +2620,8 @@
   <script src="js/audio.js?v=3"></script>
   <script src="js/weather.js?v=3"></script>
   <script src="js/sleep.js?v=6"></script>
-  <script src="js/lists.js?v=10"></script>
+  <script src="js/grocery.js?v=4"></script>
+  <script src="js/lists.js?v=12"></script>
   <script src="js/magic-scanner.js?v=6"></script>
   <script src="js/rewards.js?v=5"></script>
   <script src="js/reward-goals.js?v=2"></script>
@@ -2623,7 +2632,7 @@
   <script src="js/tasks.js?v=25"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
-  <script type="module" src="js/meals.js?v=29"></script>
+  <script type="module" src="js/meals.js?v=31"></script>
   <script type="module" src="app.js?v=221"></script>
 </body>
 </html>
