@@ -1664,62 +1664,20 @@ function renderTasksFilterMenu() {
 // ============================================================================
 // 18. SKYLIGHT MINI CALENDAR DATE PICKER MODAL
 // ============================================================================
-let pickerCurrentMonth = new Date();
 
+// The picker itself lives in js/date-picker.js and is shared by every date
+// field in the app
 function openSkylightDatePickerModal() {
-  const modal = document.getElementById("skylight-datepicker-modal");
-  if (!modal) return;
-  pickerCurrentMonth = new Date(drawerSelectedDate);
-  renderDatePickerCalendar();
-  modal.style.display = "flex";
-
-  document.getElementById("btn-datepicker-dismiss").onclick = () => { modal.style.display = "none"; };
-  document.getElementById("btn-datepicker-select").onclick = () => {
-    document.getElementById("drawer-chore-date-label").textContent = drawerSelectedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-    modal.style.display = "none";
-  };
-}
-
-function renderDatePickerCalendar() {
-  const yr = pickerCurrentMonth.getFullYear();
-  const mo = pickerCurrentMonth.getMonth();
-  const mNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  document.getElementById("datepicker-month-name").textContent = `${mNames[mo]} ${yr}`;
-  document.getElementById("datepicker-selected-label").textContent = drawerSelectedDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const firstDay = new Date(yr, mo, 1).getDay(); // 0 is Sun
-  const lastDate = new Date(yr, mo + 1, 0).getDate();
-  const grid = document.getElementById("datepicker-days-grid");
-  if (!grid) return;
-
-  let html = "";
-  for (let i = 0; i < firstDay; i++) {
-    html += `<span class="datepicker-day-cell is-other-month"></span>`;
-  }
-  for (let d = 1; d <= lastDate; d++) {
-    const isSel = (drawerSelectedDate.getFullYear() === yr && drawerSelectedDate.getMonth() === mo && drawerSelectedDate.getDate() === d);
-    html += `<button type="button" class="datepicker-day-cell ${isSel ? 'is-selected' : ''}" data-day="${d}">${d}</button>`;
-  }
-  grid.innerHTML = html;
-
-  grid.querySelectorAll(".datepicker-day-cell[data-day]").forEach(btn => {
-    btn.onclick = () => {
-      const d = parseInt(btn.getAttribute("data-day"), 10);
-      drawerSelectedDate = new Date(yr, mo, d);
-      drawerSelectedDate.setHours(0, 0, 0, 0);
-      renderDatePickerCalendar();
-    };
+  if (typeof window.openDatePicker !== "function") return;
+  window.openDatePicker({
+    value: drawerSelectedDate,
+    onSelect: (d) => {
+      drawerSelectedDate = d;
+      document.getElementById("drawer-chore-date-label").textContent = drawerSelectedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    }
   });
-
-  document.getElementById("btn-datepicker-prev").onclick = () => {
-    pickerCurrentMonth.setMonth(pickerCurrentMonth.getMonth() - 1);
-    renderDatePickerCalendar();
-  };
-  document.getElementById("btn-datepicker-next").onclick = () => {
-    pickerCurrentMonth.setMonth(pickerCurrentMonth.getMonth() + 1);
-    renderDatePickerCalendar();
-  };
 }
+function renderDatePickerCalendar() {} // kept for anything that still calls it
 
 // Window Exports
 window.tasksSelectedDate = tasksSelectedDate;

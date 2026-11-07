@@ -5516,3 +5516,36 @@ body.theme-dark #view-calendar .skylight-timed-event-block.ev-block {
 .event-pop-notes span:last-child { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-secondary, #475569); }
 body.theme-dark .event-pop-notes span:last-child { color: #cbd5e1; }
 #event-pop-where { overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   Shared date picker (js/date-picker.js). It's a <dialog> now, so it opens
+   above the side panels; these undo the browser's dialog defaults so it looks
+   exactly as before.
+   ========================================================================== */
+dialog.skylight-datepicker-overlay {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.4);
+}
+dialog.skylight-datepicker-overlay:not([open]) { display: none; }
+dialog.skylight-datepicker-overlay::backdrop { background: transparent; }
+.datepicker-day-cell.is-today:not(.is-selected) { color: var(--accent, #0284c7); font-weight: 800; }
+
+/* Date fields: a button that looks like the field and opens the picker */
+.date-field-hidden-input { display: none !important; }
+.date-field-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.date-field-button-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.date-field-button-icon { flex-shrink: 0; opacity: 0.7; }

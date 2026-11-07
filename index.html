@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=18">
   <link rel="stylesheet" href="css/meals.css?v=9">
-  <link rel="stylesheet" href="css/calendar.css?v=9">
+  <link rel="stylesheet" href="css/calendar.css?v=10">
   <link rel="stylesheet" href="css/lists.css?v=4">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=2">
@@ -1075,7 +1075,7 @@
     </div>
 
     <!-- SKYLIGHT MINI CALENDAR DATE PICKER MODAL -->
-    <div id="skylight-datepicker-modal" class="skylight-datepicker-overlay" style="display: none;">
+    <dialog id="skylight-datepicker-modal" class="skylight-datepicker-overlay" aria-label="Select date">
       <div class="skylight-datepicker-card">
         <div class="datepicker-header">
           <span class="datepicker-header-label">Select date</span>
@@ -1101,7 +1101,7 @@
           <button type="button" class="datepicker-btn-text font-bold" id="btn-datepicker-select">Select</button>
         </div>
       </div>
-    </div>
+    </dialog>
 
     <!-- CELEBRATION FULL SCREEN OVERLAY -->
     <div id="skylight-celebration-overlay" class="skylight-celebration-screen" style="display: none;">
@@ -2324,7 +2324,7 @@
           </div>
           <div class="ev-when-card">
             <label class="ev-field">
-              <span class="ev-field-label">Date <span class="ev-day-name" id="event-selected-day-badge"></span></span>
+              <span class="ev-field-label">Date <span class="ev-day-name" id="event-selected-day-badge" hidden></span></span>
               <input type="date" id="event-date-input" class="ev-native-input" required>
             </label>
 
@@ -2672,7 +2672,8 @@
   <script src="js/page-intro.js?v=4"></script>
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=14"></script>
-  <script src="js/tasks.js?v=24"></script>
+  <script src="js/date-picker.js?v=1"></script>
+  <script src="js/tasks.js?v=25"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=20"></script>
