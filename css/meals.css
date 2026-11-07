@@ -3756,3 +3756,9 @@ body.theme-dark .skylight-plan-drawer .cat-bubble { background: #0f172a; border-
   min-width: 56px;
 }
 .skylight-plan-drawer #drawer-chef-chips-select { display: flex; flex-wrap: nowrap; gap: 16px; overflow-x: auto; }
+
+/* The tabs take their natural height so the whole panel scrolls (older,
+   more specific rules squeezed them to the screen and hid the rest) */
+#plan-meal-drawer #pane-from-recipes,
+#plan-meal-drawer #pane-new-entry { flex: none !important; overflow: visible !important; min-height: auto !important; max-height: none !important; }
+#plan-meal-drawer #drawer-recipes-list { flex: none !important; overflow: visible !important; max-height: none !important; }
