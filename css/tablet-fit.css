@@ -82,12 +82,22 @@
 }
 
 /* --- Lists ----------------------------------------------------------------
-   Lists were fixed 288px columns, leaving most of a tablet screen empty.
-   They now share the width (up to 480px each) and still scroll sideways
-   when there are many. */
+   Lists used to sit in one row that ran off the right of the screen. Now
+   they're a grid of equal cards that wraps: 1 list = one card, 2 or 3 sit
+   side by side, more wrap onto new rows, so nothing is ever cut off and the
+   page just scrolls down. (3 across on a landscape tablet, 2 in portrait.) */
+#view-lists .lists-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: start;
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
 #view-lists .list-column {
-  flex: 1 1 288px;
-  max-width: 480px;
+  max-width: none;
+  min-width: 0;
+  max-height: 70vh;
+  max-height: 70dvh;
 }
 
 /* --- Recipe card, landscape tablets (short screens) -----------------------
@@ -122,3 +132,71 @@
 #grocery-list-modal .grocery-modal-footer { margin-top: auto !important; }
 #grocery-list-modal #btn-close-grocery-footer { display: none; }
 #grocery-list-modal .btn-grocery-clear { flex: 1; }
+
+/* --- Press and hold ---------------------------------------------------------
+   No phone/tablet "copy / look up" callouts or text highlighting when a
+   finger rests on cards, the calendar grid or buttons (text boxes still
+   work as normal). Pairs with the long-press menu switch-off in utils.js. */
+.skylight-app-wrapper {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.skylight-app-wrapper input,
+.skylight-app-wrapper textarea,
+.skylight-app-wrapper [contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* --- Sidebar layout (landscape tablets and up) -----------------------------
+   The whole page used to scroll on Rewards and Lists. On Android that makes
+   Chrome's address bar slide away mid-scroll, the screen height changes, and
+   the sidebar stretched (Dark and Settings briefly dropped off the bottom).
+   Now only the content area beside the sidebar scrolls; the page itself
+   never does, so the screen height stays put. */
+@media (min-width: 861px) and (orientation: landscape), (min-width: 1025px) {
+  html, body { height: 100%; overflow: hidden; }
+  .skylight-app-wrapper { height: 100vh; height: 100dvh; }
+  .skylight-main-viewport {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+}
+
+/* --- Tasks: the columns scroll together, and always reach the bottom -------
+   Each column used to scroll on its own inside a block at least 540px tall.
+   On the tablet (Chrome's bars plus our header) there's less room than that,
+   so the bottom of the columns was below the screen and couldn't be reached.
+   Now the columns are as tall as their cards and the column area scrolls as
+   one, with room under the last card for the + button. */
+@media (min-width: 861px) and (orientation: landscape), (min-width: 1025px) {
+  #view-chores .skylight-tasks-columns-grid {
+    min-height: 0;
+    overflow-y: auto;
+    align-items: flex-start;
+    padding-bottom: 96px !important;
+  }
+  #view-chores .skylight-tasks-col { align-self: flex-start; }
+  #view-chores .tasks-col-body { flex: none; overflow: visible; }
+}
+
+/* --- People pickers with bigger families -----------------------------------
+   "Who's doing it", "Who's it for" and "Who's cooking" sat in one row, so in
+   a family of 6+ the later people were off the edge of the panel. They now
+   wrap onto a second row; the per-day rota rows wrap the same way. */
+.drawer-profiles-pills-row,
+.cook-plan-who .drawer-profiles-pills-row {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  row-gap: 8px;
+}
+.skylight-task-drawer .drawer-rota-pills { flex-wrap: wrap; }
+
+/* Rewards "Saving up for" cards: 20px names clipped "Grandma" to "Grand…".
+   A touch smaller fits most names whole; very long ones still end in "…". */
+#view-rewards .reward-goals-member-name { font-size: 1.05rem; }

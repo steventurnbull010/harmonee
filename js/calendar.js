@@ -2418,6 +2418,9 @@ function renderWeekCalendar() {
     `;
   });
 
+  // Where the timeline is scrolled to right now, read before it's redrawn
+  const prevBodyScroll = document.getElementById("skylight-trad-body-scroll");
+  const prevScrollTop = prevBodyScroll ? prevBodyScroll.scrollTop : null;
   gridContainer.className = `skylight-trad-calendar-grid days-${dayCount}`;
   gridContainer.innerHTML = `
     <div class="skylight-schedule-scroll-container" id="skylight-schedule-scroll-container">
@@ -2454,10 +2457,23 @@ function renderWeekCalendar() {
     </div>
   `;
 
-  // Auto-scroll into near current hour on load
+  // Open with an hour before now at the top (e.g. 8am at 9:20am). Only when
+  // the calendar is first shown or the days change: the calendar redraws
+  // whenever anything syncs, and that mustn't jump you back mid-scroll.
   const bodyScroll = document.getElementById("skylight-trad-body-scroll");
-  if (bodyScroll && showNowLine) {
-    bodyScroll.scrollTop = Math.max(0, nowTopPx - 100);
+  if (bodyScroll) {
+    const scrollKey = `${currentCalendarView}|${getLocalDateKey(startDate)}|${hourHeight}`;
+    const visible = !!(bodyScroll.offsetParent);
+    if (window.__calScroll && window.__calScroll.key === scrollKey && window.__calScroll.wasVisible && visible) {
+      bodyScroll.scrollTop = prevScrollTop !== null ? prevScrollTop : window.__calScroll.top; // same days: keep where you were
+    } else {
+      const fromHour = Math.max(startHour, currentHourDecimal - 1);
+      bodyScroll.scrollTop = showNowLine ? Math.max(0, topPadding + (fromHour - startHour) * hourHeight) : 0;
+    }
+    window.__calScroll = { key: scrollKey, top: bodyScroll.scrollTop, wasVisible: visible };
+    bodyScroll.addEventListener("scroll", () => {
+      if (window.__calScroll && window.__calScroll.key === scrollKey) window.__calScroll.top = bodyScroll.scrollTop;
+    }, { passive: true });
   }
 
   wireTimeGridCreate(gridContainer, { startHour, endHour, hourHeight, topPadding });

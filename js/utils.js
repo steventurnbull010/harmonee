@@ -242,3 +242,13 @@ function isTouchScreen() {
   try { return window.matchMedia("(hover: none) and (pointer: coarse)").matches; } catch (e) { return false; }
 }
 window.isTouchScreen = isTouchScreen;
+
+// Press-and-hold on a tablet: Chrome opens its own page menu (Back, Reload,
+// Share...) if a drag starts a moment too late, interrupting the drag. The app
+// handles holds itself (drag chores, drag on the calendar), so that menu is
+// switched off everywhere except text boxes and links, where it's useful.
+document.addEventListener("contextmenu", (e) => {
+  const t = e.target;
+  if (t && t.closest && t.closest("input, textarea, select, [contenteditable='true'], a[href]")) return;
+  e.preventDefault();
+}, true);

@@ -613,7 +613,7 @@ function getMemberPalette(name) {
   // 4. Fallback based on familyMembers array index
   if (!chosenId) {
     const idx = familyMembers.findIndex(m => m.toLowerCase() === rawKey);
-    const fallbackIds = ["warm-ochre", "periwinkle", "coral-pink", "spring-green", "sky-blue", "tangerine", "deep-teal"];
+    const fallbackIds = ["warm-ochre", "periwinkle", "coral-pink", "spring-green", "sky-blue", "tangerine", "deep-teal", "lavender", "petal-pink", "emerald", "cornflower", "lemon-yellow"];
     chosenId = fallbackIds[(idx >= 0 ? idx : 0) % fallbackIds.length];
   }
 
@@ -4921,7 +4921,7 @@ function setupEventListeners() {
           icon: "👤",
           title: "Remove Family Member?",
           itemTitle: member,
-          warning: `Are you sure you want to remove ${member} from this family board?`,
+          warning: `${member}'s chores won't show on the board any more, but their points history is kept. Adding ${member} back with the same name brings everything back.`,
           confirmLabel: `Remove ${member}`,
           onConfirm: () => {
             familyMembers.splice(idx, 1);
@@ -4941,6 +4941,14 @@ function setupEventListeners() {
     const newMemberGrid = document.getElementById("new-member-color-grid");
     const hiddenColorInput = document.getElementById("new-member-selected-color");
     if (newMemberGrid && hiddenColorInput) {
+      // Start on a colour nobody has yet, so a bigger family doesn't end up
+      // with several people in the same colour by default.
+      const usedIds = new Set(familyMembers.map(m => getMemberPalette(m).id));
+      if (usedIds.has(hiddenColorInput.value)) {
+        const order = ["sky-blue", "tangerine", "deep-teal", "lavender", "petal-pink", "emerald", "cornflower", "vermillion", "lemon-yellow", "denim", "ice-blue", "amber-orange"];
+        const free = order.find(id => !usedIds.has(id)) || SKYLIGHT_PROFILE_COLORS.map(c => c.id).find(id => !usedIds.has(id));
+        if (free) hiddenColorInput.value = free;
+      }
       newMemberGrid.innerHTML = SKYLIGHT_PROFILE_COLORS.map(c => `
         <button type="button" class="skylight-color-swatch ${c.id === hiddenColorInput.value ? 'is-selected' : ''}" 
                 data-color-id="${c.id}" style="background: ${c.solid};" title="${escapeHtml(c.name)}"></button>
@@ -6208,9 +6216,11 @@ function switchSkylightView(viewName) {
       viewCalendar.style.setProperty("display", "block", "important");
       viewCalendar.classList.add("active-page");
     }
+    window.__calScroll = null; // opening the calendar: start an hour before now
     renderWeekCalendar();
     renderFamilyStickyNote();
     window.scrollTo({ top: 0, behavior: "instant" });
+    { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else if (viewName === "meals") {
     if (viewChores) viewChores.style.setProperty("display", "none", "important");
     if (viewCalendar) viewCalendar.style.setProperty("display", "none", "important");
@@ -6222,6 +6232,7 @@ function switchSkylightView(viewName) {
     }
     renderMealsView();
     window.scrollTo({ top: 0, behavior: "instant" });
+    { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else if (viewName === "lists") {
     if (viewChores) viewChores.style.setProperty("display", "none", "important");
     if (viewCalendar) viewCalendar.style.setProperty("display", "none", "important");
@@ -6233,6 +6244,7 @@ function switchSkylightView(viewName) {
     }
     renderListsView();
     window.scrollTo({ top: 0, behavior: "instant" });
+    { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else if (viewName === "rewards") {
     if (viewChores) viewChores.style.setProperty("display", "none", "important");
     if (viewCalendar) viewCalendar.style.setProperty("display", "none", "important");
@@ -6244,6 +6256,7 @@ function switchSkylightView(viewName) {
     }
     renderPodiumRewards();
     window.scrollTo({ top: 0, behavior: "instant" });
+    { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else {
     // Default Tasks view (Skylight Profiles Multi-Column Board)
     if (viewCalendar) viewCalendar.style.setProperty("display", "none", "important");
@@ -6256,6 +6269,7 @@ function switchSkylightView(viewName) {
     }
     renderSkylightTasksPage();
     window.scrollTo({ top: 0, behavior: "instant" });
+    { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   }
   // First visit to this page on this device: show its intro (js/page-intro.js)
   const introPage = ["calendar", "meals", "lists", "rewards"].includes(viewName) ? viewName : "chores";
