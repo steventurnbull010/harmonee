@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="css/lists.css?v=12">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=14">
+  <link rel="stylesheet" href="css/modals.css?v=17">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
@@ -1404,6 +1404,7 @@
           <button type="button" class="settings-nav-chip" data-section="rewards">🏆 Rewards</button>
           <button type="button" class="settings-nav-chip" data-section="access">🔐 Access</button>
           <button type="button" class="settings-nav-chip" data-section="sleep">🌙 Sleep</button>
+          <button type="button" class="settings-nav-chip" data-section="music">🎵 Music</button>
           <button type="button" class="settings-nav-chip" data-section="reset">⚠️ Reset</button>
         </nav>
 
@@ -1601,6 +1602,18 @@
                 </button>
               </div>
             </div>
+          </section>
+
+          <!-- MUSIC: family playlists on Today at a glance (js/music.js) -->
+          <section class="settings-section" id="settings-sec-music" aria-labelledby="settings-head-music">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-music">
+                <span class="drawer-section-icon" aria-hidden="true">🎵</span>
+                <span class="drawer-section-label">Music</span>
+              </h3>
+              <p class="settings-section-desc">Your family playlists, one tap away on Today at a glance. They open in Spotify, so you can play on your phone or send to a speaker as usual. Saves straight away.</p>
+            </div>
+            <div class="settings-section-box music-settings" id="music-settings"></div>
           </section>
 
           <!-- RESET: last, and needs the word RESET typed -->
@@ -2738,10 +2751,11 @@
   <script src="js/board-access.js?v=2"></script>
   <script src="js/countdowns.js?v=4"></script>
   <script src="js/parent-pin.js?v=2"></script>
-  <script src="js/today-screen.js?v=6"></script>
+  <script src="js/music.js?v=2"></script>
+  <script src="js/today-screen.js?v=7"></script>
   <script src="js/side-panel.js?v=10"></script>
   <script type="module" src="js/meals.js?v=32"></script>
-  <script type="module" src="app.js?v=233"></script>
+  <script type="module" src="app.js?v=234"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

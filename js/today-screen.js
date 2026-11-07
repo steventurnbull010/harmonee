@@ -182,6 +182,7 @@
             <section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}</section>
             ${tomorrowHtml}
             ${countdownHtml}
+            ${window.Music ? window.Music.todayCardHtml() : ""}
           </div>
           <div class="today-col">
             <section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>
