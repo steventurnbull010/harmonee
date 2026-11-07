@@ -2043,5 +2043,379 @@ export const MEALDB_RECIPES = [
       "Cook on low for 20 minutes. Add your cheeses, stir to combine.",
       "Top with roasted peppers and parsley."
     ]
+  },
+  {
+    "id": "mealdb-52863",
+    "title": "Vegetarian Casserole",
+    "subtitle": "British · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/vptwyt1511450962.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/1993645/vegetarian-casserole",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52863",
+    "ingredients": [
+      "1 Rapeseed Oil",
+      "1 Onion",
+      "3 cloves Garlic",
+      "1 tsp Paprika",
+      "½ tsp Cumin",
+      "1 tblsp Thyme",
+      "3 Medium Carrots",
+      "2 small stalks Celery",
+      "1 Red Pepper",
+      "1 Yellow Pepper",
+      "2 x 400g tins Tomato",
+      "250ml Vegetable Stock Cube",
+      "2 sliced Courgettes",
+      "2 sprigs Thyme",
+      "250g Lentils"
+    ],
+    "instructions": [
+      "Heat the oil in a large, heavy-based pan. Add the onions and cook gently for 5 – 10 mins until softened.",
+      "Add the garlic, spices, dried thyme, carrots, celery and peppers and cook for 5 minutes.",
+      "Add the tomatoes, stock, courgettes and fresh thyme and cook for 20 - 25 minutes.",
+      "Take out the thyme sprigs. Stir in the lentils and bring back to a simmer. Serve with wild and white basmati rice, mash or quinoa."
+    ]
+  },
+  {
+    "id": "mealdb-52868",
+    "title": "Kidney Bean Curry",
+    "subtitle": "India · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/sywrsu1511463066.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/kidney-bean-curry",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52868",
+    "ingredients": [
+      "1 tbls Vegetable Oil",
+      "1 finely chopped Onion",
+      "2 cloves chopped Garlic",
+      "1 part Ginger",
+      "1 Packet Coriander",
+      "1 tsp Cumin",
+      "1 tsp Paprika",
+      "2 tsp Garam Masala",
+      "400g Chopped Tomatoes",
+      "400g Kidney Beans",
+      "to serve Basmati Rice"
+    ],
+    "instructions": [
+      "Heat the oil in a large frying pan over a low-medium heat. Add the onion and a pinch of salt and cook slowly, stirring occasionally, until softened and just starting to colour. Add the garlic, ginger and coriander stalks and cook for a further 2 mins, until fragrant.",
+      "Add the spices to the pan and cook for another 1 min, by which point everything should smell aromatic. Tip in the chopped tomatoes and kidney beans in their water, then bring to the boil.",
+      "Turn down the heat and simmer for 15 mins until the curry is nice and thick. Season to taste, then serve with the basmati rice and the coriander leaves."
+    ]
+  },
+  {
+    "id": "mealdb-52785",
+    "title": "Dal fry",
+    "subtitle": "India · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/wuxrtu1483564410.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.instagram.com/p/BO21bpYD3Fu",
+    "sourceName": "instagram.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52785",
+    "ingredients": [
+      "1 cup Toor dal",
+      "2-1/2 cups Water",
+      "1 tsp Salt",
+      "1/4 tsp Turmeric",
+      "3 tbs Ghee",
+      "1 cup Chopped tomatoes",
+      "1/2 tsp Cumin seeds",
+      "1/2 tsp Mustard Seeds",
+      "2 Bay Leaf",
+      "1 tbs chopped Green Chilli",
+      "2 tsp shredded Ginger",
+      "2 tbs Cilantro",
+      "1/2 tsp Red Pepper",
+      "1/2 tsp Salt",
+      "1 tsp Sugar",
+      "1/4 tsp Garam Masala"
+    ],
+    "instructions": [
+      "Wash and soak toor dal in approx. 3 cups of water, for at least one hours. Dal will be double in volume after soaking. Drain the water.",
+      "Cook dal with 2-1/2 cups water and add salt, turmeric, on medium high heat, until soft in texture (approximately 30 mins) it should be like thick soup.",
+      "In a frying pan, heat the ghee. Add cumin seeds, and mustard seeds. After the seeds crack, add bay leaves, green chili, ginger and chili powder. Stir for a few seconds.",
+      "Add tomatoes, salt and sugar stir and cook until tomatoes are tender and mushy.",
+      "Add cilantro and garam masala cook for about one minute.",
+      "Pour the seasoning over dal mix it well and cook for another minute.",
+      "Serve with Naan."
+    ]
+  },
+  {
+    "id": "mealdb-52865",
+    "title": "Matar Paneer",
+    "subtitle": "India · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/xxpqsy1511452222.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/matar-paneer",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52865",
+    "ingredients": [
+      "1 tbls Sunflower Oil",
+      "225g Paneer",
+      "2 Ginger",
+      "1 tsp Cumin",
+      "1 tsp Turmeric",
+      "1 tsp Coriander",
+      "1 Green Chilli",
+      "4 large Tomato",
+      "150g Peas",
+      "1 tsp Garam Masala",
+      "Small bunch Coriander",
+      "to serve Naan Bread"
+    ],
+    "instructions": [
+      "Heat the oil in a frying pan over high heat until it’s shimmering hot. Add the paneer, then turn the heat down a little. Fry until it starts to brown at the edges, then turn it over and brown on each side – the paneer will brown faster than you think, so don’t walk away. Remove the paneer from the pan and drain on kitchen paper.",
+      "Put the ginger, cumin, turmeric, ground coriander and chilli in the pan, and fry everything for 1 min. Add the tomatoes, mashing them with the back of a spoon and simmer everything for 5 mins until the sauce smells fragrant.",
+      "Add a splash of water if it’s too thick. Season well.",
+      "Add the peas and simmer for a further 2 mins, then stir in the paneer and sprinkle over the garam masala. Divide between two bowls, top with coriander leaves and serve with naan bread, roti or rice."
+    ]
+  },
+  {
+    "id": "mealdb-52771",
+    "title": "Spicy Arrabiata Penne",
+    "subtitle": "Italian · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/52771",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/52771",
+    "ingredients": [
+      "1 pound penne rigate",
+      "1/4 cup olive oil",
+      "3 cloves garlic",
+      "1 tin chopped tomatoes",
+      "1/2 teaspoon red chilli flakes",
+      "1/2 teaspoon italian seasoning",
+      "6 leaves basil",
+      "sprinkling Parmigiano-Reggiano"
+    ],
+    "instructions": [
+      "Bring a large pot of water to a boil. Add kosher salt to the boiling water, then add the pasta. Cook according to the package instructions, about 9 minutes.",
+      "In a large skillet over medium-high heat, add the olive oil and heat until the oil starts to shimmer. Add the garlic and cook, stirring, until fragrant, 1 to 2 minutes. Add the chopped tomatoes, red chile flakes, Italian seasoning and salt and pepper to taste. Bring to a boil and cook for 5 minutes. Remove from the heat and add the chopped basil.",
+      "Drain the pasta and add it to the sauce. Garnish with Parmigiano-Reggiano flakes and more basil and serve warm."
+    ]
+  },
+  {
+    "id": "mealdb-52864",
+    "title": "Mushroom & Chestnut Rotolo",
+    "subtitle": "British · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/ssyqwr1511451678.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/mushroom-chestnut-rotolo",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52864",
+    "ingredients": [
+      "30g Mushrooms",
+      "240g Chestnuts",
+      "3 Challots",
+      "3 cloves Garlic",
+      "3 sprigs Rosemary",
+      "500g Wild Mushrooms",
+      "2 tblsp Soy Sauce",
+      "125ml White Wine",
+      "350g Lasagne Sheets",
+      "4 tbsp Breadcrumbs",
+      "1/2 handful Sage",
+      "to serve Truffle Oil"
+    ],
+    "instructions": [
+      "Soak the dried mushrooms in 350ml boiling water and set aside until needed. Blitz ¾ of the chestnuts with 150ml water until creamy. Roughly chop the remaining chestnuts.",
+      "Heat 2 tbsp olive oil in a large non-stick frying pan. Fry the shallots with a pinch of salt until softened, then add the garlic, chopped chestnuts and rosemary, and fry for 2 mins more.",
+      "Add the wild mushrooms, 2 tbsp oil and some seasoning. Cook for 3 mins until they begin to soften.",
+      "Drain and roughly chop the dried mushrooms (reserve the soaking liquid), then add those too, along with the soy sauce, and fry for 2 mins more.",
+      "Whisk the wine, reserved mushroom liquid and chestnut cream together to create a sauce. Season, then add half to the mushroom mixture in the pan and cook for 1 min until the sauce becomes glossy. Remove and discard the rosemary sprigs, then set the mixture aside.",
+      "Heat oven to 180C/160C fan/gas 4. Bring a large pan of salted water to the boil and get a large bowl of ice water ready.",
+      "Drop the lasagne sheets into the boiling water for 2 mins or until pliable and a little cooked, then immediately plunge them into the cold water. Using your fingers, carefully separate the sheets and transfer to a clean tea towel.",
+      "Spread a good spoonful of the sauce on the bottom two thirds of each sheet, then, rolling away from yourself, roll up the shorter ends. Cut each roll in half, then position the rolls of pasta cut-side up in a pie dish that you are happy to serve from at the table.",
+      "If you have any mushroom sauce remaining after you’ve rolled up all the sheets, simply push it into some of the exposed rolls of pasta.",
+      "Pour the rest of the sauce over the top of the pasta, then bake for 10 mins or until the pasta no longer has any resistance when tested with a skewer.",
+      "Meanwhile, put the breadcrumbs, the last 2 tbsp olive oil, sage leaves and some seasoning in a bowl, and toss everything together. Scatter the rotolo with the crumbs and sage, then bake for another 10 mins, until the top is golden and the sage leaves are crispy. Leave to cool for 10 mins to allow the pasta to absorb the sauce, then drizzle with a little truffle oil, if you like, before taking your dish to the table."
+    ]
+  },
+  {
+    "id": "mealdb-53067",
+    "title": "Stuffed Bell Peppers with Quinoa and Black Beans",
+    "subtitle": "Mexican · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/b66myb1683207208.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/53067",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/53067",
+    "ingredients": [
+      "4 whole Green Pepper",
+      "1 tablespoon Olive Oil",
+      "1 small finely diced Onion",
+      "2 cloves minced Garlic",
+      "1 cups Quinoa",
+      "1 can Black Beans",
+      "1 cup Sweetcorn",
+      "1 can Diced Tomatoes",
+      "1 teaspoon Cumin",
+      "½ tsp Chili Powder",
+      "½ tsp Smoked Paprika",
+      "To taste Salt",
+      "To taste Pepper",
+      "1 1/2 cup Shredded Mexican Cheese",
+      "Chopped Cilantro"
+    ],
+    "instructions": [
+      "Preheat your oven to 375°F (190°C). Lightly grease a 9x13-inch baking dish or a similar-sized casserole dish.",
+      "Place the bell pepper halves in the prepared baking dish, cut side up. Bake for 15-20 minutes, or until slightly softened.",
+      "While the bell peppers are baking, prepare the filling. In a large skillet, heat the olive oil over medium heat. Add the chopped onion, and cook for 3-4 minutes, until softened. Add the garlic, and cook for another 1 minute, until fragrant.",
+      "Stir in the cooked quinoa, black beans, corn, diced tomatoes, ground cumin, chili powder, smoked paprika, salt, and pepper. Cook for 5-7 minutes, until heated through. Remove the skillet from heat, and stir in 1 cup of the shredded cheese, if using.",
+      "Remove the bell peppers from the oven, and carefully stuff each pepper half with the quinoa and black bean mixture. Top the stuffed peppers with the remaining 1/2 cup of shredded cheese, if using.",
+      "Return the stuffed peppers to the oven, and bake for another 15-20 minutes, until the cheese is melted and the peppers are tender.",
+      "Remove from the oven, and allow the stuffed peppers to cool for 5 minutes before serving. Garnish with fresh chopped cilantro."
+    ]
+  },
+  {
+    "id": "mealdb-52870",
+    "title": "Chickpea Fajitas",
+    "subtitle": "Mexican · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/tvtxpq1511464705.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/chickpea-fajitas",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52870",
+    "ingredients": [
+      "400g Chickpeas",
+      "1 tblsp Olive Oil",
+      "pinch Paprika",
+      "2 small cut chunks Tomatoes",
+      "1 finely sliced Red Onions",
+      "2 tsp Red Wine Vinegar",
+      "1 Avocado",
+      "Juice of 1 Lime",
+      "Chopped Lime",
+      "100g Sour Cream",
+      "2 tsp Harissa Spice",
+      "4 Corn Tortillas",
+      "to serve Coriander"
+    ],
+    "instructions": [
+      "Heat oven to 200C/180C fan/gas 6 and line a baking tray with foil. Drain the chickpeas, pat dry and tip onto the prepared baking tray. Add the oil and paprika, toss to coat, then roast for 20-25 mins until browned and crisp, shaking halfway through cooking.",
+      "Meanwhile, put the tomatoes and onion in a small bowl with the vinegar and set aside to pickle. Put the avocado in another bowl and mash with a fork, leaving some larger chunks. Stir in the lime juice and season well. Mix the soured cream with the harissa and set aside until ready to serve.",
+      "Heat a griddle pan until nearly smoking. Add the tortillas , one at a time, charring each side until hot with griddle lines.",
+      "Put everything on the table and build the fajitas : spread a little of the harissa cream over the tortilla, top with roasted chickpeas, guacamole, pickled salsa and coriander, if you like. Serve with the lime wedges for squeezing over."
+    ]
+  },
+  {
+    "id": "mealdb-52866",
+    "title": "Squash linguine",
+    "subtitle": "Italian · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/wxswxy1511452625.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/creamy-squash-linguine",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52866",
+    "ingredients": [
+      "350g Butternut Squash",
+      "3 parts Garlic",
+      "3 tbs Olive Oil",
+      "350g Linguine Pasta",
+      "Small bunch Sage"
+    ],
+    "instructions": [
+      "Heat oven to 200C/180C fan/gas 6. Put the squash and garlic on a baking tray and drizzle with the olive oil. Roast for 35-40 mins until soft. Season.",
+      "Cook the pasta according to pack instructions. Drain, reserving the water. Use a stick blender to whizz the squash with 400ml cooking water. Heat some oil in a frying pan, fry the sage until crisp, then drain on kitchen paper. Tip the pasta and sauce into the pan and warm through. Scatter with sage."
+    ]
+  },
+  {
+    "id": "mealdb-53240",
+    "title": "Tofu, greens & cashew stir-fry",
+    "subtitle": "Vietnamese · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/minfsc1763766806.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/tofu-greens-cashew-stir-fry",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53240",
+    "ingredients": [
+      "1 tablespoon Vegetable Oil",
+      "1 head Broccoli",
+      "4 sliced Garlic Clove",
+      "1 sliced Red Chilli",
+      "1  bunch Spring Onions",
+      "140g Soya Bean",
+      "2 heads Pak Choi",
+      "300g Marinated Tofu",
+      "1 ½ tbsp Hoisin Sauce",
+      "1 tablespoon Soy Sauce",
+      "25g Cashew Nuts"
+    ],
+    "instructions": [
+      "Heat the oil in a non-stick wok. Add the broccoli, then fry on a high heat for 5 mins or until just tender, adding a little water if it begins to catch. Add the garlic and chilli, fry for 1 min, then toss through the spring onions, soya beans, pak choi and tofu. Stir-fry for 2-3 mins. Add the hoisin, soy and nuts to warm through."
+    ]
   }
 ];

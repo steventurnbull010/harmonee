@@ -4,7 +4,7 @@
 // recipes are kept on the device. Helpers for listing, searching and saving.
 // ============================================================================
 
-import { MEALDB_RECIPES } from "./recipes-themealdb.js?v=2";
+import { MEALDB_RECIPES } from "./recipes-themealdb.js?v=3";
 
 // The starter recipes that used to live here were written by an AI, not
 // taken from real sources, so they've been removed. Every built-in recipe now
