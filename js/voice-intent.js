@@ -416,7 +416,8 @@
     const members = Array.isArray(ctx.members) ? ctx.members : [];
     const lists = Array.isArray(ctx.lists) ? ctx.lists : [];
     const want = ctx.want || null;
-    const s = normalise(text);
+    // "Hey, add tacos", "OK harmonee, …", "Um can you put …": the lead-in goes
+    const s = normalise(text).replace(/^(?:(?:hey|hi|hiya|ok|okay|right|so|um|umm|erm|er|uh|ah|oh|please|harmonee|harmony|can you|could you|would you|will you)\s*,?\s+)+/, "");
     rememberCase(text);
     if (!s) return { kind: "unknown", text: "" };
 

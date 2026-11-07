@@ -138,6 +138,13 @@ const CASES = [
   ["Take Ava to swimming on Saturday", { kind: "event" }],
   ["Clear the table", { kind: "unknown" }],
 
+  // ---- Lead-in words
+  ["Hey add tacos", { kind: "list", items: ["tacos"] }, { want: "list" }],
+  ["Hey, add bananas to the shopping list", { kind: "list", items: ["bananas"] }],
+  ["OK harmonee, swimming on Saturday at 10", { kind: "event", title: "Swimming", start: "10:00" }],
+  ["Um can you put milk on the list", { kind: "list", items: ["milk"] }],
+  ["Right, Ava needs to feed the cat", { kind: "task", title: "Feed the cat", people: ["Ava"] }],
+
   // ---- Not sure
   ["hello there", { kind: "unknown" }],
   ["what's the weather like", { kind: "unknown" }],

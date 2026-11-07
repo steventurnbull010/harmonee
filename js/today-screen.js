@@ -149,7 +149,10 @@
   }
 
   // Every "add" on this screen looks the same: a soft sky-blue pill with a "+"
-  const addBtn = (attrs, label) => `<button type="button" class="today-add-btn" ${attrs}><span class="today-add-plus" aria-hidden="true">+</span> ${label}</button>`;
+  // (the "+" is drawn, so it sits exactly in the middle of its circle)
+  const PLUS_ICON = `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+  window.TODAY_PLUS_ICON = PLUS_ICON;
+  const addBtn = (attrs, label) => `<button type="button" class="today-add-btn" ${attrs}><span class="today-add-plus" aria-hidden="true">${PLUS_ICON}</span> ${label}</button>`;
 
   // ---- Which cards show (Customise; saved for the whole board) ----------------
   const CARDS = [
@@ -239,7 +242,7 @@
            <p class="today-groc-preview">${esc(preview.join(", "))}${left.length > preview.length ? "…" : ""}</p>`
         : `<p class="today-empty">Nothing on the list.</p>`}
       <div class="today-groc-actions">
-        ${left.length ? `<button type="button" class="today-groc-btn is-primary" data-groc="shop">🛒 Shop</button>` : ""}
+        ${left.length ? `<button type="button" class="today-groc-btn is-primary today-shop-btn" data-groc="shop"><span class="today-shop-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 10.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg></span>Shop</button>` : ""}
         ${addBtn('data-groc="add"', "Add to shopping list")}
       </div>
     </section>`;

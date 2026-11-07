@@ -2555,11 +2555,16 @@ body.theme-dark .today-customise-link strong { color: #7dd3fc; }
 .today-add-btn:hover, .today-add-btn:focus-visible { background: #e0f2fe; border-color: #7dd3fc; }
 .today-add-btn:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
 .today-add-plus {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
   width: 22px; height: 22px; border-radius: 50%;
   background: #0284c7; color: #ffffff;
   font-size: 1rem; font-weight: 800; line-height: 1;
 }
+.today-add-plus svg { display: block; }
+/* Shop: a drawn white basket that shows up on the blue */
+.today-shop-btn { display: inline-flex; align-items: center; gap: 8px; }
+.today-groc-btn.is-primary .today-shop-icon { display: inline-flex; color: #ffffff; }
+.today-shop-icon svg { display: block; }
 .today-card-foot { margin-top: 16px; }
 .today-groc-actions { align-items: center; }
 body.theme-dark .today-add-btn { background: rgba(2, 132, 199, 0.16); border-color: #0369a1; color: #e0f2fe; }

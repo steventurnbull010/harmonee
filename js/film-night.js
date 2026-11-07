@@ -194,7 +194,7 @@
       return `<section class="today-card today-films" aria-labelledby="today-films-title">
         <h3 class="today-card-title" id="today-films-title">🍿 Watch together</h3>
         <p class="today-empty">Family films and series to watch together, from your streaming services. Choose which ones you have.</p>
-        <div class="today-card-foot"><button type="button" class="today-add-btn" data-film-setup><span class="today-add-plus" aria-hidden="true">+</span> Choose services</button></div>
+        <div class="today-card-foot"><button type="button" class="today-add-btn" data-film-setup><span class="today-add-plus" aria-hidden="true">${root.TODAY_PLUS_ICON || "+"}</span> Choose services</button></div>
       </section>`;
     }
     const tab = tabNow();
