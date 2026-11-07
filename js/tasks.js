@@ -396,7 +396,7 @@ function renderSkylightTasksPage() {
           <div class="tasks-col-top-row">
             <div class="tasks-col-profile-info">
               <div class="tasks-col-avatar" style="background: ${pal.primary};">${escapeHtml(initialLetter)}</div>
-              <span class="tasks-col-name">${escapeHtml(colMember)}</span>
+              <span class="tasks-col-name">${escapeHtml(displayMemberName(colMember))}</span>
             </div>
             <span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
               ${isAllDone ? '✓' : ''} ${completedCount}/${totalCount}
@@ -643,7 +643,7 @@ function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
   }
   saveTaskAssignment(task, payload);
 
-  const where = toMember === "Up for grabs" ? "Up for grabs" : toMember;
+  const where = displayMemberName(toMember);
   showTaskMoveToast(`${task.title} moved to ${where}`, () => {
     Object.assign(task, before);
     saveTaskAssignment(task, before);
@@ -880,7 +880,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   const assigneeEl = document.getElementById("quick-card-assignee");
   if (assigneeEl) {
     if (!shown.length) {
-      assigneeEl.innerHTML = `<span class="task-pop-avatar" style="background:${grabPal.primary}">⚡</span><span>Up for grabs</span>`;
+      assigneeEl.innerHTML = `<span class="task-pop-avatar" style="background:${grabPal.primary}">⚡</span><span>${GRAB_LABEL}</span>`;
     } else {
       const avatars = shown.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("");
       assigneeEl.innerHTML = `<span class="task-pop-avatars">${avatars}</span><span>${escapeHtml(formatAssigneeNames(shown))}</span>`;
@@ -1021,12 +1021,12 @@ function renderDrawerRota() {
     const pills = people.map(p => {
       const on = p === null ? !chosen.length : chosen.includes(p);
       const pal = p ? getMemberPalette(p) : { primary: "#ef4444" };
-      const label = p ? p : "Up for grabs";
+      const label = p ? p : GRAB_LABEL;
       return `<button type="button" class="drawer-rota-pill ${on ? "is-selected" : ""}" data-rota-day="${day}" data-rota-person="${p ? escapeHtml(p) : ""}" aria-pressed="${on}" aria-label="${escapeHtml(label)} on ${day}" title="${escapeHtml(label)}" style="--rota-color: ${pal.primary};">${p ? escapeHtml(badge(p)) : "⚡"}${tick}</button>`;
     }).join("");
     const who = chosen.length
       ? chosen.map(p => `<span class="drawer-rota-chip" style="--rota-color: ${getMemberPalette(p).primary};"><span class="drawer-rota-chip-dot"></span>${escapeHtml(p)}</span>`).join("")
-      : `<span class="drawer-rota-chip is-grab"><span aria-hidden="true">⚡</span>Up for grabs</span>`;
+      : `<span class="drawer-rota-chip is-grab"><span aria-hidden="true">⚡</span>${GRAB_LABEL}</span>`;
     return `<div class="drawer-rota-row${chosen.length ? "" : " is-grab"}"><span class="drawer-rota-day">${day.slice(0, 3)}</span><div class="drawer-rota-who">${who}</div><div class="drawer-rota-pills" role="group" aria-label="Who's on ${day}">${pills}</div></div>`;
   }).join("");
 }
@@ -1184,7 +1184,7 @@ function renderDrawerProfilesRow() {
     return `
       <button type="button" class="drawer-profile-pill ${isActive ? 'active' : ''}" data-profile="${escapeHtml(p)}" aria-pressed="${isActive}" style="--profile-color: ${pal.primary};">
         <span class="drawer-profile-avatar">${escapeHtml(initial)}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span>
-        <span class="drawer-profile-name">${escapeHtml(p)}</span>
+        <span class="drawer-profile-name">${escapeHtml(displayMemberName(p))}</span>
       </button>
     `;
   }).join("");
@@ -1228,7 +1228,7 @@ function updateDrawerWhoSummary() {
   const people = drawerSelectedProfiles.filter(p => p !== "Up for grabs");
   if (!people.length) {
     el.classList.add("is-grab");
-    el.textContent = "Up for grabs: anyone can claim it.";
+    el.textContent = `${GRAB_LABEL}: anyone can claim it.`;
   } else if (people.length === 1) {
     el.textContent = `${people[0]} is doing it.`;
   } else {
@@ -1612,14 +1612,14 @@ function renderTasksFilterMenu() {
 
   profiles.forEach(p => {
     const isGrab = p === "Up for grabs";
-    const pal = isGrab ? { primary: "#ef4444", name: "Up for grabs" } : getMemberPalette(p);
+    const pal = isGrab ? { primary: "#ef4444", name: GRAB_LABEL } : getMemberPalette(p);
     const isMemberActive = isAllActive || (tasksActiveMemberFilter && tasksActiveMemberFilter.includes(p));
 
     html += `
       <div class="skylight-filter-row ${isMemberActive ? 'is-active' : ''}" data-task-filter="${escapeHtml(p)}" role="button" tabindex="0">
         <div class="skylight-filter-member-left">
           <span class="skylight-filter-color-dot" style="background: ${pal.primary};" title="${escapeHtml(pal.name)}"></span>
-          <span class="skylight-filter-member-name">${escapeHtml(p)}</span>
+          <span class="skylight-filter-member-name">${escapeHtml(displayMemberName(p))}</span>
         </div>
         <div class="skylight-filter-member-right">
           <div class="skylight-filter-toggle ${isMemberActive ? 'is-on' : ''}" aria-label="${escapeHtml(p)} toggle">

@@ -189,6 +189,15 @@ window.detectEmojiForChore = detectEmojiForChore;
 // A chore's assignedTo can be one name ("Ava"), a comma list ("Ava, Dara"),
 // an array (["Ava", "Dara"], which the Tasks panel saves for shared chores) or
 // empty. Always go through this instead of treating it as a string.
+// What the shared pool is called on screen. Tasks still store "Up for grabs"
+// (so existing boards keep working); this is only the label people see.
+const GRAB_LABEL = "Grab it";
+window.GRAB_LABEL = GRAB_LABEL;
+function displayMemberName(name) {
+  return /^up for grabs$/i.test(String(name || "").trim()) ? GRAB_LABEL : name;
+}
+window.displayMemberName = displayMemberName;
+
 function getAssigneeNames(assignedTo) {
   if (!assignedTo) return [];
   const raw = Array.isArray(assignedTo) ? assignedTo : (typeof assignedTo === "string" ? assignedTo.split(",") : []);

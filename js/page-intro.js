@@ -73,7 +73,7 @@ const INTRO_PREVIEWS = {
       { icon: chores[i * 2][0], title: chores[i * 2][1], done: i === 0 || (stepIndex === 0 && i === 1) },
       { icon: chores[i * 2 + 1][0], title: chores[i * 2 + 1][1] }
     ])).join("");
-    const grabs = col({ name: "Up for grabs", pal: { primary: "#ef4444", lightBg: "#fef2f2", border: "#fca5a5" } },
+    const grabs = col({ name: GRAB_LABEL, pal: { primary: "#ef4444", lightBg: "#fef2f2", border: "#fca5a5" } },
       [{ icon: "🚗", title: "Clean the car", hl: stepIndex === 1 }, { icon: "🪴", title: "Water the plants" }],
       { grab: true, icon: "⚡" });
     const fab = stepIndex === 2 ? `<span class="intro-fab page-intro-highlight">+</span>` : "";
@@ -163,8 +163,8 @@ const PAGE_INTROS = {
       { title: "Tasks", lead: "Chores and daily routines for everyone, with a column for each person.",
         rows: [["☀️", "Routines are grouped into Morning, Afternoon, Evening and Anytime."],
                ["✅", "Tap the circle to tick a chore off and earn points."],
-               ["⚡", "Chores nobody has claimed wait in Up for grabs."]] },
-      { title: "Up for grabs", lead: "Drag a chore from Up for grabs into your own column to claim it, then tick it off when it's done.",
+               ["⚡", "Chores nobody has claimed wait in the Grab it column."]] },
+      { title: "Grab it", lead: "Drag a chore from the Grab it column into your own to claim it, then tick it off when it's done.",
         rows: [["👆", "On a tablet, press and hold the chore, then drag."],
                ["🔄", "Set a rota so a chore goes to different people on different days."]] },
       { title: "Add a chore", lead: "Tap + to add a chore or routine, choose who it's for and how many points it's worth.",
