@@ -113,11 +113,23 @@
 #view-lists #btn-create-new-list { padding: 8px 16px !important; gap: 8px !important; }
 /* Columns, rows and panels: on the 8px grid in css/lists.css */
 
-/* Rewards: header like Lists; the rest is on the 8px grid in css/rewards.css */
+/* Rewards: header like Tasks, Meals and Lists; the rest is on the 8px grid in css/rewards.css */
 #view-rewards .rewards-view-container { padding: 16px 24px 48px 24px !important; }
-#view-rewards .calendar-header { padding: 8px 8px 0 8px !important; }
+#view-rewards .calendar-header { padding: 8px 8px 16px 8px !important; }
 #view-rewards .calendar-header-controls { gap: 8px !important; }
 #view-rewards #btn-podium-confetti { padding: 8px 16px !important; gap: 8px !important; }
+
+/* Same header height on every page: the buttons on the right differ by a few
+   pixels (Tasks 35px, Meals 37px, Lists 38px), which moved the title and the
+   divider when switching pages. A 40px row keeps every header at 8 + 40 + 16.
+   Tablet/desktop only; the phone layout stacks the header differently. */
+@media (min-width: 1025px), (min-width: 861px) and (orientation: landscape) {
+  #view-calendar .calendar-header-controls,
+  #view-chores .calendar-header-controls,
+  #view-meals .calendar-header-controls,
+  #view-lists .calendar-header-controls,
+  #view-rewards .calendar-header-controls { min-height: 40px !important; }
+}
 
 /* Sidebar */
 #skylight-sidebar { padding: 16px 8px 8px 8px !important; }

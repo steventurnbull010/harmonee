@@ -207,7 +207,9 @@ function renderRewardsPodiumStage(stage, sortedMembers, formatScore) {
   const maxScore = sortedMembers.length > 0 ? Math.max(...sortedMembers.map(m => m.score)) : 0;
   const minBarHeight = 64;  // so 0 pts still has a step to stand on
   const maxBarHeight = 176; // tallest pillar, fits a 768px-tall tablet
-  const many = sortedMembers.length >= 2;
+  // Only reorder 2nd-1st-3rd once someone has points; with no scores yet keep
+  // the family's own order so the podium matches the "Saving up for" cards.
+  const many = sortedMembers.length >= 2 && maxScore > 0;
 
   sortedMembers.forEach((m, rankIdx) => {
     const col = cols[m.name];
@@ -218,7 +220,7 @@ function renderRewardsPodiumStage(stage, sortedMembers, formatScore) {
       ? Math.round(minBarHeight + (m.score / maxScore) * (maxBarHeight - minBarHeight))
       : minBarHeight;
     // Olympic order: 2nd, 1st, 3rd, then everyone else
-    const position = many ? (rankIdx === 0 ? 1 : (rankIdx === 1 ? 0 : rankIdx)) : 0;
+    const position = many ? (rankIdx === 0 ? 1 : (rankIdx === 1 ? 0 : rankIdx)) : rankIdx;
 
     col.classList.toggle("is-leader", isLeader);
     col.style.order = String(position);
