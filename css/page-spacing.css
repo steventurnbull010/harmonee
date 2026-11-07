@@ -113,37 +113,11 @@
 #view-lists #btn-create-new-list { padding: 8px 16px !important; gap: 8px !important; }
 /* Columns, rows and panels: on the 8px grid in css/lists.css */
 
-/* Rewards */
-#view-rewards .rewards-view-container { padding: 24px 32px 88px 32px !important; gap: 24px !important; }
-#view-rewards .rewards-header { padding: 16px 24px !important; gap: 16px !important; }
-#view-rewards .rewards-title-wrap { gap: 16px !important; }
-#view-rewards .rewards-title { margin-top: 0 !important; margin-bottom: 0 !important; }
-#view-rewards #btn-podium-confetti { padding: 8px 16px !important; }
-#view-rewards .podium-name { margin-top: 0 !important; margin-bottom: 8px !important; }
-#view-rewards .podium-pillar { padding: 8px !important; }
-#view-rewards .rewards-breakdown-header { margin-top: 0 !important; margin-bottom: 16px !important; }
-#view-rewards .breakdown-badge { padding: 8px 16px !important; }
-#view-rewards #rewards-goals-grid { gap: 16px !important; }
-#view-rewards .reward-goals-member { padding: 16px !important; gap: 16px !important; }
-#view-rewards .reward-goals-member-head { gap: 8px !important; }
-#view-rewards .reward-goals-empty { padding: 8px 0 !important; }
-#view-rewards .reward-goal-row { padding: 8px 16px !important; }
-#view-rewards .reward-goal-main { gap: 8px !important; }
-#view-rewards .reward-goal-redeem { padding: 8px 16px !important; }
-#view-rewards #rewards-mode-badge { padding: 8px 16px !important; }
-#view-rewards .rewards-member-card { gap: 16px !important; }
-#view-rewards .rewards-card-person { gap: 8px !important; }
-#view-rewards .rewards-card-tasklist { padding: 8px 0 0 0 !important; }
-#view-rewards .rewards-card-tasklist > ul { margin-top: 8px !important; margin-bottom: 0 !important; }
-#view-rewards .rewards-card-tasklist > ul > li { margin-top: 0 !important; margin-bottom: 0 !important; }
-#view-rewards .rewards-empty-note { margin-top: 8px !important; margin-bottom: 0 !important; }
-#view-rewards #rewards-streaks-card { padding: 24px !important; }
-#view-rewards .rewards-streaks-header { gap: 16px !important; }
-#view-rewards .streaks-header-left { gap: 16px !important; }
-#view-rewards .streaks-subtitle { margin-top: 0 !important; margin-bottom: 0 !important; }
-#view-rewards .streaks-badge { padding: 8px 16px !important; }
-#view-rewards #rewards-streaks-grid { gap: 16px !important; }
-#view-rewards .streak-card-item { padding: 16px !important; }
+/* Rewards: header like Lists; the rest is on the 8px grid in css/rewards.css */
+#view-rewards .rewards-view-container { padding: 16px 24px 48px 24px !important; }
+#view-rewards .calendar-header { padding: 8px 8px 0 8px !important; }
+#view-rewards .calendar-header-controls { gap: 8px !important; }
+#view-rewards #btn-podium-confetti { padding: 8px 16px !important; gap: 8px !important; }
 
 /* Sidebar */
 #skylight-sidebar { padding: 16px 8px 8px 8px !important; }

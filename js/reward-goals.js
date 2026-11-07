@@ -126,16 +126,36 @@ window.getMemberRewardBalance = getMemberRewardBalance;
 let rewardRedeemArmed = null; // goal id waiting for its confirming second tap
 let rewardRedeemTimer = null;
 
+// Remembered between renders so live updates (which re-render often) only
+// animate what actually changed:
+const rewardGoalShownPct = new Map();   // goal id -> % the bar showed last time
+const rewardGoalWasReady = new Map();   // goal id -> was it ready last time
+// Data settles in the first few seconds after the page loads (cache, then
+// the live board), so a goal "becoming ready" then isn't a real moment.
+const REWARD_GOALS_SETTLE_MS = 5000;
+const rewardGoalsLoadedAt = Date.now();
+
 function renderRewardGoals() {
   const grid = document.getElementById("rewards-goals-grid");
   if (!grid) return;
   const members = window.familyMembers || [];
   const goals = window.rewardGoals || [];
   const redemptions = window.rewardRedemptions || [];
+  const paletteStyle = typeof window.rewardsPaletteStyle === "function"
+    ? window.rewardsPaletteStyle
+    : (pal) => `--member-primary: ${pal.primary}; --member-light: ${pal.lightBg}; --member-border: ${pal.border}; --member-text: ${pal.text};`;
+  const liveScores = typeof window.computeMemberScores === "function" ? window.computeMemberScores() : {};
+  const visible = grid.getClientRects().length > 0;
+  const settled = Date.now() - rewardGoalsLoadedAt > REWARD_GOALS_SETTLE_MS;
+  const justReady = []; // goals that have just crossed into "ready" while someone's watching
+  const fills = [];     // [element, target %] to animate after the HTML is in
 
   grid.innerHTML = members.map(member => {
     const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(member) : { primary: "#0284c7", lightBg: "#e0f2fe", border: "#7dd3fc", text: "#075985" };
     const balance = getMemberRewardBalance(member);
+    // Split for grown-ups: earned this week, and what's left over from before
+    const live = (liveScores[member] && liveScores[member].score) || 0;
+    const saved = Math.round((balance - live) * 100) / 100;
     const memberGoals = goals.filter(g => g.member === member).sort((a, b) => (a.cost || 0) - (b.cost || 0));
     const recent = redemptions.filter(r => r.member === member)
       .sort((a, b) => String(b.redeemedAt).localeCompare(String(a.redeemedAt)))
@@ -146,11 +166,18 @@ function renderRewardGoals() {
       const pct = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
       const ready = balance >= cost && cost > 0;
       const armed = rewardRedeemArmed === g.id;
+
+      // Celebrate only a real change seen on screen, never the first look
+      if (visible && settled && rewardGoalWasReady.has(g.id) && !rewardGoalWasReady.get(g.id) && ready) justReady.push(g.id);
+      if (visible || !rewardGoalWasReady.has(g.id)) rewardGoalWasReady.set(g.id, ready);
+      const fromPct = rewardGoalShownPct.has(g.id) ? rewardGoalShownPct.get(g.id) : pct;
+      rewardGoalShownPct.set(g.id, pct);
+
       const btn = ready
-        ? `<button type="button" class="reward-goal-redeem ${armed ? "is-armed" : ""}" data-redeem-goal="${escapeHtml(g.id)}">${armed ? "Tap again to redeem" : "Redeem"}</button>`
+        ? `<button type="button" class="reward-goal-redeem ${armed ? "is-armed" : ""}" data-redeem-goal="${escapeHtml(g.id)}">${armed ? "Tap again to redeem" : "🎉 Redeem"}</button>`
         : `<span class="reward-goal-togo">${formatRewardAmount(cost - balance)} to go</span>`;
       return `
-        <div class="reward-goal-row ${ready ? "is-ready" : ""}">
+        <div class="reward-goal-row ${ready ? "is-ready" : ""}" data-goal-row="${escapeHtml(g.id)}">
           <button type="button" class="reward-goal-main" data-edit-goal="${escapeHtml(g.id)}" title="Edit goal">
             <span class="reward-goal-emoji">${escapeHtml(g.emoji || "🎁")}</span>
             <span class="reward-goal-text">
@@ -158,7 +185,11 @@ function renderRewardGoals() {
               <span class="reward-goal-cost">${formatRewardAmount(Math.min(balance, cost))} of ${formatRewardAmount(cost)}</span>
             </span>
           </button>
-          <div class="reward-goal-bar"><div class="reward-goal-bar-fill" style="width: ${pct}%; background: ${pal.primary};"></div></div>
+          <div class="reward-goal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${escapeHtml(g.title)}: ${pct}%">
+            <div class="reward-goal-bar-fill" data-fill-goal="${escapeHtml(g.id)}" data-pct="${pct}" style="width: ${fromPct}%;">
+              <span class="reward-goal-bar-star" aria-hidden="true">${ready ? "🌟" : "⭐"}</span>
+            </div>
+          </div>
           <div class="reward-goal-action">${btn}</div>
         </div>`;
     }).join("") : `<p class="reward-goals-empty">No goals yet. What is ${escapeHtml(member)} saving up for?</p>`;
@@ -168,20 +199,50 @@ function renderRewardGoals() {
         ${recent.map(r => `<span>✓ ${escapeHtml(r.emoji || "🎁")} ${escapeHtml(r.title)} · ${new Date(r.redeemedAt).toLocaleDateString([], { day: "numeric", month: "short" })}</span>`).join("")}
       </div>` : "";
 
+    const splitHtml = `
+      <div class="reward-goals-split">
+        <span class="reward-goals-chip">⭐ This week <strong>${formatRewardAmount(live)}</strong></span>
+        ${saved > 0 ? `<span class="reward-goals-chip">🏦 Saved <strong>${formatRewardAmount(saved)}</strong></span>` : ""}
+      </div>`;
+
     return `
-      <div class="reward-goals-member" style="--member-primary: ${pal.primary}; --member-light: ${pal.lightBg}; --member-border: ${pal.border}; --member-text: ${pal.text};">
+      <div class="reward-goals-member" style="${paletteStyle(pal)}">
         <div class="reward-goals-member-head">
-          <span class="reward-goals-avatar" style="background: ${pal.primary};">${escapeHtml(member.charAt(0).toUpperCase())}</span>
+          <button type="button" class="reward-goals-avatar" data-rw-bounce aria-label="${escapeHtml(member)}">${escapeHtml(member.charAt(0).toUpperCase())}</button>
           <div class="reward-goals-member-names">
             <span class="reward-goals-member-name">${escapeHtml(member)}</span>
-            <span class="reward-goals-balance">${formatRewardAmount(balance)} to spend</span>
+            <span class="reward-goals-balance"><strong>${formatRewardAmount(balance)}</strong> to spend</span>
           </div>
         </div>
+        ${splitHtml}
         <div class="reward-goals-list">${goalsHtml}</div>
         ${recentHtml}
         <button type="button" class="reward-goals-add" data-add-goal-for="${escapeHtml(member)}">+ Add goal</button>
       </div>`;
   }).join("");
+
+  // Bars grow from where they were to where they are now
+  grid.querySelectorAll("[data-fill-goal]").forEach(el => fills.push(el));
+  if (fills.length) {
+    void grid.offsetWidth; // lock in the starting widths so the change animates
+    fills.forEach(el => { el.style.width = `${el.getAttribute("data-pct")}%`; });
+  }
+
+  // Someone just reached a goal: a burst of confetti in their colour
+  if (justReady.length) {
+    const reduce = typeof window.rewardsReduceMotion === "function" && window.rewardsReduceMotion();
+    justReady.forEach(id => {
+      const row = grid.querySelector(`[data-goal-row="${CSS.escape(id)}"]`);
+      if (!row) return;
+      if (!reduce) row.classList.add("is-just-ready");
+      const goal = goals.find(g => g.id === id);
+      const pal = goal && typeof window.getMemberPalette === "function" ? window.getMemberPalette(goal.member) : null;
+      if (typeof window.rewardsConfettiFrom === "function") window.rewardsConfettiFrom(row, pal ? [pal.primary, pal.border] : null);
+    });
+    try {
+      if (typeof sfx !== "undefined" && sfx && typeof sfx.playCelebrationChime === "function") sfx.playCelebrationChime();
+    } catch (e) {}
+  }
 
   if (!grid.hasAttribute("data-wired")) {
     grid.setAttribute("data-wired", "true");
@@ -234,7 +295,12 @@ function redeemRewardGoal(goalId) {
   renderRewardGoals();
 
   try {
-    if (typeof window.confetti === "function") window.confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+    // Confetti in their colour (skipped for reduced motion), and the trophy chime
+    const reduce = typeof window.rewardsReduceMotion === "function" && window.rewardsReduceMotion();
+    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(goal.member) : null;
+    if (!reduce && typeof window.confetti === "function") {
+      window.confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, colors: pal ? [pal.primary, pal.border, "#facc15", "#ffffff"] : undefined });
+    }
     if (typeof sfx !== "undefined" && sfx && typeof sfx.playTrophyChime === "function") sfx.playTrophyChime();
   } catch (e) {}
 }

@@ -17,14 +17,14 @@
   <link rel="stylesheet" href="css/meals.css?v=21">
   <link rel="stylesheet" href="css/calendar.css?v=12">
   <link rel="stylesheet" href="css/lists.css?v=7">
-  <link rel="stylesheet" href="css/rewards.css?v=2">
-  <link rel="stylesheet" href="css/widgets.css?v=2">
+  <link rel="stylesheet" href="css/rewards.css?v=3">
+  <link rel="stylesheet" href="css/widgets.css?v=3">
   <link rel="stylesheet" href="css/modals.css?v=4">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
   <link rel="stylesheet" href="css/page-intro.css?v=5">
-  <link rel="stylesheet" href="css/page-spacing.css?v=5">
+  <link rel="stylesheet" href="css/page-spacing.css?v=6">
   <link rel="stylesheet" href="css/panel-spacing.css?v=5">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
@@ -594,68 +594,65 @@
         </div>
       </div>
 
-      <!-- VIEW 5: REWARDS & PODIUM LEADERBOARD -->
+      <!-- VIEW 5: REWARDS (js/rewards.js, js/reward-goals.js, css/rewards.css) -->
       <div id="view-rewards" class="skylight-page-view" style="display: none;">
         <div class="rewards-view-container">
-          <header class="rewards-header">
-            <div class="rewards-title-wrap">
-              <span class="rewards-badge-icon">🏆</span>
-              <div>
-                <h2 class="rewards-title">Household Champions Podium</h2>
-                <p class="rewards-subtitle" id="rewards-week-label">Current Week Standings & Earnings</p>
-              </div>
+          <!-- Same single-line header as Calendar, Tasks, Meals and Lists -->
+          <header class="calendar-header skylight-single-header rewards-page-header">
+            <div class="calendar-header-left">
+              <h2 class="calendar-family-title">Rewards</h2>
+              <span class="calendar-time-indicator" id="rewards-week-label"></span>
             </div>
-            
-            <div class="rewards-header-actions">
-              <button type="button" class="btn-rewards-confetti" id="btn-podium-confetti" title="Celebrate Champions!">
-                <span>Celebrate</span> <span>🎉</span>
+            <div class="calendar-header-controls">
+              <button type="button" class="btn-skylight-action-pill" id="btn-podium-confetti" title="Celebrate everyone!">
+                <span class="pill-icon">🎉</span>
+                <span class="pill-text">Celebrate</span>
               </button>
             </div>
           </header>
 
-          <!-- Olympic-style 3-Place Podium -->
-          <div class="podium-stage" id="podium-stage">
-            <!-- Dynamically populated from household scores in app.js -->
-          </div>
+          <!-- This week's podium: tap someone to make them bounce -->
+          <section class="rewards-card rewards-podium-card" aria-label="This week's podium">
+            <div class="rewards-card-head">
+              <h3 class="rewards-card-title">🏆 This week</h3>
+              <span class="rewards-card-badge" id="rewards-mode-badge">Points</span>
+            </div>
+            <div class="podium-stage" id="podium-stage">
+              <!-- One column per person, rendered by js/rewards.js -->
+            </div>
+          </section>
 
           <!-- Reward goals: save up, track progress, redeem (js/reward-goals.js) -->
-          <div class="rewards-breakdown-card rewards-goals-card">
-            <div class="rewards-breakdown-header">
-              <h3 class="breakdown-title">🎯 Reward Goals</h3>
-              <span class="breakdown-badge">Points carry over week to week</span>
+          <section class="rewards-card rewards-goals-card" aria-label="Reward goals">
+            <div class="rewards-card-head">
+              <h3 class="rewards-card-title">🎯 Saving up for</h3>
+              <span class="rewards-card-badge">Points carry over week to week</span>
             </div>
             <div class="rewards-goals-grid" id="rewards-goals-grid">
               <!-- One column per family member, rendered by js/reward-goals.js -->
             </div>
-          </div>
+          </section>
 
-          <!-- All Household Members Earnings Breakdown -->
-          <div class="rewards-breakdown-card">
-            <div class="rewards-breakdown-header">
-              <h3 class="breakdown-title">📊 Household Standings & Earnings</h3>
-              <span class="breakdown-badge" id="rewards-mode-badge">Points Mode</span>
-            </div>
-            <div class="rewards-members-grid" id="rewards-members-grid">
-              <!-- Dynamically populated from scores and task completions in app.js -->
-            </div>
-          </div>
-
-          <!-- Household Daily Habit Streaks Showcase -->
-          <div class="rewards-streaks-card" id="rewards-streaks-card">
-            <div class="rewards-streaks-header">
-              <div class="streaks-header-left">
-                <span class="streaks-flame-icon">🔥</span>
-                <div>
-                  <h3 class="streaks-title">Daily Habit Streaks & Momentum</h3>
-                  <p class="streaks-subtitle">Keep daily routines going to earn bonus streak points!</p>
-                </div>
-              </div>
-              <span class="streaks-badge">+5 pts at 7-day milestone</span>
+          <!-- Daily routines done day after day -->
+          <section class="rewards-card rewards-streaks-card" id="rewards-streaks-card" aria-label="Streaks">
+            <div class="rewards-card-head">
+              <h3 class="rewards-card-title">🔥 Streaks</h3>
+              <span class="rewards-card-badge">Do a daily routine every day to keep it going</span>
             </div>
             <div class="rewards-streaks-grid" id="rewards-streaks-grid">
-              <!-- Dynamically rendered streak items in app.js -->
+              <!-- Rendered by js/rewards.js -->
             </div>
-          </div>
+          </section>
+
+          <!-- For grown-ups: this week's points and chores per person -->
+          <section class="rewards-card rewards-standings-card" aria-label="This week's chores">
+            <div class="rewards-card-head">
+              <h3 class="rewards-card-title">📊 This week's chores</h3>
+            </div>
+            <div class="rewards-members-grid" id="rewards-members-grid">
+              <!-- Rendered by js/rewards.js -->
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -2624,8 +2621,8 @@
   <script src="js/grocery.js?v=5"></script>
   <script src="js/lists.js?v=14"></script>
   <script src="js/magic-scanner.js?v=6"></script>
-  <script src="js/rewards.js?v=5"></script>
-  <script src="js/reward-goals.js?v=2"></script>
+  <script src="js/rewards.js?v=6"></script>
+  <script src="js/reward-goals.js?v=3"></script>
   <script src="js/page-intro.js?v=4"></script>
   <script src="js/sticky-note.js?v=4"></script>
   <script src="js/calendar.js?v=16"></script>
