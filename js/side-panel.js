@@ -41,6 +41,21 @@ function focusAfterPanelOpens(el, then) {
 }
 window.focusAfterPanelOpens = focusAfterPanelOpens;
 
+// Every panel opens at the very top. Browsers remember how far a hidden panel
+// was scrolled, so without this a panel reopens wherever you left it last
+// time. Resets the panel and anything scrollable inside it, now and again
+// once it has been laid out.
+function scrollPanelToTop(root) {
+  if (!root) return;
+  const reset = () => {
+    if (root.scrollTop) root.scrollTop = 0;
+    root.querySelectorAll("*").forEach(el => { if (el.scrollTop) el.scrollTop = 0; });
+  };
+  reset();
+  requestAnimationFrame(reset);
+}
+window.scrollPanelToTop = scrollPanelToTop;
+
 // Slide out on close instead of vanishing. Every way of closing goes through
 // dialog.close() (or Escape), so wrapping it here covers all the panels.
 function addSmoothClose(dialog) {
@@ -72,6 +87,7 @@ function addSmoothClose(dialog) {
       return;
     }
     if (!dialog.open) nativeShowModal();
+    scrollPanelToTop(dialog);
   };
 
   // Escape: slide out too

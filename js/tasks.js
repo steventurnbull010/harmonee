@@ -1160,6 +1160,7 @@ function openSkylightTaskDrawer(taskId = null) {
   document.getElementById("drawer-chore-date-label").textContent = drawerSelectedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
   overlay.style.display = "flex";
+  if (typeof window.scrollPanelToTop === "function") window.scrollPanelToTop(overlay);
 
   // Back button closes
   document.getElementById("btn-task-drawer-back").onclick = () => { overlay.style.display = "none"; };

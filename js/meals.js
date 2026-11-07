@@ -704,8 +704,9 @@ function openPlanMealDrawer(dateStr, slot = "dinner") {
   // Render recipes list
   renderDrawerRecipeList();
 
-  // Open drawer
+  // Open drawer, at the top
   drawer.style.display = "flex";
+  if (typeof window.scrollPanelToTop === "function") window.scrollPanelToTop(drawer);
 }
 window.openPlanMealDrawer = openPlanMealDrawer;
 
