@@ -15,6 +15,8 @@ import {
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
+// Today at a glance (a classic script) shows the planned recipe's photo
+window.findRecipeByIdOrTitle = findRecipeByIdOrTitle;
 
 let mealsWeekOffset = 0;
 window.mealsWeekOffset = mealsWeekOffset;

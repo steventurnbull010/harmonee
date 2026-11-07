@@ -93,7 +93,15 @@
   function dinnerOn(day) {
     const meal = typeof window.getMealForDate === "function" ? window.getMealForDate(day, "dinner") : null;
     const cooks = meal && meal.cook ? String(meal.cook).split(/,|&/).map(s => s.trim()).filter(n => n && (window.familyMembers || []).includes(n)) : [];
-    return meal && meal.title ? { meal, cooks } : null;
+    if (!(meal && meal.title)) return null;
+    // Its photo: the meal's own, else its recipe's (only an exact recipe -
+    // a home-made "Chicken" mustn't borrow some other chicken dish's picture)
+    let photo = meal.image || meal.imageUrl || null;
+    if (!photo && typeof window.findRecipeByIdOrTitle === "function") {
+      const r = window.findRecipeByIdOrTitle(meal.recipeId || meal.title);
+      if (r && (r.id === meal.recipeId || String(r.title).toLowerCase() === String(meal.title).toLowerCase())) photo = r.image || r.imageUrl || null;
+    }
+    return { meal, cooks, photo };
   }
 
   // Today's events. When "isToday", finished ones fade and the next (or the
@@ -123,7 +131,21 @@
 
   function dinnerHtml(d) {
     if (!d) return `<div class="today-plan-row"><p class="today-empty">Not planned yet.</p><button type="button" class="today-plan-btn" data-plan-dinner><span aria-hidden="true">+</span> Plan dinner</button></div>`;
-    return `<p class="today-dinner">${esc(d.meal.emoji || "🍽️")} ${esc(d.meal.title)}</p>${d.cooks.length ? `<p class="today-sub">${d.cooks.map(avatar).join("")} ${esc(d.cooks.join(" & "))} cooking</p>` : ""}`;
+    // "Chef: Steven", "Chefs: Steven & Sorcha", "Chefs: Steven, Sorcha, Ava & Dara"
+    const n = d.cooks.length;
+    const names = n <= 1 ? d.cooks.join("") : `${d.cooks.slice(0, -1).join(", ")} & ${d.cooks[n - 1]}`;
+    const shown = d.cooks.slice(0, 4);
+    const chefs = n ? `<p class="today-chefs">
+        <span class="today-avatars">${shown.map(avatar).join("")}${n > 4 ? `<span class="today-avatar is-more" aria-hidden="true">+${n - 4}</span>` : ""}</span>
+        <span class="today-chefs-text"><span class="today-chefs-label">${n === 1 ? "Chef" : "Chefs"}:</span> ${esc(names)}</span>
+      </p>` : "";
+    return `<div class="today-dinner-wrap${d.photo ? " has-photo" : ""}">
+      ${d.photo ? `<img class="today-dinner-photo" src="${esc(d.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}
+      <div class="today-dinner-text">
+        <p class="today-dinner">${d.photo ? "" : `${esc(d.meal.emoji || "🍽️")} `}${esc(d.meal.title)}</p>
+        ${chefs}
+      </div>
+    </div>`;
   }
 
   function render() {

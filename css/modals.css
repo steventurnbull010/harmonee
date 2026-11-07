@@ -2431,3 +2431,42 @@ body.theme-dark .today-wordmark span::after { background: #7dd3fc; }
 /* The script h reaches further left than the serif G: line their ink up */
 .today-wordmark span { margin-left: 0.12em; }
 .today-weather { white-space: nowrap; }
+
+/* Dinner tonight: the dish's photo (when there is one) beside its name and
+   chefs; smaller on phones */
+.today-dinner-wrap { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.today-dinner-photo {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: #f1f5f9;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+.today-dinner-text { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.today-dinner-wrap .today-dinner {
+  margin: 0;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.today-chefs { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.92rem; color: #475569; min-width: 0; }
+.today-chefs .today-avatars { flex-shrink: 0; }
+.today-chefs-text { min-width: 0; line-height: 1.35; } /* wraps onto a second line with several chefs */
+.today-chefs-label { font-weight: 700; color: #334155; }
+.today-avatar.is-more { background: #94a3b8; font-size: 0.68rem; }
+body.theme-dark .today-chefs { color: #cbd5e1; }
+body.theme-dark .today-chefs-label { color: #e2e8f0; }
+body.theme-dark .today-dinner-photo { background: #0f172a; }
+@media (max-width: 600px) {
+  .today-dinner-photo { width: 64px; height: 64px; border-radius: 12px; }
+  .today-dinner-wrap { gap: 12px; }
+  .today-chefs { font-size: 0.86rem; align-items: flex-start; }
+}
+/* Phones: chefs' names under their avatars, so a long list has the width */
+@media (max-width: 600px) {
+  .today-chefs { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
