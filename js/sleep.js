@@ -46,7 +46,7 @@ function activateAmbientSleepScreen(isPreview = false) {
     if (weatherBadge && typeof weatherBadge.textContent === "string" && weatherBadge.textContent.trim()) {
       weatherEl.textContent = `🌙 ${weatherBadge.textContent.trim()}`;
     } else {
-      weatherEl.textContent = "🌙 Clear Sky";
+      weatherEl.textContent = ""; // no weather place set: show nothing rather than a guess
     }
   }
 

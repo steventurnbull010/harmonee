@@ -55,6 +55,7 @@
       mode: "points",
       currency: "£",
       picked: new Set([...ROUTINES, ...JOBS].filter(x => x.on).map(x => x.key)),
+      weather: null,       // { lat, lon, name, label } from the place picker (js/weather.js)
       error: ""
     };
   }
@@ -71,7 +72,9 @@
       <p class="setup-lead">It takes about a minute, and you can change anything later.</p>
       <label class="setup-label" for="setup-family">What's your family called?</label>
       <input id="setup-family" class="setup-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" enterkeyhint="next">
-      <p class="setup-preview" aria-hidden="true"><span class="setup-preview-name">${esc(s.familyName || "The Bakers")}</span> <span>9:41</span> <span>☀️ 14°</span></p>`;
+      <p class="setup-preview" aria-hidden="true"><span class="setup-preview-name">${esc(s.familyName || "The Bakers")}</span> <span>9:41</span> <span>☀️ 14°</span></p>
+      <p class="setup-label">Where are you, for the weather? <span class="setup-optional">Optional</span></p>
+      <div id="setup-weather" class="setup-weather"></div>`;
 
     if (s.step === 2) return `
       <h1 class="setup-title" id="setup-title">Who's in the family?</h1>
@@ -134,6 +137,7 @@
         <li><span aria-hidden="true">👥</span><span>${s.people.map(p => `<span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>`).join("")} ${esc(s.people.map(p => p.name).join(", "))}</span></li>
         <li><span aria-hidden="true">${s.mode === "money" ? "💰" : "🏆"}</span><span>${s.mode === "money" ? `Pocket money in ${esc(s.currency)}` : "Points and a weekly podium"}</span></li>
         <li><span aria-hidden="true">✅</span><span>${nRoutines} daily routine${nRoutines === 1 ? "" : "s"} and ${nJobs} job${nJobs === 1 ? "" : "s"} to grab</span></li>
+        <li><span aria-hidden="true">🌤️</span><span>${s.weather ? `Weather for ${esc(s.weather.label || s.weather.name)}` : "No weather yet. Add your town any time in Settings › Display"}</span></li>
         <li><span aria-hidden="true">🔐</span><span>A family code to add your phones, shown on the next screen</span></li>
       </ul>`;
   }
@@ -156,6 +160,12 @@
           <button type="button" class="setup-btn is-primary" data-act="next">${nextLabel}</button>
         </div>
       </div>`;
+    if (s.step === 1 && window.WeatherPlace) {
+      window.WeatherPlace.renderWeatherPlacePicker(document.getElementById("setup-weather"), {
+        current: s.weather,
+        onPick: (place) => { state.weather = place; }
+      });
+    }
     const focus = el.querySelector(s.step === 1 ? "#setup-family" : s.step === 2 ? "#setup-person" : ".setup-btn.is-primary");
     if (focus && !(s.step === 2 && s.people.length >= MAX_PEOPLE)) setTimeout(() => { try { focus.focus({ preventScroll: true }); } catch (e) {} }, 30);
   }
@@ -233,7 +243,8 @@
       localStorage.setItem("harmonee_pending_new_board", boardId); // app.js creates it, with a family code
       localStorage.setItem(`harmonee_roster_${boardId}`, JSON.stringify(names));
       localStorage.setItem(`harmonee_settings_${boardId}`, JSON.stringify({
-        familyName: s.familyName, gameMode: s.mode, currency: s.currency, memberColors
+        familyName: s.familyName, gameMode: s.mode, currency: s.currency, memberColors,
+        ...(s.weather ? { weatherLocation: { lat: s.weather.lat, lon: s.weather.lon, name: s.weather.name, label: s.weather.label || s.weather.name } } : {})
       }));
       localStorage.setItem(`harmonee_setup_tasks_${boardId}`, JSON.stringify(tasks));
     } catch (e) {

@@ -222,3 +222,56 @@ body.theme-dark .setup-code { background: rgba(2, 132, 199, 0.18); color: #e0f2f
 body.theme-dark .setup-btn.is-secondary { background: rgba(2, 132, 199, 0.2); color: #e0f2fe; }
 body.theme-dark .setup-btn.is-ghost { color: #cbd5e1; }
 body.theme-dark .setup-brand { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; }
+
+/* ==========================================================================
+   WEATHER PLACE PICKER (js/weather.js), in the setup and Settings > Display
+   ========================================================================== */
+.setup-optional { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
+.wx-pick { display: flex; flex-direction: column; gap: 8px; }
+.wx-device {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 48px; padding: 0 16px;
+  border: 1.5px solid #bae6fd; border-radius: 14px;
+  background: #f0f9ff; color: #075985;
+  font: inherit; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer;
+}
+.wx-device:disabled { opacity: 0.7; cursor: default; }
+.wx-or { display: flex; align-items: center; gap: 12px; color: #94a3b8; font-size: 0.8rem; font-weight: 600; }
+.wx-or::before, .wx-or::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+.wx-search { display: flex; gap: 8px; }
+.wx-input {
+  flex: 1; min-width: 0; height: 48px; padding: 0 16px; box-sizing: border-box;
+  border: 1.5px solid #cbd5e1; border-radius: 14px;
+  background: #ffffff; color: #0f172a; font: inherit; font-size: 1rem;
+}
+.wx-input:focus { outline: none; border-color: #0284c7; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15); }
+.wx-find { height: 48px; padding: 0 16px; border: none; border-radius: 14px; background: #e0f2fe; color: #075985; font: inherit; font-weight: 800; cursor: pointer; }
+.wx-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.wx-result {
+  width: 100%; min-height: 44px; padding: 8px 16px;
+  border: 1px solid #e2e8f0; border-radius: 12px;
+  background: #ffffff; color: #0f172a;
+  font: inherit; font-size: 0.92rem; font-weight: 600; text-align: left;
+  cursor: pointer;
+}
+.wx-result:hover { border-color: #7dd3fc; background: #f0f9ff; }
+.wx-note { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.4; }
+.wx-picked {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+.wx-picked-name { flex: 1; min-width: 0; font-weight: 700; color: #075985; }
+.wx-link { border: none; background: none; padding: 0; color: #0284c7; font: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer; }
+.wx-link.is-quiet { color: #64748b; }
+#settings-modal .settings-weather-field { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+body.theme-dark .setup-optional { background: #334155; color: #cbd5e1; }
+body.theme-dark .wx-device, body.theme-dark .wx-picked { background: rgba(2, 132, 199, 0.16); border-color: #0369a1; color: #e0f2fe; }
+body.theme-dark .wx-picked-name { color: #e0f2fe; }
+body.theme-dark .wx-input, body.theme-dark .wx-result { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .wx-find { background: rgba(2, 132, 199, 0.2); color: #e0f2fe; }
+body.theme-dark .wx-or::before, body.theme-dark .wx-or::after { background: #334155; }
+body.theme-dark .wx-note, body.theme-dark .wx-link.is-quiet { color: #94a3b8; }

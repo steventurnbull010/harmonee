@@ -1609,9 +1609,11 @@ function listenToFirestoreBoard() {
         shouldRender = true;
       }
       if (data.settings) {
+        const placeBefore = JSON.stringify(boardSettings.weatherLocation || null);
         boardSettings = { ...boardSettings, ...data.settings }; window.boardSettings = boardSettings;
         saveLocalBoardSettings(boardSettings);
         shouldRender = true;
+        if (JSON.stringify(boardSettings.weatherLocation || null) !== placeBefore && typeof window.initLocalWeather === "function") window.initLocalWeather();
       }
       if (Array.isArray(data.events)) {
         familyEvents = data.events;
@@ -5272,6 +5274,7 @@ function setupEventListeners() {
     if (window.ParentPin) { window.ParentPin.renderSettingsBox(); window.ParentPin.renderOffer(); }
     if (window.syncTodayScreenSetting) window.syncTodayScreenSetting();
     if (window.Music) window.Music.renderSettings();
+    if (window.renderWeatherSettings) window.renderWeatherSettings();
     renderRosterModalList();
     wireSettingsSectionNav();
 

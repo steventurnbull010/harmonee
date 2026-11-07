@@ -36,6 +36,145 @@ const weatherMap = {
 
 let localWeatherForecast = null;
 
+// ---------------------------------------------------------------------------
+// WHERE THE WEATHER IS FOR
+// One place for the whole board (boardSettings.weatherLocation =
+// { lat, lon, name }), chosen in the guided setup or Settings > Display:
+// this device's location, or a town typed in. Only a rough position is kept
+// (rounded to 0.1 degrees, roughly 10 km), and it's only sent to the weather
+// service. With no place set, a device that has *already* allowed location
+// uses its own; otherwise there's simply no weather (never a guessed city,
+// and no surprise "wants to know your location" pop-up).
+// ---------------------------------------------------------------------------
+const roundCoord = (x) => Math.round(Number(x) * 10) / 10;
+const validPlace = (p) => !!p && isFinite(p.lat) && isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180;
+const placeKey = (p) => (p ? `${roundCoord(p.lat)},${roundCoord(p.lon)}` : "");
+
+function fromDevice(timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error("This device can't share its location.")); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: roundCoord(pos.coords.latitude), lon: roundCoord(pos.coords.longitude), name: "Your area" }),
+      (err) => reject(new Error(err && err.code === 1 ? "Location wasn't allowed. You can type your town instead." : "Couldn't find this device's location. Try typing your town.")),
+      { timeout: timeoutMs, maximumAge: 30 * 60 * 1000, enableHighAccuracy: false }
+    );
+  });
+}
+
+// Open-Meteo's free place search: "Bangor" -> Bangor, Northern Ireland, ...
+async function searchTowns(q) {
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+  if (!res.ok) throw new Error("search failed");
+  const data = await res.json();
+  return (data.results || []).map(r => ({
+    lat: roundCoord(r.latitude),
+    lon: roundCoord(r.longitude),
+    name: r.name,
+    label: [r.name, r.admin1, r.country].filter((v, i, a) => v && a.indexOf(v) === i).join(", ")
+  }));
+}
+
+async function resolveWeatherPlace() {
+  const chosen = (window.boardSettings || {}).weatherLocation;
+  if (validPlace(chosen)) return chosen;
+  if (chosen === false) return null; // weather switched off for this board
+  try {
+    if (navigator.permissions && navigator.geolocation) {
+      const st = await navigator.permissions.query({ name: "geolocation" });
+      if (st.state === "granted") return await fromDevice(6000);
+    }
+  } catch (e) {}
+  return null;
+}
+
+// A small "where are you?" control, used by the guided setup and Settings.
+//   renderWeatherPlacePicker(container, { current, onPick(place|null), offLabel })
+function renderWeatherPlacePicker(box, opts = {}) {
+  if (!box) return;
+  const esc = (v) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(v)) : String(v));
+  let results = [];
+  let message = "";
+  let busy = false;
+  let current = validPlace(opts.current) ? opts.current : null;
+
+  const draw = () => {
+    box.innerHTML = current
+      ? `<div class="wx-picked">
+          <span class="wx-picked-name">📍 ${esc(current.label || current.name || "Your area")}</span>
+          <button type="button" class="wx-link" data-wx="change">Change</button>
+          ${opts.offLabel ? `<button type="button" class="wx-link is-quiet" data-wx="off">${esc(opts.offLabel)}</button>` : ""}
+        </div>`
+      : `<div class="wx-pick">
+          <button type="button" class="wx-device" data-wx="device" ${busy ? "disabled" : ""}><span aria-hidden="true">📍</span> ${busy ? "Finding you…" : "Use this device's location"}</button>
+          <div class="wx-or"><span>or type your town</span></div>
+          <div class="wx-search">
+            <input type="text" class="wx-input" placeholder="e.g. Bangor" aria-label="Your town" autocomplete="off" enterkeyhint="search">
+            <button type="button" class="wx-find" data-wx="find">Find</button>
+          </div>
+          ${results.length ? `<ul class="wx-results">${results.map((r, i) => `<li><button type="button" class="wx-result" data-wx="pick" data-i="${i}">${esc(r.label)}</button></li>`).join("")}</ul>` : ""}
+          <p class="wx-note">${message ? esc(message) : "Only your rough area (about 10 km) is kept, just to fetch the weather."}</p>
+        </div>`;
+  };
+  const choose = (place) => { current = place; results = []; message = ""; draw(); if (typeof opts.onPick === "function") opts.onPick(place); };
+  const find = async () => {
+    const input = box.querySelector(".wx-input");
+    const q = input && input.value.trim();
+    if (!q) return;
+    message = "Searching…"; draw(); box.querySelector(".wx-input").value = q;
+    try {
+      results = await searchTowns(q);
+      message = results.length ? "Tap your town:" : `No places called "${q}". Try a nearby town.`;
+    } catch (e) { results = []; message = "Couldn't search just now. Check the connection."; }
+    draw();
+    const again = box.querySelector(".wx-input"); if (again) again.value = q;
+  };
+
+  box.onclick = async (e) => {
+    const b = e.target.closest("[data-wx]");
+    if (!b) return;
+    const act = b.getAttribute("data-wx");
+    if (act === "change") { current = null; draw(); return; }
+    if (act === "off") { choose(null); return; }
+    if (act === "find") { find(); return; }
+    if (act === "pick") { const r = results[parseInt(b.getAttribute("data-i"), 10)]; if (r) choose(r); return; }
+    if (act === "device") {
+      busy = true; message = ""; draw();
+      try { const p = await fromDevice(); busy = false; choose(p); }
+      catch (err) { busy = false; message = err.message; draw(); }
+    }
+  };
+  box.onkeydown = (e) => { if (e.key === "Enter" && e.target.classList.contains("wx-input")) { e.preventDefault(); e.stopPropagation(); find(); } };
+  draw();
+}
+
+// Settings > Display > Weather location (whole board; saves straight away)
+function renderWeatherSettings() {
+  const box = document.getElementById("weather-settings");
+  if (!box) return;
+  const current = (window.boardSettings || {}).weatherLocation;
+  renderWeatherPlacePicker(box, {
+    current,
+    offLabel: "Turn off weather",
+    onPick: async (place) => {
+      // null from "Turn off weather" is saved as false: off for every device
+      const value = place ? { lat: place.lat, lon: place.lon, name: place.name, label: place.label || place.name } : false;
+      if (typeof window.saveBoardSettingsNow === "function") await window.saveBoardSettingsNow({ weatherLocation: value });
+      initLocalWeather();
+    }
+  });
+}
+
+window.WeatherPlace = { fromDevice, searchTowns, renderWeatherPlacePicker, roundCoord };
+window.renderWeatherSettings = renderWeatherSettings;
+
+// No place: no weather on the headers (rather than a guessed city)
+function hideLocalWeather() {
+  document.querySelectorAll("#calendar-weather-badge, #tasks-weather-badge, .calendar-weather-badge").forEach(b => { b.textContent = ""; b.title = ""; b.onclick = null; b.style.cursor = ""; });
+  const mealsWeatherEl = document.getElementById("meals-header-time-weather");
+  if (mealsWeatherEl) mealsWeatherEl.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  localWeatherForecast = null;
+}
+
 async function initLocalWeather() {
   const badgeElements = document.querySelectorAll("#calendar-weather-badge, #tasks-weather-badge, .calendar-weather-badge");
   const mealsWeatherEl = document.getElementById("meals-header-time-weather");
@@ -69,24 +208,29 @@ async function initLocalWeather() {
     }
   };
 
-  // 1. Instant cache restore if available and fresh (< 2 hours)
+  const place = await resolveWeatherPlace();
+  if (!place) { hideLocalWeather(); return; }
+  const thisPlace = placeKey(place);
+
+  // 1. Instant cache restore if available, fresh (< 2 hours) and for this place
   try {
     const cached = localStorage.getItem("turnbull_weather_cache");
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < 2 * 60 * 60 * 1000) {
+      if (Date.now() - parsed.timestamp < 2 * 60 * 60 * 1000 && parsed.place === thisPlace) {
         applyWeather(parsed.temp, parsed.code, parsed.isDay, parsed.city);
       }
     }
     const cachedForecast = localStorage.getItem("turnbull_weather_forecast");
     if (cachedForecast) {
-      localWeatherForecast = JSON.parse(cachedForecast);
+      const f = JSON.parse(cachedForecast);
+      if (f && f.place === thisPlace) localWeatherForecast = f;
     }
   } catch (e) {}
 
   // 2. Weather Fetcher with reliable fallback
   async function fetchWeather(lat, lon, city) {
-    city = city || "Belfast, UK";
+    city = city || "";
     let success = false;
 
     // Strategy A: Open-Meteo
@@ -101,6 +245,7 @@ async function initLocalWeather() {
             city: city,
             current: cw,
             daily: data.daily || null,
+            place: thisPlace,
             timestamp: Date.now()
           };
           localStorage.setItem("turnbull_weather_cache", JSON.stringify({
@@ -108,6 +253,7 @@ async function initLocalWeather() {
             code: cw.weathercode,
             isDay: cw.is_day,
             city: city,
+            place: thisPlace,
             timestamp: Date.now()
           }));
           localStorage.setItem("turnbull_weather_forecast", JSON.stringify(localWeatherForecast));
@@ -166,6 +312,7 @@ async function initLocalWeather() {
                 weathercode: dailyCode,
                 precipitation_probability_max: dailyRain
               },
+              place: thisPlace,
               timestamp: Date.now()
             };
 
@@ -174,6 +321,7 @@ async function initLocalWeather() {
               code: code,
               isDay: isDay,
               city: city,
+              place: thisPlace,
               timestamp: Date.now()
             }));
             localStorage.setItem("turnbull_weather_forecast", JSON.stringify(localWeatherForecast));
@@ -190,16 +338,7 @@ async function initLocalWeather() {
     }
   }
 
-  // Detect location or default to Belfast, UK
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude, "Local Area"),
-      () => fetchWeather(54.5968, -5.9254, "Belfast, UK"),
-      { timeout: 4000, maximumAge: 600000 }
-    );
-  } else {
-    fetchWeather(54.5968, -5.9254, "Belfast, UK");
-  }
+  await fetchWeather(place.lat, place.lon, place.label || place.name);
 }
 window.initLocalWeather = initLocalWeather;
 
