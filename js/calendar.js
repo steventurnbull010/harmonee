@@ -306,6 +306,111 @@ function wireTimeGridCreate(gridContainer, geo) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Tap an event: a small pop-up in the middle of the screen with what, when,
+// who, repeat, where and notes, and Edit / Delete / Close at the top right,
+// the same as tapping a task. Edit opens the full side panel.
+// dateStr: the day it was tapped on (a repeating event shows that day).
+// ---------------------------------------------------------------------------
+function openEventQuickView(evt, dateStr = null) {
+  const overlay = document.getElementById("event-quick-modal");
+  if (!overlay || !evt) return;
+  const $ = (id) => document.getElementById(id);
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  // Which day
+  let d = null;
+  const key = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) ? dateStr : (evt.date && /^\d{4}-\d{2}-\d{2}$/.test(evt.date) ? evt.date : null);
+  if (key) { const [y, m, dd] = key.split("-").map(Number); d = new Date(y, m - 1, dd); }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dayLabel = d ? `${d.getTime() === today.getTime() ? "Today, " : ""}${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}` : (evt.day || "");
+
+  // When: "9am – 5pm", or All day
+  const isAllDay = /all\s*day/i.test(evt.duration || "") || /all\s*day/i.test(evt.time || "");
+  let timeText = "All day";
+  if (!isAllDay) {
+    const start = typeof getEventMinutes === "function" ? getEventMinutes(evt) : 0;
+    const m = String(evt.duration || "1 hour").match(/(\d+(?:\.\d+)?)\s*(h|hour|hr|min|m)/i);
+    const len = m ? (/^m/i.test(m[2]) ? parseFloat(m[1]) : parseFloat(m[1]) * 60) : 60;
+    const end = start + len;
+    const clock = (mins, withPeriod) => {
+      const h = Math.floor(mins / 60) % 24, mm = Math.round(mins % 60);
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return `${h12}${mm ? ":" + String(mm).padStart(2, "0") : ""}${withPeriod ? (h >= 12 ? "pm" : "am") : ""}`;
+    };
+    const same = (Math.floor(start / 60) % 24 >= 12) === (Math.floor(end / 60) % 24 >= 12);
+    timeText = `${clock(start, !same)} – ${clock(end, true)}`;
+  }
+
+  // Who
+  const isFamily = (n) => /^(family|whole family|everyone)$/i.test(n);
+  const people = String(evt.member || "Family").split(/&|,|\band\b|\+/i).map(x => x.trim()).filter(Boolean);
+  const named = people.filter(n => !isFamily(n));
+  const firstColor = named.length ? getMemberPalette(named[0]).primary : "#f59e0b";
+
+  $("event-pop-swatch").style.background = firstColor;
+  $("event-pop-title").textContent = `${evt.icon || "📅"} ${evt.title || "Event"}`;
+  $("event-pop-when").textContent = `${dayLabel} · ${timeText}`;
+  $("event-pop-who").innerHTML = named.length
+    ? `<span class="task-pop-avatars">${named.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("")}</span><span>${escapeHtml(named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} & ${named[named.length - 1]}`)}</span>`
+    : `<span class="task-pop-avatar" style="background:#f59e0b">👪</span><span>Everyone</span>`;
+
+  // Repeat
+  const wd = d ? DAYS[d.getDay()] : (evt.day || "");
+  const ord = (n) => { const s2 = ["th", "st", "nd", "rd"], v = n % 100; return n + (s2[(v - 20) % 10] || s2[v] || s2[0]); };
+  const repeatText = {
+    none: "Does not repeat",
+    daily: "Every day",
+    weekdays: "Every weekday",
+    weekly: `Every week on ${wd}`,
+    monthly: d ? `Every month on the ${ord(d.getDate())}` : "Every month",
+    annually: d ? `Every year on ${d.getDate()} ${MONTHS[d.getMonth()]}` : "Every year"
+  }[evt.repeat || "none"] || "Repeats";
+  $("event-pop-repeat").textContent = repeatText;
+
+  // Where and notes, only when there's something to show
+  const where = (evt.location || "").trim();
+  const notes = (evt.description || "").trim();
+  $("event-pop-where-row").style.display = where ? "" : "none";
+  $("event-pop-where").textContent = where;
+  $("event-pop-notes-row").style.display = notes ? "" : "none";
+  $("event-pop-notes").textContent = notes;
+
+  const close = () => {
+    overlay.style.display = "none";
+    document.removeEventListener("keydown", onKey);
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  $("btn-event-pop-close").onclick = close;
+  $("btn-event-pop-edit").onclick = () => { close(); openEventModal(evt); };
+  $("btn-event-pop-delete").onclick = () => {
+    close();
+    showDeleteConfirmation({
+      icon: "🗓️",
+      title: "Delete event?",
+      itemTitle: evt.title || "Event",
+      warning: evt.repeat && evt.repeat !== "none"
+        ? "This removes every repeat of this event from the calendar."
+        : "This removes the event from the calendar.",
+      confirmLabel: "Delete event",
+      onConfirm: () => {
+        if (!window.familyEvents) window.familyEvents = loadFamilyEvents();
+        window.familyEvents = (window.familyEvents || []).filter(x => x.id !== evt.id);
+        saveFamilyEvents(window.familyEvents);
+        renderWeekCalendar();
+        if (typeof sfx !== "undefined" && sfx && sfx.playTrash) sfx.playTrash();
+      }
+    });
+  };
+
+  overlay.style.display = "flex";
+  setTimeout(() => { try { $("btn-event-pop-close").focus({ preventScroll: true }); } catch (e) {} }, 50);
+}
+window.openEventQuickView = openEventQuickView;
+
 // "8 hours", "1.5 hours", "45 mins": the same wording the duration list and
 // the calendar's height maths use
 function formatEventDuration(mins) {

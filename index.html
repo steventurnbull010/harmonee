@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/navigation.css?v=2">
   <link rel="stylesheet" href="css/tasks.css?v=18">
   <link rel="stylesheet" href="css/meals.css?v=9">
-  <link rel="stylesheet" href="css/calendar.css?v=8">
+  <link rel="stylesheet" href="css/calendar.css?v=9">
   <link rel="stylesheet" href="css/lists.css?v=4">
   <link rel="stylesheet" href="css/rewards.css?v=2">
   <link rel="stylesheet" href="css/widgets.css?v=2">
@@ -843,6 +843,30 @@
           <button type="button" class="task-pop-primary" id="btn-quick-card-complete">Mark as complete</button>
           <p class="task-pop-hint" id="quick-card-hint"></p>
         </div>
+      </div>
+    </div>
+
+    <!-- Event pop-up: same look as the task pop-up. Edit opens the side panel. -->
+    <div id="event-quick-modal" class="skylight-task-quick-overlay" style="display: none;">
+      <div class="task-pop" role="dialog" aria-modal="true" aria-labelledby="event-pop-title">
+        <div class="task-pop-toolbar">
+          <button type="button" class="task-pop-icon-btn" id="btn-event-pop-edit" aria-label="Edit" title="Edit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+          <button type="button" class="task-pop-icon-btn" id="btn-event-pop-delete" aria-label="Delete" title="Delete"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>
+          <button type="button" class="task-pop-icon-btn" id="btn-event-pop-close" aria-label="Close" title="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="task-pop-head">
+          <span class="task-pop-swatch" id="event-pop-swatch" aria-hidden="true"></span>
+          <div class="task-pop-titles">
+            <h3 class="task-pop-title" id="event-pop-title">Event</h3>
+            <p class="task-pop-when" id="event-pop-when"></p>
+          </div>
+        </div>
+        <ul class="task-pop-details">
+          <li><span class="task-pop-row-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><div class="task-pop-assignee" id="event-pop-who"></div></li>
+          <li><span class="task-pop-row-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></span><span id="event-pop-repeat"></span></li>
+          <li id="event-pop-where-row"><span class="task-pop-row-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></span><span id="event-pop-where"></span></li>
+          <li id="event-pop-notes-row" class="event-pop-notes"><span class="task-pop-row-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg></span><span id="event-pop-notes"></span></li>
+        </ul>
       </div>
     </div>
 
@@ -2647,11 +2671,11 @@
   <script src="js/reward-goals.js?v=2"></script>
   <script src="js/page-intro.js?v=4"></script>
   <script src="js/sticky-note.js?v=4"></script>
-  <script src="js/calendar.js?v=13"></script>
+  <script src="js/calendar.js?v=14"></script>
   <script src="js/tasks.js?v=24"></script>
   <script src="js/board-access.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=20"></script>
-  <script type="module" src="app.js?v=219"></script>
+  <script type="module" src="app.js?v=220"></script>
 </body>
 </html>

@@ -5511,3 +5511,8 @@ body.theme-dark #view-calendar .skylight-timed-event-block.ev-block {
     color-mix(in srgb, var(--c2, #64748b) 30%, #1e293b) 100%) !important;
   border-color: color-mix(in srgb, var(--c1, #64748b) 60%, transparent) !important;
 }
+
+/* Event pop-up (reuses the task pop-up styles): notes keep their line breaks */
+.event-pop-notes span:last-child { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-secondary, #475569); }
+body.theme-dark .event-pop-notes span:last-child { color: #cbd5e1; }
+#event-pop-where { overflow-wrap: anywhere; }

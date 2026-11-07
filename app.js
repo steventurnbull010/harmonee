@@ -6731,12 +6731,15 @@ function initSkylightNavigation() {
       }
 
       // 4. Event card click
-      const eventCard = e.target.closest(".skylight-card[data-event-id], .calendar-event-card");
+      const eventCard = e.target.closest(".skylight-card[data-event-id], .calendar-event-card, .skylight-day-event-banner[data-event-id]");
       if (eventCard) {
         e.stopPropagation();
         const eventId = eventCard.getAttribute("data-event-id");
-        const evt = (familyEvents || []).find(x => x.id === eventId);
-        if (evt) openEventModal(evt);
+        const evt = (familyEvents || []).find(x => x.id === eventId) || (window.familyEvents || []).find(x => x.id === eventId);
+        // A small pop-up first, like tapping a task; Edit in it opens the panel
+        const onDate = (eventCard.closest("[data-date]") || {}).getAttribute ? eventCard.closest("[data-date]").getAttribute("data-date") : null;
+        if (evt && typeof window.openEventQuickView === "function") window.openEventQuickView(evt, onDate);
+        else if (evt) openEventModal(evt);
         return;
       }
 
