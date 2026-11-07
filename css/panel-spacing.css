@@ -32,26 +32,18 @@ dialog.side-panel #new-list-emoji-picker { margin-top: 8px !important; margin-bo
 dialog.side-panel #new-list-color-picker { gap: 8px !important; }
 dialog.side-panel .modal-footer.create-list-footer { gap: 8px !important; }
 dialog.side-panel #btn-save-new-list { padding: 16px !important; gap: 8px !important; }
-dialog.side-panel #banner-event-magic-scan { padding: 16px !important; gap: 16px !important; }
-dialog.side-panel .magic-banner-text { gap: 8px !important; }
-dialog.side-panel .magic-banner-desc { gap: 0 !important; }
-dialog.side-panel #btn-event-magic-scan { padding: 8px 16px !important; }
-dialog.side-panel #btn-event-emoji-picker { padding: 0 8px !important; gap: 8px !important; }
-dialog.side-panel #event-title-input { padding: 8px 16px !important; }
-dialog.side-panel #btn-close-emoji-palette { padding: 0 8px !important; }
-dialog.side-panel #emoji-palette-grid { padding: 0 !important; gap: 8px !important; }
-dialog.side-panel #event-selected-day-badge { padding: 0 8px !important; }
-dialog.side-panel #event-date-input { padding: 8px 16px 8px 40px !important; }
-dialog.side-panel #event-quick-date-pills { margin-top: 8px !important; margin-bottom: 0 !important; }
-dialog.side-panel .quick-date-pill { padding: 8px 16px !important; }
-dialog.side-panel #event-time-preview-badge { padding: 8px 16px !important; gap: 8px !important; }
-dialog.side-panel .time-sub-label { margin-top: 0 !important; margin-bottom: 8px !important; }
-dialog.side-panel #hour-carousel-track { padding: 8px 0 !important; }
-dialog.side-panel .minute-chip { padding: 8px 16px !important; }
-dialog.side-panel #event-duration-select,
+/* Add / Edit Event (rebuilt to match the Tasks panel) */
+dialog.side-panel #form-event { display: flex; flex-direction: column; gap: 24px; }
+dialog.side-panel #form-event .drawer-input-row { padding: 16px !important; gap: 16px !important; }
+dialog.side-panel #event-title-input { padding: 0 !important; }
+dialog.side-panel #btn-event-emoji-picker { padding: 8px 16px !important; min-height: 48px; box-sizing: border-box; gap: 8px !important; }
+dialog.side-panel #event-emoji-palette { margin-top: 8px !important; }
+dialog.side-panel #emoji-palette-grid { padding: 0 !important; }
+dialog.side-panel #event-who-row { padding: 8px 0 !important; }
+dialog.side-panel #event-who-row .drawer-profile-pill { gap: 8px !important; }
+dialog.side-panel .ev-native-input { padding: 8px 16px !important; }
 dialog.side-panel #event-repeat-select { padding: 8px 40px 8px 16px !important; }
 dialog.side-panel #event-description-input { padding: 16px !important; }
-dialog.side-panel #event-location-input { padding: 8px 16px !important; }
 dialog.side-panel #btn-save-event { padding: 16px 24px !important; }
 dialog.side-panel #sticky-input-text { padding: 16px !important; }
 dialog.side-panel #sticky-color-picker { margin-top: 8px !important; margin-bottom: 0 !important; }

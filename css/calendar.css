@@ -5369,3 +5369,66 @@ body.theme-dark .time-grid-new-event-time { color: #93c5fd; }
 
 @keyframes timeGridNewIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .time-grid-new-event { animation: none; } }
+
+/* ==========================================================================
+   Add / Edit Event panel, rebuilt to match the Tasks panel: title, grouped
+   icon picker, avatar "Who's it for", a "When" card with the device's own
+   date and time pickers, then Where and Notes. 8px grid throughout.
+   ========================================================================== */
+#form-event .drawer-field-group { margin: 0; }
+#form-event .drawer-section-label-row { margin-bottom: 8px; }
+
+.ev-when-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: var(--card-bg, #ffffff);
+}
+.ev-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.ev-field-label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+.ev-day-name { font-weight: 700; color: var(--accent, #3b82f6); }
+
+.ev-native-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 16px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ev-native-input:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12); }
+.ev-native-input::placeholder { color: #94a3b8; font-weight: 500; }
+textarea.ev-native-input { min-height: 96px; resize: vertical; line-height: 1.5; font-weight: 500; }
+
+.ev-allday-row { padding: 0 !important; border-bottom: none !important; }
+.ev-time-row { display: flex; align-items: flex-end; gap: 8px; }
+.ev-time-arrow { padding-bottom: 12px; color: var(--text-secondary, #64748b); font-weight: 700; }
+
+.ev-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 0; }
+.ev-actions .btn-submit { width: 100%; }
+.ev-delete {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: transparent;
+  color: #dc2626;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ev-delete:hover { background: rgba(220, 38, 38, 0.06); }
+
+body.theme-dark .ev-when-card { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.1); }
+body.theme-dark .ev-native-input { background: #0f172a; border-color: #334155; color: #f8fafc; color-scheme: dark; }
+body.theme-dark .ev-day-name { color: #93c5fd; }
+body.theme-dark .ev-delete { color: #f87171; border-color: rgba(248, 113, 113, 0.35); }

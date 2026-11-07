@@ -103,6 +103,21 @@ const EVENT_EMOJI_LIST = [
   "📅", "⏰", "⭐", "✨", "🔔", "📌", "🏆", "🌟"
 ];
 
+// Icons for calendar events, grouped by the kind of thing it is, in the same
+// big-tile picker as the Tasks panel
+const EVENT_EMOJI_GROUPS = [
+  { name: "General", items: [["📅","Event"],["⏰","Reminder"],["📌","Important"],["🔔","Alert"],["⭐","Special"],["✅","To do"],["🗑️","Bin day"],["♻️","Recycling"]] },
+  { name: "School & learning", items: [["🏫","School"],["📚","Homework"],["🎓","Exam"],["✏️","Tutor"],["🔬","Science"],["🧮","Maths"],["💻","Computer"],["🎒","School trip"],["🗣️","Parents' evening"],["📝","Test"]] },
+  { name: "Sport & clubs", items: [["⚽","Football"],["🏀","Basketball"],["🎾","Tennis"],["🏊","Swimming"],["🥋","Martial arts"],["🩰","Dance"],["🏃","Running"],["🚴","Cycling"],["🏋️","Gym"],["🏐","Volleyball"],["⛳","Golf"],["🧗","Climbing"],["🤸","Gymnastics"],["🏉","Rugby"],["🏑","Hockey"],["🐴","Riding"]] },
+  { name: "Music & arts", items: [["🎹","Piano"],["🎸","Guitar"],["🎻","Violin"],["🥁","Drums"],["🎤","Singing"],["🎨","Art"],["🎭","Drama"],["📷","Photography"],["🎼","Music lesson"]] },
+  { name: "Health & appointments", items: [["🩺","Doctor"],["🏥","Hospital"],["🦷","Dentist"],["💊","Pharmacy"],["💉","Vaccine"],["👓","Optician"],["💇","Haircut"],["🧘","Yoga"],["🐾","Vet"]] },
+  { name: "Family & friends", items: [["👨‍👩‍👧‍👦","Family"],["🎂","Birthday"],["🎉","Party"],["🎁","Present"],["🍽️","Dinner"],["☕","Coffee"],["🍕","Pizza"],["🏡","Visit"],["👶","Baby"],["💒","Wedding"],["🛌","Sleepover"],["📞","Call"]] },
+  { name: "Days out", items: [["🎬","Cinema"],["🍿","Film night"],["🎳","Bowling"],["🎡","Fair"],["🏟️","Match"],["🛍️","Shopping"],["🌳","Park"],["🏖️","Beach"],["⛺","Camping"],["🦁","Zoo"],["🏰","Day trip"],["🎢","Theme park"]] },
+  { name: "Travel", items: [["✈️","Flight"],["🚆","Train"],["🚗","Drive"],["🚌","Bus"],["⛴️","Ferry"],["🧳","Holiday"],["🏨","Hotel"],["🗺️","Trip"]] },
+  { name: "Work & errands", items: [["💼","Work"],["🏢","Office"],["🛒","Groceries"],["🏦","Bank"],["📮","Post"],["🔧","Repair"],["🚙","Car service"],["🧾","Bills"],["🔑","Keys"]] },
+  { name: "Holidays & seasons", items: [["🎄","Christmas"],["🎃","Halloween"],["🐣","Easter"],["💝","Valentine's"],["🎆","Fireworks"],["🍀","St Patrick's"],["🕯️","Celebration"],["☀️","Summer"],["❄️","Winter"]] }
+];
+
 function detectEmojiForTitle(text) {
   if (!text) return null;
   const t = text.toLowerCase();
@@ -392,7 +407,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       month: "short",
       year: "numeric"
     });
-    if (selectedDayBadge) selectedDayBadge.textContent = formattedBadge;
+    if (selectedDayBadge) selectedDayBadge.textContent = `· ${dayName}`;
 
     if (repeatOptWeekly) repeatOptWeekly.textContent = `Weekly on ${dayName}`;
     if (repeatOptMonthly) repeatOptMonthly.textContent = `Monthly on the ${getOrdinal(dObj.getDate())}`;
@@ -564,17 +579,53 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   }
 
   // 3. Multi-Member Selection
-  let selectedEventMembers = (Array.isArray(activeCalendarMemberFilters) && activeCalendarMemberFilters.length > 0) ? [...activeCalendarMemberFilters] : ["Ava"];
+  // New events start as the whole family, or whoever the calendar is
+  // filtered to
+  const boardMembers = (window.familyMembers && window.familyMembers.length) ? window.familyMembers : ["Steven", "Sorcha", "Ava", "Dara"];
+  const filtered = Array.isArray(activeCalendarMemberFilters) ? activeCalendarMemberFilters.filter(m => boardMembers.includes(m)) : [];
+  let selectedEventMembers = filtered.length ? [...filtered] : ["Family"];
 
+  // Same avatar picker as the Tasks panel: picked people are filled in their
+  // colour with a tick, with a sentence underneath saying who it's for
   const updateMemberChipsUI = () => {
-    document.querySelectorAll(".event-member-chip").forEach(chip => {
-      const m = chip.getAttribute("data-member");
-      if (selectedEventMembers.includes(m)) {
-        chip.classList.add("is-selected");
-      } else {
-        chip.classList.remove("is-selected");
-      }
-    });
+    const row = document.getElementById("event-who-row");
+    const summary = document.getElementById("event-who-summary");
+    const isFamily = (n) => /^(family|whole family|everyone)$/i.test(n);
+    if (selectedEventMembers.some(isFamily) || !selectedEventMembers.length) selectedEventMembers = ["Family"];
+    const known = selectedEventMembers.filter(n => !isFamily(n));
+    if (row) {
+      const tick = `<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
+      const pills = [...boardMembers, ...known.filter(n => !boardMembers.includes(n)), "Family"].map(p => {
+        const fam = p === "Family";
+        const color = fam ? "#f59e0b" : getMemberPalette(p).primary;
+        const on = fam ? selectedEventMembers[0] === "Family" : selectedEventMembers.includes(p);
+        return `<button type="button" class="drawer-profile-pill ${on ? "active" : ""}" data-event-member="${escapeHtml(p)}" aria-pressed="${on}" style="--profile-color: ${color};">
+          <span class="drawer-profile-avatar">${fam ? "👪" : escapeHtml(p.charAt(0).toUpperCase())}${tick}</span>
+          <span class="drawer-profile-name">${fam ? "Everyone" : escapeHtml(p)}</span>
+        </button>`;
+      }).join("");
+      row.innerHTML = pills;
+      row.querySelectorAll("[data-event-member]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const m = btn.getAttribute("data-event-member");
+          if (m === "Family") {
+            selectedEventMembers = ["Family"];
+          } else {
+            selectedEventMembers = selectedEventMembers.filter(x => !isFamily(x));
+            selectedEventMembers = selectedEventMembers.includes(m) ? selectedEventMembers.filter(x => x !== m) : [...selectedEventMembers, m];
+            if (!selectedEventMembers.length) selectedEventMembers = ["Family"];
+          }
+          updateMemberChipsUI();
+        };
+      });
+    }
+    if (summary) {
+      const people = selectedEventMembers.filter(n => !isFamily(n));
+      summary.textContent = !people.length ? "For everyone in the family."
+        : people.length === 1 ? `For ${people[0]}.`
+        : `For ${people.slice(0, -1).join(", ")} & ${people[people.length - 1]}.`;
+    }
     if (memberInput) memberInput.value = selectedEventMembers.join(" & ") || "Family";
   };
 
@@ -587,7 +638,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     if (modalTrophy) modalTrophy.textContent = em;
 
     if (emojiPaletteGrid) {
-      emojiPaletteGrid.querySelectorAll(".emoji-palette-item").forEach(item => {
+      emojiPaletteGrid.querySelectorAll(".drawer-emoji-item").forEach(item => {
         if (item.getAttribute("data-emoji") === em) item.classList.add("is-selected");
         else item.classList.remove("is-selected");
       });
@@ -596,13 +647,13 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
 
   // Populate emoji palette grid once if empty
   if (emojiPaletteGrid && emojiPaletteGrid.children.length === 0) {
-    emojiPaletteGrid.innerHTML = EVENT_EMOJI_LIST.map(em => `
-      <button type="button" class="emoji-palette-item" data-emoji="${em}" title="Select ${em}">
-        ${em}
-      </button>
-    `).join("");
+    emojiPaletteGrid.innerHTML = EVENT_EMOJI_GROUPS.map(g => `
+      <div class="drawer-emoji-group">
+        <div class="drawer-emoji-group-title">${escapeHtml(g.name)}</div>
+        <div class="drawer-emoji-group-items">${g.items.map(([em, label]) => `<button type="button" class="drawer-emoji-item" data-emoji="${em}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${em}</button>`).join("")}</div>
+      </div>`).join("");
 
-    emojiPaletteGrid.querySelectorAll(".emoji-palette-item").forEach(item => {
+    emojiPaletteGrid.querySelectorAll(".drawer-emoji-item").forEach(item => {
       item.onclick = (e) => {
         e.preventDefault();
         const chosen = item.getAttribute("data-emoji");
@@ -610,6 +661,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
           isManualEmoji = true;
           setEmoji(chosen);
           if (emojiPalette) emojiPalette.style.display = "none";
+          if (btnEmojiPicker) btnEmojiPicker.setAttribute("aria-expanded", "false");
         }
       };
     });
@@ -621,8 +673,11 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       e.stopPropagation();
       if (!emojiPalette) return;
       const isOpen = emojiPalette.style.display !== "none";
-      emojiPalette.style.display = isOpen ? "none" : "flex";
+      emojiPalette.style.display = isOpen ? "none" : "block";
+      btnEmojiPicker.setAttribute("aria-expanded", String(!isOpen));
+      if (!isOpen) emojiPalette.scrollTop = 0;
     };
+    btnEmojiPicker.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") btnEmojiPicker.onclick(e); };
   }
 
   if (btnClosePalette) {
@@ -648,7 +703,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
 
   // Populate data when editing vs creating
   if (evt) {
-    if (modalTitle) modalTitle.textContent = "Edit Calendar Event";
+    if (modalTitle) modalTitle.textContent = "Edit Event";
     if (idInput) idInput.value = evt.id || "";
     if (titleInput) titleInput.value = evt.title || "";
     setEventDurationValue(durationSelect, evt.duration || "1 hour");
@@ -663,13 +718,13 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     const parsed = parseTimeString(evt.time || "16:30");
     setTime(parsed.hour, parsed.minute);
     
-    const curMem = evt.member || "Ava";
+    const curMem = evt.member || "Family";
     selectedEventMembers = curMem.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
-    if (selectedEventMembers.length === 0) selectedEventMembers = ["Ava"];
+    if (selectedEventMembers.length === 0) selectedEventMembers = ["Family"];
     updateMemberChipsUI();
     if (btnDelete) btnDelete.style.display = "inline-block";
   } else {
-    if (modalTitle) modalTitle.textContent = "Add Calendar Event";
+    if (modalTitle) modalTitle.textContent = "Add Event";
     if (idInput) idInput.value = "";
     if (titleInput) titleInput.value = "";
     setEventDurationValue(durationSelect, (slot && slot.duration) || "1 hour");
@@ -685,13 +740,61 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       const [sh, sm] = slot.start.split(":");
       setTime(sh, sm); // where you tapped or dragged on the calendar
     } else {
-      setTime("16", "30"); // Defaults to 16:30 (4:30 PM)
+      // The next half hour from now, like Google Calendar
+      const n = new Date();
+      const next = Math.min(23 * 60 + 30, Math.ceil((n.getHours() * 60 + n.getMinutes() + 1) / 30) * 30);
+      setTime(String(Math.floor(next / 60)).padStart(2, "0"), String(next % 60).padStart(2, "0"));
     }
 
-    selectedEventMembers = ["Ava"];
+    selectedEventMembers = filtered.length ? [...filtered] : ["Family"];
     updateMemberChipsUI();
     if (btnDelete) btnDelete.style.display = "none";
   }
+
+  // When: Starts and Ends (the device's own time pickers) and All day. Saving
+  // still uses the start time plus a length, so Ends sets the length.
+  const startInput = document.getElementById("event-start-time");
+  const endInput = document.getElementById("event-end-time");
+  const allDayToggle = document.getElementById("event-allday-toggle");
+  const timeRow = document.getElementById("event-time-row");
+  const durLabel = document.getElementById("event-duration-label");
+  const toMins = (hhmm) => { const [h, m] = (hhmm || "00:00").split(":").map(Number); return h * 60 + m; };
+  const toHHMM = (mins) => { const t = ((mins % 1440) + 1440) % 1440; return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+  const durationMins = (str) => {
+    const m = String(str || "").match(/(\d+(?:\.\d+)?)\s*(h|hour|hr|min|m)/i);
+    if (!m) return 60;
+    return /^m/i.test(m[2]) ? Math.round(parseFloat(m[1])) : Math.round(parseFloat(m[1]) * 60);
+  };
+  const showLength = (mins) => { if (durLabel) durLabel.textContent = `· ${formatEventDuration(mins)}`; };
+  const syncWhenUI = () => {
+    const allDay = durationSelect && durationSelect.value === "All Day";
+    if (allDayToggle) allDayToggle.checked = allDay;
+    if (timeRow) timeRow.style.display = allDay ? "none" : "";
+    const start = (timeInput && timeInput.value) || "09:00";
+    const len = allDay ? 60 : durationMins(durationSelect && durationSelect.value);
+    if (startInput) startInput.value = start;
+    if (endInput) endInput.value = toHHMM(toMins(start) + len);
+    showLength(len);
+  };
+  if (startInput) startInput.onchange = () => {
+    if (!startInput.value) return;
+    const len = toMins(endInput && endInput.value) - toMins(timeInput.value);
+    const [h, m] = startInput.value.split(":");
+    setTime(h, m);
+    if (endInput) endInput.value = toHHMM(toMins(startInput.value) + (len > 0 ? len : 60)); // keep the same length
+  };
+  if (endInput) endInput.onchange = () => {
+    if (!endInput.value) return;
+    let len = toMins(endInput.value) - toMins(startInput.value);
+    if (len <= 0) { len = 15; endInput.value = toHHMM(toMins(startInput.value) + 15); }
+    setEventDurationValue(durationSelect, formatEventDuration(len));
+    showLength(len);
+  };
+  if (allDayToggle) allDayToggle.onchange = () => {
+    setEventDurationValue(durationSelect, allDayToggle.checked ? "All Day" : "1 hour");
+    syncWhenUI();
+  };
+  syncWhenUI();
 
   // Wire preset suggestion chips
   document.querySelectorAll(".preset-chip").forEach(chip => {
@@ -723,27 +826,6 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   });
 
   // Wire member chips (Multi-select)
-  document.querySelectorAll(".event-member-chip").forEach(chip => {
-    chip.onclick = (e) => {
-      e.preventDefault();
-      const m = chip.getAttribute("data-member");
-      if (m === "Family") {
-        selectedEventMembers = ["Family"];
-      } else {
-        selectedEventMembers = selectedEventMembers.filter(x => x !== "Family");
-        if (selectedEventMembers.includes(m)) {
-          selectedEventMembers = selectedEventMembers.filter(x => x !== m);
-        } else {
-          selectedEventMembers.push(m);
-        }
-        if (selectedEventMembers.length === 0) {
-          selectedEventMembers = [m];
-        }
-      }
-      updateMemberChipsUI();
-    };
-  });
-
   const closeEventModal = () => {
     if (modal) {
       if (typeof modal.close === "function") modal.close();
