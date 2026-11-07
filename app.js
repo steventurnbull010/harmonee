@@ -577,6 +577,8 @@ function getSkylightColor(colorIdOrIdx) {
 }
 
 // Helper avatar palette: Returns dynamic member palette
+window.SKYLIGHT_PROFILE_COLORS = SKYLIGHT_PROFILE_COLORS;
+
 function getMemberPalette(name) {
   if (!name) {
     const fColor = getSkylightColor("buttercup");
@@ -1235,16 +1237,22 @@ function initApp() {
   // and do NOT load Turnbull family tasks or members into the background!
   if (isFirstTimeVisitor()) {
     familyMembers = [];
+    window.familyMembers = familyMembers;
     currentTasks = [];
     document.body.classList.add("onboarding-active");
     setupEventListeners();
     setTimeout(() => {
-      openOnboardingModal();
+      // The guided setup (js/setup-wizard.js); the old one-page form as a fallback
+      if (typeof window.openSetupWizard === "function") window.openSetupWizard();
+      else openOnboardingModal();
     }, 100);
     return;
   }
 
   loadLocalBoardSettings();
+  // The people saved on this device (e.g. by the guided setup) before the
+  // board is opened or created; the board's own list replaces it once loaded
+  loadLocalRoster();
   setupEventListeners();
   loadFamilyStickyNote();
   loadFamilyLists();
@@ -1447,6 +1455,9 @@ async function ensureBoardAccess(app) {
     try {
       await createBoardWithAccess();
       localStorage.removeItem(PENDING_NEW_BOARD_KEY);
+      // First visit to a brand-new board: show the welcome with the family code
+      try { localStorage.setItem(`harmonee_welcome_${currentBoardId}`, "1"); } catch (e) {}
+      if (typeof window.showSetupWelcome === "function") setTimeout(window.showSetupWelcome, 300);
       return;
     } catch (err) {
       // The name is already taken by another household: fall through to joining
@@ -1541,7 +1552,7 @@ function listenToFirestoreTasks() {
         // Custom board
         const params = new URLSearchParams(window.location.search);
         const template = params.get("template");
-        if (template === "starter") {
+        if (template === "starter" || (template === "setup" && getNewBoardSeedTasks().length)) {
           console.log("Seeding custom board with starter tasks...");
           await seedFirestoreData();
           return;
@@ -1593,6 +1604,7 @@ function listenToFirestoreBoard() {
       let shouldRender = false;
       if (Array.isArray(data.members) && data.members.length > 0) {
         familyMembers = data.members;
+        window.familyMembers = familyMembers; // js/ modules read the shared copy
         saveLocalRoster(familyMembers);
         shouldRender = true;
       }
@@ -1661,11 +1673,25 @@ function listenToFirestoreBoard() {
   });
 }
 
+// A new board's first jobs: the ones picked in the guided setup
+// (?template=setup), or the starter pack
+function getNewBoardSeedTasks() {
+  const template = new URLSearchParams(window.location.search).get("template");
+  if (template === "setup") {
+    try {
+      const picked = JSON.parse(localStorage.getItem(`harmonee_setup_tasks_${currentBoardId}`) || "[]");
+      if (Array.isArray(picked)) return picked;
+    } catch (e) {}
+    return [];
+  }
+  return STARTER_GENERIC_TASKS;
+}
+
 async function seedFirestoreData() {
   if (!db) return;
   try {
     const batch = writeBatch(db);
-    const tasksToSeed = isDefaultTurnbullBoard ? INITIAL_SEED_TASKS : STARTER_GENERIC_TASKS;
+    const tasksToSeed = isDefaultTurnbullBoard ? INITIAL_SEED_TASKS : getNewBoardSeedTasks();
 
     tasksToSeed.forEach(task => {
       const docRef = getTaskDocRef(task.id);
@@ -1759,6 +1785,7 @@ function loadLocalRoster() {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
         familyMembers = parsed;
+        window.familyMembers = familyMembers;
       }
     }
   } catch (e) {
@@ -1803,8 +1830,8 @@ function loadLocalTasks() {
       } else {
         const params = new URLSearchParams(window.location.search);
         const template = params.get("template");
-        if (template === "starter") {
-          currentTasks = JSON.parse(JSON.stringify(STARTER_GENERIC_TASKS)).map(normalizeTask);
+        if (template === "starter" || template === "setup") {
+          currentTasks = JSON.parse(JSON.stringify(getNewBoardSeedTasks())).map(normalizeTask);
         } else {
           currentTasks = [];
         }
@@ -4851,6 +4878,16 @@ function setupEventListeners() {
 
       const rawName = boardNameInput ? boardNameInput.value.trim() : "";
       if (!rawName) return;
+
+      // New boards are made through the guided setup (js/setup-wizard.js),
+      // starting with this name
+      if (typeof window.openSetupWizard === "function") {
+        const go = new URL(window.location.origin + window.location.pathname);
+        go.searchParams.set("new", "true");
+        go.searchParams.set("family", rawName);
+        window.location.href = go.toString();
+        return;
+      }
 
       const baseSlug = rawName
         .toLowerCase()

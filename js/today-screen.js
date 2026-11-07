@@ -448,6 +448,8 @@
   const openOnPhone = () => {
     if (!window.matchMedia("(max-width: 600px)").matches) return;
     if (shown("board-join-screen") || shown("ambient-sleep-overlay")) return;
+    const setup = document.getElementById("setup-wizard");
+    if (setup && !setup.hidden) return; // a new family is still setting up
     const today = document.getElementById("today-screen");
     if (today && !today.hidden) return;
     showTodayScreen({ from: "logo" });
