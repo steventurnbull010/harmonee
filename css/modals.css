@@ -2428,3 +2428,6 @@ body.theme-dark .today-wordmark span::after { background: #7dd3fc; }
   .today-time { min-width: 0; flex-basis: 96px; white-space: normal; font-size: 0.86rem; line-height: 1.25; }
   .today-wordmark span { font-size: 1.7rem; }
 }
+/* The script h reaches further left than the serif G: line their ink up */
+.today-wordmark span { margin-left: 0.12em; }
+.today-weather { white-space: nowrap; }

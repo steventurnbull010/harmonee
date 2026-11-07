@@ -173,6 +173,7 @@ function hideLocalWeather() {
   const mealsWeatherEl = document.getElementById("meals-header-time-weather");
   if (mealsWeatherEl) mealsWeatherEl.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   localWeatherForecast = null;
+  window.currentWeatherNow = null;
 }
 
 async function initLocalWeather() {
@@ -184,6 +185,8 @@ async function initLocalWeather() {
     let icon = info.icon;
     if (code === 0 && !isDay) icon = "🌙";
     const rounded = Math.round(temp);
+    // For Today at a glance: "☁️ Overcast, 10°"
+    window.currentWeatherNow = { icon, text: info.text, temp: rounded };
 
     badgeElements.forEach(badge => {
       badge.innerHTML = icon + " " + rounded + "°";

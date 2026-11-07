@@ -29,9 +29,11 @@
 
   function partOfDay(now) {
     const h = now.getHours();
-    if (h < 12) return { key: "morning", text: "Good morning", icon: "☀️" };
-    if (h < 18) return { key: "afternoon", text: "Good afternoon", icon: "🌤️" };
-    return { key: "evening", text: "Good evening", icon: "🌙" };
+    // A friendly wave, not a weather symbol: the weather has its own place on
+    // the date line, and "Good afternoon ☀️" would be wrong on a rainy day
+    if (h < 12) return { key: "morning", text: "Good morning", icon: "👋" };
+    if (h < 18) return { key: "afternoon", text: "Good afternoon", icon: "👋" };
+    return { key: "evening", text: "Good evening", icon: "👋" };
   }
 
   // "9am", "12:30pm"
@@ -130,7 +132,9 @@
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const part = partOfDay(now);
-    const weather = (document.getElementById("calendar-weather-badge") || {}).textContent || "";
+    // The weather, in words so rain is obvious: "· 🌧️ Rain, 9°"
+    const wx = window.currentWeatherNow;
+    const weatherLine = wx ? ` · <span class="today-weather"><span aria-hidden="true">${esc(wx.icon)}</span> ${esc(wx.text)}, ${esc(wx.temp)}°</span>` : "";
 
     // Jobs
     const jobs = jobsOn(today);
@@ -183,7 +187,7 @@
         <header class="today-head">
           <p class="today-wordmark" aria-label="harmonee"><span aria-hidden="true">harmonee</span></p>
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
-          <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weather.trim() ? ` · ${esc(weather.trim())}` : ""}</p>
+          <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weatherLine}</p>
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
           <div class="today-quick" role="group" aria-label="Quick add">
             <button type="button" class="today-quick-btn" data-quick="list"><span aria-hidden="true">🛒</span> List item</button>
