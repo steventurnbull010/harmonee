@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="css/navigation.css?v=3">
   <link rel="stylesheet" href="css/tasks.css?v=19">
   <link rel="stylesheet" href="css/meals.css?v=21">
-  <link rel="stylesheet" href="css/calendar.css?v=13">
+  <link rel="stylesheet" href="css/calendar.css?v=15">
   <link rel="stylesheet" href="css/lists.css?v=7">
   <link rel="stylesheet" href="css/rewards.css?v=3">
   <link rel="stylesheet" href="css/widgets.css?v=3">
-  <link rel="stylesheet" href="css/modals.css?v=5">
+  <link rel="stylesheet" href="css/modals.css?v=6">
   <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=1">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
@@ -1527,6 +1527,7 @@
                 <p class="settings-box-desc">Loading…</p>
               </div>
             </div>
+            <div class="settings-section-box parent-pin-settings" id="parent-pin-settings"></div>
           </section>
 
           <!-- SLEEP: scheduled lights-out overnight -->
@@ -2371,6 +2372,44 @@
           </div>
         </div>
 
+        <!-- Extras: countdown and birthday -->
+        <div class="drawer-field-group">
+          <div class="drawer-section-label-row">
+            <span class="drawer-section-icon">✨</span>
+            <span class="drawer-section-label">Extras</span>
+          </div>
+          <div class="ev-when-card">
+            <div class="drawer-toggle-row">
+              <div class="drawer-toggle-left">
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">⏳ Count down to it</span>
+                  <span class="drawer-toggle-sub">Shows how many sleeps to go at the top of every page</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="event-countdown-toggle">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div class="drawer-toggle-row">
+              <div class="drawer-toggle-left">
+                <div class="drawer-toggle-texts">
+                  <span class="drawer-toggle-title">🎂 It's a birthday</span>
+                  <span class="drawer-toggle-sub">Every year, all day, with a countdown in the month before</span>
+                </div>
+              </div>
+              <label class="skylight-switch">
+                <input type="checkbox" id="event-birthday-toggle">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <label class="ev-field" id="event-born-row" hidden>
+              <span class="ev-field-label">Year born (optional, shows their age)</span>
+              <input type="number" id="event-born-year" class="ev-native-input" inputmode="numeric" min="1900" max="2100" placeholder="e.g. 2017" autocomplete="off">
+            </label>
+          </div>
+        </div>
+
         <!-- Where and notes -->
         <div class="drawer-field-group">
           <div class="drawer-section-label-row">
@@ -2646,7 +2685,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/utils.js?v=10"></script>
+  <script src="js/utils.js?v=12"></script>
   <script src="js/seed-data.js?v=3"></script>
   <script src="js/audio.js?v=3"></script>
   <script src="js/weather.js?v=3"></script>
@@ -2655,16 +2694,18 @@
   <script src="js/lists.js?v=14"></script>
   <script src="js/magic-scanner.js?v=6"></script>
   <script src="js/rewards.js?v=7"></script>
-  <script src="js/reward-goals.js?v=3"></script>
+  <script src="js/reward-goals.js?v=4"></script>
   <script src="js/page-intro.js?v=4"></script>
   <script src="js/sticky-note.js?v=4"></script>
-  <script src="js/calendar.js?v=18"></script>
+  <script src="js/calendar.js?v=21"></script>
   <script src="js/date-picker.js?v=1"></script>
   <script src="js/tasks.js?v=27"></script>
   <script src="js/code-words.js?v=1"></script>
   <script src="js/board-access.js?v=2"></script>
+  <script src="js/countdowns.js?v=1"></script>
+  <script src="js/parent-pin.js?v=1"></script>
   <script src="js/side-panel.js?v=9"></script>
   <script type="module" src="js/meals.js?v=32"></script>
-  <script type="module" src="app.js?v=228"></script>
+  <script type="module" src="app.js?v=229"></script>
 </body>
 </html>

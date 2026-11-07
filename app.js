@@ -1463,6 +1463,34 @@ async function ensureBoardAccess(app) {
   });
 }
 
+// For the parent PIN (js/parent-pin.js): "forgot the PIN" accepts the
+// family code instead. Members can read the code, so check it here.
+async function checkFamilyCode(code) {
+  const typed = normalizeFamilyCode(code);
+  if (typed.length < 8) return false;
+  try {
+    const snap = await getDoc(doc(db, "boards", currentBoardId, "private", "access"));
+    return snap.exists() && normalizeFamilyCode(snap.data().code) === typed;
+  } catch (e) {
+    return false;
+  }
+}
+window.checkFamilyCode = checkFamilyCode;
+
+// Save a few board settings now (this device and Firestore), e.g. the parent PIN
+async function saveBoardSettingsNow(fields) {
+  saveLocalBoardSettings({ ...boardSettings, ...fields });
+  if (!db) return;
+  try {
+    const boardDocRef = getBoardDocRef();
+    if (boardDocRef) await setDoc(boardDocRef, { settings: fields, updatedAt: serverTimestamp() }, { merge: true });
+  } catch (err) {
+    console.warn("Failed to sync settings to Firestore:", err);
+  }
+}
+window.saveBoardSettingsNow = saveBoardSettingsNow;
+window.getCurrentBoardId = () => currentBoardId;
+
 // Settings > Family access: read the code and joined devices (members only)
 async function loadFamilyAccessInfo() {
   if (!db || !boardDeviceUid) return null;
@@ -5196,12 +5224,15 @@ function setupEventListeners() {
     }
   }
 
-  function openSettingsModal(section = null) {
+  async function openSettingsModal(section = null) {
+    // A parent PIN, if one is set, guards Settings
+    if (window.ParentPin && !(await window.ParentPin.require("Settings"))) return;
     tempSelectedMode = boardSettings.gameMode || "points";
     tempSelectedCurrency = boardSettings.currency || "£";
 
     updateSettingsModalUI();
     renderFamilyAccessSection();
+    if (window.ParentPin) window.ParentPin.renderSettingsBox();
     renderRosterModalList();
     wireSettingsSectionNav();
 

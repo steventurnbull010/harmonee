@@ -251,12 +251,23 @@ function renderRewardGoals() {
 }
 window.renderRewardGoals = renderRewardGoals;
 
-function onRewardGoalsGridClick(e) {
+// With a parent PIN set, adding/editing goals and redeeming need the PIN
+const rewardParentOk = (reason) => (window.ParentPin ? window.ParentPin.require(reason) : Promise.resolve(true));
+
+async function onRewardGoalsGridClick(e) {
   const addBtn = e.target.closest("[data-add-goal-for]");
-  if (addBtn) { openRewardGoalPanel(null, addBtn.getAttribute("data-add-goal-for")); return; }
+  if (addBtn) {
+    const who = addBtn.getAttribute("data-add-goal-for");
+    if (await rewardParentOk("reward goals")) openRewardGoalPanel(null, who);
+    return;
+  }
 
   const editBtn = e.target.closest("[data-edit-goal]");
-  if (editBtn) { openRewardGoalPanel(editBtn.getAttribute("data-edit-goal")); return; }
+  if (editBtn) {
+    const goalId = editBtn.getAttribute("data-edit-goal");
+    if (await rewardParentOk("reward goals")) openRewardGoalPanel(goalId);
+    return;
+  }
 
   const redeemBtn = e.target.closest("[data-redeem-goal]");
   if (redeemBtn) {
@@ -271,6 +282,7 @@ function onRewardGoalsGridClick(e) {
     }
     rewardRedeemArmed = null;
     clearTimeout(rewardRedeemTimer);
+    if (!(await rewardParentOk("rewards"))) { renderRewardGoals(); return; }
     redeemRewardGoal(goalId);
   }
 }

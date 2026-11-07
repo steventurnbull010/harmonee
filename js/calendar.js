@@ -121,6 +121,13 @@ const EVENT_EMOJI_GROUPS = [
 function detectEmojiForTitle(text) {
   if (!text) return null;
   const t = text.toLowerCase();
+  // Big days (often counted down to)
+  if (t.includes("birthday") || t.includes("bday")) return "🎂";
+  if (t.includes("christmas") || t.includes("xmas")) return "🎄";
+  if (t.includes("halloween")) return "🎃";
+  if (t.includes("easter")) return "🐣";
+  if (t.includes("wedding")) return "💒";
+  if (t.includes("party")) return "🎉";
   if (t.includes("business") || t.includes("finance") || t.includes("econ")) return "💼";
   if (t.includes("math") || t.includes("algebra") || t.includes("calc")) return "📚";
   if (t.includes("english") || t.includes("read") || t.includes("essay") || t.includes("tutor") || t.includes("study") || t.includes("school") || t.includes("biology") || t.includes("chemistry") || t.includes("physics") || t.includes("science")) return "📚";
@@ -350,7 +357,8 @@ function openEventQuickView(evt, dateStr = null) {
   const firstColor = named.length ? getMemberPalette(named[0]).primary : "#f59e0b";
 
   $("event-pop-swatch").style.background = firstColor;
-  $("event-pop-title").textContent = `${evt.icon || "📅"} ${evt.title || "Event"}`;
+  const shown = (d && typeof eventForDay === "function") ? eventForDay(evt, d) : evt; // "· turns 9" on birthdays
+  $("event-pop-title").textContent = `${evt.icon || "📅"} ${shown.title || "Event"}`;
   $("event-pop-when").textContent = `${dayLabel} · ${timeText}`;
   $("event-pop-who").innerHTML = named.length
     ? `<span class="task-pop-avatars">${named.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("")}</span><span>${escapeHtml(named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} & ${named[named.length - 1]}`)}</span>`
@@ -901,6 +909,25 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   };
   syncWhenUI();
 
+  // Extras: countdown and birthday. A birthday repeats every year, all day.
+  const countdownToggle = document.getElementById("event-countdown-toggle");
+  const birthdayToggle = document.getElementById("event-birthday-toggle");
+  const bornRow = document.getElementById("event-born-row");
+  const bornInput = document.getElementById("event-born-year");
+  if (countdownToggle) countdownToggle.checked = !!(evt && evt.countdown);
+  if (birthdayToggle) birthdayToggle.checked = !!(evt && evt.birthday);
+  if (bornInput) bornInput.value = (evt && evt.bornYear) ? String(evt.bornYear) : "";
+  if (bornRow) bornRow.hidden = !(birthdayToggle && birthdayToggle.checked);
+  if (birthdayToggle) birthdayToggle.onchange = () => {
+    const on = birthdayToggle.checked;
+    if (bornRow) bornRow.hidden = !on;
+    if (!on) return;
+    if (repeatSelect) repeatSelect.value = "annually";
+    setEventDurationValue(durationSelect, "All Day");
+    syncWhenUI();
+    if (emojiDisplay && emojiDisplay.textContent.trim() === "📅") { isManualEmoji = true; setEmoji("🎂"); }
+  };
+
   // Wire preset suggestion chips
   document.querySelectorAll(".preset-chip").forEach(chip => {
     chip.onclick = (e) => {
@@ -1005,6 +1032,15 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
         icon,
         category
       };
+      // Extras (only stored when switched on, so old events stay as they were)
+      if (countdownToggle && countdownToggle.checked) newEvt.countdown = true;
+      if (birthdayToggle && birthdayToggle.checked) {
+        newEvt.birthday = true;
+        newEvt.repeat = "annually";
+        const yr = parseInt(bornInput && bornInput.value, 10);
+        const thisYear = new Date().getFullYear();
+        if (yr >= 1900 && yr <= thisYear) newEvt.bornYear = yr;
+      }
 
       if (!Array.isArray(window.familyEvents)) window.familyEvents = [];
       if (existingIdx >= 0) {
@@ -1016,6 +1052,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       saveFamilyEvents(window.familyEvents);
       renderWeekCalendar();
       closeEventModal();
+      if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
     };
   }
@@ -1173,7 +1210,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     const dayName = weekDayNames[dayDowIdx];
     const dateStr = getLocalDateKey(cellDate);
 
-    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, dateStr, dayName, cellDate));
+    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, dateStr, dayName, cellDate)).map(e => eventForDay(e, cellDate));
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }
@@ -1652,7 +1689,7 @@ function renderWeekCalendar() {
     }
 
     const durationText = evt.duration ? ` (${escapeHtml(evt.duration)})` : "";
-    const timeSubtitle = evt.time ? `${escapeHtml(evt.time)}${durationText}` : "All day";
+    const timeSubtitle = (!evt.time || /all\s*day/i.test(evt.time) || /all\s*day/i.test(evt.duration || "")) ? "All day" : `${escapeHtml(evt.time)}${durationText}`;
 
     return `
       <div class="skylight-card" ${inlineStyleAttr} data-event-id="${evt.id}" title="Tap to view/edit ${escapeHtml(evt.title)}">
@@ -1822,7 +1859,7 @@ function renderWeekCalendar() {
       });
 
       // Day events
-      let dayEvents = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, colDateStr, dayName, colDate));
+      let dayEvents = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, colDateStr, dayName, colDate)).map(e => eventForDay(e, colDate));
 
       // Active member filter (supports multi-member e.g. Steven / Dara / Ava)
       if (activeCalendarMemberFilters !== null) {
@@ -1920,7 +1957,7 @@ function renderWeekCalendar() {
       const nwDayIdx = nwDate.getDay() === 0 ? 6 : nwDate.getDay() - 1;
       const nwDayName = weekDays[nwDayIdx];
       const nwDateStr = getLocalDateKey(nwDate);
-      let dayEvts = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, nwDateStr, nwDayName, nwDate));
+      let dayEvts = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, nwDateStr, nwDayName, nwDate)).map(e => eventForDay(e, nwDate));
       if (activeCalendarMemberFilters !== null) {
         dayEvts = dayEvts.filter(e => isMemberSelected(e.member));
       }
@@ -2020,7 +2057,7 @@ function renderWeekCalendar() {
     }
 
     // 2. Build Right Side: Day's Full Events List (Ordered All-day first, then chronologically)
-    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, colDateStr, dayName, currentDayDate));
+    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, colDateStr, dayName, currentDayDate)).map(e => eventForDay(e, currentDayDate));
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }
@@ -2066,7 +2103,7 @@ function renderWeekCalendar() {
         }).join("");
 
         const durationText = evt.duration ? ` (${escapeHtml(evt.duration)})` : "";
-        const timeSubtitle = evt.time ? `${escapeHtml(evt.time)}${durationText}` : "All day";
+        const timeSubtitle = (!evt.time || /all\s*day/i.test(evt.time) || /all\s*day/i.test(evt.duration || "")) ? "All day" : `${escapeHtml(evt.time)}${durationText}`;
 
         let repeatBadge = "";
         if (evt.repeat && evt.repeat !== "none") {
@@ -2206,7 +2243,7 @@ function renderWeekCalendar() {
     const isToday = today.toDateString() === colDate.toDateString();
     const colDateStr = getLocalDateKey(colDate);
 
-    let dayEvents = (window.familyEvents || []).filter(e => isEventOnDate(e, colDateStr, dayName, colDate));
+    let dayEvents = (window.familyEvents || []).filter(e => isEventOnDate(e, colDateStr, dayName, colDate)).map(e => eventForDay(e, colDate));
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }

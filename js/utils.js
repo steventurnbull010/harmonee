@@ -252,3 +252,23 @@ document.addEventListener("contextmenu", (e) => {
   if (t && t.closest && t.closest("input, textarea, select, [contenteditable='true'], a[href]")) return;
   e.preventDefault();
 }, true);
+
+// How an event is drawn on a given day (returns a copy; the saved event is
+// never changed):
+// - Birthdays with a year born show the age: "Ava's birthday · turns 10".
+// - Events switched to All day are drawn in the all-day row. The panel saves
+//   them with "All Day" as the length but keeps a start time, and the views
+//   decide by start time, so all-day events used to appear at e.g. 10:30.
+function eventForDay(e, dateObj) {
+  if (!e || typeof e !== "object") return e;
+  let out = e;
+  const allDayByLength = /all\s*day/i.test(e.duration || "");
+  const timeSaysAllDay = !e.time || /all\s*day/i.test(e.time);
+  if (allDayByLength && !timeSaysAllDay) out = Object.assign({}, out, { time: "All Day" });
+  if (e.birthday && e.bornYear && dateObj instanceof Date) {
+    const age = dateObj.getFullYear() - Number(e.bornYear);
+    if (age >= 1 && age <= 130) out = Object.assign({}, out, { title: `${e.title} · turns ${age}` });
+  }
+  return out;
+}
+window.eventForDay = eventForDay;

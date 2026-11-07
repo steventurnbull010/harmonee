@@ -5561,3 +5561,46 @@ dialog.skylight-datepicker-overlay::backdrop { background: transparent; }
 }
 .date-field-button-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .date-field-button-icon { flex-shrink: 0; opacity: 0.7; }
+
+/* ==========================================================================
+   COUNTDOWN CHIPS (js/countdowns.js)
+   "🎄 Christmas · 47 sleeps" beside the weather at the top of every page.
+   ========================================================================== */
+.header-countdowns { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.header-countdowns:empty { display: none; }
+.header-countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 260px;
+  height: 32px;
+  padding: 0 16px 0 8px;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #78350f;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.header-countdown-icon { font-size: 1.05rem; line-height: 1; }
+.header-countdown-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.header-countdown-sleeps { flex-shrink: 0; font-weight: 800; }
+.header-countdown-sleeps::before { content: "·"; margin-right: 8px; font-weight: 600; opacity: 0.6; }
+.header-countdown-chip.is-today {
+  border-color: #f9a8d4;
+  background: linear-gradient(90deg, #fdf2f8, #fef3c7);
+  color: #831843;
+}
+body.theme-dark .header-countdown-chip { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+body.theme-dark .header-countdown-chip.is-today { background: rgba(236, 72, 153, 0.18); border-color: rgba(236, 72, 153, 0.45); color: #fbcfe8; }
+/* Room for one on tablets, two on wide screens; phones show just the sleeps */
+/* The chips never push the page's buttons off screen: the left side gives
+   way first (the title shortens; a second chip only shows from 1440px) */
+.calendar-header-left { min-width: 0; }
+.header-countdowns { flex-shrink: 1; overflow: hidden; }
+@media (max-width: 1439px) { .header-countdown-chip + .header-countdown-chip { display: none; } }
+@media (max-width: 600px) { .header-countdown-title { display: none; } .header-countdown-sleeps::before { content: none; } }
