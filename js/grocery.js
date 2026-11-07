@@ -210,7 +210,7 @@
   // ---- Adding a recipe's ingredients ------------------------------------------
   // items: the Groceries list's items (changed in place)
   // returns { added, combined, skipped: [names], already }
-  function addLinesToItems(items, lines, { title = "", sourceKey = "", includeBasics = false } = {}) {
+  function addLinesToItems(items, lines, { title = "", sourceKey = "", includeBasics = false, idFor = null } = {}) {
     const result = { added: 0, combined: 0, skipped: [], already: 0 };
     const sk = sourceKey || title;
     // This meal is already on the list if an item had it before this add;
@@ -236,7 +236,8 @@
       const g = { key: p.key, name: p.name, label: p.label, amounts: {}, sources: title ? [title] : [], sourceKeys: sk ? [sk] : [] };
       addAmount(g.amounts, p);
       items.push({
-        id: "g-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        // idFor lets a synced change name its new items the same way each time it runs
+        id: idFor ? idFor(result.added) : "g-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
         text: describe(g),
         checked: false,
         source: title || "Recipe",

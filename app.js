@@ -17,6 +17,7 @@ import {
   getDoc,
   getDocs,
   writeBatch,
+  runTransaction,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -670,6 +671,8 @@ Object.assign(window, {
   collection,
   onSnapshot,
   writeBatch,
+  runTransaction,
+  getDoc,
   serverTimestamp,
   DEFAULT_FIREBASE_CONFIG,
   // app.js functions the js/ modules call (hoisted, so safe to share here)
@@ -1588,8 +1591,10 @@ function listenToFirestoreBoard() {
       if (typeof window.applyBoardRewardData === "function") {
         window.applyBoardRewardData(data);
       }
-      if (Array.isArray(data.familyLists) && typeof window.applyBoardFamilyLists === "function") {
-        window.applyBoardFamilyLists(data.familyLists);
+      // Lists sync through js/lists.js (deleted-item record included, so
+      // stale copies can't bring deleted items back)
+      if (typeof window.applyBoardFamilyLists === "function") {
+        window.applyBoardFamilyLists(data.familyLists, data.familyListsDeleted);
       }
       if (shouldRender) {
         renderApp();

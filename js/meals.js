@@ -285,6 +285,8 @@ function loadFamilyGroceryList() {
   return familyGroceryList;
 }
 
+// Kept for any older caller: saveFamilyLists works out what changed and
+// sends only that, so it can't overwrite another device's changes.
 function saveFamilyGroceryList(items) {
   familyGroceryList = items;
   window.familyGroceryList = items;
@@ -311,11 +313,15 @@ function updateGroceryBadgeCount() {
 function addIngredientsToGroceryList(ingredients, sourceTitle = "", sourceKey = "") {
   const empty = { added: 0, combined: 0, skipped: [], already: 0 };
   if (!ingredients || !ingredients.length || !window.Grocery) return empty;
-  const list = loadFamilyGroceryList();
-  const res = window.Grocery.addLinesToItems(list, ingredients, {
+  if (typeof window.mutateFamilyLists !== "function") return empty;
+  // One synced change: the board re-runs it on its latest Groceries list, so
+  // ticks or adds from another device at the same moment are kept. A meal
+  // already on the list is skipped, so running it twice is harmless.
+  const res = window.mutateFamilyLists({
+    type: "groceryAddLines", lines: ingredients.slice(),
     title: sourceTitle, sourceKey: sourceKey || sourceTitle, includeBasics: window.Grocery.includeBasics()
-  });
-  if (res.added || res.combined) saveFamilyGroceryList(list);
+  }) || empty;
+  updateGroceryBadgeCount();
   return res;
 }
 
@@ -1382,11 +1388,9 @@ function openGroceryListModal() {
       const chk = row.querySelector("input[type='checkbox']");
       if (chk) {
         chk.onchange = () => {
-          const l = loadFamilyGroceryList();
-          const target = l.find(i => i.id === id);
+          const target = loadFamilyGroceryList().find(i => i.id === id);
           if (target) {
-            target.checked = chk.checked;
-            saveFamilyGroceryList(l);
+            window.mutateFamilyLists({ type: "toggleItem", listId: "groceries", itemId: id, checked: chk.checked });
             renderItems();
           }
         };
@@ -1395,8 +1399,7 @@ function openGroceryListModal() {
       if (delBtn) {
         delBtn.onclick = (e) => {
           e.stopPropagation();
-          const l = (loadFamilyGroceryList()).filter(i => i.id !== id);
-          saveFamilyGroceryList(l);
+          window.mutateFamilyLists({ type: "deleteItems", listId: "groceries", itemIds: [id] });
           renderItems();
         };
       }
@@ -1416,15 +1419,13 @@ function openGroceryListModal() {
     if (!quickInput) return;
     const val = quickInput.value.trim();
     if (!val) return;
-    const list = loadFamilyGroceryList();
-    list.unshift({
-      id: "g-" + Date.now(),
+    window.mutateFamilyLists({ type: "addItems", listId: "groceries", items: [{
+      id: "g-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       text: val,
       checked: false,
       source: "Manual",
       addedAt: new Date().toISOString()
-    });
-    saveFamilyGroceryList(list);
+    }] });
     quickInput.value = "";
     if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
     renderItems();
@@ -1459,8 +1460,9 @@ function openGroceryListModal() {
 
   if (btnClearCompleted) {
     btnClearCompleted.onclick = () => {
-      const list = (loadFamilyGroceryList()).filter(i => !i.checked);
-      saveFamilyGroceryList(list);
+      // Only what is ticked on this screen now
+      const ticked = loadFamilyGroceryList().filter(i => i.checked).map(i => i.id);
+      if (ticked.length) window.mutateFamilyLists({ type: "deleteItems", listId: "groceries", itemIds: ticked });
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
       renderItems();
     };
