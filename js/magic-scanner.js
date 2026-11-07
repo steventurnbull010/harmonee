@@ -8,6 +8,12 @@
 // ============================================================================
 let currentScannedRecipeData = null;
 let currentScannedCalendarEvents = [];
+// Calendar flyer scan state (these used to be declared in app.js, where this
+// file couldn't see them)
+let isMagicEventScanningActive = false;
+let lastMagicEventScanTimestamp = 0;
+let currentScannedFlyerDataUrl = "";
+let currentScannedDocTitle = "";
 
 // Guardrail constants: Daily Allowance & Anti-Spam Debounce
 const MAX_DAILY_PHOTO_SCANS = 15;

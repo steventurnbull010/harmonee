@@ -676,7 +676,10 @@ Object.assign(window, {
   loadWeeklyMeals,
   getTaskDocRef,
   renderApp,
-  showGamifiedCelebration
+  showGamifiedCelebration,
+  // Tasks page: untick a task, and the pop-up's Delete button
+  handleUndoTask,
+  openDeleteTaskModal
 });
 
 let firestoreUnsubscribe = null;
@@ -865,10 +868,6 @@ let familyGroceryList = null;
 let isSleepScreenActive = false;
 let sleepScreenTemporaryWakeUntil = 0;
 let localWeatherForecast = null;
-let isMagicEventScanningActive = false;
-let lastMagicEventScanTimestamp = 0;
-let currentScannedFlyerDataUrl = "";
-let currentScannedDocTitle = "";
 
 function getLocalDateKey(date) {
   if (!date) date = new Date();

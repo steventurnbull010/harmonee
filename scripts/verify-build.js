@@ -201,22 +201,97 @@ setImmediate(() => setImmediate(() => {
   // global scope are reported.
   console.log('\n5. Checking js/ modules only use globals that actually exist...');
   const appSrc = fs.readFileSync(appJsPath, 'utf8');
+  // What app.js really shares: window.name = ..., and the keys of its
+  // Object.assign(window, { ... }) block. (The sandbox runs app.js as a plain
+  // script, which makes every top-level function a global, so "is it on the
+  // booted window?" can't tell shared from private for functions.)
+  const sharedByApp = new Set([...appSrc.matchAll(/\bwindow\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)].map((m) => m[1]));
+  for (const block of appSrc.matchAll(/Object\.assign\(\s*window\s*,\s*\{([\s\S]*?)\}\s*\)/g)) {
+    for (const m of block[1].matchAll(/(?:^|,)\s*([A-Za-z_$][\w$]*)\s*(?=[:,]|$)/gm)) sharedByApp.add(m[1]);
+  }
+  // Names a classic js/ script declares at its top level, or puts on window,
+  // are real globals too (e.g. escapeHtml in utils.js, which app.js also has
+  // its own copy of). Module scripts (type="module") don't count.
+  const otherGlobals = new Set();
+  const moduleFiles = new Set(scriptTags.filter((t) => t.isModule).map((t) => path.basename(t.src)));
+  for (const f of fs.readdirSync(path.join(rootDir, 'js')).filter((f) => f.endsWith('.js'))) {
+    const src = fs.readFileSync(path.join(rootDir, 'js', f), 'utf8');
+    for (const m of src.matchAll(/\bwindow\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) otherGlobals.add(m[1]);
+    if (moduleFiles.has(f)) continue;
+    for (const m of src.matchAll(/^(?:async\s+)?(?:let|const|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm)) otherGlobals.add(m[1]);
+  }
   const privateNames = new Set(
     [...appSrc.matchAll(/^(?:export\s+)?(?:async\s+)?(?:let|const|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm)]
       .map((m) => m[1])
-      .filter((n) => !(n in win))
+      .filter((n) => !sharedByApp.has(n) && !otherGlobals.has(n))
   );
-  const stripNoise = (src) => src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
-    .replace(/\/\/.*$/gm, '')
-    .replace(/`(?:\\[\s\S]|\$\{[^}]*\}|[^`\\])*`/g, (m) => '``' + '\n'.repeat((m.match(/\n/g) || []).length))
-    .replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g, '""');
+  // Blank out comments and the text inside strings, templates and regexes,
+  // keeping code (including code inside ${ } in templates) and every newline,
+  // so line numbers still match. One pass with a small scanner: regex-based
+  // stripping got out of step on "//" inside strings and nested templates
+  // and silently erased real code.
+  const stripNoise = (src) => {
+    let out = '';
+    let i = 0;
+    const n = src.length;
+    const braceStack = []; // for each open "${": brace depth inside it
+    let prevSig = '';      // last significant code character, for regex detection
+    const blank = (text) => text.replace(/[^\n]/g, ' ');
+    const readTemplate = () => { // at the char after an opening ` or after a closing } of ${ }
+      while (i < n) {
+        const c = src[i];
+        if (c === '\\') { out += blank(src.slice(i, i + 2)); i += 2; continue; }
+        if (c === '`') { out += '`'; i++; prevSig = '`'; return; }
+        if (c === '$' && src[i + 1] === '{') { out += '${'; i += 2; braceStack.push(0); prevSig = '{'; return; }
+        out += c === '\n' ? '\n' : ' ';
+        i++;
+      }
+    };
+    while (i < n) {
+      const c = src[i];
+      const d = src[i + 1];
+      if (c === '/' && d === '/') { const e = src.indexOf('\n', i); const end = e === -1 ? n : e; out += blank(src.slice(i, end)); i = end; continue; }
+      if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); const end = e === -1 ? n : e + 2; out += blank(src.slice(i, end)); i = end; continue; }
+      if (c === '"' || c === "'") {
+        let j = i + 1;
+        while (j < n && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
+        out += c + blank(src.slice(i + 1, j)) + c; i = j + 1; prevSig = c; continue;
+      }
+      if (c === '`') { out += '`'; i++; readTemplate(); continue; }
+      if (c === '/' && (prevSig === '' || '(,=:[!&|?{};+-*%<>~^'.includes(prevSig))) {
+        // Regex literal
+        let j = i + 1; let inClass = false;
+        while (j < n && src[j] !== '\n') {
+          if (src[j] === '\\') { j += 2; continue; }
+          if (src[j] === '[') inClass = true;
+          else if (src[j] === ']') inClass = false;
+          else if (src[j] === '/' && !inClass) break;
+          j++;
+        }
+        out += '/' + blank(src.slice(i + 1, j)) + '/'; i = j + 1; prevSig = '/x'; continue;
+      }
+      if (braceStack.length) {
+        if (c === '{') braceStack[braceStack.length - 1]++;
+        else if (c === '}') {
+          if (braceStack[braceStack.length - 1] === 0) { braceStack.pop(); out += '}'; i++; readTemplate(); continue; }
+          braceStack[braceStack.length - 1]--;
+        }
+      }
+      out += c;
+      if (!/\s/.test(c)) prevSig = /[\w$]/.test(c) ? 'w' : c;
+      if (c === ')' || c === ']') prevSig = 'w'; // "a) / b" divides
+      i++;
+    }
+    return out;
+  };
   const problems = [];
   const jsDir = path.join(rootDir, 'js');
   for (const file of fs.readdirSync(jsDir).filter((f) => f.endsWith('.js'))) {
     const src = stripNoise(fs.readFileSync(path.join(jsDir, file), 'utf8'));
     for (const name of privateNames) {
-      const declared = new RegExp(`(?:\\b(?:let|const|var|function|class)\\s+|[({,]\\s*)${name.replace(/\$/g, '\\$')}\\b(?!\\s*:)`).test(src);
+      // A parameter or destructured name, not a call: "(name," or "{ name }",
+      // never "{\n  name(" (that's a call that happens to follow a brace)
+      const declared = new RegExp(`(?:\\b(?:let|const|var|function|class)\\s+|[({,][ \\t]*)${name.replace(/\$/g, '\\$')}\\b(?!\\s*[:(])`).test(src);
       if (declared) continue;
       const lines = src.split('\n');
       const re = new RegExp(`(?<![.\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])(?!\\s*:)`);
