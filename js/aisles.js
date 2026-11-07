@@ -79,7 +79,13 @@
   RULES.forEach(r => { r.re = new RegExp(`(^|[^a-z])${esc(r.w)}`, "i"); });
 
   const cache = new Map();
-  function aisleFor(text) {
+  // overrides: a list's own choices ({ itemKey: aisleKey }), set by holding an
+  // item and picking its aisle. They win over the built-in words.
+  function aisleFor(text, overrides) {
+    if (overrides && typeof window.listItemKey === "function") {
+      const own = overrides[window.listItemKey(text)];
+      if (own && AISLES.some(a => a.key === own)) return own;
+    }
     const t = String(text || "").toLowerCase().replace(/[’']/g, "").trim();
     if (!t) return "other";
     if (cache.has(t)) return cache.get(t);

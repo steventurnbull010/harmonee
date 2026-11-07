@@ -134,10 +134,12 @@
               <span class="today-count${j.left === 0 ? " is-done" : ""}">${label}</span>
               <svg class="today-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
-            ${open ? `<ul class="today-job-list">${j.items.map(({ task, done }) => `<li class="today-job-item${done ? " is-done" : ""}">
-              <span class="today-job-check" aria-hidden="true">${done ? "✓" : ""}</span>
-              <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Job")}</span>
-              ${done ? `<span class="today-visually-hidden">done</span>` : ""}
+            ${open ? `<ul class="today-job-list">${j.items.map(({ task, done }) => `<li>
+              <button type="button" class="today-job-item${done ? " is-done" : ""}" data-tick-job="${esc(task.id)}" data-job-member="${esc(j.name)}" aria-pressed="${done}" aria-label="${isGrab ? `Open Tasks to grab ${esc(task.title || "this job")}` : `${done ? "Untick" : "Tick"} ${esc(task.title || "job")}`}">
+                <span class="today-job-check" aria-hidden="true">${done ? "✓" : ""}</span>
+                <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Job")}</span>
+                ${isGrab && !done ? `<span class="today-job-grab">Grab it →</span>` : ""}
+              </button>
             </li>`).join("")}</ul>` : ""}
           </li>`;
         }).join("")}</ul>`
@@ -169,6 +171,11 @@
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weather.trim() ? ` · ${esc(weather.trim())}` : ""}</p>
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
+          <div class="today-quick" role="group" aria-label="Quick add">
+            <button type="button" class="today-quick-btn" data-quick="list"><span aria-hidden="true">🛒</span> List item</button>
+            <button type="button" class="today-quick-btn" data-quick="event"><span aria-hidden="true">📅</span> Event</button>
+            <button type="button" class="today-quick-btn" data-quick="job"><span aria-hidden="true">✅</span> Job</button>
+          </div>
         </header>
         <div class="today-grid">
           <div class="today-col">
@@ -194,6 +201,116 @@
     const scroll = el.scrollTop;
     el.innerHTML = render();
     el.scrollTop = scroll;
+  }
+
+  // ---- Tick a job from here (same as the Tasks page: points, celebrations) ----
+  function tickJob(taskId, member) {
+    const now = new Date();
+    const dayName = DAY_NAMES[now.getDay()];
+    const task = (window.currentTasks || []).find(t => t.id === taskId);
+    if (!task) return;
+    if (member === "Up for grabs") {
+      closeTodayScreen();
+      if (typeof window.switchSkylightView === "function") window.switchSkylightView("chores");
+      return;
+    }
+    const done = typeof window.isTaskDoneOnDate === "function" && window.isTaskDoneOnDate(task, now, member.toLowerCase());
+    if (done) { if (typeof window.handleUndoTask === "function") window.handleUndoTask(taskId, dayName, null, member); }
+    else if (typeof window.handleCompleteTaskWithCelebration === "function") window.handleCompleteTaskWithCelebration(taskId, dayName, member);
+    const el = document.getElementById("today-screen");
+    setTimeout(() => { if (el && !el.hidden) paint(el); }, 60);
+    setTimeout(() => { if (el && !el.hidden) paint(el); }, 700); // after the save settles
+  }
+
+  // ---- Quick add: list item (a small panel here), event, job --------------------
+  function runQuick(kind) {
+    const el = document.getElementById("today-screen");
+    if (kind === "event" && typeof window.openEventModal === "function") {
+      // The event panel opens on top of this screen; redraw when it closes
+      window.openEventModal();
+      const dlg = document.getElementById("event-modal");
+      if (dlg) dlg.addEventListener("close", () => { if (el && !el.hidden) paint(el); }, { once: true });
+      return;
+    }
+    if (kind === "job" && typeof window.openSkylightTaskDrawer === "function") {
+      closeTodayScreen(); // the job panel sits on the page, not above this screen
+      if (typeof window.switchSkylightView === "function") window.switchSkylightView("chores");
+      setTimeout(() => window.openSkylightTaskDrawer(), 250);
+      return;
+    }
+    if (kind === "list") openQuickList();
+  }
+
+  let quickListId = "groceries";
+  function openQuickList() {
+    const lists = typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : [];
+    if (!lists.length) return;
+    if (!lists.some(l => l.id === quickListId)) quickListId = lists[0].id;
+    let dlg = document.getElementById("quick-list-dialog");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "quick-list-dialog";
+      dlg.className = "quick-list-dialog";
+      dlg.setAttribute("aria-labelledby", "quick-list-title");
+      document.body.appendChild(dlg);
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); });
+      dlg.addEventListener("close", () => { const el = document.getElementById("today-screen"); if (el && !el.hidden) paint(el); });
+      dlg.addEventListener("click", (e) => {
+        if (e.target === dlg || e.target.closest("[data-quick-close]")) { dlg.close(); return; }
+        const pick = e.target.closest("[data-quick-list]");
+        if (pick) { quickListId = pick.getAttribute("data-quick-list"); drawQuickList(); focusQuickInput(); return; }
+        const usual = e.target.closest("[data-quick-usual]");
+        if (usual) { quickAdd(usual.getAttribute("data-quick-usual")); return; }
+      });
+      dlg.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = dlg.querySelector("#quick-list-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        quickAdd(text);
+        focusQuickInput();
+      });
+    }
+    dlg._log = [];
+    drawQuickList();
+    if (!dlg.open) dlg.showModal();
+    focusQuickInput();
+  }
+  function focusQuickInput() { setTimeout(() => { try { document.getElementById("quick-list-input").focus(); } catch (e) {} }, 60); }
+
+  function quickAdd(text) {
+    const dlg = document.getElementById("quick-list-dialog");
+    if (typeof window.addTextsToList !== "function") return;
+    const res = window.addTextsToList(quickListId, [text]);
+    const name = res.added[0] ? res.added[0].text : (res.already[0] || res.back[0] || {}).text || text;
+    const note = res.added.length ? "added" : res.already.length ? "already on the list" : "back on the list";
+    dlg._log = [{ name, note }, ...(dlg._log || [])].slice(0, 5);
+    if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+    if (typeof window.renderListsView === "function") window.renderListsView();
+    drawQuickList();
+  }
+
+  function drawQuickList() {
+    const dlg = document.getElementById("quick-list-dialog");
+    const lists = window.loadFamilyLists();
+    const list = lists.find(l => l.id === quickListId) || lists[0];
+    const usuals = typeof window.getListUsuals === "function" ? window.getListUsuals(list).slice(0, 8) : [];
+    const typed = (dlg.querySelector("#quick-list-input") || {}).value || "";
+    dlg.innerHTML = `
+      <form class="quick-list-card" autocomplete="off">
+        <div class="quick-list-head">
+          <h2 class="quick-list-title" id="quick-list-title">Add to a list</h2>
+          <button type="button" class="quick-list-done" data-quick-close>Done</button>
+        </div>
+        ${lists.length > 1 ? `<div class="quick-list-pills" role="group" aria-label="Which list">${lists.map(l => `<button type="button" class="quick-list-pill${l.id === list.id ? " is-on" : ""}" data-quick-list="${esc(l.id)}" aria-pressed="${l.id === list.id}">${esc(l.emoji || "📋")} ${esc(l.title)}</button>`).join("")}</div>` : ""}
+        <div class="quick-list-row">
+          <input id="quick-list-input" class="quick-list-input" type="text" placeholder="Add to ${esc(list.title)}" aria-label="Add to ${esc(list.title)}" enterkeyhint="done" value="${esc(typed)}">
+          <button type="submit" class="quick-list-add">Add</button>
+        </div>
+        ${usuals.length ? `<div class="quick-list-usuals" role="group" aria-label="Usuals">${usuals.map(u => `<button type="button" class="quick-list-usual" data-quick-usual="${esc(u.text)}"><span aria-hidden="true">+</span> ${esc(u.text)}</button>`).join("")}</div>` : ""}
+        ${(dlg._log || []).length ? `<ul class="quick-list-log" aria-live="polite">${dlg._log.map(l => `<li><span aria-hidden="true">${l.note === "added" ? "✓" : "•"}</span> ${esc(l.name)} <em>${esc(l.note)}</em></li>`).join("")}</ul>` : ""}
+      </form>`;
   }
 
   function closeTodayScreen() {
@@ -224,6 +341,12 @@
           paint(el);
           return;
         }
+        // Quick add
+        const quick = e.target.closest("[data-quick]");
+        if (quick) { runQuick(quick.getAttribute("data-quick")); return; }
+        // Tick a job (Grab it ones go to Tasks, where someone claims them)
+        const tickBtn = e.target.closest("[data-tick-job]");
+        if (tickBtn) { tickJob(tickBtn.getAttribute("data-tick-job"), tickBtn.getAttribute("data-job-member")); return; }
         // No dinner yet: go to Meals with the Plan Meal panel open for tonight
         if (e.target.closest("[data-plan-dinner]")) {
           closeTodayScreen();
@@ -235,7 +358,8 @@
         // The button, or a tap outside the cards
         if (e.target.closest("#btn-today-start") || !e.target.closest(".today-card")) closeTodayScreen();
       });
-      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.hidden) closeTodayScreen(); });
+      // Esc closes this screen, unless it's closing a panel opened from it
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.hidden && !document.querySelector("dialog[open]")) closeTodayScreen(); });
     }
     // Opened from Settings: close Settings first so it doesn't sit on top
     document.querySelectorAll("dialog[open]").forEach(d => { try { d.close(); } catch (err) {} });
@@ -316,4 +440,31 @@
     t.setAttribute("title", "Today at a glance");
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", markOpeners); else markOpeners();
+
+  // ---- Phones open on Today at a glance -----------------------------------------
+  // On a phone you mostly want "what's on" and to add or tick something, so
+  // the app opens here; ✕ goes to the full board. (Tablets open on the board.)
+  const openOnPhone = () => {
+    if (!window.matchMedia("(max-width: 600px)").matches) return;
+    if (shown("board-join-screen") || shown("ambient-sleep-overlay")) return;
+    const today = document.getElementById("today-screen");
+    if (today && !today.hidden) return;
+    showTodayScreen({ from: "logo" });
+    // Events, meals and jobs arrive from the board a moment after opening
+    [1500, 4000].forEach(ms => setTimeout(() => { const el = document.getElementById("today-screen"); if (el && !el.hidden) paint(el); }, ms));
+  };
+  if (document.readyState === "complete") setTimeout(openOnPhone, 600);
+  else window.addEventListener("load", () => setTimeout(openOnPhone, 600));
+
+  // Confetti draws on its own layer (100 by default), which would be hidden
+  // behind this screen and Shop mode: lift every burst above them
+  const liftConfetti = () => {
+    const c = window.confetti;
+    if (typeof c !== "function" || c._lifted) return;
+    const lifted = (opts = {}) => c({ zIndex: 200000, ...opts });
+    Object.assign(lifted, c);
+    lifted._lifted = true;
+    window.confetti = lifted;
+  };
+  if (document.readyState === "complete") liftConfetti(); else window.addEventListener("load", liftConfetti);
 })();

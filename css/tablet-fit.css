@@ -214,3 +214,12 @@
 @media (min-width: 861px) and (orientation: landscape), (min-width: 1025px) {
   #view-chores .skylight-tasks-col { min-width: 148px; }
 }
+
+/* --- Above the full-screen views ---------------------------------------------
+   Today at a glance and Shop mode sit at layer 100000. Celebrations and the
+   little pop-up messages must show on top of them (e.g. ticking your last job
+   from Today, "Cleared 3 from Groceries" in Shop mode). Dialogs are above
+   everything anyway. */
+#skylight-celebration-overlay { z-index: 100500 !important; }
+.celebration-toast-anchor { z-index: 100550 !important; }
+#calendar-drag-toast, .calendar-drag-toast { z-index: 100600 !important; }

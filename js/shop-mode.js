@@ -62,12 +62,13 @@
     let shelfHtml = "";
     if (isGroceries(list) && window.Aisles) {
       const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
-      onShelf.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i))).push(i));
+      onShelf.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i), list.aisles)).push(i));
       shelfHtml = window.Aisles.AISLES.filter(a => groups.get(a.key).length).map(a => {
         const its = groups.get(a.key);
         const left = its.filter(i => !i.checked).length;
         return `<section class="shop-aisle" aria-label="${esc(a.label)}">
           <h3 class="shop-aisle-title"><span aria-hidden="true">${a.icon}</span> ${esc(a.label)}${left ? `<span class="shop-aisle-count">${left}</span>` : ""}</h3>
+          ${a.key === "other" ? `<p class="shop-trolley-hint">Hold an item to choose its aisle</p>` : ""}
           <ul class="shop-rows">${its.map(i => rowHtml(i, i.checked ? "settling" : "open")).join("")}</ul>
         </section>`;
       }).join("");
@@ -182,6 +183,7 @@
     try { history.pushState({ harmoneeShop: true }, ""); shop.pushed = true; } catch (e) {}
   }
   window.openShopMode = openShopMode;
+  window.getShopModeListId = () => (shop ? shop.listId : null);
 
   function closeShopMode(fromBack = false) {
     const el = document.getElementById("shop-mode");

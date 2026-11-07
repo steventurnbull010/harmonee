@@ -253,6 +253,19 @@ function applyListOp(lists, tomb, op, now) {
       list.usuals = usuals;
       return null;
     }
+    case "forgetUsual": {
+      const list = findListForOp(lists, tomb, op.listId);
+      if (list && list.usuals && op.key) delete list.usuals[op.key];
+      return null;
+    }
+    case "setAisle": {
+      // A family's own aisle for an item ("tofu" is in Fruit & veg at our shop)
+      const list = findListForOp(lists, tomb, op.listId);
+      if (!list || !op.key || !op.aisle) return null;
+      list.aisles = (list.aisles && typeof list.aisles === "object") ? list.aisles : {};
+      list.aisles[op.key] = op.aisle;
+      return null;
+    }
     default:
       return null; // "noop": just rewrite the cleaned lists
   }
@@ -284,6 +297,7 @@ function getListUsuals(list) {
     .slice(0, LISTS_USUALS_SHOWN)
     .map(([key, u]) => ({ key, text: u.text, n: u.n }));
 }
+window.getListUsuals = getListUsuals;
 
 // Rebuilds what this device shows: the board's lists plus anything still queued
 function recomputeFamilyListsView() {
@@ -519,9 +533,15 @@ function renderListsView() {
   } else board.innerHTML = lists.map((list, index) => {
     const col = getListColor(list, index);
     const items = Array.isArray(list.items) ? list.items : [];
-    const open = items.filter(i => !i.checked);
-    const done = items.filter(i => i.checked);
-    const countText = items.length === 0 ? "Empty" : `${open.length} to do${done.length ? ` · ${done.length} done` : ""}`;
+    const nowMs = Date.now();
+    const settling = (i) => i.checked && (listsSettling.get(i.id) || 0) > nowMs;
+    const open = items.filter(i => !i.checked || settling(i));
+    const done = items.filter(i => i.checked && !settling(i));
+    const toDo = items.filter(i => !i.checked).length;
+    const doneCount = items.length - toDo;
+    const countText = items.length === 0 ? "Empty" : `${toDo} to do${doneCount ? ` · ${doneCount} done` : ""}`;
+    const isGroceryCol = !!(window.Aisles && window.Aisles.isGroceryList(list));
+    const aisleOf = (item) => window.Aisles.aisleFor(window.Grocery ? window.Grocery.displayText(item) : item.text, list.aisles);
     const itemHtml = (item) => {
       const text = window.Grocery ? window.Grocery.displayText(item) : item.text;
       const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
@@ -536,6 +556,7 @@ function renderListsView() {
             ${forLine ? `<span class="list-row-for">${escapeHtml(forLine)}</span>` : ""}
           </span>
         </button>
+        ${isGroceryCol && !item.checked && aisleOf(item) === "other" ? `<button type="button" class="list-row-aisle" data-pick-aisle aria-label="Choose the aisle for ${escapeHtml(text)}">Pick aisle</button>` : ""}
         <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(text)}">✕</button>
       </li>`;
     };
@@ -559,9 +580,13 @@ function renderListsView() {
         ${(() => {
           // "Your usuals": tap to add again
           const usuals = getListUsuals(list);
-          return usuals.length ? `<div class="list-usuals" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
-            <span class="list-usuals-label">Usuals</span>
-            ${usuals.map(u => `<button type="button" class="list-usual" data-add-usual="${escapeHtml(u.text)}" aria-label="Add ${escapeHtml(u.text)}"><span aria-hidden="true">+</span> ${escapeHtml(u.text)}</button>`).join("")}
+          const editing = listsUsualsEditing.has(list.id);
+          return usuals.length ? `<div class="list-usuals${editing ? " is-editing" : ""}" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
+            <span class="list-usuals-label">${editing ? "Tap to remove" : "Usuals"}</span>
+            ${usuals.map(u => editing
+              ? `<button type="button" class="list-usual is-removable" data-forget-usual="${escapeHtml(u.key)}" aria-label="Stop suggesting ${escapeHtml(u.text)}">${escapeHtml(u.text)} <span aria-hidden="true">✕</span></button>`
+              : `<button type="button" class="list-usual" data-add-usual="${escapeHtml(u.text)}" aria-label="Add ${escapeHtml(u.text)}"><span aria-hidden="true">+</span> ${escapeHtml(u.text)}</button>`).join("")}
+            <button type="button" class="list-usuals-edit" data-edit-usuals aria-pressed="${editing}">${editing ? "Done" : "Edit"}</button>
           </div>` : "";
         })()}
         <ul class="list-column-items">
@@ -570,7 +595,7 @@ function renderListsView() {
             if (!(window.Aisles && window.Aisles.isGroceryList(list)) || open.length < 2) return open.map(itemHtml).join("");
             const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
             const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
-            open.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i))).push(i));
+            open.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i), list.aisles)).push(i));
             return window.Aisles.AISLES.filter(a => groups.get(a.key).length).map(a =>
               `<li class="list-aisle-head" aria-hidden="true">${a.icon} ${escapeHtml(a.label)}</li>${groups.get(a.key).map(itemHtml).join("")}`).join("");
           })()}
@@ -647,6 +672,25 @@ function onListsBoardClick(e) {
   const listId = column.getAttribute("data-list-id");
   const usual = e.target.closest("[data-add-usual]");
   if (usual) { handleAddItemToList(listId, usual.getAttribute("data-add-usual")); return; }
+  if (e.target.closest("[data-edit-usuals]")) {
+    if (listsUsualsEditing.has(listId)) listsUsualsEditing.delete(listId); else listsUsualsEditing.add(listId);
+    renderListsView();
+    return;
+  }
+  const forget = e.target.closest("[data-forget-usual]");
+  if (forget) {
+    mutateFamilyLists({ type: "forgetUsual", listId, key: forget.getAttribute("data-forget-usual") });
+    const list = loadFamilyLists().find(l => l.id === listId);
+    if (!getListUsuals(list).length) listsUsualsEditing.delete(listId);
+    renderListsView();
+    return;
+  }
+  if (e.target.closest("[data-pick-aisle]") && e.target.closest("[data-item-id]")) {
+    const list = loadFamilyLists().find(l => l.id === listId);
+    const item = list && (list.items || []).find(i => i.id === e.target.closest("[data-item-id]").getAttribute("data-item-id"));
+    if (item) openAislePicker(listId, window.Grocery ? window.Grocery.displayText(item) : item.text);
+    return;
+  }
   const row = e.target.closest("[data-item-id]");
 
   if (e.target.closest("[data-toggle-item]") && row) {
@@ -777,6 +821,97 @@ function addTextsToList(listId, texts) {
 }
 window.addTextsToList = addTextsToList;
 
+// ---------------------------------------------------------------------------
+// "Which aisle?": hold a grocery item (Lists page or Shop mode), or tap
+// "Pick aisle" on one under Other. The choice is kept with the list, so the
+// same item goes to that aisle from then on, on every device.
+// ---------------------------------------------------------------------------
+function openAislePicker(listId, itemText, onDone) {
+  if (!window.Aisles) return;
+  const list = loadFamilyLists().find(l => l.id === listId);
+  if (!list) return;
+  const key = listItemKey(itemText);
+  const current = window.Aisles.aisleFor(itemText, list.aisles);
+  let dlg = document.getElementById("aisle-picker");
+  if (!dlg) {
+    dlg = document.createElement("dialog");
+    dlg.id = "aisle-picker";
+    dlg.className = "aisle-picker-dialog";
+    dlg.setAttribute("aria-labelledby", "aisle-picker-title");
+    document.body.appendChild(dlg);
+    dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); });
+  }
+  dlg.innerHTML = `
+    <div class="aisle-picker-card">
+      <h2 class="aisle-picker-title" id="aisle-picker-title">Which aisle is <span>${escapeHtml(itemText)}</span> in?</h2>
+      <p class="aisle-picker-sub">harmonee will remember this for next time.</p>
+      <div class="aisle-picker-grid">
+        ${window.Aisles.AISLES.map(a => `<button type="button" class="aisle-picker-btn${a.key === current ? " is-current" : ""}" data-aisle="${a.key}" aria-pressed="${a.key === current}"><span aria-hidden="true">${a.icon}</span> ${escapeHtml(a.label)}</button>`).join("")}
+      </div>
+      <button type="button" class="aisle-picker-cancel" data-aisle-cancel>Cancel</button>
+    </div>`;
+  dlg.onclick = (e) => {
+    const btn = e.target.closest("[data-aisle]");
+    if (btn) {
+      const aisle = btn.getAttribute("data-aisle");
+      if (aisle !== current) mutateFamilyLists({ type: "setAisle", listId, key, aisle });
+      dlg.close();
+      renderListsView();
+      if (typeof window.refreshShopMode === "function") window.refreshShopMode();
+      if (typeof onDone === "function") onDone(aisle);
+      return;
+    }
+    if (e.target.closest("[data-aisle-cancel]") || e.target === dlg) dlg.close();
+  };
+  if (!dlg.open) dlg.showModal();
+}
+window.openAislePicker = openAislePicker;
+
+// Press and hold a grocery item to choose its aisle. Works on the Lists page
+// and in Shop mode; the tap that ends a hold doesn't also tick the item.
+(function wireAisleLongPress() {
+  const HOLD_MS = 550;
+  let timer = null, startX = 0, startY = 0, held = false;
+  const target = (el) => el && el.closest && el.closest("#lists-board [data-item-id], #shop-mode [data-shop-item]");
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  document.addEventListener("pointerdown", (e) => {
+    const row = target(e.target);
+    held = false;
+    if (!row || e.target.closest("[data-delete-item], [data-pick-aisle]")) return;
+    startX = e.clientX; startY = e.clientY;
+    cancel();
+    timer = setTimeout(() => {
+      timer = null;
+      let listId, text;
+      if (row.matches("[data-shop-item]")) {
+        listId = window.getShopModeListId && window.getShopModeListId();
+        const list = loadFamilyLists().find(l => l.id === listId);
+        const item = list && (list.items || []).find(i => i.id === row.getAttribute("data-shop-item"));
+        if (!item || !(window.Aisles && window.Aisles.isGroceryList(list))) return;
+        text = window.Grocery ? window.Grocery.displayText(item) : item.text;
+      } else {
+        const col = row.closest("[data-list-id]");
+        listId = col && col.getAttribute("data-list-id");
+        const list = loadFamilyLists().find(l => l.id === listId);
+        const item = list && (list.items || []).find(i => i.id === row.getAttribute("data-item-id"));
+        if (!item || !(window.Aisles && window.Aisles.isGroceryList(list))) return;
+        text = window.Grocery ? window.Grocery.displayText(item) : item.text;
+      }
+      held = true;
+      if (navigator.vibrate) { try { navigator.vibrate(15); } catch (err) {} }
+      openAislePicker(listId, text);
+    }, HOLD_MS);
+  }, true);
+  document.addEventListener("pointermove", (e) => {
+    if (timer && (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10)) cancel(); // scrolling
+  }, true);
+  ["pointerup", "pointercancel"].forEach(t => document.addEventListener(t, cancel, true));
+  // Swallow the click that follows a hold
+  document.addEventListener("click", (e) => {
+    if (held && target(e.target)) { e.stopPropagation(); e.preventDefault(); held = false; }
+  }, true);
+})();
+
 // After an add: highlight items that were already there (or put back), and
 // say what happened
 function reportListAdd(listId, res) {
@@ -793,6 +928,10 @@ function reportListAdd(listId, res) {
   listsFlashIds = new Set([...res.already, ...res.back].map(i => i.id));
 }
 var listsFlashIds = new Set(); // var: read by renderListsView, which can run before this line
+// Just ticked: stays where it is for a moment before moving to Done, so the
+// list doesn't shift under your finger (same as Shop mode)
+var listsSettling = new Map();  // itemId -> time it moves
+var listsUsualsEditing = new Set(); // listIds whose usuals show ✕ to remove
 
 function handleAddItemToList(listId, text) {
   if (!loadFamilyLists().some(l => l.id === listId) && listId !== GROCERIES_LIST_ID) return;
@@ -811,6 +950,12 @@ function handleToggleListItem(listId, itemId, checked) {
   if (typeof sfx !== "undefined" && sfx) {
     if (checked && sfx.playCelebrationChime) sfx.playCelebrationChime();
     else if (sfx.playClick) sfx.playClick();
+  }
+  if (checked) {
+    listsSettling.set(itemId, Date.now() + 1300);
+    setTimeout(() => { listsSettling.delete(itemId); const v = document.getElementById("view-lists"); if (v && v.style.display !== "none") renderListsView(); }, 1330);
+  } else {
+    listsSettling.delete(itemId);
   }
   renderListsView();
 }
