@@ -2396,3 +2396,35 @@ body.theme-dark .spotify-logo .is-on-dark { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Today at a glance: the handwritten harmonee wordmark (as on the welcome
+   screen and the h icon), small, above the greeting; and wider time column
+   for "9am – 5pm" */
+.today-wordmark { margin: 0 0 4px; line-height: 1; }
+.today-wordmark span {
+  position: relative;
+  display: inline-block;
+  padding-right: 0.55em;
+  font-family: "Parisienne", "Great Vibes", cursive;
+  font-size: 2rem;
+  font-weight: 400;
+  color: #0284c7;
+}
+.today-wordmark span::after {
+  content: "";
+  position: absolute;
+  top: 0.05em;
+  right: 0.05em;
+  width: 0.36em;
+  height: 0.36em;
+  background: #38bdf8;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+body.theme-dark .today-wordmark span { color: #38bdf8; }
+body.theme-dark .today-wordmark span::after { background: #7dd3fc; }
+.today-time { flex: 0 0 auto; min-width: 128px; white-space: nowrap; }
+@media (max-width: 600px) {
+  .today-time { min-width: 0; flex-basis: 96px; white-space: normal; font-size: 0.86rem; line-height: 1.25; }
+  .today-wordmark span { font-size: 1.7rem; }
+}

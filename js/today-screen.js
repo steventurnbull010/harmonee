@@ -41,6 +41,19 @@
     return `${h % 12 === 0 ? 12 : h % 12}${m ? ":" + String(m).padStart(2, "0") : ""}${h >= 12 ? "pm" : "am"}`;
   }
 
+  // "9am – 5pm", "9:45 – 11:45am" (am/pm once when both are the same), like
+  // the calendar's event cards
+  function rangeText(evt) {
+    const start = startMins(evt);
+    const end = start + lengthMins(evt);
+    const fmt = (mins, withPeriod) => {
+      const h = Math.floor(mins / 60) % 24, m = Math.round(mins % 60);
+      return `${h % 12 === 0 ? 12 : h % 12}${m ? ":" + String(m).padStart(2, "0") : ""}${withPeriod ? (h >= 12 ? "pm" : "am") : ""}`;
+    };
+    const samePeriod = (Math.floor(start / 60) % 24 >= 12) === (Math.floor(end / 60) % 24 >= 12);
+    return `${fmt(start, !samePeriod)} – ${fmt(end, true)}`;
+  }
+
   // An event's length in minutes ("1.5 hours", "45 mins"); 60 if unknown
   function lengthMins(evt) {
     const m = String(evt.duration || "1 hour").match(/(\d+(?:\.\d+)?)\s*(h|hour|hr|min|m)/i);
@@ -99,7 +112,7 @@
         }
       }
       return `<li class="today-row${state}">
-        <span class="today-time">${allDay ? "All day" : esc(clockText(evt))}</span>
+        <span class="today-time">${allDay ? "All day" : esc(rangeText(evt))}</span>
         <span class="today-row-title">${esc(evt.icon || "📅")} ${esc(evt.title || "Event")}${badge}</span>
         <span class="today-avatars">${peopleIn(evt).map(avatar).join("")}</span>
       </li>`;
@@ -168,6 +181,7 @@
     return `
       <div class="today-inner">
         <header class="today-head">
+          <p class="today-wordmark" aria-label="harmonee"><span aria-hidden="true">harmonee</span></p>
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weather.trim() ? ` · ${esc(weather.trim())}` : ""}</p>
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
