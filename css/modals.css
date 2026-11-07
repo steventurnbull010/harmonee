@@ -1929,3 +1929,24 @@ body.theme-dark .parent-pin-code-input { background: #0f172a; border-color: #334
 .parent-pin-badge.is-on { background: #dcfce7; color: #166534; }
 .parent-pin-settings-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 #settings-modal .settings-outline-btn.is-quiet { color: #b91c1c; }
+
+/* "Would you like a parent PIN?" (asked once, top of Settings) */
+#settings-modal .parent-pin-offer {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0 0;
+  padding: 16px;
+  border: 1px solid #bae6fd;
+  border-radius: 16px;
+  background: #f0f9ff;
+}
+#settings-modal .parent-pin-offer[hidden] { display: none; }
+.parent-pin-offer-icon { font-size: 1.6rem; line-height: 1; }
+.parent-pin-offer-body { min-width: 0; }
+.parent-pin-offer-title { margin: 0; font-weight: 800; color: #0f172a; }
+.parent-pin-offer-text { margin: 8px 0 0; font-size: 0.88rem; line-height: 1.4; color: #475569; }
+.parent-pin-offer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+#settings-modal .settings-outline-btn.is-primary { background: #0284c7; border-color: #0284c7; color: #ffffff; }
+body.theme-dark #settings-modal .parent-pin-offer { background: rgba(2, 132, 199, 0.14); border-color: rgba(56, 189, 248, 0.35); }
+body.theme-dark .parent-pin-offer-title { color: #f8fafc; }
+body.theme-dark .parent-pin-offer-text { color: #cbd5e1; }

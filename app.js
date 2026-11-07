@@ -5232,7 +5232,7 @@ function setupEventListeners() {
 
     updateSettingsModalUI();
     renderFamilyAccessSection();
-    if (window.ParentPin) window.ParentPin.renderSettingsBox();
+    if (window.ParentPin) { window.ParentPin.renderSettingsBox(); window.ParentPin.renderOffer(); }
     renderRosterModalList();
     wireSettingsSectionNav();
 

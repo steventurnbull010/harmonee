@@ -221,5 +221,38 @@
     };
   }
 
-  window.ParentPin = { isSet, require, renderSettingsBox };
+  // ---- Asked once per board, at the top of Settings ------------------------
+  // The PIN is off unless a parent wants it (older children may not need
+  // one). The first time Settings is opened we ask; either answer is
+  // remembered for the whole board, and it can still be set later in Access.
+  function renderOffer() {
+    const box = document.getElementById("parent-pin-offer");
+    if (!box) return;
+    if (isSet() || settings().parentPinAsked) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = `
+      <div class="parent-pin-offer-icon" aria-hidden="true">🔒</div>
+      <div class="parent-pin-offer-body">
+        <p class="parent-pin-offer-title">Would you like a parent PIN?</p>
+        <p class="parent-pin-offer-text">Handy with younger children: a 4-number PIN for Settings and rewards. Older kids you trust? Skip it. You can change your mind any time in Access.</p>
+        <div class="parent-pin-offer-actions">
+          <button type="button" class="settings-outline-btn is-primary" data-offer="yes">Set a PIN</button>
+          <button type="button" class="settings-outline-btn" data-offer="no">No thanks</button>
+        </div>
+      </div>`;
+    box.onclick = async (e) => {
+      const btn = e.target.closest("[data-offer]");
+      if (!btn) return;
+      if (btn.dataset.offer === "yes") {
+        const saved = await setNewPin();
+        if (!saved) return; // cancelled: ask again next time
+        if (typeof window.showCalendarToast === "function") window.showCalendarToast("Parent PIN saved");
+      }
+      if (typeof window.saveBoardSettingsNow === "function") await window.saveBoardSettingsNow({ parentPinAsked: true });
+      renderOffer();
+      renderSettingsBox();
+    };
+  }
+
+  window.ParentPin = { isSet, require, renderSettingsBox, renderOffer };
 })();
