@@ -157,6 +157,7 @@
     { key: "tomorrow",  label: "Tomorrow's first thing", icon: "🌅", note: "Mornings and afternoons" },
     { key: "countdown", label: "Countdown",            icon: "⏳" },
     { key: "music",     label: "Music",                icon: "🎵" },
+    { key: "weather",   label: "Weather",              icon: "🌦️", note: "Uses the town in Settings › Display" },
     { key: "dinner",    label: "Dinner tonight",       icon: "🍽️" },
     { key: "groceries", label: "Groceries",            icon: "🛒" },
     { key: "jobs",      label: "Tasks today",          icon: "✅" }
@@ -316,6 +317,7 @@
             ${cardOn("music") && window.Music ? window.Music.todayCardHtml() : ""}
           </div>
           <div class="today-col">
+            ${cardOn("weather") && window.WeatherCard ? window.WeatherCard.html(now) : ""}
             ${cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : ""}
             ${cardOn("groceries") ? groceriesHtml() : ""}
             ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Tasks today</h3>${jobsHtml}<div class="today-card-foot">${addBtn('data-quick="job"', "Add task")}</div></section>` : ""}
@@ -447,6 +449,12 @@
         ${(dlg._log || []).length ? `<ul class="quick-list-log" aria-live="polite">${dlg._log.map(l => `<li><span aria-hidden="true">${l.note === "added" ? "✓" : "•"}</span> ${esc(l.name)} <em>${esc(l.note)}</em></li>`).join("")}</ul>` : ""}
       </form>`;
   }
+
+  // Fresh weather (every half hour): redraw the weather card
+  document.addEventListener("harmonee:weather", () => {
+    const el = document.getElementById("today-screen");
+    if (el && !el.hidden) paint(el);
+  });
 
   // Something added or removed by voice: show it here straight away
   document.addEventListener("harmonee:voice-change", () => {

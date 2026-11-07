@@ -238,7 +238,7 @@ async function initLocalWeather() {
 
     // Strategy A: Open-Meteo
     try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto");
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&hourly=temperature_2m,precipitation_probability,weathercode,is_day,wind_speed_10m&forecast_days=7&wind_speed_unit=mph&timezone=auto");
       if (res.ok) {
         const data = await res.json();
         if (data && data.current_weather) {
@@ -248,6 +248,7 @@ async function initLocalWeather() {
             city: city,
             current: cw,
             daily: data.daily || null,
+            hourly: data.hourly || null, // Today at a glance's weather card
             place: thisPlace,
             timestamp: Date.now()
           };
@@ -339,11 +340,16 @@ async function initLocalWeather() {
     if (typeof renderWeekCalendar === "function" && window.currentCalendarView === "week") {
       try { renderWeekCalendar(); } catch (e) {}
     }
+    document.dispatchEvent(new CustomEvent("harmonee:weather"));
   }
 
   await fetchWeather(place.lat, place.lon, place.label || place.name);
 }
 window.initLocalWeather = initLocalWeather;
+// The forecast as last fetched (or cached): { city, current, daily, hourly, timestamp }
+window.getWeatherForecast = () => localWeatherForecast;
+// A board left on all day: fresh weather every half hour (one small, free request)
+setInterval(() => { if (document.visibilityState !== "hidden") initLocalWeather(); }, 30 * 60 * 1000);
 
 function getForecastForDate(dateOrDateStr) {
   if (!localWeatherForecast) {
