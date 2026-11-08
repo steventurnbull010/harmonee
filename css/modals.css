@@ -2773,3 +2773,7 @@ body.theme-dark .today-getting-started { background: linear-gradient(135deg, rgb
 body.theme-dark .gs-item { background: #0f172a; border-color: #334155; color: #f8fafc; }
 body.theme-dark .gs-item.is-done { background: rgba(22, 163, 74, 0.12); border-color: rgba(22, 163, 74, 0.4); }
 body.theme-dark .gs-item.is-done strong { color: #86efac; }
+
+/* Settings: the build, quietly at the bottom (js/utils.js showBuildInSettings) */
+.settings-build { margin: 24px 0 8px; text-align: center; font-size: 0.78rem; color: var(--text-secondary, #94a3b8); letter-spacing: 0.02em; }
+.settings-build:empty { display: none; }

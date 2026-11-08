@@ -91,7 +91,7 @@ async function resolveWeatherPlace() {
 //   renderWeatherPlacePicker(container, { current, onPick(place|null), offLabel })
 function renderWeatherPlacePicker(box, opts = {}) {
   if (!box) return;
-  const esc = (v) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(v)) : String(v));
+  const esc = (v) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(v)) : String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   let results = [];
   let message = "";
   let busy = false;

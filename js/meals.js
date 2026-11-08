@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=152";
+} from "../recipes-data.js?v=edeedaa8";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -487,7 +487,7 @@ function renderMealsView() {
         matrixHtml += `
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
             <div class="meal-block-card meal-cat-${cat.key} meal-card-v2" role="button" tabindex="0" title="${escapeHtml(meal.title)}">
-              <span class="ev-block-title meal-card-title"><span class="ev-block-icon" aria-hidden="true">${emoji}</span>${escapeHtml(meal.title)}</span>
+              <span class="ev-block-title meal-card-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(emoji)}</span>${escapeHtml(meal.title)}</span>
               ${(() => { const c = renderMealCardCooksHtml(meal.cook); return c.names ? `<span class="ev-block-time meal-card-cooks">${escapeHtml(c.names)}</span><div class="ev-block-people">${c.avatars}</div>` : ""; })()}
             </div>
           </div>
@@ -590,7 +590,7 @@ function renderMealsView() {
           feedHtml += `
             <div class="mobile-slot-card mobile-slot-card-${cat.key}" role="button" tabindex="0" data-date="${dateStr}" data-slot="${cat.key}" title="Tap to view meal details: ${escapeHtml(meal.title)}">
               <div class="mobile-meal-main">
-                <span class="mobile-meal-emoji">${emoji}</span>
+                <span class="mobile-meal-emoji">${escapeHtml(emoji)}</span>
                 <div class="mobile-meal-info">
                   <div class="mobile-meal-title">${escapeHtml(meal.title)}</div>
                   <div class="mobile-meal-sub">
@@ -1045,9 +1045,10 @@ function recipeRowHtml(recipe) {
       timeDisplay = formatMinutesToDuration(knownMin);
     }
     const emoji = recipe.emoji || (mealType === 'breakfast' ? '🥞' : mealType === 'lunch' ? '🥪' : mealType === 'dinner' ? '🥘' : '🍫');
-    const badgeContent = (recipe.image || recipe.imageUrl)
-      ? `<img src="${recipe.image || recipe.imageUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="">`
-      : emoji;
+    const imgUrl = safeImageUrl(recipe.image || recipe.imageUrl);
+    const badgeContent = imgUrl
+      ? `<img src="${escapeHtml(imgUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="">`
+      : escapeHtml(emoji);
 
     return `
       <div class="drawer-recipe-card" data-recipe-id="${recipe.id}" title="Tap to view recipe details and plan">

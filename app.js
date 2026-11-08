@@ -19,6 +19,8 @@ import {
   deleteDoc,
   getDoc,
   getDocs,
+  getDocFromServer,
+  getDocsFromServer,
   writeBatch,
   runTransaction,
   serverTimestamp
@@ -1597,6 +1599,15 @@ async function removeBoardDevice(uid) {
   await deleteDoc(doc(db, "boards", currentBoardId, "devices", uid));
 }
 
+// A new family code. Devices already joined stay joined (membership is the device record);
+// old join links and QR codes stop working, so a removed device can't come back with them.
+async function changeFamilyCode() {
+  const code = generateFamilyCode();
+  await updateDoc(doc(db, "boards", currentBoardId, "private", "access"), { code });
+  return formatFamilyCode(code);
+}
+window.changeFamilyCode = changeFamilyCode;
+
 window.loadFamilyAccessInfo = loadFamilyAccessInfo;
 window.removeBoardDevice = removeBoardDevice;
 
@@ -1617,6 +1628,17 @@ function listenToFirestoreTasks() {
   listenToFirestoreBoard();
 
   firestoreUnsubscribe = onSnapshot(colRef, async (snapshot) => {
+    if (snapshot.empty && snapshot.metadata.fromCache) {
+      // "Empty" from this device's offline cache (a new or cleared device, maybe offline) isn't the
+      // truth: never seed starter chores from it, or they'd land on the real board on reconnecting.
+      // Ask the server; if it has chores, the next snapshot brings them. Offline: wait.
+      try {
+        const fresh = await getDocsFromServer(colRef);
+        if (!fresh.empty) return;
+      } catch (e) {
+        return;
+      }
+    }
     if (snapshot.empty) {
       if (isDefaultTurnbullBoard) {
         console.log("Turnbull collection empty on first load. Seeding...");
@@ -1734,16 +1756,25 @@ function listenToFirestoreBoard() {
       }
     } else {
       // First time initialization for this board doc in Firestore
-      try {
-        setDoc(boardDocRef, {
-          boardId: currentBoardId,
-          members: familyMembers,
-          settings: boardSettings,
-          events: loadFamilyEvents(),
-          meals: loadDateMeals(),
-          createdAt: serverTimestamp()
-        }, { merge: true }).catch(() => {});
-      } catch (e) {}
+      const createBoardDoc = () => {
+        try {
+          setDoc(boardDocRef, {
+            boardId: currentBoardId,
+            members: familyMembers,
+            settings: boardSettings,
+            events: loadFamilyEvents(),
+            meals: loadDateMeals(),
+            createdAt: serverTimestamp()
+          }, { merge: true }).catch(() => {});
+        } catch (e) {}
+      };
+      // Missing only in this device's offline cache? Check with the server first, or this
+      // device's defaults would be written over the family's real settings, events and meals.
+      if (docSnap.metadata.fromCache) {
+        getDocFromServer(boardDocRef).then(fresh => { if (!fresh.exists()) createBoardDoc(); }).catch(() => {});
+      } else {
+        createBoardDoc();
+      }
     }
   }, (err) => {
     console.warn("Board doc listener error:", err);
@@ -5450,6 +5481,7 @@ function setupEventListeners() {
         <span class="family-access-code" aria-label="Family code">${escapeHtml(info.code)}</span>
         <button type="button" class="family-access-small-btn" id="btn-copy-join-link">Copy join link</button>
         <button type="button" class="family-access-small-btn" id="btn-show-join-qr">Show QR code</button>
+        <button type="button" class="family-access-small-btn" id="btn-change-family-code">Change code</button>
       </div>
       <p class="settings-box-desc" style="margin-top: 12px;">Joined devices (${info.devices.length})</p>
       <ul class="family-access-devices">${devicesHtml}</ul>
@@ -5472,6 +5504,28 @@ function setupEventListeners() {
       url: info.joinUrl, code: info.code,
       familyName: isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || "")
     });
+    // New code: asks first, then shows it (and offers to show the QR for the next device)
+    const askToChangeCode = async ({ afterRemoving = false } = {}) => {
+      const ask = { icon: "🔑", yes: "Change the code", no: afterRemoving ? "Not now" : "Keep this code",
+        title: afterRemoving ? "Change the family code too?" : "Change the family code?",
+        text: afterRemoving
+          ? "Then the removed device can't use the old code, link or QR to get back in. Your other phones and tablets stay connected."
+          : "Phones and tablets already on harmonee stay connected. Old join links and QR codes stop working, so anyone joining after this needs the new code." };
+      const sure = window.Sheet ? await window.Sheet.confirm(ask) : window.confirm(ask.title);
+      if (!sure) return;
+      if (typeof window.needsInternet === "function" && window.needsInternet("Changing the family code")) return;
+      try {
+        const fresh = await changeFamilyCode();
+        if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🔑 New family code: ${fresh}`);
+      } catch (err) {
+        console.warn("Could not change the family code:", err);
+        if (typeof window.showCalendarToast === "function") window.showCalendarToast("Couldn't change the code. Please try again.");
+      }
+      renderFamilyAccessSection();
+    };
+    const changeBtn = document.getElementById("btn-change-family-code");
+    if (changeBtn) changeBtn.onclick = () => askToChangeCode();
+
     box.querySelectorAll("[data-remove-device]").forEach(btn => {
       btn.onclick = async () => {
         const sure = window.Sheet
@@ -5479,12 +5533,16 @@ function setupEventListeners() {
           : window.confirm("Remove this device? It will need the family code to get back in.");
         if (!sure) return;
         btn.disabled = true;
+        let removed = false;
         try {
           await removeBoardDevice(btn.getAttribute("data-remove-device"));
+          removed = true;
         } catch (err) {
           console.warn("Could not remove device:", err);
         }
-        renderFamilyAccessSection();
+        await renderFamilyAccessSection();
+        // A lost phone or a nanny's tablet may still have the join link or QR: offer a new code
+        if (removed) askToChangeCode({ afterRemoving: true });
       };
     });
   }

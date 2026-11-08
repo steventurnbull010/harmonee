@@ -58,13 +58,19 @@ console.log(`   ✅ ${cssFiles.length} stylesheets, all braces balanced.`);
 // 3. index.html Cache Buster Check
 console.log('\n3. Checking index.html script & css links...');
 const html = fs.readFileSync(indexHtmlPath, 'utf8');
-const cssMatch = html.match(/style\.css\?v=(\d+)/);
-const jsMatch = html.match(/app\.js\?v=(\d+)/);
+const cssMatch = html.match(/style\.css\?v=([A-Za-z0-9]+)/);
+const jsMatch = html.match(/app\.js\?v=([A-Za-z0-9]+)/);
 if (!cssMatch || !jsMatch) {
   console.error('   ❌ Missing cache buster on style.css or app.js in index.html!');
   process.exit(1);
 }
 console.log(`   ✅ Cache busters found: style.css?v=${cssMatch[1]}, app.js?v=${jsMatch[1]}`);
+// Every ?v= must match its file's content (scripts/stamp-versions.mjs sets them)
+{
+  const stamp = require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, 'stamp-versions.mjs'), '--check'], { encoding: 'utf8' });
+  process.stdout.write(stamp.stdout || '');
+  if (stamp.status !== 0) { process.stderr.write(stamp.stderr || ''); process.exit(1); }
+}
 
 // 4. Browser-faithful Boot Simulation
 // Loads every local <script> from index.html in page order inside one shared

@@ -18,7 +18,7 @@
   let shop = null;             // { listId, seen, settling, armed, pushed }
   let wakeLock = null;
 
-  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
+  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   const textOf = (item) => (window.Grocery ? window.Grocery.displayText(item) : item.text) || "";
   const forOf = (item) => (window.Grocery ? window.Grocery.sourcesLabel(item) : "");
   const getList = () => (typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : (window.familyLists || [])).find(l => l.id === (shop && shop.listId));

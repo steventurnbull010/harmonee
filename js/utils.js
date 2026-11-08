@@ -4,7 +4,7 @@
 // ============================================================================
 
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return ""; // 0 shows as "0"
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -13,6 +13,13 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 window.escapeHtml = escapeHtml;
+
+// An image address that's safe to put in src="": our own data: images or https links only
+function safeImageUrl(url) {
+  const u = String(url || "").trim();
+  return /^(https:\/\/|data:image\/(png|jpe?g|webp|gif);base64,)/i.test(u) ? u : "";
+}
+window.safeImageUrl = safeImageUrl;
 
 function getLocalDateKey(date) {
   if (!date) date = new Date();
@@ -272,3 +279,21 @@ function eventForDay(e, dateObj) {
   return out;
 }
 window.eventForDay = eventForDay;
+
+// The build shown at the bottom of Settings ("harmonee · build 3fa9c1e · 8 Nov 2026, 23:40")
+(function showBuildInSettings() {
+  const fill = () => {
+    const el = document.getElementById("settings-build");
+    const b = window.HARMONEE_BUILD;
+    if (!el || !b) return;
+    let when = "";
+    const m = String(b.builtAt || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+    if (m) {
+      const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+      when = `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}, ${m[4]}:${m[5]}`;
+    }
+    el.textContent = `harmonee · build ${b.id}${when ? ` · ${when}` : ""}`;
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fill);
+  else fill();
+})();

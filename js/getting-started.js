@@ -13,7 +13,7 @@
 // tapped. Only new boards (made with settings.firsts) get the card.
 // ============================================================================
 (function () {
-  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
+  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   const ITEMS = [
     { key: "invite", icon: "👋", title: "Invite your family", sub: "Share a QR code so they can join" },
     { key: "event",  icon: "📅", title: "Add your first event", sub: "A club, a birthday, the dentist" },

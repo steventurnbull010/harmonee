@@ -24,7 +24,7 @@
 // ============================================================================
 (function () {
   const MAX_TILES = 8;
-  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
+  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   const tiles = () => (Array.isArray((window.boardSettings || {}).musicTiles) ? window.boardSettings.musicTiles : []);
   const save = (list) => (typeof window.saveBoardSettingsNow === "function" ? window.saveBoardSettingsNow({ musicTiles: list }) : null);
 

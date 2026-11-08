@@ -7,7 +7,7 @@
 //   JoinQR.show({ url, code, familyName })   a big QR to show the family
 // ============================================================================
 (function () {
-  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
+  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
 
   function svg(url) {
     if (!url || typeof window.qrcode !== "function") return "";

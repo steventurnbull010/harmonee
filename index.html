@@ -38,15 +38,15 @@
   </style>
   <!-- Installable app: "Install app" / "Add to Home screen" in Chrome opens
        harmonee full screen, without the address bar and tabs -->
-  <link rel="manifest" href="/manifest.webmanifest?v=2">
+  <link rel="manifest" href="/manifest.webmanifest?v=86f400a2">
   <meta name="theme-color" content="#0284c7">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=2">
-  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=2">
-  <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png?v=2">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=46f60de5">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=a59cbe8d">
+  <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png?v=827f52a3">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=053ad604">
   <meta name="description" content="Tablet and mobile-first live synced family calendar, routines, meals, lists, and leaderboard with real-time Firebase Firestore support.">
   
   <!-- Modern Typography (Outfit & Plus Jakarta Sans) -->
@@ -54,26 +54,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Parisienne&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=144">
-  <link rel="stylesheet" href="css/navigation.css?v=4">
-  <link rel="stylesheet" href="css/tasks.css?v=30">
-  <link rel="stylesheet" href="css/meals.css?v=31">
-  <link rel="stylesheet" href="css/calendar.css?v=27">
-  <link rel="stylesheet" href="css/lists.css?v=14">
-  <link rel="stylesheet" href="css/rewards.css?v=5">
-  <link rel="stylesheet" href="css/widgets.css?v=4">
-  <link rel="stylesheet" href="css/modals.css?v=36">
-  <link rel="stylesheet" href="css/celebrations.css?v=3">
-  <link rel="stylesheet" href="css/side-panel.css?v=7">
-  <link rel="stylesheet" href="css/page-intro.css?v=10">
-  <link rel="stylesheet" href="css/page-spacing.css?v=8">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=8">
-  <link rel="stylesheet" href="css/setup.css?v=25">
-  <link rel="stylesheet" href="css/tablet-fit.css?v=8">
-  <link rel="stylesheet" href="css/voice.css?v=5">
-  <link rel="stylesheet" href="css/lists-v2.css?v=3">
-  <link rel="stylesheet" href="css/sheet.css?v=2">
-  <link rel="stylesheet" href="css/meal-genie.css?v=10">
+  <link rel="stylesheet" href="style.css?v=21c141cf">
+  <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
+  <link rel="stylesheet" href="css/tasks.css?v=815d9ed6">
+  <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
+  <link rel="stylesheet" href="css/calendar.css?v=e945f7a8">
+  <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
+  <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
+  <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
+  <link rel="stylesheet" href="css/modals.css?v=ecd2adc4">
+  <link rel="stylesheet" href="css/celebrations.css?v=eacfe3e5">
+  <link rel="stylesheet" href="css/side-panel.css?v=7e6487e3">
+  <link rel="stylesheet" href="css/page-intro.css?v=35b02c4b">
+  <link rel="stylesheet" href="css/page-spacing.css?v=fccf17a0">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=aa7186b6">
+  <link rel="stylesheet" href="css/setup.css?v=a22810f2">
+  <link rel="stylesheet" href="css/tablet-fit.css?v=46b5fa0e">
+  <link rel="stylesheet" href="css/voice.css?v=b9c8e434">
+  <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
+  <link rel="stylesheet" href="css/sheet.css?v=4182e6d0">
+  <link rel="stylesheet" href="css/meal-genie.css?v=27f8eaef">
   
   <!-- Global Crash-Proof Safety Error Boundary -->
   <script>
@@ -1635,6 +1635,9 @@
             </button>
           </section>
 
+          <!-- Which version of harmonee this is (js/build-info.js, written by scripts/stamp-versions.mjs) -->
+          <p class="settings-build" id="settings-build" aria-label="harmonee build"></p>
+
           <div class="modal-footer button-row">
             <button type="button" class="btn-cancel" id="btn-cancel-settings">Cancel</button>
             <button type="submit" class="btn-primary-modal" id="btn-save-settings">Save Settings</button>
@@ -2469,45 +2472,46 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/utils.js?v=12"></script>
-  <script src="js/seed-data.js?v=3"></script>
-  <script src="js/audio.js?v=3"></script>
-  <script src="js/firsts.js?v=2"></script>
-  <script src="js/offline.js?v=3"></script>
-  <script src="js/sheet.js?v=2"></script>
-  <script src="js/meal-genie.js?v=17"></script>
-  <script src="js/join-qr.js?v=1"></script>
-  <script src="js/getting-started.js?v=1"></script>
-  <script src="js/weather.js?v=9"></script>
-  <script src="js/sleep.js?v=10"></script>
-  <script src="js/grocery.js?v=6"></script>
-  <script src="js/lists.js?v=29"></script>
-  <script src="js/aisles.js?v=3"></script>
-  <script src="js/shop-mode.js?v=3"></script>
-  <script src="js/rewards.js?v=8"></script>
-  <script src="js/reward-goals.js?v=5"></script>
-  <script src="js/page-intro.js?v=6"></script>
-  <script src="js/sticky-note.js?v=5"></script>
-  <script src="js/calendar.js?v=32"></script>
-  <script src="js/date-picker.js?v=1"></script>
-  <script src="js/tasks.js?v=39"></script>
-  <script src="js/code-words.js?v=1"></script>
-  <script src="js/board-access.js?v=3"></script>
-  <script src="js/countdowns.js?v=5"></script>
-  <script src="js/parent-pin.js?v=2"></script>
-  <script src="js/music.js?v=4"></script>
-  <script src="js/setup-wizard.js?v=28"></script>
-  <script src="js/voice-intent.js?v=5"></script>
-  <script src="js/voice.js?v=8"></script>
-  <script src="js/meal-groceries.js?v=2"></script>
-  <script src="js/weather-card.js?v=1"></script>
-  <script src="js/settings-fold.js?v=1"></script>
-  <script src="js/secret-keys.js?v=1"></script>
-  <script src="js/film-night.js?v=5"></script>
-  <script src="js/today-screen.js?v=31"></script>
-  <script src="js/side-panel.js?v=10"></script>
-  <script type="module" src="js/meals.js?v=50"></script>
-  <script type="module" src="app.js?v=251"></script>
+  <script src="js/build-info.js?v=5a3b8de9"></script>
+  <script src="js/utils.js?v=870ad74d"></script>
+  <script src="js/seed-data.js?v=79d75f09"></script>
+  <script src="js/audio.js?v=c545908c"></script>
+  <script src="js/firsts.js?v=e8a999ca"></script>
+  <script src="js/offline.js?v=a698b4e4"></script>
+  <script src="js/sheet.js?v=3b47ea6d"></script>
+  <script src="js/meal-genie.js?v=6335017d"></script>
+  <script src="js/join-qr.js?v=65c515ef"></script>
+  <script src="js/getting-started.js?v=3738d693"></script>
+  <script src="js/weather.js?v=7d142cea"></script>
+  <script src="js/sleep.js?v=ec254c32"></script>
+  <script src="js/grocery.js?v=7adbb8db"></script>
+  <script src="js/lists.js?v=a554c8e3"></script>
+  <script src="js/aisles.js?v=171f4f8e"></script>
+  <script src="js/shop-mode.js?v=7d6e082d"></script>
+  <script src="js/rewards.js?v=2bbb368c"></script>
+  <script src="js/reward-goals.js?v=81d6eec8"></script>
+  <script src="js/page-intro.js?v=c22b878c"></script>
+  <script src="js/sticky-note.js?v=ca2f184f"></script>
+  <script src="js/calendar.js?v=1b9a36be"></script>
+  <script src="js/date-picker.js?v=884dd01a"></script>
+  <script src="js/tasks.js?v=0d9d9c07"></script>
+  <script src="js/code-words.js?v=4cda76b6"></script>
+  <script src="js/board-access.js?v=fec4f7e0"></script>
+  <script src="js/countdowns.js?v=09475303"></script>
+  <script src="js/parent-pin.js?v=b6e3c20f"></script>
+  <script src="js/music.js?v=d89c674f"></script>
+  <script src="js/setup-wizard.js?v=afe0610d"></script>
+  <script src="js/voice-intent.js?v=b2d33b92"></script>
+  <script src="js/voice.js?v=c8f133f4"></script>
+  <script src="js/meal-groceries.js?v=ddc270ab"></script>
+  <script src="js/weather-card.js?v=029cdf30"></script>
+  <script src="js/settings-fold.js?v=687c868e"></script>
+  <script src="js/secret-keys.js?v=56739ba9"></script>
+  <script src="js/film-night.js?v=a596401b"></script>
+  <script src="js/today-screen.js?v=ac1f9179"></script>
+  <script src="js/side-panel.js?v=804be778"></script>
+  <script type="module" src="js/meals.js?v=e7707687"></script>
+  <script type="module" src="app.js?v=e6b98540"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

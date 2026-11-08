@@ -10,7 +10,7 @@
 //   Sheet.close(dialog)  slides it away, then closes it
 // ============================================================================
 (function () {
-  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s));
+  const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   const reduce = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function close(dlg, then) {
@@ -50,7 +50,7 @@
       if (answer) answer(false);
       answer = resolve;
       d.innerHTML = `<div class="hm-sheet-card">
-        ${icon ? `<span class="hm-sheet-icon" aria-hidden="true">${icon}</span>` : ""}
+        ${icon ? `<span class="hm-sheet-icon" aria-hidden="true">${esc(icon)}</span>` : ""}
         <h2 class="hm-sheet-title" id="hm-confirm-title">${esc(title)}</h2>
         ${text ? `<p class="hm-sheet-text">${esc(text)}</p>` : ""}
         <button type="button" class="hm-sheet-yes${danger ? " is-danger" : ""}" data-sheet-yes>${esc(yes)}</button>
@@ -69,11 +69,11 @@
       if (answer) answer(false);
       answer = (v) => resolve(v === false || v === true ? null : v);
       d.innerHTML = `<div class="hm-sheet-card">
-        ${icon ? `<span class="hm-sheet-icon" aria-hidden="true">${icon}</span>` : ""}
+        ${icon ? `<span class="hm-sheet-icon" aria-hidden="true">${esc(icon)}</span>` : ""}
         <h2 class="hm-sheet-title" id="hm-confirm-title">${esc(title)}</h2>
         ${text ? `<p class="hm-sheet-text">${esc(text)}</p>` : ""}
         <div class="hm-sheet-options">${options.map(o => `<button type="button" class="hm-sheet-option" data-sheet-pick="${esc(o.key)}">
-          ${o.icon ? `<span class="hm-sheet-option-icon" aria-hidden="true">${o.icon}</span>` : ""}
+          ${o.icon ? `<span class="hm-sheet-option-icon" aria-hidden="true">${esc(o.icon)}</span>` : ""}
           <span class="hm-sheet-option-words"><strong>${esc(o.label)}</strong>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</span>
         </button>`).join("")}</div>
         <button type="button" class="hm-sheet-no" data-sheet-no>${esc(cancel)}</button>
