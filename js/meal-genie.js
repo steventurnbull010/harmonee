@@ -296,10 +296,50 @@
     });
     return dlg;
   }
-  function close() { if (window.Sheet) window.Sheet.close(dlg); else dlg.close(); }
+  function close() { stopMagic(); if (state) state.loading = false; if (window.Sheet) window.Sheet.close(dlg); else dlg.close(); }
 
   const ORDER = ["meal", "who", "mood", "flavour", "effort"];
   function stepsFor() { return state.answers.meal === "breakfast" ? ["meal"] : ORDER; }
+
+  // ---- The magic moment ---------------------------------------------------------------
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const MAGIC_MS = () => (reduceMotion() ? 1500 : 3600);
+  let magicTimers = [];
+  function stopMagic() { magicTimers.forEach(t => clearTimeout(t)); magicTimers = []; }
+  // Four short lines; the third is about them (who's eating, or the mood they picked)
+  function magicLines() {
+    const a = state.answers;
+    const picky = (a.eating || []).filter(n => { const p = prefsOf(n); return p.diet || p.dislikes.length; });
+    const mood = { veggie: "Picking the freshest veg…", fish: "Casting a line…", meat: "Firing up the grill…", light: "Going easy on the butter…" }[a.mood];
+    let third = picky.length === 1 ? `Checking what ${picky[0]} won't eat…`
+      : picky.length > 1 ? "Checking everyone's won't-eats…"
+      : mood || (a.flavour === "spicy" ? "Raiding the spice rack…" : "Giving the pot a stir…");
+    if (a.meal === "breakfast") third = picky.length ? third : "Cracking a few eggs…";
+    return ["Finding the recipe book…", "Putting on the chef's hat…", third, "Plating up…"];
+  }
+  function startMagic() {
+    stopMagic();
+    state.loading = true;
+    draw();
+    const lines = magicLines();
+    const total = MAGIC_MS();
+    const step = total / lines.length;
+    lines.slice(1).forEach((text, i) => {
+      magicTimers.push(setTimeout(() => {
+        const el = dlg && dlg.querySelector("#genie-magic-line");
+        if (!el) return;
+        el.classList.remove("is-in"); void el.offsetWidth;
+        el.textContent = text;
+        el.classList.add("is-in");
+      }, step * (i + 1)));
+    });
+    magicTimers.push(setTimeout(() => {
+      magicTimers = [];
+      if (!state || !state.loading) return;
+      state.loading = false;
+      if (dlg && dlg.open) draw();
+    }, total));
+  }
 
   function draw() {
     const steps = stepsFor();
@@ -372,6 +412,23 @@
         <p class="genie-q">${esc(st.q)}</p>
         <div class="genie-opts${st.opts.length > 3 ? " is-many" : ""}">${st.opts.map(o => `<button type="button" class="genie-opt${state.answers[key] === o.key ? " is-on" : ""}" data-genie="pick" data-key="${key}" data-val="${o.key}"><span class="genie-opt-icon" aria-hidden="true">${o.icon}</span><span>${esc(o.label)}</span></button>`).join("")}</div>
         ${state.step > 0 ? `<button type="button" class="genie-back" data-genie="back">‹ Back</button>` : ""}
+      </div>`;
+      return;
+    }
+    // A little magic before the results (finding takes a split second, which feels like nothing happened)
+    if (state.loading) {
+      const lines = magicLines();
+      dlg.innerHTML = `<div class="genie-card genie-loading-card">${head}
+        <div class="genie-magic" role="status" aria-live="polite">
+          <div class="genie-magic-scene" aria-hidden="true">
+            <span class="genie-magic-steam s1"></span><span class="genie-magic-steam s2"></span><span class="genie-magic-steam s3"></span>
+            <span class="genie-magic-pot">🍲</span>
+            <span class="genie-magic-wand">🪄</span>
+            <span class="genie-magic-spark k1">✨</span><span class="genie-magic-spark k2">✨</span><span class="genie-magic-spark k3">⭐</span>
+          </div>
+          <p class="genie-magic-line" id="genie-magic-line">${esc(lines[0])}</p>
+          <div class="genie-magic-bar" aria-hidden="true"><span style="animation-duration:${MAGIC_MS()}ms"></span></div>
+        </div>
       </div>`;
       return;
     }
@@ -455,8 +512,8 @@
     if (act === "pick") {
       state.answers[b.getAttribute("data-key")] = b.getAttribute("data-val");
       state.step++;
-      if (state.step >= stepsFor().length) { state.results = rank(); state.page = 0; }
       if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+      if (state.step >= stepsFor().length) { state.results = rank(); state.page = 0; startMagic(); return; }
       draw();
       return;
     }
@@ -489,6 +546,7 @@
   // Opens with a guess at the meal from the time of day (still asked)
   // From the plan-a-meal drawer it knows the day: open(slot, { date: "2026-11-09" })
   function start(meal, opts) {
+    stopMagic();
     const h = new Date().getHours();
     const guess = (typeof meal === "string" && meal) || (h < 10 ? "breakfast" : h < 14 ? "lunch" : "dinner");
     const date = opts && opts.date ? new Date(`${opts.date}T00:00:00`) : null;

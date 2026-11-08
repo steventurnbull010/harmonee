@@ -204,3 +204,43 @@ body.theme-dark .genie-diet.is-on { background: rgba(22, 163, 74, 0.18); border-
 body.theme-dark .genie-check.is-on { background: rgba(225, 29, 72, 0.15); border-color: #e11d48; }
 body.theme-dark .genie-group-title { color: #f8fafc; }
 body.theme-dark .genie-add { background: rgba(124, 58, 237, 0.18); color: #ddd6fe; }
+
+/* ---- The magic moment before the results (js/meal-genie.js startMagic) ---- */
+.genie-magic { display: flex; flex-direction: column; align-items: center; padding: 24px 0 8px; text-align: center; }
+.genie-magic-scene { position: relative; width: 160px; height: 160px; margin-bottom: 16px; }
+.genie-magic-scene::before {
+  content: ""; position: absolute; inset: 16px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 60%, #ede9fe, #e0f2fe 70%, transparent 71%);
+  animation: genieGlow 1.8s ease-in-out infinite;
+}
+.genie-magic-pot { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); font-size: 4rem; line-height: 1; animation: geniePot 1.2s ease-in-out infinite; }
+.genie-magic-wand { position: absolute; right: 8px; top: 8px; font-size: 2.5rem; transform-origin: 20% 80%; animation: genieWand 1s ease-in-out infinite; }
+.genie-magic-spark { position: absolute; font-size: 1.1rem; opacity: 0; animation: genieSpark 1.5s ease-in-out infinite; }
+.genie-magic-spark.k1 { left: 24px; top: 32px; }
+.genie-magic-spark.k2 { right: 40px; top: 72px; animation-delay: 0.5s; }
+.genie-magic-spark.k3 { left: 48px; top: 8px; animation-delay: 1s; font-size: 0.9rem; }
+.genie-magic-steam { position: absolute; bottom: 88px; width: 8px; height: 24px; border-radius: 8px; background: rgba(148, 163, 184, 0.45); opacity: 0; animation: genieSteam 1.6s ease-out infinite; }
+.genie-magic-steam.s1 { left: 64px; }
+.genie-magic-steam.s2 { left: 76px; animation-delay: 0.5s; }
+.genie-magic-steam.s3 { left: 88px; animation-delay: 1s; }
+.genie-magic-line { min-height: 1.5em; margin: 0 0 16px; font-size: 1.1rem; font-weight: 800; color: var(--text-primary, #0f172a); }
+.genie-magic-line.is-in { animation: genieLine 0.35s ease-out; }
+.genie-magic-bar { width: min(320px, 100%); height: 8px; border-radius: 999px; background: #ede9fe; overflow: hidden; }
+.genie-magic-bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7c3aed, #6366f1, #0ea5e9); animation-name: genieBar; animation-timing-function: cubic-bezier(0.4, 0.1, 0.3, 1); animation-fill-mode: forwards; }
+
+@keyframes genieBar { from { width: 4%; } to { width: 100%; } }
+@keyframes genieGlow { 0%, 100% { transform: scale(0.96); opacity: 0.85; } 50% { transform: scale(1.04); opacity: 1; } }
+@keyframes geniePot { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 25% { transform: translateX(-50%) rotate(-4deg); } 75% { transform: translateX(-50%) rotate(4deg); } }
+@keyframes genieWand { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(18deg); } }
+@keyframes genieSpark { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0; transform: scale(0.6) translateY(-8px); } }
+@keyframes genieSteam { 0% { opacity: 0; transform: translateY(0) scaleY(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-32px) scaleY(1.2); } }
+@keyframes genieLine { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+body.theme-dark .genie-magic-scene::before { background: radial-gradient(circle at 50% 60%, rgba(124, 58, 237, 0.35), rgba(14, 165, 233, 0.2) 70%, transparent 71%); }
+body.theme-dark .genie-magic-line { color: #f8fafc; }
+body.theme-dark .genie-magic-bar { background: rgba(124, 58, 237, 0.25); }
+
+@media (prefers-reduced-motion: reduce) {
+  .genie-magic-scene::before, .genie-magic-pot, .genie-magic-wand, .genie-magic-spark, .genie-magic-steam, .genie-magic-line.is-in { animation: none; }
+  .genie-magic-spark { opacity: 1; }
+}
