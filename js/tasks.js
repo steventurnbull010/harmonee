@@ -1173,6 +1173,28 @@ let drawerCurrentType = "chore"; // "chore" (swappable) or "routine" (personal)
 let drawerSchedule = "once";      // "once" or "daily"
 let drawerSelectedProfiles = ["Steven"];
 let drawerSelectedDate = new Date();
+const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+function drawerDateForNew() {
+  const today = startOfDay(new Date());
+  const viewed = startOfDay(tasksSelectedDate || today);
+  return viewed < today ? today : viewed;
+}
+function drawerDateForTask(task) {
+  const today = startOfDay(new Date());
+  if (task && task.date) {
+    if (typeof isOverdueOn === "function" && isOverdueOn(task, new Date())) return today;
+    const [y, m, d] = String(task.date).split("-").map(Number);
+    const own = new Date(y, m - 1, d);
+    return isNaN(own) ? today : own;
+  }
+  // No date (weekly, or "this week"): its weekday in the week being looked at
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const idx = task ? days.indexOf(task.day) : -1;
+  if (idx < 0) return drawerDateForNew();
+  const base = startOfDay(tasksSelectedDate || today);
+  const out = new Date(base); out.setDate(base.getDate() - base.getDay() + idx);
+  return out;
+}
 let drawerRoutineFreq = 1;
 let drawerRoutineFreqUnit = "day";
 let drawerRoutineSlot = "morning";
@@ -1295,6 +1317,9 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
     drawerCurrentType = isPersonalRoutine(task) ? "routine" : "chore";
     drawerSchedule = isDaily ? "daily" : "once";
+    // The chore's own day (the panel used to keep whatever date it last had,
+    // so saving could move a chore). Overdue: today, so saving moves it here.
+    drawerSelectedDate = drawerDateForTask(task);
     // Once: weekly repeat and time
     const repeatToggle = document.getElementById("drawer-toggle-repeat");
     const repeatSelect = document.getElementById("drawer-chore-repeat-select");
@@ -1321,6 +1346,8 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     drawerSelectedProfiles = [((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) && (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"])[0]) || "Steven"];
     drawerCurrentType = "chore";
     drawerSchedule = "once";
+    // New: the day being looked at on the Tasks page (today if that's past)
+    drawerSelectedDate = drawerDateForNew();
     const repeatToggle = document.getElementById("drawer-toggle-repeat");
     if (repeatToggle) repeatToggle.checked = false;
     const timeToggle = document.getElementById("drawer-toggle-time");
