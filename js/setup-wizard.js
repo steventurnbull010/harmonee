@@ -95,20 +95,17 @@
 
     if (s.step === 2) return `
       <h1 class="setup-title" id="setup-title">🏡 Who's in the family?</h1>
+      ${s.people.length ? `<div class="setup-pills" role="list" aria-label="Added so far">${s.people.map((p, i) => `
+        <span class="setup-pill${s.openColour === i ? " is-open" : ""}" role="listitem" style="--pill:${colourOf(p.colour)}">
+          <button type="button" class="setup-pill-name" data-act="colour" data-i="${i}" aria-label="${esc(p.name)}: change colour" aria-expanded="${s.openColour === i}">${esc(p.name)}</button>
+          <button type="button" class="setup-pill-x" data-act="remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">✕</button>
+        </span>`).join("")}</div>
+      ${s.openColour !== null && s.openColour !== undefined && s.people[s.openColour] ? `<div class="setup-swatches" role="group" aria-label="${esc(s.people[s.openColour].name)}'s colour">${palette().map(c => `<button type="button" class="setup-swatch${c.id === s.people[s.openColour].colour ? " is-on" : ""}" style="background:${c.solid}" data-act="pick-colour" data-i="${s.openColour}" data-colour="${c.id}" aria-label="${esc(c.name)}" aria-pressed="${c.id === s.people[s.openColour].colour}"></button>`).join("")}</div>` : ""}` : ""}
       <div class="setup-add-row">
-        <input id="setup-person" class="setup-input" type="text" maxlength="24" placeholder="A name, e.g. Sam" autocomplete="off" enterkeyhint="done" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>
+        <input id="setup-person" class="setup-input" type="text" maxlength="24" placeholder="${s.people.length ? "Add someone else" : "A name, e.g. Sam"}" autocomplete="off" enterkeyhint="done" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>
         <button type="button" class="setup-btn is-secondary" data-act="add-person" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>Add</button>
       </div>
-      ${s.people.length ? `<ul class="setup-people">${s.people.map((p, i) => `
-        <li class="setup-person">
-          <div class="setup-person-row">
-            <button type="button" class="setup-avatar" style="background:${colourOf(p.colour)}" data-act="colour" data-i="${i}" aria-label="Change ${esc(p.name)}'s colour" aria-expanded="${s.openColour === i}">${esc(p.name.charAt(0).toUpperCase())}</button>
-            <span class="setup-person-name">${esc(p.name)}</span>
-            <button type="button" class="setup-remove" data-act="remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">✕</button>
-          </div>
-          ${s.openColour === i ? `<div class="setup-swatches" role="group" aria-label="Colours">${palette().map(c => `<button type="button" class="setup-swatch${c.id === p.colour ? " is-on" : ""}" style="background:${c.solid}" data-act="pick-colour" data-i="${i}" data-colour="${c.id}" aria-label="${esc(c.name)}" aria-pressed="${c.id === p.colour}"></button>`).join("")}</div>` : ""}
-        </li>`).join("")}</ul>
-      <p class="setup-hint">🎨 Tap a circle to change its colour</p>` : `<p class="setup-hint">Add everyone who'll use harmonee.</p>`}`;
+      <p class="setup-hint">${s.people.length ? "🎨 Tap a name to change its colour" : "Add everyone who'll use harmonee."}</p>`;
 
     if (s.step === 3) return `
       <h1 class="setup-title" id="setup-title">⭐ Points or pocket money?</h1>
@@ -201,6 +198,9 @@
     state.people.push({ name, colour: nextColour(), child: state.people.length >= 2 }); // "child" = gets the starter routines (a guess: anyone after the first two)
     state.error = "";
     render();
+    // Keep the keyboard up for the next name
+    const again = document.getElementById("setup-person");
+    if (again) { try { again.focus({ preventScroll: true }); } catch (e) { again.focus(); } }
   }
 
   function next() {

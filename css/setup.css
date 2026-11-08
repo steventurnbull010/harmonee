@@ -538,3 +538,26 @@ body.theme-dark .setup-step-count { color: #7dd3fc; }
 .setup-for-chip.is-on .setup-mini-avatar { opacity: 1; }
 body.theme-dark .setup-for-chip { background: #1e293b; border-color: #334155; color: #cbd5e1; }
 body.theme-dark .setup-for-chip.is-on { background: color-mix(in srgb, var(--chip) 25%, #1e293b); color: #f8fafc; }
+
+/* People step: everyone added so far as coloured pills above the name box,
+   so they stay in view while the phone keyboard is up */
+.setup-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
+.setup-pill {
+  display: inline-flex; align-items: center;
+  border-radius: 999px;
+  background: var(--pill);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+.setup-pill.is-open { box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px var(--pill); }
+.setup-pill-name, .setup-pill-x {
+  border: none; background: none; color: inherit; font: inherit; cursor: pointer;
+}
+.setup-pill-name { min-height: 36px; padding: 4px 4px 4px 14px; font-size: 0.95rem; font-weight: 800; }
+.setup-pill-x { width: 32px; min-height: 36px; padding: 0 10px 0 4px; font-size: 0.75rem; opacity: 0.85; }
+.setup-pills + .setup-swatches { margin: 0 0 8px; padding-left: 0; }
+.setup-pills ~ .setup-add-row { margin-top: 8px; }
+/* Phones: the card starts at the top, so the keyboard covers nothing useful */
+@media (max-width: 600px) {
+  .setup-card:not(.is-intro) { margin: 0 auto auto; }
+}
