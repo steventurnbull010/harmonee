@@ -71,12 +71,15 @@
     const s = state;
     if (s.step === 0) return `
       <h1 class="setup-title setup-hello" id="setup-title">Welcome to <span class="hw" role="img" aria-label="harmonee"><span class="hw-ink" aria-hidden="true">harmonee</span><span class="hw-stars" aria-hidden="true"><span class="hw-star is-1"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span><span class="hw-star is-2"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span><span class="hw-star is-3"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0z" fill="currentColor"/></svg></span></span></span></h1>
-      <p class="setup-lead">Family life in sync: your calendar, jobs and routines, meals and shopping lists, shared by the whole family on a kitchen tablet and everyone's phones.</p>
-      <button type="button" class="setup-btn is-primary setup-start" data-act="start">Set up our family board</button>
-      <div class="setup-join-note">
-        <p class="setup-join-title">Joining your family's board?</p>
-        <p>Ask someone who already uses it to open <strong>Settings › Access</strong> and send you the <strong>join link</strong>. Open that link on this device and you're in.</p>
-      </div>`;
+      <p class="setup-lead setup-tagline">One board for the whole family 💛</p>
+      <ul class="setup-perks" aria-label="What's in harmonee">
+        <li><span aria-hidden="true">📅</span>Shared calendar</li>
+        <li><span aria-hidden="true">✅</span>Chores &amp; rewards</li>
+        <li><span aria-hidden="true">🍽️</span>Meal plans</li>
+        <li><span aria-hidden="true">🛒</span>Shopping lists</li>
+      </ul>
+      <button type="button" class="setup-btn is-primary setup-start" data-act="start">Let's get started</button>
+      <p class="setup-join-note is-short">👋 <strong>Joining your family?</strong> Ask them for the join link in <strong>Settings › Access</strong>.</p>`;
     if (s.step === 1) return `
       <h1 class="setup-title" id="setup-title">Let's set up your family board</h1>
       <p class="setup-lead">It takes about a minute, and you can change anything later.</p>

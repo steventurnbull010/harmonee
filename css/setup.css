@@ -382,3 +382,43 @@ body.theme-dark .setup-brand::after { background: #e0f2fe; }
 /* Smaller sidebar logo on short screens (css/navigation.css) */
 @media (max-height: 760px) and (min-width: 861px) { .skylight-brand-mark { font-size: 1.95rem !important; } }
 @media (max-height: 620px) and (min-width: 861px) { .skylight-brand-mark { font-size: 1.7rem !important; } }
+
+/* Welcome: a short tagline, four emoji tiles, one button, a one-line note */
+.setup-card.is-intro .setup-tagline { font-size: 1.1rem; font-weight: 600; color: var(--text-primary, #0f172a); }
+.setup-perks {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.setup-perks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: #f0f9ff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.setup-perks li span { font-size: 1.5rem; flex-shrink: 0; }
+.setup-perks li:nth-child(2) { background: #f0fdf4; }
+.setup-perks li:nth-child(3) { background: #fff7ed; }
+.setup-perks li:nth-child(4) { background: #fdf2f8; }
+body.theme-dark .setup-perks li { background: #1e293b; color: #f8fafc; }
+.setup-join-note.is-short { margin-top: 16px; padding: 12px 16px; text-align: center; font-size: 0.88rem; }
+/* Short phones (iPhone SE with the browser bars): the welcome still fits */
+@media (max-height: 620px) {
+  .setup-card.is-intro { padding-top: 16px; padding-bottom: 16px; }
+  .setup-card.is-intro .setup-hello + .setup-lead { margin-top: 8px; }
+  .setup-card.is-intro .setup-perks { margin-top: 16px; }
+  .setup-card.is-intro .setup-perks li { min-height: 48px; }
+  .setup-card.is-intro .setup-start { margin-top: 16px; }
+  .setup-card.is-intro .setup-join-note.is-short { margin-top: 8px; }
+}
