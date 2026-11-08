@@ -184,9 +184,17 @@ function getTasksForColumn(colMember, date) {
   const tasksSelectedDate = date;
   // Carried over: a one-off chore from an earlier day that nobody finished
   // shows on today too, until it's ticked or deleted (see isOverdueOn)
+  // A one-off chore lives on one day: its own day while that's today or still
+  // to come; once its day has passed, today while it's not done (Overdue),
+  // and the day it was done once it's ticked. Past days show what was done then.
   const todayKey = getLocalDateKey(new Date());
-  const doneLateToday = (task) => task.date < selectedDateStr && selectedDateStr === todayKey && !!task.completedAt && getLocalDateKey(new Date(task.completedAt)) === todayKey;
-  const onDate = (task, who) => task.date === selectedDateStr || isOverdueOn(task, date, who) || doneLateToday(task);
+  const doneDay = (task) => (task.completedAt ? getLocalDateKey(new Date(task.completedAt)) : task.date);
+  const onDate = (task, who) => {
+    const done = isTaskDoneOnDate(task, date, who);
+    if (task.date === selectedDateStr && selectedDateStr >= todayKey) return true;
+    if (done) return task.date <= selectedDateStr && doneDay(task) === selectedDateStr || (task.date === selectedDateStr && doneDay(task) < task.date);
+    return isOverdueOn(task, date, who);
+  };
   return (window.currentTasks || []).filter(task => {
       if (!task || typeof task !== "object") return false;
       const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";

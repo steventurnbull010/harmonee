@@ -2663,6 +2663,7 @@ body.theme-dark .skylight-task-card.is-completed .skylight-task-check-circle {
 body.theme-dark .skylight-task-grab-handle { color: #cbd5e1; }
 
 /* Carried over from an earlier day and not done yet (js/tasks.js isOverdueOn) */
-.skylight-task-overdue { display: inline-flex; align-items: center; gap: 4px; color: #b45309; font-weight: 700; }
-.skylight-task-overdue svg { flex: 0 0 auto; }
+.skylight-task-overdue { color: #b45309; font-weight: 700; white-space: nowrap; }
+/* The clock sits on the text's line, so "Overdue" lines up with "• 10 pts" */
+.skylight-task-overdue svg { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 body.theme-dark .skylight-task-overdue { color: #fbbf24; }
