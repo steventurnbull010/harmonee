@@ -142,3 +142,10 @@ dialog.side-panel #btn-close-grocery-footer { padding: 8px 24px !important; }
 .skylight-plan-drawer #form-custom-meal { padding: 0 !important; gap: 24px !important; }
 .skylight-plan-drawer #drawer-chef-chips-select { padding: 8px 0 !important; margin: 0 !important; }
 .skylight-plan-drawer .chef-select-chip.drawer-profile-pill { padding: 0 !important; gap: 8px !important; }
+
+/* Phones and portrait tablets: the bottom tab bar (64px, navigation.css) sits over these
+   drawers, so leave room for it or the last button (Add, Browse all) can't be tapped */
+@media (max-width: 1024px) and (orientation: portrait), (max-width: 860px) {
+  .skylight-task-drawer,
+  .skylight-plan-drawer { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+}
