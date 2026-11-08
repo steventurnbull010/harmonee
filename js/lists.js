@@ -529,6 +529,7 @@ function renderListsView() {
   listsJustTicked = null;
 
   if (lists.length === 0) {
+    board.classList.remove("lists-shell", "is-phone-detail");
     board.innerHTML = `
       <div class="lists-page-empty">
         <span class="lists-page-empty-icon" aria-hidden="true">📝</span>
@@ -539,85 +540,17 @@ function renderListsView() {
           <span class="pill-text">New List</span>
         </button>
       </div>`;
-  } else board.innerHTML = lists.map((list, index) => {
-    const col = getListColor(list, index);
-    const items = Array.isArray(list.items) ? list.items : [];
-    const nowMs = Date.now();
-    const settling = (i) => i.checked && (listsSettling.get(i.id) || 0) > nowMs;
-    const open = items.filter(i => !i.checked || settling(i));
-    const done = items.filter(i => i.checked && !settling(i));
-    const toDo = items.filter(i => !i.checked).length;
-    const doneCount = items.length - toDo;
-    const countText = items.length === 0 ? "Empty" : `${toDo} to do${doneCount ? ` · ${doneCount} done` : ""}`;
-    const isGroceryCol = !!(window.Aisles && window.Aisles.isGroceryList(list));
-    const aisleOf = (item) => window.Aisles.aisleFor(window.Grocery ? window.Grocery.displayText(item) : item.text, list.aisles);
-    const itemHtml = (item) => {
-      const text = window.Grocery ? window.Grocery.displayText(item) : item.text;
-      const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
-      const pop = justTicked === item.id ? " is-just-ticked" : "";
-      const flash = listsFlashIds.has(item.id) ? " is-flash" : "";
-      return `
-      <li class="list-row ${item.checked ? "is-checked" : ""}${pop}${flash}" data-item-id="${escapeHtml(item.id)}">
-        <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(text)}">
-          <span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-          <span class="list-row-text">
-            <span class="list-row-name">${escapeHtml(text)}</span>
-            ${forLine ? `<span class="list-row-for">${escapeHtml(forLine)}</span>` : ""}
-          </span>
-        </button>
-        ${isGroceryCol && !item.checked && aisleOf(item) === "other" ? `<button type="button" class="list-row-aisle" data-pick-aisle aria-label="Choose the aisle for ${escapeHtml(text)}">Pick aisle</button>` : ""}
-        <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(text)}">✕</button>
-      </li>`;
-    };
-    return `
-      <section class="list-column" data-list-id="${escapeHtml(list.id)}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
-        <header class="list-column-head">
-          <span class="list-column-emoji" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
-          <div class="list-column-titles">
-            <h3 class="list-column-title">${escapeHtml(list.title)}</h3>
-            <span class="list-column-count">${countText}</span>
-          </div>
-          ${open.length ? `<button type="button" class="list-column-shop" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>` : ""}
-          <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-          </button>
-        </header>
-        <form class="list-column-add" data-add-item>
-          <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
-          <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
-        </form>
-        ${(() => {
-          // "Your usuals": tap to add again
-          const usuals = getListUsuals(list);
-          const editing = listsUsualsEditing.has(list.id);
-          return usuals.length ? `<div class="list-usuals${editing ? " is-editing" : ""}" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
-            <span class="list-usuals-label">${editing ? "Tap to remove" : "Usuals"}</span>
-            ${usuals.map(u => editing
-              ? `<button type="button" class="list-usual is-removable" data-forget-usual="${escapeHtml(u.key)}" aria-label="Stop suggesting ${escapeHtml(u.text)}">${escapeHtml(u.text)} <span aria-hidden="true">✕</span></button>`
-              : `<button type="button" class="list-usual" data-add-usual="${escapeHtml(u.text)}" aria-label="Add ${escapeHtml(u.text)}"><span aria-hidden="true">+</span> ${escapeHtml(u.text)}</button>`).join("")}
-            <button type="button" class="list-usuals-edit" data-edit-usuals aria-pressed="${editing}">${editing ? "Done" : "Edit"}</button>
-          </div>` : "";
-        })()}
-        <div class="list-items-wrap">
-        <ul class="list-column-items">
-          ${(() => {
-            // Groceries: grouped by aisle, in shop order (js/aisles.js)
-            if (!(window.Aisles && window.Aisles.isGroceryList(list)) || open.length < 2) return open.map(itemHtml).join("");
-            const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
-            const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
-            open.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i), list.aisles)).push(i));
-            return window.Aisles.AISLES.filter(a => groups.get(a.key).length).map(a =>
-              `<li class="list-aisle-head" aria-hidden="true">${a.icon} ${escapeHtml(a.label)}</li>${groups.get(a.key).map(itemHtml).join("")}`).join("");
-          })()}
-          ${done.length && open.length ? `<li class="list-aisle-head is-done-head" aria-hidden="true">✓ Done</li>` : ""}
-          ${done.map(itemHtml).join("")}
-          ${items.length === 0 ? `<li class="list-column-empty">Nothing on this list yet. Add something above.</li>` : ""}
-        </ul>
-        <button type="button" class="list-more" data-list-more hidden><span class="list-more-n"></span> more <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-        </div>
-        ${done.length ? `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>` : ""}
-      </section>`;
-  }).join("");
+  } else {
+    // Reminders style: your lists down the side, the chosen one beside them
+    // (phones: the lists, then tap one to open it)
+    const ui = listsUi();
+    const selIndex = Math.max(0, lists.findIndex(l => l.id === ui.selected));
+    const sel = lists[selIndex];
+    ui.selected = sel.id;
+    board.classList.add("lists-shell");
+    board.classList.toggle("is-phone-detail", !!ui.phoneOpen);
+    board.innerHTML = renderListsRail(lists, sel.id) + renderListDetail(sel, selIndex, justTicked);
+  }
 
   Object.entries(drafts).forEach(([id, val]) => {
     const inp = board.querySelector(`[data-list-id="${CSS.escape(id)}"] .list-column-add input`);
@@ -657,6 +590,153 @@ function renderListsView() {
   }
 }
 window.renderListsView = renderListsView;
+
+// ---------------------------------------------------------------------------
+// Lists page layout (Reminders style)
+// ---------------------------------------------------------------------------
+const LISTS_CHEVRON = '<svg class="lists-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+// Which list is open, whether a phone is showing it, and folded sections.
+// Kept on this device only.
+function listsUi() {
+  if (!window.__listsUi) {
+    let selected = null, fold = {};
+    try { selected = localStorage.getItem("harmonee_lists_selected"); } catch (e) {}
+    try { fold = JSON.parse(localStorage.getItem("harmonee_lists_fold") || "{}") || {}; } catch (e) {}
+    window.__listsUi = { selected, phoneOpen: false, fold };
+  }
+  return window.__listsUi;
+}
+function saveListsUi() {
+  const ui = listsUi();
+  try {
+    if (ui.selected) localStorage.setItem("harmonee_lists_selected", ui.selected);
+    localStorage.setItem("harmonee_lists_fold", JSON.stringify(ui.fold));
+  } catch (e) {}
+}
+// Aisle sections start open; the Done section starts folded away
+function listSectionFolded(listId, key) {
+  const v = listsUi().fold[`${listId}:${key}`];
+  return v === undefined ? key === "done" : !!v;
+}
+
+function renderListsRail(lists, selectedId) {
+  return `
+    <nav class="lists-rail" aria-label="Your lists">
+      <h2 class="lists-rail-head">My lists</h2>
+      <ul class="lists-rail-items">
+        ${lists.map((list, index) => {
+          const col = getListColor(list, index);
+          const toDo = (Array.isArray(list.items) ? list.items : []).filter(i => !i.checked).length;
+          const on = list.id === selectedId;
+          return `<li><button type="button" class="lists-rail-row${on ? " is-selected" : ""}" data-open-list="${escapeHtml(list.id)}" aria-current="${on ? "true" : "false"}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+            <span class="lists-rail-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
+            <span class="lists-rail-name">${escapeHtml(list.title)}</span>
+            <span class="lists-rail-count" aria-label="${toDo} to do">${toDo || ""}</span>
+            <svg class="lists-rail-go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button></li>`;
+        }).join("")}
+      </ul>
+    </nav>`;
+}
+
+function renderListDetail(list, index, justTicked) {
+  const col = getListColor(list, index);
+  const items = Array.isArray(list.items) ? list.items : [];
+  const nowMs = Date.now();
+  const settling = (i) => i.checked && (listsSettling.get(i.id) || 0) > nowMs;
+  const open = items.filter(i => !i.checked || settling(i));
+  const done = items.filter(i => i.checked && !settling(i));
+  const toDo = items.filter(i => !i.checked).length;
+  const countText = items.length === 0 ? "Empty" : `${toDo} to do${done.length ? ` · ${done.length} done` : ""}`;
+  const isGrocery = !!(window.Aisles && window.Aisles.isGroceryList(list));
+  const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
+  const aisleOf = (item) => window.Aisles.aisleFor(textOf(item), list.aisles);
+
+  const itemHtml = (item) => {
+    const text = textOf(item);
+    const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
+    const pop = justTicked === item.id ? " is-just-ticked" : "";
+    const flash = listsFlashIds.has(item.id) ? " is-flash" : "";
+    return `
+      <li class="list-row ${item.checked ? "is-checked" : ""}${pop}${flash}" data-item-id="${escapeHtml(item.id)}">
+        <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(text)}">
+          <span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+          <span class="list-row-text">
+            <span class="list-row-name">${escapeHtml(text)}</span>
+            ${forLine ? `<span class="list-row-for">${escapeHtml(forLine)}</span>` : ""}
+          </span>
+        </button>
+        ${isGrocery && !item.checked && aisleOf(item) === "other" ? `<button type="button" class="list-row-aisle" data-pick-aisle aria-label="Choose the aisle for ${escapeHtml(text)}">Pick aisle</button>` : ""}
+        <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(text)}">✕</button>
+      </li>`;
+  };
+
+  // A section: a heading that folds it away (like Reminders), then its rows
+  const section = (key, title, rows, extra = "") => {
+    const folded = listSectionFolded(list.id, key);
+    return `
+      <section class="list-section${folded ? " is-folded" : ""}${key === "done" ? " is-done" : ""}" data-section="${escapeHtml(key)}">
+        ${title ? `<button type="button" class="list-section-head" data-fold-section="${escapeHtml(key)}" aria-expanded="${folded ? "false" : "true"}">
+          <span class="list-section-title">${title}</span>
+          <span class="list-section-n">${rows.length}</span>
+          ${LISTS_CHEVRON}
+        </button>` : ""}
+        ${folded ? "" : `<ul class="list-column-items">${rows.map(itemHtml).join("")}</ul>${extra}`}
+      </section>`;
+  };
+
+  let sections = "";
+  if (isGrocery && open.length) {
+    const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
+    open.forEach(i => groups.get(aisleOf(i)).push(i));
+    sections = window.Aisles.AISLES.filter(a => groups.get(a.key).length)
+      .map(a => section(a.key, `${a.icon} ${escapeHtml(a.label)}`, groups.get(a.key))).join("");
+  } else if (open.length) {
+    sections = section("items", "", open);
+  }
+  if (done.length) {
+    sections += section("done", "✓ Done", done,
+      `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>`);
+  }
+
+  const usuals = getListUsuals(list);
+  const editing = listsUsualsEditing.has(list.id);
+  const usualsHtml = usuals.length ? `<div class="list-usuals${editing ? " is-editing" : ""}" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
+      <span class="list-usuals-label">${editing ? "Tap to remove" : "Usuals"}</span>
+      ${usuals.map(u => editing
+        ? `<button type="button" class="list-usual is-removable" data-forget-usual="${escapeHtml(u.key)}" aria-label="Stop suggesting ${escapeHtml(u.text)}">${escapeHtml(u.text)} <span aria-hidden="true">✕</span></button>`
+        : `<button type="button" class="list-usual" data-add-usual="${escapeHtml(u.text)}" aria-label="Add ${escapeHtml(u.text)}"><span aria-hidden="true">+</span> ${escapeHtml(u.text)}</button>`).join("")}
+      <button type="button" class="list-usuals-edit" data-edit-usuals aria-pressed="${editing}">${editing ? "Done" : "Edit"}</button>
+    </div>` : "";
+
+  return `
+    <section class="list-detail" data-list-id="${escapeHtml(list.id)}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+      <button type="button" class="list-detail-back" data-lists-back>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        My lists
+      </button>
+      <header class="list-detail-head">
+        <div class="list-detail-titles">
+          <h2 class="list-detail-title"><span aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span> ${escapeHtml(list.title)}</h2>
+          <span class="list-detail-count">${countText}</span>
+        </div>
+        ${open.length ? `<button type="button" class="list-column-shop" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>` : ""}
+        <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        </button>
+      </header>
+      <form class="list-column-add" data-add-item>
+        <span class="list-add-ring" aria-hidden="true"></span>
+        <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
+        <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
+      </form>
+      ${usualsHtml}
+      ${items.length === 0
+        ? `<div class="list-detail-empty"><span class="list-detail-empty-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span><p class="list-detail-empty-title">Nothing on ${escapeHtml(list.title)} yet</p><p class="list-detail-empty-text">${isGrocery ? "Add things above. They're sorted into aisles for you." : "Add things above, one at a time or several at once with +."}</p></div>`
+        : `<div class="list-detail-sections${isGrocery ? " is-aisled" : ""}">${sections}</div>`}
+    </section>`;
+}
 
 // A list taller than its card (tablets: each list scrolls inside its card):
 // a "4 more ⌄" pill and a soft fade at the bottom, until you reach the end
@@ -713,6 +793,31 @@ function onListsBoardSubmit(e) {
 
 function onListsBoardClick(e) {
   if (e.target.closest("[data-new-list]")) { openCreateListModal(); return; }
+  const openBtn = e.target.closest("[data-open-list]");
+  if (openBtn) {
+    const ui = listsUi();
+    ui.selected = openBtn.getAttribute("data-open-list");
+    ui.phoneOpen = true;
+    saveListsUi();
+    renderListsView();
+    const view = document.getElementById("view-lists");
+    if (view && window.matchMedia("(max-width: 600px)").matches) window.scrollTo({ top: 0 });
+    return;
+  }
+  if (e.target.closest("[data-lists-back]")) {
+    listsUi().phoneOpen = false;
+    renderListsView();
+    return;
+  }
+  const fold = e.target.closest("[data-fold-section]");
+  if (fold) {
+    const listId = fold.closest("[data-list-id]").getAttribute("data-list-id");
+    const key = fold.getAttribute("data-fold-section");
+    listsUi().fold[`${listId}:${key}`] = !listSectionFolded(listId, key);
+    saveListsUi();
+    renderListsView();
+    return;
+  }
   const column = e.target.closest("[data-list-id]");
   if (!column) return;
   const listId = column.getAttribute("data-list-id");
@@ -1123,17 +1228,16 @@ function openCreateListModal(listId = null) {
     btnSave.onclick = () => {
       const title = input ? input.value.trim() : "";
       if (!title) { if (input) input.focus(); return; }
-      mutateFamilyLists({ type: "upsertList", list: {
-        id: editing ? editing.id : "list-" + Date.now() + "-" + Math.random().toString(36).slice(2, 5),
-        title, emoji: listPanelEmoji, color: listPanelColor
-      } });
+      const savedId = editing ? editing.id : "list-" + Date.now() + "-" + Math.random().toString(36).slice(2, 5);
+      mutateFamilyLists({ type: "upsertList", list: { id: savedId, title, emoji: listPanelEmoji, color: listPanelColor } });
       closeModal();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime && !editing) sfx.playCelebrationChime();
+      // A new list opens straight away, ready to add to
+      if (!editing) { const ui = listsUi(); ui.selected = savedId; ui.phoneOpen = true; saveListsUi(); }
       renderListsView();
       if (!editing) {
-        const cols = document.querySelectorAll("#lists-board .list-column");
-        const last = cols[cols.length - 1];
-        if (last) last.scrollIntoView({ behavior: "smooth", inline: "end", block: "nearest" });
+        const inp = document.querySelector("#lists-board .list-detail .list-column-add input");
+        if (inp) setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 300);
       }
     };
   }
@@ -1154,6 +1258,7 @@ function openCreateListModal(listId = null) {
         return;
       }
       mutateFamilyLists({ type: "deleteList", listId: editing.id });
+      listsUi().phoneOpen = false; // phones go back to My lists
       closeModal();
       if (typeof sfx !== "undefined" && sfx && sfx.playTrash) sfx.playTrash();
       renderListsView();

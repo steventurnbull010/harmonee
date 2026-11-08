@@ -101,19 +101,27 @@ const INTRO_PREVIEWS = {
   },
 
   lists(stepIndex) {
+    // Same shape as the page: your lists down the side, Groceries open with
+    // its aisles, ticked things folded into Done
     const lists = [
-      { title: "Groceries", icon: "🛒", accent: "#0284c7", light: "#e0f2fe", items: [["Milk"], ["Bananas"], ["Bread", true]] },
-      { title: "Weekend jobs", icon: "🛠️", accent: "#d97706", light: "#fef3c7", items: [["Mow the lawn"], ["Fix bike tyre"], ["Recycling", true]] },
-      { title: "Holiday packing", icon: "🧳", accent: "#7c3aed", light: "#ede9fe", items: [["Passports"], ["Chargers"]] }
+      { title: "Groceries", icon: "🛒", accent: "#0284c7", light: "#e0f2fe", n: 4 },
+      { title: "Weekend jobs", icon: "🛠️", accent: "#d97706", light: "#fef3c7", n: 2 },
+      { title: "Holiday packing", icon: "🧳", accent: "#7c3aed", light: "#ede9fe", n: 5 }
     ];
-    const cols = lists.map((l, li) => `
-      <div class="intro-list-col" style="--list-accent:${l.accent};--list-light:${l.light}">
-        <div class="intro-list-head"><span>${l.icon}</span><strong>${escapeHtml(l.title)}</strong></div>
-        <div class="intro-list-add ${stepIndex === 1 && li === 0 ? "page-intro-highlight" : ""}">${stepIndex === 1 && li === 0 ? "Eggs" : `Add to ${escapeHtml(l.title)}`}<span>+</span></div>
-        ${l.items.map(([t, done]) => `<div class="intro-list-row ${done ? "is-done" : ""}"><span class="intro-list-box">${done ? "✓" : ""}</span>${escapeHtml(t)}</div>`).join("")}
-      </div>`).join("");
+    const rail = lists.map((l, i) => `<div class="intro-lrail-row ${i === 0 ? "is-on" : ""}" style="--list-accent:${l.accent};--list-light:${l.light}"><span class="intro-lrail-icon">${l.icon}</span><span class="intro-lrail-name">${escapeHtml(l.title)}</span><span class="intro-lrail-n">${l.n}</span></div>`).join("");
+    const row = (t, done) => `<div class="intro-list-row ${done ? "is-done" : ""}"><span class="intro-list-box">${done ? "✓" : ""}</span>${escapeHtml(t)}</div>`;
+    const sec = (title, n, rows) => `<div class="intro-lsec"><span>${title}</span><span>${n} ⌄</span></div>${rows}`;
+    const g = lists[0];
+    const detail = `
+      <div class="intro-ldetail" style="--list-accent:${g.accent};--list-light:${g.light}">
+        <div class="intro-ldetail-title">${g.icon} Groceries</div>
+        <div class="intro-ladd ${stepIndex === 1 ? "page-intro-highlight" : ""}"><span class="intro-ladd-ring"></span>${stepIndex === 1 ? "Eggs" : "Add to Groceries"}<span class="intro-ladd-plus">+</span></div>
+        ${sec("🍎 Fruit &amp; veg", 2, row("Bananas") + row("Apples"))}
+        ${sec("🥛 Dairy", 2, row("Milk") + row("Cheddar"))}
+        <div class="intro-lsec is-done"><span>✓ Done</span><span>1 ›</span></div>
+      </div>`;
     const newBtn = stepIndex === 2 ? `<span class="intro-new-list page-intro-highlight">+ New List</span>` : "";
-    return `${newBtn}<div class="intro-list-board">${cols}</div>`;
+    return `${newBtn}<div class="intro-lists"><div class="intro-lrail">${rail}</div>${detail}</div>`;
   },
 
   rewards(stepIndex) {
@@ -195,8 +203,8 @@ const PAGE_INTROS = {
                ["🎨", "Every list has its own colour and icon."],
                ["⚡", "Ticks show on every device straight away."]] },
       { title: "Add items", lead: "Type in a list's box and press Return, or tap + to add several things at once, one per line.",
-        rows: [["✓", "Tap an item to tick it. Ticked items drop to the bottom."],
-               ["🧹", "Clear done tidies them away when you're finished."]] },
+        rows: [["✓", "Tap an item to tick it. Ticked items fold away into Done."],
+               ["🛒", "Groceries sort themselves into aisles you can fold away."]] },
       { title: "Make a new list", lead: "Tap New List, then give it a name, an icon and a colour.",
         rows: [["✎", "Tap the pencil on any list to rename it, change its colour or delete it."]] }
     ]

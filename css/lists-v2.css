@@ -1,0 +1,243 @@
+/* ==========================================================================
+   LISTS, REMINDERS STYLE (js/lists.js renderListsRail / renderListDetail)
+   Tablets: your lists down the left (icon, name, how many to do), the chosen
+   list filling the rest: its name big in the list's colour, slim rows with
+   thin dividers, and aisle sections that fold away. Groceries spread over
+   two columns when there's room. Phones: My lists, then tap one to open it.
+   Loaded after css/lists.css; all spacing on the 8px grid.
+   ========================================================================== */
+#view-lists .lists-board.lists-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding: 16px 0;
+}
+
+/* --- My lists ------------------------------------------------------------ */
+.lists-rail {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lists-rail-head {
+  margin: 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+}
+.lists-rail-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.lists-rail-items li + li .lists-rail-row { border-top: 1px solid var(--card-border, #e2e8f0); }
+.lists-rail-row {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.lists-rail-row.is-selected { background: color-mix(in srgb, var(--list-light) 80%, var(--card-bg, #ffffff)); }
+.lists-rail-row:active { background: color-mix(in srgb, var(--list-light) 60%, transparent); }
+.lists-rail-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--list-light);
+  border: 2px solid var(--list-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+body.theme-dark .lists-rail-icon { background: color-mix(in srgb, var(--list-accent) 30%, #1e293b); }
+.lists-rail-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+.lists-rail-count { flex-shrink: 0; font-size: 1rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+.lists-rail-go { flex-shrink: 0; color: #cbd5e1; display: none; }
+
+/* --- The open list ------------------------------------------------------- */
+.list-detail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+.list-detail-back { display: none; }
+.list-detail-head { display: flex; align-items: center; gap: 8px; }
+.list-detail-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.list-detail-title {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--list-accent);
+  overflow-wrap: break-word;
+}
+.list-detail-count { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+
+/* Add row: an empty ring like a new item, the box, then + for several */
+.list-detail .list-column-add { align-items: center; gap: 16px; padding: 0 0 8px; border-bottom: 1px solid var(--card-border, #e2e8f0); }
+.list-add-ring {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px dotted color-mix(in srgb, var(--list-accent) 55%, #cbd5e1);
+}
+.list-detail .list-column-add input {
+  height: 48px;
+  padding: 8px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1rem;
+  box-shadow: none;
+}
+.list-detail .list-column-add input:focus { box-shadow: none; }
+.list-detail .list-column-add button { width: 40px; height: 40px; border-radius: 50%; font-size: 1.4rem; }
+
+/* Sections and rows */
+.list-detail-sections { display: flex; flex-direction: column; gap: 16px; }
+.list-section { min-width: 0; }
+.list-section-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--card-border, #e2e8f0);
+  background: none;
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.list-section-title { flex: 1; min-width: 0; font-size: 1.1rem; font-weight: 800; }
+.list-section-n { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary, #64748b); }
+.list-section-head .lists-chevron { flex-shrink: 0; color: var(--text-secondary, #64748b); transition: transform 0.2s ease; }
+.list-section.is-folded .lists-chevron { transform: rotate(-90deg); }
+.list-section.is-done .list-section-title { color: var(--text-secondary, #64748b); }
+
+.list-detail .list-column-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+  display: block;
+}
+.list-detail .list-row {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent);
+  break-inside: avoid;
+}
+.list-detail .list-row-check { padding: 8px 0; min-height: 48px; }
+.list-detail .list-row-name { font-size: 1rem; }
+.list-detail .list-row.is-checked { background: none; }
+.list-detail .list-row-del { width: 40px; color: #cbd5e1; border-radius: 8px; }
+.list-detail .list-column-clear { margin-top: 8px; }
+
+/* Groceries on a wide screen: aisles in two columns */
+@media (min-width: 1100px) {
+  .list-detail-sections.is-aisled { display: block; columns: 2; column-gap: 40px; }
+  .list-detail-sections.is-aisled .list-section { break-inside: avoid; margin-bottom: 16px; }
+}
+
+.list-detail-empty { padding: 48px 16px; text-align: center; }
+.list-detail-empty-icon { display: block; font-size: 2.5rem; margin-bottom: 8px; opacity: 0.7; }
+.list-detail-empty-title { margin: 0 0 8px; font-size: 1.15rem; font-weight: 800; color: var(--text-primary, #0f172a); }
+.list-detail-empty-text { margin: 0 auto; max-width: 320px; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary, #64748b); }
+
+/* Dark */
+body.theme-dark .lists-rail-items,
+body.theme-dark .list-detail { background: #1e293b; border-color: #334155; }
+body.theme-dark .lists-rail-items li + li .lists-rail-row,
+body.theme-dark .list-section-head,
+body.theme-dark .list-detail .list-column-add,
+body.theme-dark .list-detail .list-row { border-color: #334155; }
+body.theme-dark .lists-rail-row.is-selected { background: color-mix(in srgb, var(--list-accent) 22%, #1e293b); }
+body.theme-dark .lists-rail-row,
+body.theme-dark .lists-rail-head,
+body.theme-dark .list-section-head,
+body.theme-dark .list-detail-empty-title { color: #f8fafc; }
+body.theme-dark .list-detail-title { color: color-mix(in srgb, var(--list-accent) 70%, #ffffff); }
+
+/* --- Portrait tablets: narrower side list -------------------------------- */
+@media (max-width: 900px) and (min-width: 601px) {
+  #view-lists .lists-board.lists-shell { grid-template-columns: 232px minmax(0, 1fr); gap: 16px; }
+  .lists-rail-row { gap: 8px; padding: 8px 12px; }
+  .lists-rail-icon { width: 32px; height: 32px; font-size: 1rem; }
+  .list-detail { padding: 16px; }
+  .list-detail-title { font-size: 1.6rem; }
+}
+
+/* --- Phones: My lists, or one list ---------------------------------------- */
+@media (max-width: 600px) {
+  #view-lists .lists-board.lists-shell { display: block; padding: 8px 0 96px; }
+  .lists-shell.is-phone-detail .lists-rail { display: none; }
+  .lists-shell:not(.is-phone-detail) .list-detail { display: none; }
+  .lists-rail { position: static; }
+  .lists-rail-head { font-size: 1.4rem; margin: 0 4px 8px; }
+  .lists-rail-go { display: block; }
+  .lists-rail-row.is-selected { background: transparent; }
+  body.theme-dark .lists-rail-row.is-selected { background: transparent; }
+
+  .list-detail { padding: 0; background: none; border: none; border-radius: 0; gap: 8px; }
+  body.theme-dark .list-detail { background: none; }
+  .list-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    min-height: 40px;
+    padding: 4px 12px 4px 6px;
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 999px;
+    background: var(--card-bg, #ffffff);
+    color: var(--text-primary, #0f172a);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  body.theme-dark .list-detail-back { background: #1e293b; border-color: #334155; color: #f8fafc; }
+  .list-detail-title { font-size: 1.8rem; }
+}

@@ -547,6 +547,28 @@ body.theme-dark .intro-list-row {
   background: #1e293b;
 }
 
+/* Lists preview: side list + open list (matches css/lists-v2.css) */
+.intro-lists { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 16px; align-items: start; }
+.intro-lrail { background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e2e8f0); border-radius: 16px; overflow: hidden; }
+.intro-lrail-row { display: flex; align-items: center; gap: 8px; padding: 8px; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+.intro-lrail-row + .intro-lrail-row { border-top: 1px solid var(--card-border, #e2e8f0); }
+.intro-lrail-row.is-on { background: var(--list-light); }
+.intro-lrail-icon { width: 28px; height: 28px; flex-shrink: 0; box-sizing: border-box; border-radius: 50%; background: var(--list-light); border: 2px solid var(--list-accent); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+.intro-lrail-name { flex: 1; min-width: 0; line-height: 1.2; }
+.intro-lrail-n { color: var(--text-secondary); }
+.intro-ldetail { background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e2e8f0); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; }
+.intro-ldetail-title { font-size: 1.3rem; font-weight: 800; color: var(--list-accent); margin-bottom: 8px; }
+.intro-ladd { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--card-border, #e2e8f0); color: var(--text-secondary); font-size: 0.85rem; border-radius: 8px; }
+.intro-ladd-ring { width: 18px; height: 18px; flex-shrink: 0; box-sizing: border-box; border-radius: 50%; border: 2px dotted var(--list-accent); }
+.intro-ladd-plus { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: var(--list-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.intro-lsec { display: flex; justify-content: space-between; padding: 8px 0 4px; margin-top: 8px; border-bottom: 1px solid var(--card-border, #e2e8f0); font-size: 0.85rem; font-weight: 800; color: var(--text-primary); }
+.intro-lsec span:last-child { font-weight: 700; color: var(--text-secondary); }
+.intro-lsec.is-done span:first-child { color: var(--text-secondary); }
+.intro-ldetail .intro-list-row { background: none; border-radius: 0; padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent); }
+body.theme-dark .intro-lrail, body.theme-dark .intro-ldetail { background: #1e293b; border-color: #334155; }
+body.theme-dark .intro-lrail-row.is-on { background: color-mix(in srgb, var(--list-accent) 22%, #1e293b); }
+body.theme-dark .intro-ldetail .intro-list-row { background: none; }
+
 /* Rewards preview */
 .intro-rewards {
   display: flex;
