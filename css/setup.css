@@ -523,3 +523,18 @@ body.theme-dark .setup-step-count { color: #7dd3fc; }
   .setup-check-sub { flex-basis: 100%; padding-left: 24px; font-size: 0.7rem; }
   .setup-slot { margin: 12px 0 8px; }
 }
+
+/* Routines step: "Who are these for?" person chips */
+.setup-for { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.setup-for-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 4px 14px 4px 4px;
+  border: 1.5px solid #e2e8f0; border-radius: 999px;
+  background: #ffffff; color: #475569;
+  font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+}
+.setup-for-chip .setup-mini-avatar { width: 28px; height: 28px; margin: 0; opacity: 0.45; }
+.setup-for-chip.is-on { border-color: var(--chip); background: color-mix(in srgb, var(--chip) 12%, #ffffff); color: #0f172a; }
+.setup-for-chip.is-on .setup-mini-avatar { opacity: 1; }
+body.theme-dark .setup-for-chip { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+body.theme-dark .setup-for-chip.is-on { background: color-mix(in srgb, var(--chip) 25%, #1e293b); color: #f8fafc; }

@@ -5,7 +5,7 @@
 //   1. Family name ("The Bakers")          -> shown at the top of every page
 //   2. Who's in the family                 -> names, colours, grown-up / child
 //   3. Points or pocket money (+ currency)
-//   4. Starter routines and jobs to tick   -> kids' routines go to children
+//   4. Starter routines and jobs to tick   -> routines go to the people picked
 //   5. All set                             -> creates the board
 // It saves everything where a new board reads it, then goes to the board,
 // which is created (with its family code) on arrival by ensureBoardAccess in
@@ -104,15 +104,11 @@
           <div class="setup-person-row">
             <button type="button" class="setup-avatar" style="background:${colourOf(p.colour)}" data-act="colour" data-i="${i}" aria-label="Change ${esc(p.name)}'s colour" aria-expanded="${s.openColour === i}">${esc(p.name.charAt(0).toUpperCase())}</button>
             <span class="setup-person-name">${esc(p.name)}</span>
-            <span class="setup-seg" role="group" aria-label="${esc(p.name)} is a">
-              <button type="button" class="${p.child ? "" : "is-on"}" data-act="adult" data-i="${i}" aria-pressed="${!p.child}">Grown-up</button>
-              <button type="button" class="${p.child ? "is-on" : ""}" data-act="child" data-i="${i}" aria-pressed="${p.child}">Child</button>
-            </span>
             <button type="button" class="setup-remove" data-act="remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">✕</button>
           </div>
           ${s.openColour === i ? `<div class="setup-swatches" role="group" aria-label="Colours">${palette().map(c => `<button type="button" class="setup-swatch${c.id === p.colour ? " is-on" : ""}" style="background:${c.solid}" data-act="pick-colour" data-i="${i}" data-colour="${c.id}" aria-label="${esc(c.name)}" aria-pressed="${c.id === p.colour}"></button>`).join("")}</div>` : ""}
         </li>`).join("")}</ul>
-      <p class="setup-hint">🎨 Tap a circle to change its colour</p>` : `<p class="setup-hint">Add everyone who'll use harmonee, grown-ups and children.</p>`}`;
+      <p class="setup-hint">🎨 Tap a circle to change its colour</p>` : `<p class="setup-hint">Add everyone who'll use harmonee.</p>`}`;
 
     if (s.step === 3) return `
       <h1 class="setup-title" id="setup-title">⭐ Points or pocket money?</h1>
@@ -128,16 +124,16 @@
       ${s.mode === "money" ? `<div class="setup-currency" role="group" aria-label="Currency">${["£", "€", "$"].map(c => `<button type="button" class="${s.currency === c ? "is-on" : ""}" data-act="currency" data-currency="${c}" aria-pressed="${s.currency === c}">${c}</button>`).join("")}</div>` : ""}`;
 
     if (s.step === 4) {
-      const kids = children();
-      const forWho = kids.length ? `for ${kids.length === 1 ? kids[0] : (kids.length === 2 ? kids.join(" and ") : "the children")}` : "for everyone";
       const group = (slot) => ROUTINES.filter(r => r.slot === slot);
       const check = (x, sub = "") => `<button type="button" class="setup-check${s.picked.has(x.key) ? " is-on" : ""}" data-act="pick" data-key="${x.key}" aria-pressed="${s.picked.has(x.key)}">
         <span class="setup-check-box" aria-hidden="true">✓</span><span class="setup-check-icon" aria-hidden="true">${x.icon}</span><span class="setup-check-title">${esc(x.title)}</span>${sub ? `<span class="setup-check-sub">${esc(sub)}</span>` : ""}
       </button>`;
       return `
         <h1 class="setup-title" id="setup-title">✅ Starter routines</h1>
+        <p class="setup-label">Who are these for?</p>
+        <div class="setup-for" role="group" aria-label="Who the daily routines are for">${s.people.map((p, i) => `<button type="button" class="setup-for-chip${p.child ? " is-on" : ""}" style="--chip:${colourOf(p.colour)}" data-act="routine-for" data-i="${i}" aria-pressed="${!!p.child}"><span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>${esc(p.name)}</button>`).join("")}</div>
         <p class="setup-lead">Untick anything you don't want.</p>
-        <h2 class="setup-group">🧒 Daily routines <span>${esc(forWho)}</span></h2>
+        <h2 class="setup-group">🔁 Daily routines</h2>
         ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><div class="setup-checks">${group(slot).map(r => check(r)).join("")}</div>`).join("")}
         <h2 class="setup-group">🙋 Up for grabs <span>anyone can do these</span></h2>
         <div class="setup-checks">${JOBS.map(j => check(j, j.day ? `${j.day}s` : "Every day")).join("")}</div>`;
@@ -202,7 +198,7 @@
     if (!name) return;
     if (state.people.some(p => p.name.toLowerCase() === name.toLowerCase())) { state.error = `${name} is already on the list.`; render(); return; }
     // First two default to grown-ups, the rest to children (one tap to change)
-    state.people.push({ name, colour: nextColour(), child: state.people.filter(p => !p.child).length >= 2 });
+    state.people.push({ name, colour: nextColour(), child: state.people.length >= 2 }); // "child" = gets the starter routines (a guess: anyone after the first two)
     state.error = "";
     render();
   }
@@ -308,7 +304,7 @@
     if (act === "back") { s.error = ""; s.step = Math.max(s.cameFromIntro ? 0 : 1, s.step - 1); return render(); }
     if (act === "add-person") return addPerson();
     if (act === "remove") { s.people.splice(i, 1); s.openColour = null; return render(); }
-    if (act === "adult" || act === "child") { s.people[i].child = act === "child"; return render(); }
+    if (act === "routine-for") { s.people[i].child = !s.people[i].child; return render(); }
     if (act === "colour") { s.openColour = s.openColour === i ? null : i; return render(); }
     if (act === "pick-colour") { s.people[i].colour = b.getAttribute("data-colour"); s.openColour = null; return render(); }
     if (act === "mode") { s.mode = b.getAttribute("data-mode"); return render(); }
