@@ -88,13 +88,11 @@
         ${s.pasteError ? `<p class="setup-paste-error" role="alert">${esc(s.pasteError)}</p>` : ""}` : ""}
       </div>`;
     if (s.step === 1) return `
-      <h1 class="setup-title" id="setup-title">Let's set up your family board</h1>
-      <p class="setup-lead">It takes about a minute, and you can change anything later.</p>
-      <label class="setup-label" for="setup-family">What's your family called?</label>
-      <input id="setup-family" class="setup-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" enterkeyhint="next">
-      <p class="setup-preview" aria-hidden="true"><span class="setup-preview-name">${esc(s.familyName || "The Bakers")}</span> <span>9:41</span> <span>☀️ 14°</span></p>
-      <p class="setup-label">Where are you, for the weather? <span class="setup-optional">Optional</span></p>
-      <div id="setup-weather" class="setup-weather"></div>`;
+      <h1 class="setup-title" id="setup-title">👋 What's your family called?</h1>
+      <ul class="setup-chips" aria-label="About setup"><li>⏱️ About a minute</li><li>✏️ Change it later</li></ul>
+      <input id="setup-family" class="setup-input setup-family-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" enterkeyhint="next" aria-label="Family name">
+      <p class="setup-label setup-label-row">🌤️ Your town, for the weather <span class="setup-optional">Optional</span></p>
+      <div id="setup-weather" class="setup-weather is-compact"></div>`;
 
     if (s.step === 2) return `
       <h1 class="setup-title" id="setup-title">Who's in the family?</h1>
@@ -184,6 +182,7 @@
     if (s.step === 1 && window.WeatherPlace) {
       window.WeatherPlace.renderWeatherPlacePicker(document.getElementById("setup-weather"), {
         current: s.weather,
+        compact: true,
         onPick: (place) => { state.weather = place; }
       });
     }
@@ -214,7 +213,7 @@
     s.error = "";
     if (s.step === 1) {
       const v = (document.getElementById("setup-family").value || "").trim();
-      if (!v) { s.error = "Give your board a name, e.g. The Bakers."; render(); return; }
+      if (!v) { s.error = "Add your family's name first 🙂"; render(); return; }
       s.familyName = v.slice(0, 40);
     }
     if (s.step === 2) {

@@ -493,3 +493,12 @@ body.theme-dark .join-qr-btn.is-primary { background: #0284c7; border-color: #02
 .setup-paste-form .setup-input { flex: 1; min-width: 0; margin: 0; }
 .setup-paste-form .setup-btn { flex: 0 0 auto; width: auto; min-width: 0; margin: 0; padding: 0 24px; }
 .setup-paste-error { margin: 8px 0 0; font-size: 0.85rem; color: #b91c1c; }
+
+/* Step 1, short and friendly: name, two chips, then the weather (compact) */
+.setup-chips { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-chips li { padding: 4px 12px; border-radius: 999px; background: #f0f9ff; color: #0369a1; font-size: 0.85rem; font-weight: 700; }
+body.theme-dark .setup-chips li { background: rgba(2, 132, 199, 0.18); color: #bae6fd; }
+.setup-family-input { margin-top: 16px; font-size: 1.15rem; }
+.setup-label-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+.setup-weather.is-compact .wx-pick { gap: 8px; }
+.setup-weather.is-compact .wx-or { display: none; }

@@ -105,14 +105,14 @@ function renderWeatherPlacePicker(box, opts = {}) {
           ${opts.offLabel ? `<button type="button" class="wx-link is-quiet" data-wx="off">${esc(opts.offLabel)}</button>` : ""}
         </div>`
       : `<div class="wx-pick">
-          <button type="button" class="wx-device" data-wx="device" ${busy ? "disabled" : ""}><span aria-hidden="true">📍</span> ${busy ? "Finding you…" : "Use this device's location"}</button>
+          <button type="button" class="wx-device" data-wx="device" ${busy ? "disabled" : ""}><span aria-hidden="true">📍</span> ${busy ? "Finding you…" : (opts.compact ? "Use my location" : "Use this device's location")}</button>
           <div class="wx-or"><span>or type your town</span></div>
           <div class="wx-search">
-            <input type="text" class="wx-input" placeholder="e.g. Bangor" aria-label="Your town" autocomplete="off" enterkeyhint="search">
+            <input type="text" class="wx-input" placeholder="${opts.compact ? "Or type your town" : "e.g. Bangor"}" aria-label="Your town" autocomplete="off" enterkeyhint="search">
             <button type="button" class="wx-find" data-wx="find">Find</button>
           </div>
           ${results.length ? `<ul class="wx-results">${results.map((r, i) => `<li><button type="button" class="wx-result" data-wx="pick" data-i="${i}">${esc(r.label)}</button></li>`).join("")}</ul>` : ""}
-          <p class="wx-note">${message ? esc(message) : "Only your rough area (about 10 km) is kept, just to fetch the weather."}</p>
+          <p class="wx-note">${message ? esc(message) : (opts.compact ? "🔒 Just your rough area, for the forecast." : "Only your rough area (about 10 km) is kept, just to fetch the weather.")}</p>
         </div>`;
   };
   const choose = (place) => { current = place; results = []; message = ""; draw(); if (typeof opts.onPick === "function") opts.onPick(place); };
