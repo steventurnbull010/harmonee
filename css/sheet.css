@@ -118,3 +118,58 @@ body.theme-dark .hm-sheet-text { color: #cbd5e1; }
 .hm-sheet-option-words strong { font-size: 1rem; }
 .hm-sheet-option-words small { font-size: 0.82rem; color: var(--text-secondary, #64748b); }
 body.theme-dark .hm-sheet-option { background: #0f172a; border-color: #334155; color: #f8fafc; }
+
+/* ---- Action toast (js/utils.js showActionToast): dark pill, one button ------ */
+.hm-action-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  z-index: 100600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(480px, calc(100vw - 32px));
+  min-height: 56px;
+  padding: 8px 8px 8px 16px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hm-action-toast.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.hm-action-toast-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.hm-action-toast-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.hm-action-toast-words strong { font-size: 0.92rem; font-weight: 800; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-action-toast-words span { font-size: 0.82rem; font-weight: 600; line-height: 1.25; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-action-toast-btn {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hm-action-toast-btn:hover, .hm-action-toast-btn:focus-visible { background: rgba(255, 255, 255, 0.26); outline: none; }
+body.theme-dark .hm-action-toast { background: #f8fafc; color: #0f172a; }
+body.theme-dark .hm-action-toast-btn { background: rgba(15, 23, 42, 0.08); color: #0f172a; }
+
+/* Phones and portrait tablets: the bottom tab bar (64px) is there, so toasts sit above it */
+@media (max-width: 1024px) and (orientation: portrait), (max-width: 860px) {
+  .hm-action-toast,
+  .calendar-drag-toast,
+  .task-move-toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-action-toast { transition: opacity 0.2s ease; transform: translate(-50%, 0); }
+}

@@ -297,3 +297,37 @@ window.eventForDay = eventForDay;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fill);
   else fill();
 })();
+
+// A dark pill along the bottom with an icon, a line or two, and one button:
+//   showActionToast({ icon: "📅", title: "Event added", text: "Dentist · Tue 10 Nov, 4:30pm",
+//                     action: { label: "Edit", onClick: () => … }, ms: 6000 })
+// Long text is cut with "…" so it fits a phone. Same look as showCalendarToast.
+function showActionToast({ icon = "", title = "", text = "", action = null, ms = 6000 } = {}) {
+  let toast = document.getElementById("hm-action-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "hm-action-toast";
+    toast.className = "hm-action-toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    document.body.appendChild(toast);
+  }
+  const hide = () => { toast.classList.remove("is-visible"); clearTimeout(toast._timer); };
+  // One pill at a time: tuck away a plain toast that's in the same spot
+  const plain = document.getElementById("calendar-drag-toast");
+  if (plain) plain.classList.remove("is-visible");
+  toast.innerHTML = `
+    ${icon ? `<span class="hm-action-toast-icon" aria-hidden="true">${escapeHtml(icon)}</span>` : ""}
+    <span class="hm-action-toast-words">
+      ${title ? `<strong>${escapeHtml(title)}</strong>` : ""}
+      ${text ? `<span>${escapeHtml(text)}</span>` : ""}
+    </span>
+    ${action && action.label ? `<button type="button" class="hm-action-toast-btn">${escapeHtml(action.label)}</button>` : ""}`;
+  const btn = toast.querySelector(".hm-action-toast-btn");
+  if (btn) btn.onclick = () => { hide(); if (typeof action.onClick === "function") action.onClick(); };
+  // Restart the slide-in if one is already showing
+  toast.classList.remove("is-visible"); void toast.offsetWidth; toast.classList.add("is-visible");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(hide, ms);
+}
+window.showActionToast = showActionToast;

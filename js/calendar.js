@@ -324,6 +324,30 @@ function wireTimeGridCreate(gridContainer, geo) {
 // the same as tapping a task. Edit opens the full side panel.
 // dateStr: the day it was tapped on (a repeating event shows that day).
 // ---------------------------------------------------------------------------
+// Short "when" for toasts: "Today, 4:30pm", "Tomorrow, All day", "Tue 10 Nov, 9am"
+function eventWhenShort(evt) {
+  const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  let dayText = evt.day || "";
+  if (evt.date && /^\d{4}-\d{2}-\d{2}$/.test(evt.date)) {
+    const [y, m, dd] = evt.date.split("-").map(Number);
+    const d = new Date(y, m - 1, dd);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((d - today) / 86400000);
+    dayText = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${SHORT_DAYS[d.getDay()]} ${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
+  }
+  const allDay = /all\s*day/i.test(evt.duration || "") || /all\s*day/i.test(evt.time || "");
+  let timeText = "All day";
+  if (!allDay) {
+    const mins = typeof getEventMinutes === "function" ? getEventMinutes(evt) : 0;
+    const h = Math.floor(mins / 60) % 24, mm = Math.round(mins % 60);
+    timeText = `${h % 12 === 0 ? 12 : h % 12}${mm ? ":" + String(mm).padStart(2, "0") : ""}${h >= 12 ? "pm" : "am"}`;
+  }
+  return dayText ? `${dayText}, ${timeText}` : timeText;
+}
+window.eventWhenShort = eventWhenShort;
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 function openEventQuickView(evt, dateStr = null) {
   const overlay = document.getElementById("event-quick-modal");
   if (!overlay || !evt) return;
@@ -1068,6 +1092,22 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       if (existingIdx < 0 && typeof window.celebrateFirst === "function") window.celebrateFirst("event");
       if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
+      // "📅 Dentist            [Edit]
+      //     Added · Tue 10 Nov, 4:30pm"   (the title is cut short if it's long; the when always shows)
+      if (typeof window.showActionToast === "function") {
+        window.showActionToast({
+          icon: icon,
+          title: title,
+          text: `${existingIdx >= 0 ? "Updated" : "Added"} · ${eventWhenShort(newEvt)}`,
+          action: {
+            label: "Edit",
+            onClick: () => {
+              const saved = (window.familyEvents || []).find(x => x.id === eventId) || newEvt;
+              openEventModal(saved, saved.day, saved.date);
+            }
+          }
+        });
+      }
     };
   }
 
