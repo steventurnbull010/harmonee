@@ -5288,6 +5288,7 @@ function setupEventListeners() {
   // Rewards, Access, Sleep, Reset) with a jump-to menu at the top.
   // openSettingsModal("profiles") opens it at that section.
   function scrollSettingsToSection(key, smooth = true) {
+    if (typeof window.openSettingsSection === "function") window.openSettingsSection(key); // js/settings-fold.js
     const sec = document.getElementById(`settings-sec-${key}`);
     if (sec) sec.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     highlightSettingsNav(key);

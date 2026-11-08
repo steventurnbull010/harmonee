@@ -2506,7 +2506,7 @@ body.theme-dark .today-groc-preview, body.theme-dark .today-next-more { color: #
 }
 body.theme-dark .today-customise-link { color: #94a3b8; }
 
-.today-customise-card { text-align: left; width: min(420px, calc(100vw - 32px)); }
+.today-customise-card { text-align: left; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
 .today-customise-list { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .today-customise-row {
   display: flex; align-items: center; gap: 12px;
@@ -2688,3 +2688,41 @@ body.theme-dark .film-btn.is-primary { background: #0284c7; border-color: #0284c
 .film-set-credit a { color: inherit; font-weight: 700; }
 body.theme-dark .film-set-chip { background: #0f172a; border-color: #475569; color: #e2e8f0; }
 body.theme-dark .film-set-chip.is-on { background: rgba(2, 132, 199, 0.2); border-color: #0284c7; color: #e0f2fe; }
+
+/* Make it yours: order with ↑ ↓ (js/today-screen.js cardLayout) */
+.today-customise-item { display: flex; align-items: center; gap: 4px; }
+.today-customise-item .today-customise-row { flex: 1; min-width: 0; }
+.today-customise-moves { display: flex; gap: 4px; flex: 0 0 auto; }
+.today-customise-move { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; color: #334155; cursor: pointer; touch-action: manipulation; }
+.today-customise-move:hover:not(:disabled) { background: #f0f9ff; border-color: #bae6fd; color: #0284c7; }
+.today-customise-move:disabled { opacity: 0.3; cursor: default; }
+.today-customise-move:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.today-customise-move svg { display: block; }
+.today-customise-split { display: flex; align-items: center; gap: 12px; margin: 8px 0; color: #64748b; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.today-customise-split::before, .today-customise-split::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+body.theme-dark .today-customise-move { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+body.theme-dark .today-customise-split { color: #94a3b8; }
+body.theme-dark .today-customise-split::before, body.theme-dark .today-customise-split::after { background: #334155; }
+@media (max-width: 600px) {
+  .today-customise-row { padding: 8px; gap: 8px; }
+  .today-customise-split span { white-space: nowrap; }
+}
+
+/* Settings fold-outs (js/settings-fold.js): tap a heading to open or close its section */
+#settings-modal .settings-fold-btn {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 48px; margin: -8px 0; padding: 8px 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  touch-action: manipulation;
+}
+#settings-modal .settings-fold-btn:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; border-radius: 8px; }
+#settings-modal .settings-fold-btn .spotify-logo { margin-left: auto; }
+#settings-modal .settings-fold-btn .spotify-logo + .settings-fold-chevron { margin-left: 8px; }
+#settings-modal .settings-fold-chevron { margin-left: auto; flex: 0 0 auto; color: #64748b; transition: transform 0.2s ease; }
+#settings-modal .settings-fold-btn[aria-expanded="true"] .settings-fold-chevron { transform: rotate(180deg); }
+#settings-modal .settings-fold-body { display: flex; flex-direction: column; gap: 16px; }
+#settings-modal .settings-fold-body[hidden] { display: none; }
+/* Folded: just the heading, so the page reads as a short list */
+#settings-modal .settings-section.is-folded .settings-section-desc { display: none; }
+#settings-modal .settings-section.is-folded { gap: 0; }
+@media (prefers-reduced-motion: reduce) { #settings-modal .settings-fold-chevron { transition: none; } }

@@ -167,7 +167,11 @@
   // Settings > Music header: the Spotify logo beside the section title
   const markSettingsHeader = () => {
     const head = document.getElementById("settings-head-music");
-    if (head && !head.querySelector(".spotify-logo")) head.insertAdjacentHTML("beforeend", logoHtml("is-settings"));
+    if (!head || head.querySelector(".spotify-logo")) return;
+    // Inside the fold-out heading, before its chevron (js/settings-fold.js)
+    const chevron = head.querySelector(".settings-fold-chevron");
+    if (chevron) chevron.insertAdjacentHTML("beforebegin", logoHtml("is-settings"));
+    else head.insertAdjacentHTML("beforeend", logoHtml("is-settings"));
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", markSettingsHeader); else markSettingsHeader();
 

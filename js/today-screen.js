@@ -158,6 +158,35 @@
   ];
   const cardOn = (key) => (((window.boardSettings || {}).todayCards) || {})[key] !== false;
 
+  // ---- Card order (Make it yours, ↑ ↓): one list in screen order. On tablets
+  // and computers the "|" splits it into the left and right columns; on phones
+  // the cards simply stack in this order. Saved for the whole board as
+  // boardSettings.todayLayout; cards added to harmonee later join their usual side.
+  const DEFAULT_LAYOUT = ["events", "tomorrow", "countdown", "music", "films", "|", "weather", "dinner", "groceries", "jobs"];
+  function cardLayout() {
+    const known = CARDS.map(c => c.key);
+    const saved = (window.boardSettings || {}).todayLayout;
+    let out = (Array.isArray(saved) ? saved : DEFAULT_LAYOUT).filter((k, i, a) => (k === "|" || known.includes(k)) && a.indexOf(k) === i);
+    if (!out.includes("|")) out.push("|");
+    known.forEach(k => {
+      if (out.includes(k)) return;
+      if (DEFAULT_LAYOUT.indexOf(k) < DEFAULT_LAYOUT.indexOf("|")) out.splice(out.indexOf("|"), 0, k); else out.push(k);
+    });
+    return out;
+  }
+  const cardShown = (key) => { const c = CARDS.find(x => x.key === key); return !!c && (!c.when || c.when()); };
+  // Move a card one place up or down past the next card you can see in the list
+  // (or across the column line)
+  function moveCard(key, dir) {
+    const list = cardLayout();
+    const from = list.indexOf(key);
+    let to = from + dir;
+    while (to >= 0 && to < list.length && list[to] !== "|" && !cardShown(list[to])) to += dir;
+    if (from < 0 || to < 0 || to >= list.length) return null;
+    [list[from], list[to]] = [list[to], list[from]];
+    return list;
+  }
+
   function openCustomise() {
     let dlg = document.getElementById("today-customise");
     if (!dlg) {
@@ -170,6 +199,19 @@
       dlg.addEventListener("close", () => { const el = document.getElementById("today-screen"); if (el && !el.hidden) paint(el); });
       dlg.addEventListener("click", async (e) => {
         if (e.target === dlg || e.target.closest("[data-customise-done]")) { dlg.close(); return; }
+        const mv = e.target.closest("[data-move]");
+        if (mv) {
+          const key = mv.getAttribute("data-move"), dir = Number(mv.getAttribute("data-dir"));
+          const next = moveCard(key, dir);
+          if (!next) return;
+          if (typeof window.saveBoardSettingsNow === "function") await window.saveBoardSettingsNow({ todayLayout: next });
+          drawCustomise();
+          const again = dlg.querySelector(`[data-move="${key}"][data-dir="${dir}"]`);
+          if (again && !again.disabled) again.focus(); else { const other = dlg.querySelector(`[data-move="${key}"]:not([disabled])`); if (other) other.focus(); }
+          const el = document.getElementById("today-screen");
+          if (el && !el.hidden) paint(el);
+          return;
+        }
         const sw = e.target.closest("[data-card]");
         if (!sw) return;
         const key = sw.getAttribute("data-card");
@@ -191,14 +233,27 @@
     const dlg = document.getElementById("today-customise");
     dlg.innerHTML = `<div class="save-prompt-card today-customise-card">
       <h2 class="save-prompt-title" id="today-customise-title">Make it yours</h2>
-      <p class="save-prompt-text">Choose what shows here. Tap to switch each one on or off. It changes on every device.</p>
-      <ul class="today-customise-list">${CARDS.filter(c => !c.when || c.when()).map(c => `<li>
-        <button type="button" class="today-customise-row" data-card="${c.key}" role="switch" aria-checked="${cardOn(c.key)}">
-          <span class="today-customise-icon" aria-hidden="true">${c.icon}</span>
-          <span class="today-customise-label">${esc(c.label)}${c.note ? `<span class="today-customise-note">${esc(c.note)}</span>` : ""}</span>
-          <span class="today-customise-switch${cardOn(c.key) ? " is-on" : ""}" aria-hidden="true"><span></span></span>
-        </button>
-      </li>`).join("")}</ul>
+      <p class="save-prompt-text">Choose what shows here, and use the arrows to put it in your order. It changes on every device.</p>
+      <ul class="today-customise-list">${(() => {
+        const rows = cardLayout().filter(k => k === "|" || cardShown(k));
+        const up = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+        const down = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+        return rows.map((k, i) => {
+          if (k === "|") return `<li class="today-customise-split" aria-hidden="true"><span>Right-hand column on tablets</span></li>`;
+          const c = CARDS.find(x => x.key === k);
+          return `<li class="today-customise-item">
+            <button type="button" class="today-customise-row" data-card="${c.key}" role="switch" aria-checked="${cardOn(c.key)}">
+              <span class="today-customise-icon" aria-hidden="true">${c.icon}</span>
+              <span class="today-customise-label">${esc(c.label)}${c.note ? `<span class="today-customise-note">${esc(c.note)}</span>` : ""}</span>
+              <span class="today-customise-switch${cardOn(c.key) ? " is-on" : ""}" aria-hidden="true"><span></span></span>
+            </button>
+            <span class="today-customise-moves">
+              <button type="button" class="today-customise-move" data-move="${c.key}" data-dir="-1" aria-label="Move ${esc(c.label)} up"${i === 0 ? " disabled" : ""}>${up}</button>
+              <button type="button" class="today-customise-move" data-move="${c.key}" data-dir="1" aria-label="Move ${esc(c.label)} down"${i === rows.length - 1 ? " disabled" : ""}>${down}</button>
+            </span>
+          </li>`;
+        }).join("");
+      })()}</ul>
       <button type="button" class="save-prompt-btn is-primary today-customise-done" data-customise-done>Done</button>
     </div>`;
   }
@@ -294,6 +349,24 @@
 
     const buttonText = openedFrom === "wake" ? "Start the day" : openedFrom === "preview" ? "Close preview" : "Open the board";
 
+    // Each card, in the family's order (Make it yours)
+    const cardHtml = {
+      events: () => cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>` : "",
+      // Evenings show "Tomorrow" in full (with the Today card); otherwise "Tomorrow's first thing"
+      tomorrow: () => part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : ""),
+      countdown: () => cardOn("countdown") ? countdownHtml : "",
+      music: () => cardOn("music") && window.Music ? window.Music.todayCardHtml() : "",
+      films: () => cardOn("films") && window.FilmNight ? window.FilmNight.cardHtml() : "",
+      weather: () => cardOn("weather") && window.WeatherCard ? window.WeatherCard.html(now) : "",
+      dinner: () => cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : "",
+      groceries: () => cardOn("groceries") ? groceriesHtml() : "",
+      jobs: () => cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Tasks today</h3>${jobsHtml}<div class="today-card-foot">${addBtn('data-quick="job"', "Add task")}</div></section>` : ""
+    };
+    const order = cardLayout();
+    const split = order.indexOf("|");
+    const colLeft = order.slice(0, split).map(k => (cardHtml[k] ? cardHtml[k]() : "")).join("");
+    const colRight = order.slice(split + 1).map(k => (cardHtml[k] ? cardHtml[k]() : "")).join("");
+
     return `
       <div class="today-inner">
         <header class="today-head">
@@ -304,19 +377,8 @@
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
         </header>
         <div class="today-grid">
-          <div class="today-col">
-            ${cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>` : ""}
-            ${part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : "")}
-            ${cardOn("countdown") ? countdownHtml : ""}
-            ${cardOn("music") && window.Music ? window.Music.todayCardHtml() : ""}
-            ${cardOn("films") && window.FilmNight ? window.FilmNight.cardHtml() : ""}
-          </div>
-          <div class="today-col">
-            ${cardOn("weather") && window.WeatherCard ? window.WeatherCard.html(now) : ""}
-            ${cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : ""}
-            ${cardOn("groceries") ? groceriesHtml() : ""}
-            ${cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Tasks today</h3>${jobsHtml}<div class="today-card-foot">${addBtn('data-quick="job"', "Add task")}</div></section>` : ""}
-          </div>
+          <div class="today-col">${colLeft}</div>
+          <div class="today-col">${colRight}</div>
         </div>
         <button type="button" class="today-customise-link" data-customise><strong>Make it yours</strong> · choose what shows here</button>
       </div>
