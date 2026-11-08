@@ -979,8 +979,8 @@ function renderDrawerMagicHero() {
   const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner" }[currentPlanningSlot] || "meal";
   const names = window.MealGenie && window.MealGenie.peopleWithTastes ? window.MealGenie.peopleWithTastes() : [];
   const who = names.length === 0 ? "Answer a few quick questions, get three ideas."
-    : names.length <= 2 ? `Knows what ${names.join(" and ")} will eat.`
-    : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} will eat.`;
+    : names.length <= 2 ? `Knows what ${names.join(" and ")} won't eat.`
+    : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} won't eat.`;
   hero.innerHTML = `<div class="magic-hero">
       <button type="button" class="magic-hero-main" data-drawer-genie>
         <span class="magic-hero-wand" aria-hidden="true">🪄</span>
@@ -991,7 +991,7 @@ function renderDrawerMagicHero() {
         </span>
         <span class="magic-hero-cta">Find me a ${escapeHtml(slotWord)} ✨</span>
       </button>
-      <button type="button" class="magic-hero-tastes" data-drawer-tastes>👍👎 Family tastes${names.length ? ` · ${names.length}` : ""}</button>
+      <button type="button" class="magic-hero-tastes" data-drawer-tastes>🚫 Won't-eat lists${names.length ? ` · ${names.length}` : ""}</button>
     </div>`;
   // A gentle glow each time the drawer opens (not on every search keystroke)
   if (drawerHeroGlow) { drawerHeroGlow = false; hero.classList.remove("is-glowing"); void hero.offsetWidth; hero.classList.add("is-glowing"); }
