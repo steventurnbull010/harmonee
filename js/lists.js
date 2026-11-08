@@ -1338,8 +1338,10 @@ async function shareOrCopy(data, copied) {
 function listInviteText(list) {
   const name = list.title || "list";
   const ours = /^(our|my|the)\b/i.test(name) ? name : `our ${name}`;
-  if (window.Aisles && window.Aisles.isGroceryList(list)) return `🛒 Anything you need from the shop? Add it to ${ours} list 👇`;
-  return `${list.emoji || "📋"} Here's ${ours} list on harmonee. Add anything that's missing 👇`;
+  // Always names harmonee; ends with a tick box (like the Lists icon), not a pointing finger,
+  // since some apps show the link preview above the text
+  if (window.Aisles && window.Aisles.isGroceryList(list)) return `🛒 Anything you need from the shop? Add it to ${ours} list on harmonee ☑️`;
+  return `${list.emoji || "📋"} Anything missing? Add it to ${ours} list on harmonee ☑️`;
 }
 
 async function sendList(listId) {
