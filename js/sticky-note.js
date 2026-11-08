@@ -86,7 +86,14 @@ function openStickyNoteModal() {
   const note = (familyStickyNote !== undefined && familyStickyNote !== null) ? familyStickyNote : loadFamilyStickyNote();
 
   if (input) input.value = (note && note.text && !note.deleted) ? note.text : "";
-  if (authorSelect) authorSelect.value = (note && note.author) ? note.author : "Family";
+  // "Signed by": this family's people (the page itself names nobody)
+  if (authorSelect) {
+    const people = (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
+    const extra = note && note.author && note.author !== "Family" && !people.includes(note.author) ? [note.author] : [];
+    authorSelect.innerHTML = `<option value="Family">❤️ The whole family</option>` +
+      [...people, ...extra].map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+    authorSelect.value = (note && note.author) ? note.author : "Family";
+  }
   selectedStickyColor = (note && note.color) ? note.color : "yellow";
 
   const pills = document.querySelectorAll(".sticky-color-pill");

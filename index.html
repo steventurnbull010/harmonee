@@ -4,6 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <title>harmonee — family life in sync</title>
+  <!-- First paint: a new visitor (no board in the link and none used on this
+       device) gets a plain harmonee splash until the welcome opens, never
+       the app shell behind it. Must run before the body is drawn. -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        var board = q.get("board") || q.get("b") || localStorage.getItem("harmonee_active_board_id") || localStorage.getItem("chore_active_board_id");
+        if (!board || q.get("new") === "true" || q.get("onboarding") === "true") document.documentElement.classList.add("is-new-visitor");
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    html.is-new-visitor .skylight-app-wrapper { visibility: hidden; }
+    html.is-new-visitor body { background: #edf2f7; }
+    html.is-new-visitor body::before {
+      content: "harmonee";
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font: italic 400 2.6rem/1 Georgia, serif; color: #0284c7; letter-spacing: 0.01em;
+    }
+  </style>
   <!-- Installable app: "Install app" / "Add to Home screen" in Chrome opens
        harmonee full screen, without the address bar and tabs -->
   <link rel="manifest" href="/manifest.webmanifest?v=2">
@@ -180,10 +202,10 @@
       <!-- VIEW 1: TASKS (Skylight Profiles Multi-Column Board) -->
       <div id=view-chores class=skylight-page-view style="display: none;">
         <div class="skylight-tasks-page-container">
-          <!-- Skylight Single-Line Header (Turnbull Family, Live Clock, Weather | Filter ⌵, < Today >) -->
+          <!-- Skylight Single-Line Header (family name, Live Clock, Weather | Filter ⌵, < Today >) -->
           <header class="calendar-header skylight-single-header skylight-tasks-header">
             <div class="calendar-header-left">
-              <h2 class="calendar-family-title" id="tasks-family-name">Turnbull Family</h2>
+              <h2 class="calendar-family-title" id="tasks-family-name"></h2>
               <span class="calendar-time-indicator" id="tasks-live-clock">1:52 PM</span>
               <span class="calendar-weather-badge" id="tasks-weather-badge" title="Local weather">☀️ 18°</span>
             </div>
@@ -218,7 +240,7 @@
             <!-- e.g. Wednesday, November 6 -->
           </div>
 
-          <!-- Multi-Column Board: Steven, Sorcha, Ava, Dara, Up for grabs -->
+          <!-- Multi-Column Board: one column per person, plus Up for grabs -->
           <div class="skylight-tasks-columns-grid" id="tasks-columns-grid">
             <!-- Dynamically populated profile columns -->
           </div>
@@ -240,7 +262,7 @@
           <!-- Skylight Single-Line Header (Family Name, Live Clock, Weather | Week ⌵, Filter ⌵, < Today >) -->
           <header class="calendar-header skylight-single-header">
             <div class="calendar-header-left">
-              <h2 class="calendar-family-title" id="calendar-family-name">Turnbull Family</h2>
+              <h2 class="calendar-family-title" id="calendar-family-name"></h2>
               <span class="calendar-time-indicator" id="calendar-live-clock">12:26 PM</span>
               <span class="calendar-weather-badge" id="calendar-weather-badge" title="Local weather">☀️ 18°</span>
             </div>
@@ -308,7 +330,7 @@
             <div class="family-sticky-card color-yellow" id="family-sticky-card">
               <span class="sticky-pin-icon" aria-hidden="true">📌</span>
               <div class="sticky-content-wrap" id="sticky-content-wrap">
-                <p class="sticky-message-text" id="sticky-message-text">Welcome to the Turnbull Family Board! Have a fantastic day! ❤️</p>
+                <p class="sticky-message-text" id="sticky-message-text"></p>
                 <div class="sticky-meta-row">
                   <span class="sticky-author-badge" id="sticky-author-badge">Family Note</span>
                   <span class="sticky-time-badge" id="sticky-time-badge">Today</span>
@@ -380,7 +402,7 @@
             <!-- Same single-line header as Calendar and Tasks -->
             <header class="calendar-header skylight-single-header skylight-meals-page-header">
               <div class="calendar-header-left">
-                <h2 class="calendar-family-title skylight-meals-family-name">Turnbull Family</h2>
+                <h2 class="calendar-family-title skylight-meals-family-name"></h2>
                 <span class="calendar-time-indicator" id="meals-live-clock"></span>
                 <span class="calendar-weather-badge" id="meals-weather-badge" title="Local weather"></span>
               </div>
@@ -890,7 +912,7 @@
               <span class="drawer-section-label">Who's doing it</span>
             </div>
             <div class="drawer-profiles-pills-row" id="drawer-profiles-row" role="group" aria-label="Who's doing it">
-              <!-- Steven, Sorcha, Ava, Dara, Up for grabs (+ Add) -->
+              <!-- One per person, plus Up for grabs (+ Add) -->
             </div>
             <p class="drawer-who-summary" id="drawer-who-summary" aria-live="polite"></p>
           </div>
@@ -1035,7 +1057,7 @@
             <div class="drawer-rota-days" id="drawer-rota-days" style="display: none;"></div>
           </div>
 
-          <!-- POINTS / ££ REWARD STEPPER (Custom for Turnbull family) -->
+          <!-- POINTS / ££ REWARD STEPPER -->
           <div class="drawer-field-group drawer-reward-stepper-box">
             <div class="drawer-reward-header">
               <span class="drawer-reward-title" id="drawer-reward-mode-text">Reward Points</span>
@@ -1277,7 +1299,7 @@
                 <label for="task-form-room">Room / Area</label>
                 <div class="select-chevron-wrapper">
                   <select id="task-form-room" class="form-input form-select-with-chevron">
-                    <!-- Populated dynamically based on Turnbull vs General board -->
+                    <!-- Populated dynamically for the board -->
                   </select>
                 </div>
                 <span class="room-rename-hint" id="room-rename-hint" style="display: none; font-size: 0.76rem; color: var(--accent-cyan); cursor: pointer; margin-top: 4px;">✏️ Want to add a name to this bedroom? Tap to customize</span>
@@ -1298,7 +1320,7 @@
               <button type="button" class="popover-close" id="btn-close-roster-popover" aria-label="Close">✕</button>
             </div>
             <div class="popover-members-row" id="popover-members-row">
-              <!-- Injected dynamically: Anyone, Steven, Sorcha, Ava, Dara -->
+              <!-- Injected dynamically: Anyone, then each person -->
             </div>
           </div>
 
@@ -1771,7 +1793,7 @@
         <!-- Voice & Text Input Form -->
         <div class="ai-input-wrapper">
           <div class="ai-textarea-container">
-            <textarea id="ai-prompt-input" rows="4" placeholder="Speak or type: 'Ava clean kitchen and feed the cats for £1.50 each, Steve vacuum upstairs on Saturday for £2...'"></textarea>
+            <textarea id="ai-prompt-input" rows="4" placeholder="Speak or type: 'Sam clean the kitchen and feed the cat for £1.50 each, Alex vacuum upstairs on Saturday for £2...'"></textarea>
             
             <button type="button" id="btn-voice-dictate" class="btn-voice-dictate" title="Tap to dictate by voice">
               <span class="mic-icon" id="mic-icon">🎙️</span>
@@ -1781,7 +1803,7 @@
 
           <div class="ai-quick-examples">
             <span class="quick-examples-label">Try:</span>
-            <button type="button" class="btn-example-pill" data-example="Weekend reset: Ava tidy bedrooms and empty dishwasher for £1 each, Dara clean living room rugs">Weekend Reset</button>
+            <button type="button" class="btn-example-pill" data-example="Weekend reset: Sam tidy bedrooms and empty dishwasher for £1 each, Alex clean living room rugs">Weekend Reset</button>
             <button type="button" class="btn-example-pill" data-example="Feed cats fresh water daily, scoop litter trays, take out bins Friday">Daily Routine</button>
           </div>
 
@@ -1872,7 +1894,6 @@
             <span class="recipe-pill">⏱️ 10–15 Minutes</span>
             <span class="recipe-pill">🥗 Veggie</span>
             <span class="recipe-pill">🍎 1 of your 5 a day</span>
-            <span class="recipe-pill">👨‍🍳 Chef: Steve</span>
           </div>
         </div>
         <button type="button" class="btn-modal-close" id="btn-close-recipe-modal" aria-label="Close modal" title="Close">
@@ -1988,24 +2009,8 @@
 
         <div class="form-group">
           <label>Who's Cooking? (Tap to select multiple)</label>
-          <div class="meal-chef-chips-select" id="meal-chef-chips-select">
-            <button type="button" class="chef-select-chip" data-chef="Steve">
-              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">S</span> Steve
-            </button>
-            <button type="button" class="chef-select-chip" data-chef="Sorcha">
-              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #e11d48, #fb7185);">S</span> Sorcha
-            </button>
-            <button type="button" class="chef-select-chip" data-chef="Ava">
-              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #db2777, #f472b6);">A</span> Ava
-            </button>
-            <button type="button" class="chef-select-chip" data-chef="Dara">
-              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #059669, #34d399);">D</span> Dara
-            </button>
-            <button type="button" class="chef-select-chip" data-chef="Team Effort">
-              <span class="chef-chip-avatar" style="background: linear-gradient(135deg, #f59e0b, #ec4899);">👥</span> Family
-            </button>
-          </div>
-          <input type="hidden" id="meal-cook-input" value="Steve">
+          <div class="meal-chef-chips-select" id="meal-chef-chips-select"></div>
+          <input type="hidden" id="meal-cook-input" value="">
         </div>
 
         <div class="form-group">
@@ -2218,7 +2223,7 @@
         <button type="button" class="btn-modal-close" id="btn-close-photo-review" aria-label="Close modal">✕</button>
         <div class="photo-review-badge">✨ AI Recipe Extraction</div>
         <h2 id="photo-review-title" class="modal-title">Review Scanned Recipe</h2>
-        <p class="modal-subtitle">Review details before saving to your Turnbull family cookbook</p>
+        <p class="modal-subtitle">Review details before saving to your family cookbook</p>
       </div>
 
       <div class="photo-review-body">
@@ -2516,7 +2521,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label for="sticky-input-text" class="form-label">Note for the Family</label>
-          <textarea id="sticky-input-text" class="form-input form-textarea" rows="3" placeholder="Write a note for the family... (e.g. Good luck with your maths test today Ava! ❤️)"></textarea>
+          <textarea id="sticky-input-text" class="form-input form-textarea" rows="3" placeholder="Write a note for the family... (e.g. Good luck with your maths test today! ❤️)"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Sticky Color</label>
@@ -2531,13 +2536,7 @@
         <div class="form-group">
           <label for="sticky-input-author" class="form-label">Signed by</label>
           <select id="sticky-input-author" class="form-input form-select">
-            <option value="Family">❤️ Turnbull Family</option>
-            <option value="Steven">Steven</option>
-            <option value="Sorcha">Sorcha</option>
-            <option value="Ava">Ava</option>
-            <option value="Dara">Dara</option>
-            <option value="Mum">Mum</option>
-            <option value="Dad">Dad</option>
+            <option value="Family">❤️ The whole family</option>
           </select>
         </div>
       </div>
@@ -2691,7 +2690,7 @@
         <button type="button" class="btn-modal-close" id="btn-close-magic-review" aria-label="Close modal">✕</button>
         <div class="magic-pill-badge">✨ AI Schedule Extraction</div>
         <h2 id="magic-review-title" class="modal-title">Review Extracted Events</h2>
-        <p class="modal-subtitle" id="magic-review-subtitle">Review, edit, or adjust events before adding them to your Turnbull calendar</p>
+        <p class="modal-subtitle" id="magic-review-subtitle">Review, edit, or adjust events before adding them to your calendar</p>
       </div>
 
       <!-- Scanned Image Thumbnail / Details Toggle Bar -->
@@ -2768,7 +2767,7 @@
   <script src="js/rewards.js?v=8"></script>
   <script src="js/reward-goals.js?v=5"></script>
   <script src="js/page-intro.js?v=5"></script>
-  <script src="js/sticky-note.js?v=4"></script>
+  <script src="js/sticky-note.js?v=5"></script>
   <script src="js/calendar.js?v=31"></script>
   <script src="js/date-picker.js?v=1"></script>
   <script src="js/tasks.js?v=38"></script>
