@@ -505,3 +505,21 @@ body.theme-dark .setup-chips li { background: rgba(2, 132, 199, 0.18); color: #b
 /* "Step 2 of 5" beside the dots, so people know how far they've got */
 .setup-step-count { margin-left: auto; margin-right: -8px; font-size: 0.85rem; font-weight: 800; color: #0284c7; white-space: nowrap; }
 body.theme-dark .setup-step-count { color: #7dd3fc; }
+/* Phones: each person on one line (avatar, name, grown-up/child, remove) */
+@media (max-width: 600px) {
+  .setup-person-row { flex-wrap: nowrap; gap: 8px; }
+  .setup-seg { order: 0; margin-left: 0; }
+  .setup-seg button { height: 28px; padding: 0 8px; font-size: 0.78rem; }
+  .setup-avatar { width: 36px; height: 36px; }
+  .setup-people { gap: 8px; }
+}
+/* Phones: routines and jobs as two columns of small tick-tiles */
+@media (max-width: 600px) {
+  .setup-checks { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .setup-check { gap: 6px; min-height: 48px; padding: 8px; border-radius: 12px; flex-wrap: wrap; align-content: center; }
+  .setup-check-box { width: 18px; height: 18px; border-radius: 6px; font-size: 0.65rem; }
+  .setup-check-icon { font-size: 1rem; }
+  .setup-check-title { font-size: 0.85rem; line-height: 1.2; }
+  .setup-check-sub { flex-basis: 100%; padding-left: 24px; font-size: 0.7rem; }
+  .setup-slot { margin: 12px 0 8px; }
+}

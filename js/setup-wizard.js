@@ -94,8 +94,7 @@
       <div id="setup-weather" class="setup-weather is-compact"></div>`;
 
     if (s.step === 2) return `
-      <h1 class="setup-title" id="setup-title">Who's in the family?</h1>
-      <p class="setup-lead">Add everyone who'll use the board. Children get the starter routines.</p>
+      <h1 class="setup-title" id="setup-title">🏡 Who's in the family?</h1>
       <div class="setup-add-row">
         <input id="setup-person" class="setup-input" type="text" maxlength="24" placeholder="A name, e.g. Sam" autocomplete="off" enterkeyhint="done" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>
         <button type="button" class="setup-btn is-secondary" data-act="add-person" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>Add</button>
@@ -112,17 +111,18 @@
             <button type="button" class="setup-remove" data-act="remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">✕</button>
           </div>
           ${s.openColour === i ? `<div class="setup-swatches" role="group" aria-label="Colours">${palette().map(c => `<button type="button" class="setup-swatch${c.id === p.colour ? " is-on" : ""}" style="background:${c.solid}" data-act="pick-colour" data-i="${i}" data-colour="${c.id}" aria-label="${esc(c.name)}" aria-pressed="${c.id === p.colour}"></button>`).join("")}</div>` : ""}
-        </li>`).join("")}</ul>` : `<p class="setup-hint">Nobody yet. Type a name and press Add.</p>`}`;
+        </li>`).join("")}</ul>
+      <p class="setup-hint">🎨 Tap a circle to change its colour</p>` : `<p class="setup-hint">Add everyone who'll use harmonee, grown-ups and children.</p>`}`;
 
     if (s.step === 3) return `
-      <h1 class="setup-title" id="setup-title">Points or pocket money?</h1>
-      <p class="setup-lead">Jobs earn something. You can switch later in Settings.</p>
+      <h1 class="setup-title" id="setup-title">⭐ Points or pocket money?</h1>
+      <p class="setup-lead">What do jobs earn?</p>
       <div class="setup-choice-grid">
         <button type="button" class="setup-choice${s.mode === "points" ? " is-on" : ""}" data-act="mode" data-mode="points" aria-pressed="${s.mode === "points"}">
-          <span class="setup-choice-icon" aria-hidden="true">🏆</span><span class="setup-choice-title">Points</span><span class="setup-choice-desc">A weekly podium, and goals to save up for</span>
+          <span class="setup-choice-icon" aria-hidden="true">🏆</span><span class="setup-choice-title">Points</span><span class="setup-choice-desc">Weekly podium &amp; goals</span>
         </button>
         <button type="button" class="setup-choice${s.mode === "money" ? " is-on" : ""}" data-act="mode" data-mode="money" aria-pressed="${s.mode === "money"}">
-          <span class="setup-choice-icon" aria-hidden="true">💰</span><span class="setup-choice-title">Pocket money</span><span class="setup-choice-desc">Jobs earn real money towards treats</span>
+          <span class="setup-choice-icon" aria-hidden="true">💰</span><span class="setup-choice-title">Pocket money</span><span class="setup-choice-desc">Earn real money</span>
         </button>
       </div>
       ${s.mode === "money" ? `<div class="setup-currency" role="group" aria-label="Currency">${["£", "€", "$"].map(c => `<button type="button" class="${s.currency === c ? "is-on" : ""}" data-act="currency" data-currency="${c}" aria-pressed="${s.currency === c}">${c}</button>`).join("")}</div>` : ""}`;
@@ -135,11 +135,11 @@
         <span class="setup-check-box" aria-hidden="true">✓</span><span class="setup-check-icon" aria-hidden="true">${x.icon}</span><span class="setup-check-title">${esc(x.title)}</span>${sub ? `<span class="setup-check-sub">${esc(sub)}</span>` : ""}
       </button>`;
       return `
-        <h1 class="setup-title" id="setup-title">Pick some starter routines</h1>
-        <p class="setup-lead">A head start for the Tasks page. Untick anything you don't want.</p>
-        <h2 class="setup-group">Daily routines <span>${esc(forWho)}</span></h2>
+        <h1 class="setup-title" id="setup-title">✅ Starter routines</h1>
+        <p class="setup-lead">Untick anything you don't want.</p>
+        <h2 class="setup-group">🧒 Daily routines <span>${esc(forWho)}</span></h2>
         ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><div class="setup-checks">${group(slot).map(r => check(r)).join("")}</div>`).join("")}
-        <h2 class="setup-group">Jobs anyone can grab <span>points for whoever does it</span></h2>
+        <h2 class="setup-group">🙋 Up for grabs <span>anyone can do these</span></h2>
         <div class="setup-checks">${JOBS.map(j => check(j, j.day ? `${j.day}s` : "Every day")).join("")}</div>`;
     }
 
@@ -149,13 +149,13 @@
     return `
       <div class="setup-done-mark" aria-hidden="true">🎉</div>
       <h1 class="setup-title" id="setup-title">All set, ${esc(s.familyName || "your family")}!</h1>
-      <p class="setup-lead">Here's what we'll make. Everything can be changed later.</p>
+
       <ul class="setup-summary">
         <li><span aria-hidden="true">👥</span><span>${s.people.map(p => `<span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>`).join("")} ${esc(s.people.map(p => p.name).join(", "))}</span></li>
-        <li><span aria-hidden="true">${s.mode === "money" ? "💰" : "🏆"}</span><span>${s.mode === "money" ? `Pocket money in ${esc(s.currency)}` : "Points and a weekly podium"}</span></li>
-        <li><span aria-hidden="true">✅</span><span>${nRoutines} daily routine${nRoutines === 1 ? "" : "s"} and ${nJobs} job${nJobs === 1 ? "" : "s"} to grab</span></li>
-        <li><span aria-hidden="true">🌤️</span><span>${s.weather ? `Weather for ${esc(s.weather.label || s.weather.name)}` : "No weather yet. Add your town any time in Settings › Display"}</span></li>
-        <li><span aria-hidden="true">🔐</span><span>A family code to add your phones, shown on the next screen</span></li>
+        <li><span aria-hidden="true">${s.mode === "money" ? "💰" : "🏆"}</span><span>${s.mode === "money" ? `Pocket money in ${esc(s.currency)}` : "Points &amp; a weekly podium"}</span></li>
+        <li><span aria-hidden="true">✅</span><span>${nRoutines} routine${nRoutines === 1 ? "" : "s"} &amp; ${nJobs} job${nJobs === 1 ? "" : "s"} up for grabs</span></li>
+        <li><span aria-hidden="true">🌤️</span><span>${s.weather ? `Weather for ${esc(s.weather.label || s.weather.name)}` : "No weather yet (add it in Settings)"}</span></li>
+        <li><span aria-hidden="true">🔐</span><span>A QR code to add everyone's phones, next</span></li>
       </ul>`;
   }
 
@@ -164,7 +164,7 @@
     const s = state;
     const canBack = s.step > 1;
     const intro = s.step === 0;
-    const nextLabel = s.step === STEPS ? "Create our board" : "Continue";
+    const nextLabel = s.step === STEPS ? "Create the board 🎉" : "Continue";
     el.innerHTML = `
       <div class="setup-card${intro ? " is-intro" : ""}" role="document">
         <div class="setup-top">
@@ -231,7 +231,7 @@
     const s = state;
     // Making a family's board (and its family code) happens online
     if (window.isOffline && window.isOffline()) {
-      s.error = "Setting up a family needs the internet. Your answers are kept: tap “Create our board” again when you're back online.";
+      s.error = "Setting up a family needs the internet. Your answers are kept: tap “Create the board” again when you're back online.";
       render();
       return;
     }
