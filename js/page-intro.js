@@ -325,12 +325,27 @@ function maybeShowPageIntro(page) {
   if (document.body.classList.contains("board-join-active") || document.getElementById("board-join-screen")) return;
   const onboarding = document.getElementById("onboarding-modal");
   if (onboarding && onboarding.open) return;
+  // One thing at a time: not over Today at a glance, setup or an open panel
+  // (it shows when Today closes, or the next time the page opens)
+  const today = document.getElementById("today-screen");
+  if (today && !today.hidden) return;
+  if (document.getElementById("setup-wizard") && !document.getElementById("setup-wizard").hidden) return;
+  if (document.querySelector("dialog[open]")) return;
   const container = document.querySelector(PAGE_INTROS[page].container);
   const view = container && container.closest(".skylight-page-view");
   if (!view || view.style.display === "none") return;
   showPageIntro(page);
 }
 window.maybeShowPageIntro = maybeShowPageIntro;
+
+// Going to a page to do something (Getting started): count its tutorial as seen
+window.markPageIntroSeen = function (page) {
+  const key = page === "tasks" ? "chores" : page;
+  if (!PAGE_INTROS[key]) return;
+  try { localStorage.setItem(PAGE_INTROS[key].seenKey, "true"); } catch (e) {}
+  const host = document.getElementById("page-intro");
+  if (host && host.getAttribute("data-page") === key) closePageIntroWithoutSaving();
+};
 
 window.resetPageIntros = function () {
   Object.values(PAGE_INTROS).forEach(cfg => { try { localStorage.removeItem(cfg.seenKey); } catch (e) {} });

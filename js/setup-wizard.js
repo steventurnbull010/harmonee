@@ -412,53 +412,17 @@
 
   // ---- First visit to a brand-new board: the family code -------------------------
   let welcomeShowing = false;
+  // First visit to a brand-new board: open Today at a glance, where the
+  // Getting started card offers the QR (js/getting-started.js), rather than
+  // a QR pop-up landing on top of everything
   async function showWelcome() {
     if (welcomeShowing) return;
-    const boardId = window.currentBoardId;
-    const key = `harmonee_welcome_${boardId}`;
-    try { if (!localStorage.getItem(key)) return; } catch (e) { return; }
-    let info = null;
-    for (let tries = 0; tries < 10 && !(info && info.code); tries++) {
-      await new Promise(r => setTimeout(r, 700));
-      try { info = typeof window.loadFamilyAccessInfo === "function" ? await window.loadFamilyAccessInfo() : null; } catch (e) {}
-    }
-    if (!info || !info.code) return; // try again next visit
-    if (welcomeShowing) return;
+    const key = `harmonee_welcome_${window.currentBoardId}`;
+    try { if (!localStorage.getItem(key)) return; localStorage.removeItem(key); localStorage.removeItem(`harmonee_setup_tasks_${window.currentBoardId}`); } catch (e) { return; }
     welcomeShowing = true;
-    try { localStorage.removeItem(key); localStorage.removeItem(`harmonee_setup_tasks_${boardId}`); } catch (e) {}
-    const name = ((window.boardSettings || {}).familyName) || "";
-    const dlg = document.createElement("dialog");
-    dlg.className = "setup-welcome-dialog";
-    dlg.setAttribute("aria-labelledby", "setup-welcome-title");
-    dlg.innerHTML = `
-      <div class="setup-welcome-card">
-        <div class="setup-done-mark" aria-hidden="true">🏡</div>
-        <h2 class="setup-title" id="setup-welcome-title">${name ? `Welcome, ${esc(name)}!` : "You're all set!"}</h2>
-        <p class="setup-lead">Bring the family in: they point their phone camera at this code, or you send them the link.</p>
-        ${window.JoinQR && window.JoinQR.svg(info.joinUrl) ? `<div class="setup-welcome-qr">${window.JoinQR.svg(info.joinUrl)}</div>` : ""}
-        <p class="setup-code-small">Family code <strong>${esc(info.code)}</strong></p>
-        <div class="setup-welcome-actions">
-          <button type="button" class="setup-btn is-secondary" data-welcome="copy">Copy join link</button>
-          <button type="button" class="setup-btn is-primary" data-welcome="close">Let's go</button>
-        </div>
-        <p class="setup-hint">Find this again any time in Settings › Access.</p>
-      </div>`;
-    document.body.appendChild(dlg);
-    dlg.addEventListener("click", async (e) => {
-      const b = e.target.closest("[data-welcome]");
-      if (!b) return;
-      if (b.getAttribute("data-welcome") === "copy") {
-        try { await navigator.clipboard.writeText(info.joinUrl); b.textContent = "Copied ✓"; }
-        catch (err) { b.textContent = "Copy didn't work"; }
-        return;
-      }
-      dlg.close();
-      dlg.remove();
-    });
-    dlg.showModal();
+    for (let tries = 0; tries < 20 && typeof window.showTodayScreen !== "function"; tries++) await new Promise(r => setTimeout(r, 250));
+    if (typeof window.showTodayScreen === "function") window.showTodayScreen({ from: "welcome" });
   }
-  // app.js calls this right after creating a new board; on load it also
-  // catches a welcome that didn't get shown (e.g. the page was reloaded)
   window.showSetupWelcome = showWelcome;
   if (document.readyState === "complete") setTimeout(showWelcome, 500);
   else window.addEventListener("load", () => setTimeout(showWelcome, 500));

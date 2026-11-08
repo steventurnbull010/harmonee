@@ -471,3 +471,10 @@ body.theme-dark .first-cheer-emoji { background: rgba(245, 158, 11, 0.2); }
   .first-cheer { transition: opacity 0.2s ease; transform: translate(-50%, 0); }
   .first-cheer.is-showing .first-cheer-emoji { animation: none; }
 }
+/* First-time cheer: "Next up: 🍽️ Plan a meal →" (Getting started) */
+.first-cheer-next {
+  align-self: flex-start; margin-top: 8px;
+  min-height: 36px; padding: 6px 14px; border-radius: 999px;
+  border: none; background: #0284c7; color: #ffffff;
+  font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer;
+}

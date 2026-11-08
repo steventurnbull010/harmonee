@@ -376,6 +376,7 @@
           ${window.Voice && window.Voice.supported() ? `<button type="button" class="today-say-it" data-voice data-voice-intro aria-label="Add by voice: shopping, events, tasks and meals">${window.Voice.MIC_SVG}<span>Add by voice</span></button>` : ""}
           ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
         </header>
+        ${window.GettingStarted ? window.GettingStarted.cardHtml() : ""}
         <div class="today-grid">
           <div class="today-col">${colLeft}</div>
           <div class="today-col">${colRight}</div>
@@ -536,11 +537,18 @@
     if (dlg && dlg.open) drawQuickList();
   });
 
-  function closeTodayScreen() {
+  function closeTodayScreen(opts = {}) {
     const el = document.getElementById("today-screen");
+    const wasOpen = el && !el.hidden;
     if (el) el.hidden = true;
     clearTimeout(autoCloseTimer);
     clearInterval(refreshTimer);
+    // The page underneath gets its first-visit tutorial now, if it was waiting
+    // (not when Getting started is taking you somewhere to do something)
+    if (wasOpen && !opts.quiet && typeof window.maybeShowPageIntro === "function") {
+      const v = window.currentActiveView || "calendar";
+      setTimeout(() => window.maybeShowPageIntro(["calendar", "meals", "lists", "rewards"].includes(v) ? v : "chores"), 50);
+    }
   }
   window.closeTodayScreen = closeTodayScreen;
 
@@ -565,6 +573,10 @@
           return;
         }
         if (e.target.closest("[data-customise]")) { openCustomise(); return; }
+        // Getting started (js/getting-started.js)
+        if (e.target.closest("[data-gs-hide]")) { window.GettingStarted.hide(); paint(el); return; }
+        const gs = e.target.closest("[data-gs]");
+        if (gs) { window.GettingStarted.go(gs.getAttribute("data-gs")); return; }
         const groc = e.target.closest("[data-groc]");
         if (groc) {
           if (groc.getAttribute("data-groc") === "shop") {

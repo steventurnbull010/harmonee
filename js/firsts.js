@@ -34,14 +34,14 @@
       window.saveBoardSettingsNow({ firsts: { ...firsts, [kind]: new Date().toISOString() } });
     }
     // A moment after the panel closes, so the card isn't hidden behind it
-    setTimeout(() => show(cfg), 450);
+    setTimeout(() => show(cfg, kind), 450);
   }
 
   function reduceMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function show(cfg) {
+  function show(cfg, kind) {
     let card = document.getElementById("first-cheer");
     if (!card) {
       card = document.createElement("div");
@@ -49,20 +49,28 @@
       card.className = "first-cheer";
       card.setAttribute("role", "status");
       card.setAttribute("aria-live", "polite");
-      card.addEventListener("click", hide);
+      card.addEventListener("click", (e) => {
+        const next = e.target.closest("[data-cheer-next]");
+        hide();
+        if (next && window.GettingStarted) window.GettingStarted.go(next.getAttribute("data-cheer-next"));
+      });
       document.body.appendChild(card);
     }
+    // Getting started still going: offer the next thing (never pushed)
+    const next = kind && window.GettingStarted ? window.GettingStarted.nextAfter(kind) : null;
     card.innerHTML = `
       <span class="first-cheer-emoji" aria-hidden="true">${cfg.emoji}</span>
       <span class="first-cheer-words">
         <strong class="first-cheer-title">${escapeHtml(cfg.title)}</strong>
         <span class="first-cheer-text">${escapeHtml(cfg.text)}</span>
+        ${next ? `<button type="button" class="first-cheer-next" data-cheer-next="${next.key}">Next up: ${escapeHtml(next.label)} →</button>` : ""}
       </span>`;
     card.classList.remove("is-showing");
     void card.offsetWidth; // restart the pop-in
+    card.classList.toggle("has-next", !!next);
     card.classList.add("is-showing");
     clearTimeout(card._timer);
-    card._timer = setTimeout(hide, 5000);
+    card._timer = setTimeout(hide, next ? 8000 : 5000);
 
     playFanfare();
     if (!reduceMotion() && typeof window.triggerConfettiBurst === "function") window.triggerConfettiBurst();

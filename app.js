@@ -964,6 +964,8 @@ function saveDateMeals(meals) {
   }
 }
 
+window.loadDateMeals = loadDateMeals;
+
 function getMealForDate(date, slot = "dinner") {
   const store = loadDateMeals();
   if (!store || typeof store !== "object") return null;
@@ -6442,6 +6444,7 @@ function openOnboardingModal() {
 
 function switchSkylightView(viewName) {
   currentActiveView = viewName;
+  window.currentActiveView = viewName;
 
   const navItems = document.querySelectorAll(".skylight-nav-item[data-view]");
   navItems.forEach(item => {

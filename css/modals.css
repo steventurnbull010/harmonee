@@ -2726,3 +2726,50 @@ body.theme-dark .today-customise-split::before, body.theme-dark .today-customise
 #settings-modal .settings-section.is-folded .settings-section-desc { display: none; }
 #settings-modal .settings-section.is-folded { gap: 0; }
 @media (prefers-reduced-motion: reduce) { #settings-modal .settings-fold-chevron { transition: none; } }
+
+/* ==========================================================================
+   Getting started (js/getting-started.js): a full-width card at the top of
+   Today at a glance for a new family. Each item opens the right page; done
+   ones tick themselves off; ✕ hides it.
+   ========================================================================== */
+.today-getting-started {
+  position: relative;
+  margin-bottom: 16px;
+  border: 1.5px solid #fde68a;
+  background: linear-gradient(135deg, #fffbeb, #ffffff 60%);
+}
+.gs-hide {
+  position: absolute; top: 8px; right: 8px;
+  width: 40px; height: 40px; border: none; border-radius: 50%;
+  background: transparent; color: #94a3b8; font: inherit; font-size: 1rem; cursor: pointer;
+}
+.gs-hide:hover { background: rgba(15, 23, 42, 0.06); color: #475569; }
+.gs-lead { margin: 4px 0 8px; font-size: 0.92rem; color: var(--text-secondary, #475569); }
+.gs-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.gs-item {
+  width: 100%; min-height: 56px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; box-sizing: border-box;
+  border: 1.5px solid #e2e8f0; border-radius: 14px;
+  background: #ffffff; color: var(--text-primary, #0f172a);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.gs-item:hover { border-color: #fcd34d; }
+.gs-check {
+  width: 22px; height: 22px; flex-shrink: 0; box-sizing: border-box;
+  border-radius: 50%; border: 2px solid #cbd5e1;
+  display: flex; align-items: center; justify-content: center;
+  color: #ffffff; font-size: 0.75rem; font-weight: 900;
+}
+.gs-icon { font-size: 1.3rem; flex-shrink: 0; }
+.gs-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gs-text strong { font-size: 0.95rem; }
+.gs-text small { font-size: 0.8rem; color: var(--text-secondary, #64748b); }
+.gs-go { font-size: 1.4rem; color: #94a3b8; }
+.gs-item.is-done { background: #f0fdf4; border-color: #bbf7d0; cursor: default; }
+.gs-item.is-done .gs-check { background: #16a34a; border-color: #16a34a; }
+.gs-item.is-done strong { color: #15803d; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+body.theme-dark .today-getting-started { background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), #1e293b 60%); border-color: rgba(245, 158, 11, 0.4); }
+body.theme-dark .gs-item { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .gs-item.is-done { background: rgba(22, 163, 74, 0.12); border-color: rgba(22, 163, 74, 0.4); }
+body.theme-dark .gs-item.is-done strong { color: #86efac; }
