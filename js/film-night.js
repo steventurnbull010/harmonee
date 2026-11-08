@@ -160,7 +160,8 @@
       if (typeof root.streamingListSave === "function") { try { await root.streamingListSave(svc, fresh); } catch (e) {} }
     } catch (e) {
       console.warn("Watch together:", e);
-      failedAt[svc] = Date.now();
+      // Offline isn't the service failing: look again as soon as we're back
+      if (!(window.isOffline && window.isOffline())) failedAt[svc] = Date.now();
     } finally {
       busy.delete(svc);
       document.dispatchEvent(new CustomEvent("harmonee:films"));
@@ -205,7 +206,8 @@
           <span class="film-poster">${poster(f)}${isNew(f) ? `<span class="film-new">New</span>` : ""}${f.type === "series" ? `<span class="film-kind">Series</span>` : ""}</span>
           <span class="film-name">${esc(f.title)}</span>
         </button>`).join("")}</div>`
-      : `<p class="today-empty">${waiting ? "Finding family films…" : "Nothing to show just now. It'll look again soon."}</p>`;
+      : `<p class="today-empty">${window.isOffline && window.isOffline() ? "Finding films needs the internet. They'll show when you're back online."
+          : waiting ? "Finding family films…" : "Nothing to show just now. It'll look again soon."}</p>`;
     return `<section class="today-card today-films" aria-labelledby="today-films-title">
       <div class="film-head">
         <h3 class="today-card-title" id="today-films-title">🍿 Watch together</h3>
@@ -327,6 +329,7 @@
     });
     const first = () => renderSettings();
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", first); else first();
+    window.addEventListener("online", () => document.dispatchEvent(new CustomEvent("harmonee:films")));
   }
 
   const api = { ready, cardHtml, renderSettings, open, urlFor, slim, slimList, merge, isNew, isStale, weekStart, planSlot, SERVICES };

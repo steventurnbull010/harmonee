@@ -243,6 +243,7 @@ function closePhotoReviewModal() {
 
 // Handle Photo File Selected (from either Camera or Gallery)
 async function handleRecipePhotoUpload(file) {
+  if (typeof window.needsInternet === "function" && window.needsInternet("Magic Import")) return;
   if (!file) return;
 
   // Guardrail 1: In-Flight Lock
@@ -315,7 +316,9 @@ async function handleRecipePhotoUpload(file) {
   } catch (err) {
     console.error("Photo recipe extraction error:", err);
     closePhotoScanningModal();
-    alert("Could not read recipe details from that photo. Please make sure the photo clearly shows recipe ingredients or steps, and try again!");
+    alert(window.isNetworkError && window.isNetworkError(err)
+      ? "Magic Import needs the internet, and the connection dropped. Try again when you've got a better signal."
+      : "Could not read recipe details from that photo. Please make sure the photo clearly shows recipe ingredients or steps, and try again!");
   } finally {
     isPhotoScanningActive = false;
     lastPhotoScanTimestamp = Date.now();
@@ -905,6 +908,7 @@ function addNewManualReviewEvent() {
 }
 
 async function handleCalendarPhotoUpload(file) {
+  if (typeof window.needsInternet === "function" && window.needsInternet("Magic Import")) return;
   if (!file) return;
 
   if (isMagicEventScanningActive) {
@@ -950,7 +954,9 @@ async function handleCalendarPhotoUpload(file) {
   } catch (err) {
     console.error("Calendar schedule photo extraction error:", err);
     closeCalendarMagicScanningModal();
-    alert("Could not read schedule details from that photo. Please try again with a clear photo in good light!");
+    alert(window.isNetworkError && window.isNetworkError(err)
+      ? "Magic Import needs the internet, and the connection dropped. Try again when you've got a better signal."
+      : "Could not read schedule details from that photo. Please try again with a clear photo in good light!");
   } finally {
     isMagicEventScanningActive = false;
     lastMagicEventScanTimestamp = Date.now();

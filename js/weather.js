@@ -124,7 +124,7 @@ function renderWeatherPlacePicker(box, opts = {}) {
     try {
       results = await searchTowns(q);
       message = results.length ? "Tap your town:" : `No places called "${q}". Try a nearby town.`;
-    } catch (e) { results = []; message = "Couldn't search just now. Check the connection."; }
+    } catch (e) { results = []; message = window.isOffline && window.isOffline() ? "You're offline. Finding a town needs the internet." : "Couldn't search just now. Check the connection."; }
     draw();
     const again = box.querySelector(".wx-input"); if (again) again.value = q;
   };

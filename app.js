@@ -8,6 +8,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection, 
   onSnapshot, 
   doc, 
@@ -1313,6 +1316,9 @@ function loadSavedFirebaseConfig() {
   return null;
 }
 
+let firebaseApp = null;
+let liveSyncStarted = false;
+let reconnectWaiting = false;
 async function initializeDataSource() {
   const cfg = loadSavedFirebaseConfig();
   const statusPill = document.getElementById("sync-status-pill");
@@ -1322,8 +1328,19 @@ async function initializeDataSource() {
   if (cfg && cfg.apiKey && cfg.projectId) {
     try {
       if (statusText) statusText.textContent = "Connecting...";
-      const app = initializeApp(cfg);
-      db = getFirestore(app);
+      const app = firebaseApp || initializeApp(cfg);
+      firebaseApp = app;
+      // Saved on the device too (IndexedDB): changes made without a signal
+      // survive closing the app and sync when it's back, and the board
+      // opens from the saved copy when there's no connection at all
+      if (!db) {
+        try {
+          db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+        } catch (e) {
+          console.warn("Offline storage unavailable, using memory only:", e);
+          db = getFirestore(app);
+        }
+      }
       window.db = db;
 
       // Board data is only readable by devices that have joined the board
@@ -1337,12 +1354,29 @@ async function initializeDataSource() {
       }
       if (statusText) statusText.textContent = "Live Sync";
 
-      listenToFirestoreTasks();
+      if (!liveSyncStarted) { liveSyncStarted = true; listenToFirestoreTasks(); }
       return;
     } catch (err) {
       console.warn("Firebase init failed, falling back to local mode:", err);
       if (statusDot) statusDot.classList.remove("connected");
       if (statusText) statusText.textContent = "Offline Mode";
+      // Opened with no signal: carry on from this device's copy, and join
+      // up with the board as soon as the connection comes back
+      // (a weak signal never fires "online", so also try again every 30s)
+      const networkTrouble = typeof window.isNetworkError === "function" ? window.isNetworkError(err) : true;
+      if (networkTrouble && !reconnectWaiting) {
+        reconnectWaiting = true;
+        let timer = null;
+        const retry = () => {
+          if (!reconnectWaiting) return;
+          reconnectWaiting = false;
+          clearTimeout(timer);
+          window.removeEventListener("online", retry);
+          initializeDataSource();
+        };
+        window.addEventListener("online", retry);
+        timer = setTimeout(retry, 30000);
+      }
     }
   } else {
     if (statusDot) statusDot.classList.remove("connected");
@@ -1473,6 +1507,8 @@ async function ensureBoardAccess(app) {
       if (typeof window.showSetupWelcome === "function") setTimeout(window.showSetupWelcome, 300);
       return;
     } catch (err) {
+      // No connection: keep the new board waiting and try again when it's back
+      if (typeof window.isNetworkError === "function" && window.isNetworkError(err)) throw err;
       // The name is already taken by another household: fall through to joining
       console.warn("Could not create board:", err && err.code);
       localStorage.removeItem(PENDING_NEW_BOARD_KEY);

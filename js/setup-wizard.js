@@ -221,6 +221,12 @@
   // Builds the board's starting data and goes to it
   function create() {
     const s = state;
+    // Making a family's board (and its family code) happens online
+    if (window.isOffline && window.isOffline()) {
+      s.error = "Setting up a family needs the internet. Your answers are kept: tap “Create our board” again when you're back online.";
+      render();
+      return;
+    }
     const slug = (s.familyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "family").slice(0, 30);
     const rand = Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
     const boardId = `${slug}-${rand}`;

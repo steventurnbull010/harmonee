@@ -65,7 +65,9 @@ function showJoinBoardScreen({ familyName = "", hadWrongLinkCode = false, tryCod
       } else {
         btn.disabled = false;
         btn.textContent = "Join board";
-        errorEl.textContent = "That code didn't work. Check it and try again.";
+        errorEl.textContent = window.isOffline && window.isOffline()
+          ? "You're offline. Joining needs the internet: try again when you're connected."
+          : "That code didn't work. Check it and try again.";
         input.select();
       }
     });

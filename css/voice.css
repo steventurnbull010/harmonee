@@ -228,3 +228,35 @@ body.theme-dark .voice-ex-where { background: rgba(2, 132, 199, 0.2); color: #e0
   .today-head > * { grid-column: 1; }
   .today-head > .today-say-it { grid-column: 2; grid-row: 1 / span 3; align-self: end; margin: 0 0 4px; }
 }
+
+/* "Type it instead" (no signal, or a slow one): a box and Add */
+.voice-typed { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
+.voice-typed input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  font-size: 1rem;
+}
+.voice-typed input:focus { outline: none; border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18); }
+.voice-typed .voice-btn { flex-shrink: 0; width: auto; }
+body.theme-dark .voice-typed input { background: #0f172a; border-color: #334155; color: #f8fafc; }
+.voice-type-link {
+  margin-top: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--text-secondary, #475569);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.voice-mic.is-keys { font-size: 2rem; }

@@ -37,7 +37,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", markSupport); else markSupport();
 
   // ---- The listening sheet ------------------------------------------------------
-  let rec = null, mode = null, sheet = null, closeTimer = null;
+  let rec = null, mode = null, sheet = null, closeTimer = null, listenTimer = null;
 
   function getSheet() {
     if (sheet) return sheet;
@@ -47,9 +47,18 @@
     sheet.setAttribute("aria-labelledby", "voice-title");
     document.body.appendChild(sheet);
     sheet.addEventListener("cancel", (e) => { e.preventDefault(); stop(); });
+    // "Type it instead": the same words go through the same steps as speech
+    sheet.addEventListener("submit", (e) => {
+      const form = e.target.closest("[data-voice-typed]");
+      if (!form) return;
+      e.preventDefault();
+      const text = (form.querySelector("input").value || "").trim();
+      if (text) handle(text);
+    });
     sheet.addEventListener("click", (e) => {
       if (e.target === sheet || e.target.closest("[data-voice-close]")) { stop(); return; }
       if (e.target.closest("[data-voice-again]") || e.target.closest("[data-voice-talk]")) { start(mode); return; }
+      if (e.target.closest("[data-voice-type]")) { typeIt("Type it instead", "", ""); return; }
       if (e.target.closest("[data-voice-done]")) { if (rec) { try { rec.stop(); } catch (err) {} } return; }
       const as = e.target.closest("[data-voice-as]");
       if (as) { act(window.VoiceIntent.parse(sheet._heard || "", ctx({ ...mode, want: as.getAttribute("data-voice-as") })), sheet._heard); return; }
@@ -99,6 +108,7 @@
       <p class="voice-words is-hint">Tap the button, then say something like:</p>
       <ul class="voice-examples">${examples.map(([say, where]) => `<li><span class="voice-ex-say">“${esc(say)}”</span><span class="voice-ex-where">${esc(where)}</span></li>`).join("")}</ul>
       <button type="button" class="voice-talk" data-voice-talk><span class="voice-talk-icon" aria-hidden="true">${MIC_SVG}</span>Tap to talk</button>
+      <button type="button" class="voice-type-link" data-voice-type>⌨️ Type instead</button>
       <p class="voice-small voice-intro-foot">Events, tasks and meals open for you to check before they're saved.</p>`);
     setTimeout(() => { try { sheet.querySelector("[data-voice-talk]").focus({ preventScroll: true }); } catch (e) {} }, 50);
   }
@@ -111,8 +121,31 @@
       <div class="voice-actions">${buttons || ""}</div>`);
   }
 
+  // A box to type what you'd have said ("Add milk to the shopping list"):
+  // works with no connection, since only turning speech into words needs it
+  function typeIt(title, text, words) {
+    clearTimeout(closeTimer);
+    clearTimeout(listenTimer);
+    if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
+    const eg = mode && mode.want === "list" ? "Like “milk and bread”"
+      : mode && mode.want === "event" ? "Like “Dentist on Tuesday at 4”"
+      : mode && mode.want === "task" ? "Like “Ava to tidy her room on Saturday”"
+      : "Like “Add milk to the shopping list”";
+    draw(`${closeBtn}
+      <span class="voice-mic is-keys" aria-hidden="true">⌨️</span>
+      <h2 class="voice-title" id="voice-title">${esc(title)}</h2>
+      ${text ? `<p class="voice-words">${esc(text)}</p>` : ""}
+      <form class="voice-typed" data-voice-typed>
+        <input type="text" value="${esc(words || "")}" placeholder="${esc(eg)}" aria-label="What to add" autocomplete="off" enterkeyhint="go">
+        <button type="submit" class="voice-btn is-primary">Add</button>
+      </form>
+      ${window.isOffline && window.isOffline() ? "" : `<div class="voice-actions"><button type="button" class="voice-btn" data-voice-again>🎤 Try speaking again</button></div>`}`);
+    setTimeout(() => { try { const i = sheet.querySelector("[data-voice-typed] input"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} }, 60);
+  }
+
   function stop() {
     clearTimeout(closeTimer);
+    clearTimeout(listenTimer);
     if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
     if (sheet && sheet.open) sheet.close();
   }
@@ -122,16 +155,35 @@
   function start(opts = {}) {
     if (!Rec) return;
     clearTimeout(closeTimer);
+    clearTimeout(listenTimer);
     if (rec) { try { rec.abort(); } catch (e) {} }
     mode = opts || {};
+    // No connection: the browser can't turn speech into words, so go
+    // straight to typing (adding still works offline)
+    if (window.isOffline && window.isOffline()) {
+      typeIt("You're offline", "Speech needs the internet, but you can type it and harmonee does the rest.", "");
+      return;
+    }
     const r = new Rec();
     rec = r;
     r.lang = "en-GB";
     r.interimResults = true;
     r.continuous = false;
     r.maxAlternatives = 1;
-    let finalText = "", heardAnything = false;
+    let finalText = "", interimText = "", heardAnything = false;
     drawListening("");
+    // On a weak signal speech can hang with no error at all. Nothing heard
+    // in 8 seconds: offer typing. Words heard but the rest never arrives:
+    // keep them in the box to finish off.
+    const giveUp = () => {
+      if (rec !== r) return;
+      rec = null;
+      try { r.abort(); } catch (e) {}
+      const got = (finalText + " " + interimText).trim();
+      if (got) typeIt("Is this right?", "The connection is slow, so check the words and tap Add.", got);
+      else typeIt("This is taking a while", "The connection looks slow. Type it instead, or try speaking again.", "");
+    };
+    listenTimer = setTimeout(giveUp, 8000);
     r.onresult = (e) => {
       let interim = "";
       finalText = "";
@@ -140,29 +192,34 @@
         else interim += e.results[i][0].transcript;
       }
       heardAnything = true;
+      interimText = interim;
+      clearTimeout(listenTimer);
+      listenTimer = setTimeout(giveUp, 5000); // still waiting 5s after the last word
       if (rec === r) drawListening((finalText + " " + interim).trim());
     };
     r.onerror = (e) => {
       if (rec !== r) return;
       rec = null;
+      clearTimeout(listenTimer);
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         blocked = true;
         markSupport();
         drawMessage("harmonee can't hear you", "The microphone is switched off for this page. Allow it in the browser's site settings, then try again.", `<button type="button" class="voice-btn" data-voice-close>OK</button>`);
       } else if (e.error === "no-speech" || e.error === "aborted") {
-        drawMessage("I didn't catch that", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
+        drawMessage("I didn't catch that", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn" data-voice-type>⌨️ Type it</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
       } else if (e.error === "network") {
-        drawMessage("Speech needs the internet", "Your browser turns speech into words online. Check the Wi-Fi and try again.", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
+        typeIt("The signal dropped", "Speech needs the internet. Type it instead (it still saves offline), or try again.", (finalText + " " + interimText).trim());
       } else {
-        drawMessage("Something went wrong", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
+        drawMessage("Something went wrong", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn" data-voice-type>⌨️ Type it</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
       }
     };
     r.onend = () => {
       if (rec !== r) return;
       rec = null;
+      clearTimeout(listenTimer);
       const text = finalText.trim();
       if (!text) {
-        if (!heardAnything) drawMessage("I didn't catch that", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
+        if (!heardAnything) drawMessage("I didn't catch that", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn" data-voice-type>⌨️ Type it</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
         else stop();
         return;
       }
