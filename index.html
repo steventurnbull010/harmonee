@@ -58,7 +58,7 @@
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
   <link rel="stylesheet" href="css/tasks.css?v=3a9f03f7">
   <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
-  <link rel="stylesheet" href="css/calendar.css?v=e945f7a8">
+  <link rel="stylesheet" href="css/calendar.css?v=ed676681">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
   <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
@@ -850,7 +850,7 @@
           <!-- Title Input -->
           <div class="drawer-input-row">
             <span class="drawer-input-icon">≡</span>
-            <input type="text" id="drawer-task-title" class="drawer-input-title" placeholder="Task Title" required autocomplete="off">
+            <input type="text" id="drawer-task-title" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
           </div>
 
           <!-- Emoji Picker Accordion -->
@@ -858,7 +858,7 @@
             <div class="drawer-accordion-trigger" id="drawer-emoji-trigger" role="button" tabindex="0" aria-expanded="false" aria-controls="drawer-emoji-grid">
               <div class="drawer-trigger-left">
                 <span class="drawer-emoji-preview" id="drawer-emoji-preview">😀</span>
-                <span class="drawer-trigger-label">Emoji (Optional)</span>
+                <span class="drawer-trigger-label">Icon</span>
               </div>
               <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
@@ -2190,68 +2190,89 @@
           <p class="drawer-who-summary" id="event-who-summary" aria-live="polite"></p>
         </div>
 
-        <!-- When -->
+        <!-- How often: the same pills as chores, plus the extra repeats events need -->
         <div class="drawer-field-group">
           <div class="drawer-section-label-row">
             <span class="drawer-section-icon">🗓️</span>
-            <span class="drawer-section-label">When</span>
+            <span class="drawer-section-label">How often</span>
           </div>
-          <div class="ev-when-card">
-            <label class="ev-field">
-              <span class="ev-field-label">Date <span class="ev-day-name" id="event-selected-day-badge" hidden></span></span>
-              <input type="date" id="event-date-input" class="ev-native-input" required>
-            </label>
-
-            <div class="drawer-toggle-row ev-allday-row">
-              <div class="drawer-toggle-left">
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">All day</span>
-                </div>
-              </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="event-allday-toggle">
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-
-            <div class="ev-time-row" id="event-time-row">
-              <label class="ev-field">
-                <span class="ev-field-label">Starts</span>
-                <input type="time" id="event-start-time" class="ev-native-input" step="300">
-              </label>
-              <span class="ev-time-arrow" aria-hidden="true">→</span>
-              <label class="ev-field">
-                <span class="ev-field-label">Ends <span class="ev-day-name" id="event-duration-label"></span></span>
-                <input type="time" id="event-end-time" class="ev-native-input" step="300">
-              </label>
-            </div>
-
-            <label class="ev-field">
-              <span class="ev-field-label">Repeat</span>
-              <div class="select-chevron-wrapper">
-                <select id="event-repeat-select" class="ev-native-input form-select-with-chevron">
-                  <option value="none" selected>Does not repeat</option>
-                  <option value="daily">Every day</option>
-                  <option value="weekdays">Every weekday (Mon to Fri)</option>
-                  <option value="weekly" id="repeat-opt-weekly">Weekly on Tuesday</option>
-                  <option value="monthly" id="repeat-opt-monthly">Monthly on this day</option>
-                  <option value="annually" id="repeat-opt-annually">Every year on this day</option>
-                </select>
-              </div>
-            </label>
-
-            <!-- Length, kept for saving: worked out from Starts and Ends -->
-            <select id="event-duration-select" hidden aria-hidden="true" tabindex="-1">
-              <option value="15 mins">15 mins</option>
-              <option value="30 mins">30 mins</option>
-              <option value="45 mins">45 mins</option>
-              <option value="1 hour" selected>1 hour</option>
-              <option value="1.5 hours">1.5 hours</option>
-              <option value="2 hours">2 hours</option>
-              <option value="3 hours">3 hours</option>
-              <option value="All Day">All Day</option>
-            </select>
+          <div class="drawer-segmented-pills drawer-pills-3 ev-repeat-pills" id="event-repeat-pills" role="group" aria-label="How often">
+            <button type="button" class="drawer-pill-segment" data-repeat="none">Once</button>
+            <button type="button" class="drawer-pill-segment" data-repeat="weekly">Every week</button>
+            <button type="button" class="drawer-pill-segment" data-repeat="daily">Every day</button>
+            <button type="button" class="drawer-pill-segment" data-repeat="weekdays">Weekdays</button>
+            <button type="button" class="drawer-pill-segment" data-repeat="monthly">Every month</button>
+            <button type="button" class="drawer-pill-segment" data-repeat="annually">Every year</button>
           </div>
+        </div>
+
+        <!-- On / Every / Starting: a date button, or Mon–Sun pills for every week -->
+        <div class="drawer-field-group">
+          <div class="drawer-section-label-row">
+            <span class="drawer-section-icon">📅</span>
+            <span class="drawer-section-label" id="event-day-heading">On</span>
+          </div>
+          <button type="button" class="drawer-date-button" id="event-date-btn">
+            <span id="event-date-label">Today</span>
+            <span class="drawer-date-button-change" aria-hidden="true">Change</span>
+          </button>
+          <div class="drawer-weekday-pills" id="event-weekdays" role="radiogroup" aria-label="Day of the week" hidden>
+            <button type="button" class="drawer-pill-segment" data-weekday="1" aria-label="Monday">Mon</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="2" aria-label="Tuesday">Tue</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="3" aria-label="Wednesday">Wed</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="4" aria-label="Thursday">Thu</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="5" aria-label="Friday">Fri</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="6" aria-label="Saturday">Sat</button>
+            <button type="button" class="drawer-pill-segment" data-weekday="0" aria-label="Sunday">Sun</button>
+          </div>
+          <p class="ev-repeat-note" id="event-repeat-note" hidden></p>
+        </div>
+
+        <!-- Time: All day, or a start and end -->
+        <div class="drawer-field-group">
+          <div class="drawer-section-label-row">
+            <span class="drawer-section-icon">🕒</span>
+            <span class="drawer-section-label">Time</span>
+          </div>
+          <div class="drawer-segmented-pills" id="event-time-pills" role="group" aria-label="Time">
+            <button type="button" class="drawer-pill-segment" data-time-mode="allday">All day</button>
+            <button type="button" class="drawer-pill-segment" data-time-mode="set">Set a time</button>
+          </div>
+          <div class="ev-time-row ev-time-row-nice" id="event-time-row">
+            <label class="ev-field">
+              <span class="ev-field-label">Starts</span>
+              <input type="time" id="event-start-time" class="drawer-time-input-nice" step="300">
+            </label>
+            <span class="ev-time-arrow" aria-hidden="true">→</span>
+            <label class="ev-field">
+              <span class="ev-field-label">Ends <span class="ev-day-name" id="event-duration-label"></span></span>
+              <input type="time" id="event-end-time" class="drawer-time-input-nice" step="300">
+            </label>
+          </div>
+
+          <!-- What the save reads (kept as they were, now set by the buttons above) -->
+          <input type="date" id="event-date-input" hidden aria-hidden="true" tabindex="-1">
+          <span id="event-selected-day-badge" hidden></span>
+          <input type="checkbox" id="event-allday-toggle" hidden aria-hidden="true" tabindex="-1">
+          <select id="event-repeat-select" hidden aria-hidden="true" tabindex="-1">
+            <option value="none" selected>Does not repeat</option>
+            <option value="daily">Every day</option>
+            <option value="weekdays">Every weekday (Mon to Fri)</option>
+            <option value="weekly" id="repeat-opt-weekly">Weekly on Tuesday</option>
+            <option value="monthly" id="repeat-opt-monthly">Monthly on this day</option>
+            <option value="annually" id="repeat-opt-annually">Every year on this day</option>
+          </select>
+          <!-- Length, kept for saving: worked out from Starts and Ends -->
+          <select id="event-duration-select" hidden aria-hidden="true" tabindex="-1">
+            <option value="15 mins">15 mins</option>
+            <option value="30 mins">30 mins</option>
+            <option value="45 mins">45 mins</option>
+            <option value="1 hour" selected>1 hour</option>
+            <option value="1.5 hours">1.5 hours</option>
+            <option value="2 hours">2 hours</option>
+            <option value="3 hours">3 hours</option>
+            <option value="All Day">All Day</option>
+          </select>
         </div>
 
         <!-- Extras: countdown and birthday -->
@@ -2463,7 +2484,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=f62beff6"></script>
+  <script src="js/build-info.js?v=746abfe3"></script>
   <script src="js/utils.js?v=7e7ddbd6"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
   <script src="js/audio.js?v=c545908c"></script>
@@ -2483,7 +2504,7 @@
   <script src="js/reward-goals.js?v=81d6eec8"></script>
   <script src="js/page-intro.js?v=c22b878c"></script>
   <script src="js/sticky-note.js?v=ca2f184f"></script>
-  <script src="js/calendar.js?v=247fe7b9"></script>
+  <script src="js/calendar.js?v=3b00f560"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
   <script src="js/tasks.js?v=1ad15231"></script>
   <script src="js/code-words.js?v=4cda76b6"></script>

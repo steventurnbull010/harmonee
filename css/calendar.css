@@ -5803,3 +5803,14 @@ body.theme-dark .countdown-list-date, body.theme-dark .countdown-list-head { col
 }
 body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background: #334155; color: #e2e8f0; }
 .countdown-list-pop.is-sheet .countdown-list-item { min-height: 56px; }
+
+/* ---- Event panel: the same pills as the task panel (2026-11-08) ------------- */
+#event-modal .drawer-pill-segment { min-height: 48px; }
+#event-modal .ev-repeat-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#event-modal .ev-repeat-pills .drawer-pill-segment { padding: 8px 4px; font-size: 0.88rem; white-space: nowrap; }
+#event-modal .drawer-weekday-pills .drawer-pill-segment { padding: 8px 0; min-width: 0; font-size: 0.85rem; }
+#event-modal .ev-repeat-note { margin: 8px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+#event-modal .ev-time-row-nice { margin-top: 8px; display: flex; align-items: flex-end; gap: 8px; }
+#event-modal .ev-time-row-nice .ev-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#event-modal .ev-time-row-nice .ev-time-arrow { padding-bottom: 12px; color: var(--text-secondary, #94a3b8); }
+#event-modal [hidden] { display: none !important; } /* the kept-for-saving fields stay out of sight */

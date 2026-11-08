@@ -847,6 +847,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   // Populate data when editing vs creating
   if (evt) {
     if (modalTitle) modalTitle.textContent = "Edit Event";
+    { const b = document.getElementById("btn-save-event"); if (b) b.textContent = "Save"; }
     if (idInput) idInput.value = evt.id || "";
     if (titleInput) titleInput.value = evt.title || "";
     setEventDurationValue(durationSelect, evt.duration || "1 hour");
@@ -868,6 +869,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     if (btnDelete) btnDelete.style.display = "inline-block";
   } else {
     if (modalTitle) modalTitle.textContent = "Add Event";
+    { const b = document.getElementById("btn-save-event"); if (b) b.textContent = "Add"; }
     if (idInput) idInput.value = "";
     if (titleInput) titleInput.value = "";
     setEventDurationValue(durationSelect, (slot && slot.duration) || "1 hour");
@@ -925,6 +927,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     if (startInput) startInput.value = start;
     if (endInput) endInput.value = toHHMM(toMins(start) + len);
     showLength(len);
+    syncEventPills();
   };
   if (startInput) startInput.onchange = () => {
     if (!startInput.value) return;
@@ -944,6 +947,77 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     setEventDurationValue(durationSelect, allDayToggle.checked ? "All Day" : "1 hour");
     syncWhenUI();
   };
+  // ---- The same pills as the task panel: how often, which day, time --------
+  function syncEventPills() {
+    const rep = repeatSelect ? repeatSelect.value : "none";
+    document.querySelectorAll("#event-repeat-pills [data-repeat]").forEach(b => {
+      const on = b.getAttribute("data-repeat") === rep;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    const [y, mo, dd] = String(currentDateKey).split("-").map(Number);
+    const d = new Date(y, (mo || 1) - 1, dd || 1);
+    const heading = document.getElementById("event-day-heading");
+    if (heading) heading.textContent = rep === "weekly" ? "Every" : (rep === "daily" || rep === "weekdays") ? "Starting" : "On";
+    const dateBtn = document.getElementById("event-date-btn");
+    const weekdays = document.getElementById("event-weekdays");
+    if (dateBtn) dateBtn.hidden = rep === "weekly";
+    if (weekdays) weekdays.hidden = rep !== "weekly";
+    const label = document.getElementById("event-date-label");
+    if (label) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const diff = Math.round((d - today) / 86400000);
+      const nice = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      label.textContent = diff === 0 ? `Today · ${nice}` : diff === 1 ? `Tomorrow · ${nice}` : nice;
+    }
+    if (weekdays) weekdays.querySelectorAll("[data-weekday]").forEach(b => {
+      const on = b.getAttribute("data-weekday") === String(d.getDay());
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+    const note = document.getElementById("event-repeat-note");
+    if (note) {
+      const text = rep === "monthly" ? `On the ${getOrdinal(d.getDate())} of every month`
+        : rep === "annually" ? `Every year on ${d.getDate()} ${d.toLocaleDateString("en-GB", { month: "long" })}`
+        : rep === "weekdays" ? "Monday to Friday" : "";
+      note.textContent = text;
+      note.hidden = !text;
+    }
+    const allDay = durationSelect && durationSelect.value === "All Day";
+    document.querySelectorAll("#event-time-pills [data-time-mode]").forEach(b => {
+      const on = (b.getAttribute("data-time-mode") === "allday") === allDay;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+  }
+  document.querySelectorAll("#event-repeat-pills [data-repeat]").forEach(b => {
+    b.onclick = () => { if (repeatSelect) repeatSelect.value = b.getAttribute("data-repeat"); syncEventPills(); };
+  });
+  const eventDateBtn = document.getElementById("event-date-btn");
+  if (eventDateBtn) eventDateBtn.onclick = () => {
+    if (typeof window.openDatePicker !== "function") return;
+    const [y, mo, dd] = String(currentDateKey).split("-").map(Number);
+    window.openDatePicker({ value: new Date(y, mo - 1, dd), onSelect: (picked) => { setDate(picked); syncEventPills(); } });
+  };
+  document.querySelectorAll("#event-weekdays [data-weekday]").forEach(b => {
+    b.onclick = () => {
+      // The next one from today (never in the past)
+      const want = Number(b.getAttribute("data-weekday"));
+      const next = new Date(); next.setHours(0, 0, 0, 0);
+      next.setDate(next.getDate() + ((want - next.getDay() + 7) % 7));
+      setDate(next);
+      syncEventPills();
+    };
+  });
+  document.querySelectorAll("#event-time-pills [data-time-mode]").forEach(b => {
+    b.onclick = () => {
+      const wantAllDay = b.getAttribute("data-time-mode") === "allday";
+      const isAllDay = durationSelect && durationSelect.value === "All Day";
+      if (wantAllDay !== isAllDay) setEventDurationValue(durationSelect, wantAllDay ? "All Day" : "1 hour");
+      syncWhenUI();
+    };
+  });
+
   syncWhenUI();
 
   // Extras: countdown and birthday. A birthday repeats every year, all day.
@@ -982,6 +1056,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       if (categoryInput) categoryInput.value = pCat;
       if (durationSelect) durationSelect.value = pDuration;
       if (repeatSelect) repeatSelect.value = "none"; // Defaults to One-Off
+      setTimeout(syncWhenUI, 0);
 
       const parsed = parseTimeString(pTime);
       setTime(parsed.hour, parsed.minute);
