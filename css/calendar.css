@@ -5770,11 +5770,80 @@ body.theme-dark .countdown-list-date, body.theme-dark .countdown-list-head { col
   .days-3 .ev-block.is-tiny .ev-block-inline-time { display: none; }
 }
 
-/* Countdown on phones: one slim pill ("💃 2 sleeps") instead of a big tile */
+/* Countdown on phones: a small one-line pill ("💃 2 sleeps") on the same
+   line as the family name; the clock is hidden there (the phone's status
+   bar shows the time). Tapping it opens Coming up as a sheet. */
 @media (max-width: 600px) {
-  .header-countdown-chip, .header-countdown-chip.is-compact { height: 32px; padding: 0 8px 0 3px; gap: 4px; border-radius: 16px; }
-  .header-countdown-num { flex-direction: row; align-items: center; gap: 3px; height: 26px; min-width: 0; padding: 0 8px; border-radius: 13px; }
-  .header-countdown-num b { font-size: 0.9rem; }
-  .header-countdown-num small { margin-top: 0; font-size: 0.62rem; }
-  .header-countdown-icon, .header-countdown-chip.is-compact .header-countdown-icon { font-size: 1rem; }
+  .skylight-single-header .calendar-time-indicator[id$="-live-clock"] { display: none; }
+  .header-countdown-chip, .header-countdown-chip.is-compact {
+    height: 28px;
+    max-width: 120px;
+    padding: 0 10px 0 8px;
+    gap: 4px;
+    border-radius: 14px;
+  }
+  .header-countdown-chip .header-countdown-name { order: -1; }
+  .header-countdown-chip .header-countdown-title { display: none; }
+  .header-countdown-icon, .header-countdown-chip.is-compact .header-countdown-icon { margin: 0; font-size: 0.95rem; }
+  .header-countdown-chip .header-countdown-num {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 3px;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    background: none;
+    color: #92400e;
+  }
+  .header-countdown-chip .header-countdown-num b { font-size: 0.88rem; }
+  .header-countdown-chip .header-countdown-num small { margin: 0; font-size: 0.72rem; text-transform: none; letter-spacing: 0; }
+  .header-countdown-chip.is-today .header-countdown-num { background: none; color: #9d174d; }
+  body.theme-dark .header-countdown-chip .header-countdown-num { color: #fde68a; }
+  .header-countdown-more { height: 28px; min-width: 32px; font-size: 0.78rem; }
 }
+
+/* Coming up as a sheet (phones) */
+.countdown-list-headrow { display: flex; align-items: center; justify-content: space-between; }
+.countdown-list-close { display: none; }
+.countdown-list-backdrop { position: fixed; inset: 0; z-index: 10000; background: rgba(15, 23, 42, 0.35); }
+.countdown-list-backdrop[hidden] { display: none; }
+.countdown-list-pop.is-sheet {
+  z-index: 10001; /* over the tab bar (9999) */
+  top: auto !important;
+  left: 0 !important;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: 70dvh;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  border-bottom: none;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.2);
+  overscroll-behavior: contain;
+}
+.countdown-list-pop.is-sheet::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 2px;
+  background: #cbd5e1;
+}
+.countdown-list-pop.is-sheet .countdown-list-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background: #334155; color: #e2e8f0; }
+.countdown-list-pop.is-sheet .countdown-list-item { min-height: 56px; }

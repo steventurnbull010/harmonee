@@ -54,7 +54,7 @@
   }
 
   function listHtml(items) {
-    return `<p class="countdown-list-head">Coming up</p>` + items.map(item => {
+    return `<div class="countdown-list-headrow"><p class="countdown-list-head">Coming up</p><button type="button" class="countdown-list-close" aria-label="Close">×</button></div>` + items.map(item => {
       const d = item.date;
       const when = item.days === 0 ? "Today" : `${DAY_NAMES[d.getDay()].slice(0, 3)} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
       return `<button type="button" class="countdown-list-item" ${dataAttrs(item)} aria-label="${escapeHtml(spoken(item))}">
@@ -143,13 +143,29 @@
       pop.setAttribute("aria-label", "Coming up");
       pop.hidden = true;
       document.body.appendChild(pop);
+      // Phones: the list is a sheet from the bottom over a dimmed page
+      const shade = document.createElement("div");
+      shade.id = "countdown-list-backdrop";
+      shade.className = "countdown-list-backdrop";
+      shade.hidden = true;
+      document.body.appendChild(shade);
     }
     return pop;
   }
+  const isPhone = () => window.matchMedia("(max-width: 600px)").matches;
   function openList(anchor) {
     const pop = getPop();
     pop.innerHTML = listHtml(lastItems);
     pop.hidden = false;
+    const sheet = isPhone();
+    pop.classList.toggle("is-sheet", sheet);
+    const shade = document.getElementById("countdown-list-backdrop");
+    if (shade) shade.hidden = !sheet;
+    if (sheet) {
+      pop.style.top = pop.style.left = "";
+      anchor.setAttribute("aria-expanded", "true");
+      return;
+    }
     const r = anchor.getBoundingClientRect();
     const w = pop.offsetWidth;
     pop.style.top = `${Math.round(r.bottom + 8)}px`;
@@ -159,6 +175,8 @@
   function closeList() {
     const pop = document.getElementById("countdown-list-pop");
     if (pop) pop.hidden = true;
+    const shade = document.getElementById("countdown-list-backdrop");
+    if (shade) shade.hidden = true;
     document.querySelectorAll(".header-countdown-more[aria-expanded]").forEach(b => b.removeAttribute("aria-expanded"));
   }
 
@@ -170,6 +188,7 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest ? e.target : null;
     if (!t) return;
+    if (t.closest(".countdown-list-close, #countdown-list-backdrop")) { closeList(); return; }
     const more = t.closest(".header-countdown-more");
     if (more) {
       const pop = document.getElementById("countdown-list-pop");
@@ -189,8 +208,11 @@
     if (!t.closest("#countdown-list-pop")) closeList(); // tap anywhere else
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeList(); });
-  window.addEventListener("resize", closeList);
-  document.addEventListener("scroll", closeList, true);
+  // The floating list closes if the page moves under it; the phone sheet
+  // stays (its own list scrolls, and the browser bars resize the page)
+  const sheetOpen = () => { const p = document.getElementById("countdown-list-pop"); return p && !p.hidden && p.classList.contains("is-sheet"); };
+  window.addEventListener("resize", () => { if (!sheetOpen()) closeList(); });
+  document.addEventListener("scroll", () => { if (!sheetOpen()) closeList(); }, true);
 
   // Events arrive from Firestore after load and the day rolls over at
   // midnight, so check every 30 seconds (it only redraws when something changed)
