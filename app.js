@@ -5452,7 +5452,10 @@ function setupEventListeners() {
     });
     box.querySelectorAll("[data-remove-device]").forEach(btn => {
       btn.onclick = async () => {
-        if (!window.confirm("Remove this device? It will need the family code to get back in.")) return;
+        const sure = window.Sheet
+          ? await window.Sheet.confirm({ icon: "📱", title: "Remove this device?", text: "It will need the family code (or QR) to get back in.", yes: "Remove it", no: "Keep it", danger: true })
+          : window.confirm("Remove this device? It will need the family code to get back in.");
+        if (!sure) return;
         btn.disabled = true;
         try {
           await removeBoardDevice(btn.getAttribute("data-remove-device"));
@@ -5489,7 +5492,7 @@ function setupEventListeners() {
     if (!dlg) {
       dlg = document.createElement("dialog");
       dlg.id = "settings-save-prompt";
-      dlg.className = "save-prompt-dialog";
+      dlg.className = "save-prompt-dialog hm-sheet";
       dlg.setAttribute("aria-labelledby", "settings-save-prompt-title");
       dlg.innerHTML = `
         <div class="save-prompt-card">

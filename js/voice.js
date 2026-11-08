@@ -43,7 +43,7 @@
     if (sheet) return sheet;
     sheet = document.createElement("dialog");
     sheet.id = "voice-dialog";
-    sheet.className = "voice-dialog";
+    sheet.className = "voice-dialog hm-sheet";
     sheet.setAttribute("aria-labelledby", "voice-title");
     document.body.appendChild(sheet);
     sheet.addEventListener("cancel", (e) => { e.preventDefault(); stop(); });

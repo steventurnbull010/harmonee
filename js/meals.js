@@ -1185,7 +1185,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
   // Wire "Add to Meal Plan" button in modal footer
   const btnAddToPlan = document.getElementById("btn-cooking-add-to-plan");
   if (btnAddToPlan) {
-    btnAddToPlan.onclick = () => {
+    btnAddToPlan.onclick = async () => {
       if (!currentCookingRecipe) return;
 
       const curDateInput = document.getElementById("cooking-plan-date-input");
@@ -1202,7 +1202,9 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
           const [y, m, d] = selectedDate.split("-").map(Number);
           const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
           const dayName = !isNaN(y) ? dayNames[new Date(y, m - 1, d).getDay()] : selectedDate;
-          const ok = confirm(`There is already a meal planned for ${dayName} ${slotCap}:\n"${existing.title}"\n\nDo you want to replace it with "${currentCookingRecipe.title}"?`);
+          const ok = window.Sheet
+            ? await window.Sheet.confirm({ icon: "🍽️", title: `Replace ${dayName}'s ${selectedSlot}?`, text: `“${existing.title}” is planned. Swap it for “${currentCookingRecipe.title}”?`, yes: "Replace it", no: "Keep it" })
+            : confirm(`There is already a meal planned for ${dayName} ${slotCap}:\n"${existing.title}"\n\nDo you want to replace it with "${currentCookingRecipe.title}"?`);
           if (!ok) return;
         }
       }
@@ -1582,9 +1584,12 @@ function wireMealsHeaderAndDrawerListeners() {
     return hasTitle || hasNotes;
   }
 
-  function handleAttemptCloseDrawer() {
+  async function handleAttemptCloseDrawer() {
     if (isDrawerDirty()) {
-      if (confirm("You have unsaved meal details. Discard and close?")) {
+      const discard = window.Sheet
+        ? await window.Sheet.confirm({ icon: "📝", title: "Discard this meal?", text: "You've started filling it in, but it isn't saved yet.", yes: "Discard", no: "Keep editing", danger: true })
+        : confirm("You have unsaved meal details. Discard and close?");
+      if (discard) {
         const titleInput = document.getElementById("custom-meal-title");
         const notesInput = document.getElementById("custom-meal-notes");
         if (titleInput) titleInput.value = "";
@@ -1759,7 +1764,7 @@ function wireMealsHeaderAndDrawerListeners() {
   const customForm = document.getElementById("form-custom-meal");
   if (customForm && !customForm.hasAttribute("data-wired")) {
     customForm.setAttribute("data-wired", "true");
-    customForm.onsubmit = (e) => {
+    customForm.onsubmit = async (e) => {
       e.preventDefault();
       const titleInput = document.getElementById("custom-meal-title");
       const title = titleInput ? titleInput.value.trim() : "";
@@ -1777,7 +1782,9 @@ function wireMealsHeaderAndDrawerListeners() {
       if (existingMeal && existingMeal.title && existingMeal.title.trim().length > 0) {
         if (existingMeal.title.trim().toLowerCase() !== title.toLowerCase()) {
           const slotCap = category.charAt(0).toUpperCase() + category.slice(1);
-          const ok = confirm(`There is already a meal planned for ${slotCap}:\n"${existingMeal.title}"\n\nDo you want to overwrite it with "${title}"?`);
+          const ok = window.Sheet
+            ? await window.Sheet.confirm({ icon: "🍽️", title: `Replace this ${category}?`, text: `“${existingMeal.title}” is planned. Swap it for “${title}”?`, yes: "Replace it", no: "Keep it" })
+            : confirm(`There is already a meal planned for ${slotCap}:\n"${existingMeal.title}"\n\nDo you want to overwrite it with "${title}"?`);
           if (!ok) return;
         }
       }

@@ -43,7 +43,7 @@
     if (dlg) return dlg;
     dlg = document.createElement("dialog");
     dlg.id = "meal-groc-dialog";
-    dlg.className = "meal-groc-dialog";
+    dlg.className = "meal-groc-dialog hm-sheet";
     dlg.setAttribute("aria-labelledby", "meal-groc-title");
     document.body.appendChild(dlg);
     dlg.addEventListener("cancel", (e) => { e.preventDefault(); finish(false); });
@@ -69,9 +69,9 @@
   }
   function finish(go) {
     const picked = go ? [...dlg.querySelectorAll("[data-mg-key]:checked")].map(b => b.getAttribute("data-mg-key")) : null;
-    if (dlg.open) dlg.close();
     const cb = done; done = null;
-    if (cb) cb(picked);
+    const after = () => { if (cb) cb(picked); };
+    if (window.Sheet) window.Sheet.close(dlg, after); else { if (dlg.open) dlg.close(); after(); }
   }
   // rows: [{ key, text, note, on }]
   function ask({ title, sub, rows, verb, skip }) {

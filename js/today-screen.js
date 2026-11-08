@@ -192,7 +192,7 @@
     if (!dlg) {
       dlg = document.createElement("dialog");
       dlg.id = "today-customise";
-      dlg.className = "save-prompt-dialog today-customise-dialog";
+      dlg.className = "save-prompt-dialog today-customise-dialog hm-sheet";
       dlg.setAttribute("aria-labelledby", "today-customise-title");
       document.body.appendChild(dlg);
       dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); });
