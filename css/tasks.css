@@ -2841,3 +2841,20 @@ body.theme-dark .drawer-time-input-nice { border-color: #38bdf8; color-scheme: d
 body.theme-dark .drawer-date-button-change { color: #38bdf8; }
 .skylight-task-drawer .drawer-pills-3 .drawer-pill-segment { padding: 8px 4px !important; font-size: 0.88rem; white-space: nowrap; }
 #drawer-chore-fields > .drawer-field-group + .drawer-field-group { margin-top: 24px; }
+
+/* ---- Important tasks (drawer switch → isPriority) ---------------------------- */
+.skylight-task-important {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+.skylight-task-card.is-important { box-shadow: inset 4px 0 0 #ef4444; }
+body.theme-dark .skylight-task-important { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.skylight-task-drawer .drawer-important-row { margin-top: 0; }

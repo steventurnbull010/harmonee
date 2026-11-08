@@ -56,7 +56,7 @@
   
   <link rel="stylesheet" href="style.css?v=21c141cf">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
-  <link rel="stylesheet" href="css/tasks.css?v=3a9f03f7">
+  <link rel="stylesheet" href="css/tasks.css?v=579914d7">
   <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
   <link rel="stylesheet" href="css/calendar.css?v=ed676681">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
@@ -1008,6 +1008,21 @@
               </label>
             </div>
             <div class="drawer-rota-days" id="drawer-rota-days" style="display: none;"></div>
+          </div>
+
+          <!-- Important: shows first with a red tag (Tasks board) and a 🚨 on the calendar -->
+          <div class="drawer-toggle-row drawer-important-row">
+            <div class="drawer-toggle-left">
+              <span class="drawer-toggle-icon">❗</span>
+              <div class="drawer-toggle-texts">
+                <span class="drawer-toggle-title">Important</span>
+                <span class="drawer-toggle-sub">Goes to the top with a red tag, so it isn't missed</span>
+              </div>
+            </div>
+            <label class="skylight-switch">
+              <input type="checkbox" id="drawer-toggle-important">
+              <span class="switch-slider"></span>
+            </label>
           </div>
 
           <!-- POINTS / ££ REWARD STEPPER -->
@@ -2484,7 +2499,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=746abfe3"></script>
+  <script src="js/build-info.js?v=66b6e938"></script>
   <script src="js/utils.js?v=7e7ddbd6"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
   <script src="js/audio.js?v=c545908c"></script>
@@ -2506,7 +2521,7 @@
   <script src="js/sticky-note.js?v=ca2f184f"></script>
   <script src="js/calendar.js?v=3b00f560"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
-  <script src="js/tasks.js?v=1ad15231"></script>
+  <script src="js/tasks.js?v=6c9bc455"></script>
   <script src="js/code-words.js?v=4cda76b6"></script>
   <script src="js/board-access.js?v=fec4f7e0"></script>
   <script src="js/countdowns.js?v=09475303"></script>

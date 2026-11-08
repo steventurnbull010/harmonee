@@ -420,6 +420,11 @@ function renderSkylightTasksPage() {
       }
     });
 
+    // Important ones first in each group (stable, so the rest keep their order)
+    [morningTasks, afternoonTasks, eveningTasks, anytimeTasks, generalChores].forEach(list => {
+      list.sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
+    });
+
     // Routine filter pills HTML
     const hasMorning = morningTasks.length > 0;
     const hasAfternoon = afternoonTasks.length > 0;
@@ -439,6 +444,8 @@ function renderSkylightTasksPage() {
       const valText = isMoney ? `${curr}${((t.value || 10) / 10).toFixed(2)}` : `${t.value || 10} pts`;
       const timeSubtitle = t.time || (isDaily ? "Daily" : "Today");
       const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
+      const important = !!t.isPriority && !isDone;
+      const importantTag = important ? `<span class="skylight-task-important">Important</span>` : "";
       const subHtml = overdue
         ? `<span class="skylight-task-overdue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Overdue</span>`
         : escapeHtml(timeSubtitle);
@@ -462,14 +469,14 @@ function renderSkylightTasksPage() {
           </button>`;
 
       return `
-        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''}"
+        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''} ${important ? 'is-important' : ''}"
              style="--card-color: ${pal.primary}; background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
              data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}">
           <div class="skylight-task-card-main">
             <span class="skylight-task-card-icon">${escapeHtml(tIcon)}</span>
             <div class="skylight-task-card-text">
               <span class="skylight-task-card-title">${escapeHtml(t.title)}</span>
-              <span class="skylight-task-card-sub">${subHtml} • ${valText}</span>
+              <span class="skylight-task-card-sub">${importantTag}${subHtml} • ${valText}</span>
             </div>
           </div>
           ${actionHtml}
@@ -1340,6 +1347,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     if (timeToggle) timeToggle.checked = !isDaily && !!task.time && /^\d{1,2}:\d{2}/.test(task.time);
     if (timeInput && timeToggle && timeToggle.checked) timeInput.value = task.time.slice(0, 5);
     drawerRewardValue = task.value || 10;
+    { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = !!task.isPriority; }
     // Same rule as the board: no time of day set (or in the title) = Anytime
     if (task.routineSlot) {
       drawerRoutineSlot = task.routineSlot;
@@ -1364,6 +1372,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     if (timeToggle) timeToggle.checked = false;
     drawerRewardValue = 1;
     drawerRoutineSlot = "morning";
+    { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = false; }
     if (prefill) {
       if (prefill.title) {
         titleInput.value = prefill.title;
@@ -1737,6 +1746,7 @@ function initSkylightTaskDrawerEvents() {
         kind: drawerCurrentType, // "routine" stays with each person; "chore" can be swapped
         routineSlot: isRoutine ? drawerRoutineSlot : null,
         value: drawerRewardValue,
+        isPriority: !!(document.getElementById("drawer-toggle-important") || {}).checked,
         order: isRoutine ? ({ morning: 1, afternoon: 2, evening: 4, anytime: 5 }[drawerRoutineSlot] || 4) : 3
       };
       if (!isRoutine) taskData.time = choreTime; // one-off chores can have a time
