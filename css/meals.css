@@ -3894,7 +3894,17 @@ body.theme-dark .cooking-credit a { color: #7dd3fc; }
   word-break: normal;
   hyphens: auto;
 }
-#view-meals .meal-card-v2 .meal-card-cooks { margin-top: 0; }
+/* Cooks' names wrap (up to two lines) instead of ending in "..."; a card
+   with no room for them drops the line (fitMealCards), avatars stay */
+#view-meals .meal-card-v2 .meal-card-cooks {
+  margin-top: 0;
+  white-space: normal;
+  text-overflow: clip;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 #view-meals .meal-card-v2 .ev-block-people { margin-top: 8px; }
 /* Lines keep their height (so a card that's too tall can be spotted) */
 #view-meals .meal-card-v2 { overflow: hidden; }
