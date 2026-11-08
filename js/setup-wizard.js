@@ -5,7 +5,7 @@
 //   1. Family name ("The Bakers")          -> shown at the top of every page
 //   2. Who's in the family                 -> names, colours, grown-up / child
 //   3. Points or pocket money (+ currency)
-//   4. Starter routines and jobs to tick   -> routines go to the people picked
+//   4. Starter routines (tap who does each) and jobs up for grabs
 //   5. All set                             -> creates the board
 // It saves everything where a new board reads it, then goes to the board,
 // which is created (with its family code) on arrival by ensureBoardAccess in
@@ -63,7 +63,27 @@
   }
 
   const nextColour = () => COLOUR_ORDER.find(id => !state.people.some(p => p.colour === id)) || COLOUR_ORDER[state.people.length % COLOUR_ORDER.length];
-  const children = () => state.people.filter(p => p.child).map(p => p.name);
+  // Who does each starter routine: { routineKey: Set of names }. Made the
+  // first time step 4 opens: the routines that start on go to anyone after
+  // the first two people (or everyone, in a family of one or two).
+  function routineWho() {
+    const s = state;
+    const names = everyone();
+    if (!s.who) {
+      const guess = names.length > 2 ? names.slice(2) : names;
+      s.who = {};
+      ROUTINES.forEach(r => { s.who[r.key] = new Set(r.on ? guess : []); });
+    }
+    // Someone removed on step 2 since: drop them
+    Object.values(s.who).forEach(set => [...set].forEach(n => { if (!names.includes(n)) set.delete(n); }));
+    return s.who;
+  }
+  // "S", or "Sa" and "So" when two names start the same
+  function initialOf(name) {
+    const first = name.charAt(0).toUpperCase();
+    const clash = state.people.filter(p => p.name.charAt(0).toUpperCase() === first).length > 1;
+    return clash ? name.slice(0, 2).replace(/^./, c => c.toUpperCase()) : first;
+  }
   const everyone = () => state.people.map(p => p.name);
 
   // ---- Steps ---------------------------------------------------------------------
@@ -121,23 +141,29 @@
       ${s.mode === "money" ? `<div class="setup-currency" role="group" aria-label="Currency">${["£", "€", "$"].map(c => `<button type="button" class="${s.currency === c ? "is-on" : ""}" data-act="currency" data-currency="${c}" aria-pressed="${s.currency === c}">${c}</button>`).join("")}</div>` : ""}`;
 
     if (s.step === 4) {
+      const who = routineWho();
       const group = (slot) => ROUTINES.filter(r => r.slot === slot);
-      const check = (x, sub = "") => `<button type="button" class="setup-check${s.picked.has(x.key) ? " is-on" : ""}" data-act="pick" data-key="${x.key}" aria-pressed="${s.picked.has(x.key)}">
-        <span class="setup-check-box" aria-hidden="true">✓</span><span class="setup-check-icon" aria-hidden="true">${x.icon}</span><span class="setup-check-title">${esc(x.title)}</span>${sub ? `<span class="setup-check-sub">${esc(sub)}</span>` : ""}
-      </button>`;
+      const row = (r) => {
+        const set = who[r.key];
+        return `<li class="setup-routine${set.size ? " is-on" : ""}${s.people.length > 5 ? " is-crowded" : ""}">
+          <span class="setup-routine-icon" aria-hidden="true">${r.icon}</span>
+          <span class="setup-routine-title">${esc(r.title)}</span>
+          <span class="setup-routine-who" role="group" aria-label="Who does ${esc(r.title)}">${s.people.map(p => {
+            const on = set.has(p.name);
+            return `<button type="button" class="setup-who${on ? " is-on" : ""}" style="--who:${colourOf(p.colour)}" data-act="who" data-key="${r.key}" data-name="${esc(p.name)}" aria-pressed="${on}" aria-label="${esc(p.name)}">${esc(initialOf(p.name))}</button>`;
+          }).join("")}</span>
+        </li>`;
+      };
       return `
         <h1 class="setup-title" id="setup-title">✅ Starter routines</h1>
-        <p class="setup-label">Who are these for?</p>
-        <div class="setup-for" role="group" aria-label="Who the daily routines are for">${s.people.map((p, i) => `<button type="button" class="setup-for-chip${p.child ? " is-on" : ""}" style="--chip:${colourOf(p.colour)}" data-act="routine-for" data-i="${i}" aria-pressed="${!!p.child}"><span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>${esc(p.name)}</button>`).join("")}</div>
-        <p class="setup-lead">Untick anything you don't want.</p>
-        <h2 class="setup-group">🔁 Daily routines</h2>
-        ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><div class="setup-checks">${group(slot).map(r => check(r)).join("")}</div>`).join("")}
+        <p class="setup-lead">Tap who does each one. Leave it empty to skip it.</p>
+        ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><ul class="setup-routines">${group(slot).map(row).join("")}</ul>`).join("")}
         <h2 class="setup-group">🙋 Up for grabs <span>anyone can do these</span></h2>
-        <div class="setup-checks">${JOBS.map(j => check(j, j.day ? `${j.day}s` : "Every day")).join("")}</div>`;
+        <div class="setup-job-chips">${JOBS.map(j => `<button type="button" class="setup-job-chip${s.picked.has(j.key) ? " is-on" : ""}" data-act="pick" data-key="${j.key}" aria-pressed="${s.picked.has(j.key)}"><span aria-hidden="true">${j.icon}</span> ${esc(j.title)}${j.day ? ` <small>${esc(j.day)}s</small>` : ""}</button>`).join("")}</div>`;
     }
 
     // 5: summary
-    const nRoutines = ROUTINES.filter(r => s.picked.has(r.key)).length;
+    const nRoutines = ROUTINES.filter(r => routineWho()[r.key].size).length;
     const nJobs = JOBS.filter(j => s.picked.has(j.key)).length;
     return `
       <div class="setup-done-mark" aria-hidden="true">🎉</div>
@@ -194,8 +220,7 @@
     const name = (input && input.value || "").trim().replace(/\s+/g, " ").slice(0, 24);
     if (!name) return;
     if (state.people.some(p => p.name.toLowerCase() === name.toLowerCase())) { state.error = `${name} is already on the list.`; render(); return; }
-    // First two default to grown-ups, the rest to children (one tap to change)
-    state.people.push({ name, colour: nextColour(), child: state.people.length >= 2 }); // "child" = gets the starter routines (a guess: anyone after the first two)
+    state.people.push({ name, colour: nextColour() });
     state.error = "";
     render();
     // Keep the keyboard up for the next name
@@ -235,14 +260,13 @@
     const rand = Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
     const boardId = `${slug}-${rand}`;
     const names = everyone();
-    const kids = children();
-    const routineFor = kids.length ? kids : names;
+    const who = routineWho();
     const stamp = Date.now();
     const tasks = [];
-    ROUTINES.filter(r => s.picked.has(r.key)).forEach((r, i) => tasks.push({
+    ROUTINES.filter(r => who[r.key].size).forEach((r, i) => tasks.push({
       id: `setup-${stamp}-r${i}`,
       title: r.title, icon: r.icon,
-      assignedTo: routineFor.length === 1 ? routineFor[0] : routineFor,
+      assignedTo: who[r.key].size === 1 ? [...who[r.key]][0] : names.filter(n => who[r.key].has(n)),
       taskType: "Daily Task", day: "Daily", date: null, repeat: "daily",
       kind: "routine", routineSlot: r.slot, value: 1,
       order: { morning: 1, afternoon: 2, evening: 4 }[r.slot] || 4,
@@ -304,7 +328,12 @@
     if (act === "back") { s.error = ""; s.step = Math.max(s.cameFromIntro ? 0 : 1, s.step - 1); return render(); }
     if (act === "add-person") return addPerson();
     if (act === "remove") { s.people.splice(i, 1); s.openColour = null; return render(); }
-    if (act === "routine-for") { s.people[i].child = !s.people[i].child; return render(); }
+    if (act === "who") {
+      const set = routineWho()[b.getAttribute("data-key")];
+      const n = b.getAttribute("data-name");
+      if (set.has(n)) set.delete(n); else set.add(n);
+      return render();
+    }
     if (act === "colour") { s.openColour = s.openColour === i ? null : i; return render(); }
     if (act === "pick-colour") { s.people[i].colour = b.getAttribute("data-colour"); s.openColour = null; return render(); }
     if (act === "mode") { s.mode = b.getAttribute("data-mode"); return render(); }

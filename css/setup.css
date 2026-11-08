@@ -561,3 +561,43 @@ body.theme-dark .setup-for-chip.is-on { background: color-mix(in srgb, var(--chi
 @media (max-width: 600px) {
   .setup-card:not(.is-intro) { margin: 0 auto auto; }
 }
+
+/* Starter routines: one row each, tap who does it (empty = skipped) */
+.setup-routines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.setup-routine {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  min-height: 52px; padding: 8px 8px 8px 12px; box-sizing: border-box;
+  border: 1.5px solid #e2e8f0; border-radius: 14px; background: #ffffff;
+}
+.setup-routine.is-on { border-color: #bae6fd; background: #f0f9ff; }
+.setup-routine-icon { font-size: 1.2rem; flex-shrink: 0; }
+.setup-routine-title { flex: 1 1 120px; min-width: 0; font-size: 0.95rem; font-weight: 600; color: #94a3b8; }
+.setup-routine.is-on .setup-routine-title { color: #0f172a; }
+.setup-routine-who { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.setup-who {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px dashed #cbd5e1; background: #ffffff; color: #94a3b8;
+  font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+.setup-who.is-on { border: 2px solid var(--who); background: var(--who); color: #ffffff; }
+.setup-job-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.setup-job-chip {
+  min-height: 40px; padding: 6px 14px; border-radius: 999px;
+  border: 1.5px dashed #cbd5e1; background: #ffffff; color: #64748b;
+  font: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+}
+.setup-job-chip small { font-weight: 600; opacity: 0.8; }
+.setup-job-chip.is-on { border: 1.5px solid #7dd3fc; background: #f0f9ff; color: #0f172a; }
+body.theme-dark .setup-routine, body.theme-dark .setup-job-chip, body.theme-dark .setup-who { background: #1e293b; border-color: #334155; }
+body.theme-dark .setup-routine.is-on, body.theme-dark .setup-job-chip.is-on { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #f8fafc; }
+body.theme-dark .setup-routine.is-on .setup-routine-title { color: #f8fafc; }
+body.theme-dark .setup-who.is-on { background: var(--who); border-color: var(--who); }
+/* Keep each routine on one line: smaller circles, the title wraps instead */
+.setup-routine { flex-wrap: nowrap; gap: 8px; min-height: 48px; padding: 6px 8px 6px 10px; }
+.setup-routine-title { flex: 1 1 0; line-height: 1.2; font-size: 0.9rem; }
+.setup-routine-who { gap: 4px; flex-shrink: 0; }
+.setup-who { width: 28px; height: 28px; font-size: 0.7rem; }
+/* Big families (6+): the circles go under the title rather than squash it */
+.setup-routine.is-crowded { flex-wrap: wrap; }
+.setup-routine.is-crowded .setup-routine-who { flex-basis: 100%; justify-content: flex-end; }
