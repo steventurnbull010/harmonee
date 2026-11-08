@@ -219,11 +219,20 @@
     if (state.editing) {
       const name = state.editing;
       const p = state.draft;
-      const chips = (list, kind) => `<div class="genie-foods">${FOODS.map(f => `<button type="button" class="genie-food${list.includes(f.key) ? " is-on" : ""}" data-genie="food" data-kind="${kind}" data-food="${f.key}" aria-pressed="${list.includes(f.key)}"><span aria-hidden="true">${f.icon}</span> ${esc(f.label)}</button>`).join("")}</div>`;
+      // Won't-eats first: that's what "fussy" makes people think of. Each list in its own tinted box.
+      const chips = (list, kind) => `<div class="genie-foods">${FOODS.map(f => { const on = list.includes(f.key); return `<button type="button" class="genie-food${on ? " is-on" : ""}" data-genie="food" data-kind="${kind}" data-food="${f.key}" aria-pressed="${on}"><span aria-hidden="true">${on ? (kind === "dislikes" ? "✕" : "♥") : f.icon}</span> ${esc(f.label)}</button>`; }).join("")}</div>`;
       dlg.innerHTML = `<div class="genie-card">${head}
-        <p class="genie-q">What does ${esc(name)} like?</p>
-        <p class="genie-label">👍 Likes</p>${chips(p.likes, "likes")}
-        <p class="genie-label">👎 Won't eat</p>${chips(p.dislikes, "dislikes")}
+        <p class="genie-q">${esc(name)}'s tastes</p>
+        <section class="genie-taste is-wont">
+          <p class="genie-taste-title">👎 Won't eat</p>
+          <p class="genie-taste-hint">Tap anything ${esc(name)} won't eat. I'll leave out dishes with these.</p>
+          ${chips(p.dislikes, "dislikes")}
+        </section>
+        <section class="genie-taste is-loves">
+          <p class="genie-taste-title">👍 Loves</p>
+          <p class="genie-taste-hint">Tap ${esc(name)}'s favourites. I'll suggest dishes with these first.</p>
+          ${chips(p.likes, "likes")}
+        </section>
         <div class="genie-foot is-sticky"><button type="button" class="genie-back" data-genie="edit-cancel">‹ Back</button><button type="button" class="genie-plan" data-genie="edit-save">Save for ${esc(name)}</button></div>
       </div>`;
       return;
@@ -232,11 +241,11 @@
     if (tastes || (state.step < steps.length && steps[state.step] === "fussy")) {
       const chosen = tastes ? [] : (state.answers.fussy || []);
       // "pasta, rice +4": short enough for one line on a phone
-      const few = (keys) => keys.length <= 3 ? keys.map(foodLabel).join(", ") : `${keys.slice(0, 2).map(foodLabel).join(", ")} +${keys.length - 2}`;
+      const few = (keys) => keys.length <= 2 ? keys.map(foodLabel).join(", ") : `${foodLabel(keys[0])} +${keys.length - 1} more`;
       const line = (name) => {
         const p = prefsOf(name);
-        if (!p.likes.length && !p.dislikes.length) return `<small>Tap ✏️ to say what they like</small>`;
-        return (p.likes.length ? `<small>👍 ${esc(few(p.likes))}</small>` : "") + (p.dislikes.length ? `<small>👎 ${esc(few(p.dislikes))}</small>` : "");
+        if (!p.likes.length && !p.dislikes.length) return `<small>Tap ✏️ to add what they won't eat</small>`;
+        return (p.dislikes.length ? `<small>👎 Won't eat ${esc(few(p.dislikes))}</small>` : "") + (p.likes.length ? `<small>👍 Loves ${esc(few(p.likes))}</small>` : "");
       };
       dlg.innerHTML = `<div class="genie-card">${head}${tastes ? "" : dots}
         <p class="genie-q">${tastes ? "Family tastes" : "Anyone fussy tonight?"}</p>
@@ -245,7 +254,7 @@
           ${tastes
             ? `<button type="button" class="genie-person-pick" data-genie="edit" data-name="${esc(n)}"><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`
             : `<button type="button" class="genie-person-pick" data-genie="fussy-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`}
-          <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="What ${esc(n)} likes">✏️</button>
+          <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="${esc(n)}'s tastes">✏️</button>
         </li>`).join("")}</ul>
         <div class="genie-foot is-sticky">${tastes
           ? `<span></span><button type="button" class="genie-plan" data-genie="close">Done</button>`
