@@ -61,5 +61,33 @@
     });
   }
 
-  window.Sheet = { confirm, close };
+  // A few choices, each a big button: resolves with the chosen key (null = none)
+  //   await Sheet.choose({ icon, title, text, options: [{ key, icon, label, sub }], cancel })
+  function choose({ icon = "", title = "", text = "", options = [], cancel = "Cancel" } = {}) {
+    return new Promise(resolve => {
+      const d = getBox();
+      if (answer) answer(false);
+      answer = (v) => resolve(v === false || v === true ? null : v);
+      d.innerHTML = `<div class="hm-sheet-card">
+        ${icon ? `<span class="hm-sheet-icon" aria-hidden="true">${icon}</span>` : ""}
+        <h2 class="hm-sheet-title" id="hm-confirm-title">${esc(title)}</h2>
+        ${text ? `<p class="hm-sheet-text">${esc(text)}</p>` : ""}
+        <div class="hm-sheet-options">${options.map(o => `<button type="button" class="hm-sheet-option" data-sheet-pick="${esc(o.key)}">
+          ${o.icon ? `<span class="hm-sheet-option-icon" aria-hidden="true">${o.icon}</span>` : ""}
+          <span class="hm-sheet-option-words"><strong>${esc(o.label)}</strong>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</span>
+        </button>`).join("")}</div>
+        <button type="button" class="hm-sheet-no" data-sheet-no>${esc(cancel)}</button>
+      </div>`;
+      if (!d.open) d.showModal();
+    });
+  }
+  // Picks go through the same box
+  document.addEventListener("click", (e) => {
+    const pick = e.target.closest && e.target.closest("#hm-confirm [data-sheet-pick]");
+    if (!pick) return;
+    const cb = answer; answer = null;
+    close(box, () => { if (cb) cb(pick.getAttribute("data-sheet-pick")); });
+  });
+
+  window.Sheet = { confirm, choose, close };
 })();

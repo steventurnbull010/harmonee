@@ -4040,3 +4040,33 @@ body.theme-dark .meal-groc-all { color: #7dd3fc; }
     scroll-snap-stop: always;
   }
 }
+
+/* Phones: "‹ This week · 2 – 8 Nov ›" over the day tabs, and an edge card
+   past each end of the week that moves to the next/last week when swiped onto */
+.meals-week-bar { display: none; }
+@media (max-width: 768px) {
+  .meals-week-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .meals-week-label { flex: 1; text-align: center; font-size: 0.92rem; color: var(--text-secondary, #475569); }
+  .meals-week-label strong { color: var(--text-primary, #0f172a); }
+  .meals-week-btn {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 50%;
+    background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+    font: inherit; font-size: 1.3rem; font-weight: 700; line-height: 1; cursor: pointer;
+  }
+  body.theme-dark .meals-week-btn { background: #1e293b; border-color: #334155; color: #f8fafc; }
+  body.theme-dark .meals-week-label strong { color: #f8fafc; }
+  #meals-mobile-cards-feed .meals-week-edge {
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    min-height: 200px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 2px dashed var(--card-border, #e2e8f0); border-radius: 20px;
+    color: var(--text-secondary, #64748b); font-size: 1.1rem; font-weight: 800;
+  }
+  #meals-mobile-cards-feed .meals-week-edge span { font-size: 1.6rem; }
+}

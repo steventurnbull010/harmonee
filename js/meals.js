@@ -1891,7 +1891,7 @@ function watchMealCardFit(root) {
 var mealsPhoneShownDay = null;
 var mealsDayTabScrollUntil = 0;
 function mealsDayFromScroll(feed) {
-  const cards = [...feed.querySelectorAll(".meals-mobile-day-card")];
+  const cards = [...feed.querySelectorAll(".meals-mobile-day-card, .meals-week-edge")];
   if (!cards.length || !feed.clientWidth) return null;
   // The card whose left edge is nearest the feed's left edge
   const left = feed.getBoundingClientRect().left;
@@ -1906,7 +1906,39 @@ function markMealDayTab(day) {
     t.setAttribute("aria-selected", on ? "true" : "false");
   });
 }
+var mealsLandOn = null; // "first" / "last": after moving a week, land on Monday / Sunday
+function changeMealsWeek(dir) {
+  mealsWeekOffset += dir;
+  window.mealsWeekOffset = mealsWeekOffset;
+  mealsPhoneShownDay = null;
+  mealsLandOn = dir > 0 ? "first" : "last";
+  renderMealsView();
+}
+const MEALS_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function mealsWeekLabel(firstKey, lastKey) {
+  const [y1, m1, d1] = firstKey.split("-").map(Number);
+  const [y2, m2, d2] = lastKey.split("-").map(Number);
+  const range = m1 === m2 ? `${d1} – ${d2} ${MEALS_MONTHS[m2 - 1]}` : `${d1} ${MEALS_MONTHS[m1 - 1]} – ${d2} ${MEALS_MONTHS[m2 - 1]}`;
+  const which = mealsWeekOffset === 0 ? "This week" : mealsWeekOffset === 1 ? "Next week" : mealsWeekOffset === -1 ? "Last week" : "";
+  return which ? `<strong>${which}</strong> · ${range}` : `<strong>${range}</strong>`;
+}
+
 function renderMealDayTabs(feed, showDay, todayStr) {
+  // Swipe past Sunday into next week (or back past Monday): an edge card at
+  // each end, which moves the week when it's swiped onto
+  feed.insertAdjacentHTML("afterbegin", `<div class="meals-week-edge" data-edge="-1" aria-hidden="true"><span>‹</span>Last week</div>`);
+  feed.insertAdjacentHTML("beforeend", `<div class="meals-week-edge" data-edge="1" aria-hidden="true">Next week<span>›</span></div>`);
+  let weekBar = document.getElementById("meals-week-bar");
+  if (!weekBar) {
+    weekBar = document.createElement("div");
+    weekBar.id = "meals-week-bar";
+    weekBar.className = "meals-week-bar";
+    feed.parentNode.insertBefore(weekBar, feed);
+    weekBar.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-week]");
+      if (b) changeMealsWeek(parseInt(b.getAttribute("data-week"), 10));
+    });
+  }
   let bar = document.getElementById("meals-day-tabs");
   if (!bar) {
     bar = document.createElement("div");
@@ -1935,18 +1967,34 @@ function renderMealDayTabs(feed, showDay, todayStr) {
         if (card) { mealsDayTabScrollUntil = Date.now() + 200; feed.scrollLeft = card.offsetLeft - feed.offsetLeft; }
       }).observe(feed);
     }
-    let raf = 0;
+    let tick = 0;
     feed.addEventListener("scroll", () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
+      if (tick) return;
+      tick = setTimeout(() => {
+        tick = 0;
         if (Date.now() < mealsDayTabScrollUntil || !feed.clientWidth) return;
-        mealsPhoneShownDay = mealsDayFromScroll(feed);
+        const shown = mealsDayFromScroll(feed);
+        const edge = feed.querySelector(`.meals-week-edge[data-edge]`) && [...feed.querySelectorAll(".meals-week-edge")].find(e => Math.abs(e.getBoundingClientRect().left - feed.getBoundingClientRect().left) < 8);
+        if (edge) {
+          // Settled on "Next week" / "Last week": move there
+          clearTimeout(feed._edgeTimer);
+          feed._edgeTimer = setTimeout(() => {
+            const still = [...feed.querySelectorAll(".meals-week-edge")].find(e => Math.abs(e.getBoundingClientRect().left - feed.getBoundingClientRect().left) < 8);
+            if (still) changeMealsWeek(parseInt(still.getAttribute("data-edge"), 10));
+          }, 180);
+          return;
+        }
+        mealsPhoneShownDay = shown;
         markMealDayTab(mealsPhoneShownDay);
-      });
+      }, 60);
     }, { passive: true });
   }
   const cards = [...feed.querySelectorAll(".meals-mobile-day-card")];
+  if (cards.length) {
+    weekBar.innerHTML = `<button type="button" class="meals-week-btn" data-week="-1" aria-label="Last week">‹</button>
+      <span class="meals-week-label">${mealsWeekLabel(cards[0].getAttribute("data-day"), cards[cards.length - 1].getAttribute("data-day"))}</span>
+      <button type="button" class="meals-week-btn" data-week="1" aria-label="Next week">›</button>`;
+  }
   const slotNames = ["breakfast", "lunch", "dinner"];
   bar.innerHTML = cards.map(card => {
     const day = card.getAttribute("data-day");
@@ -1959,7 +2007,9 @@ function renderMealDayTabs(feed, showDay, todayStr) {
     </button>`;
   }).join("");
   // Same day as before a redraw; the first time, today
-  const target = cards.find(c => c.getAttribute("data-day") === showDay)
+  const land = mealsLandOn; mealsLandOn = null;
+  const target = (land === "first" ? cards[0] : land === "last" ? cards[cards.length - 1] : null)
+    || cards.find(c => c.getAttribute("data-day") === showDay)
     || cards.find(c => c.getAttribute("data-day") === todayStr) || cards[0];
   if (target && feed.clientWidth) feed.scrollLeft = target.offsetLeft - feed.offsetLeft;
   mealsPhoneShownDay = target ? target.getAttribute("data-day") : null;

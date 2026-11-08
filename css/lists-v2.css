@@ -241,3 +241,19 @@ body.theme-dark .list-detail-title { color: color-mix(in srgb, var(--list-accent
   body.theme-dark .list-detail-back { background: #1e293b; border-color: #334155; color: #f8fafc; }
   .list-detail-title { font-size: 1.8rem; }
 }
+
+/* Send this list (js/lists.js sendList) */
+.list-detail-send {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 999px;
+  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 0.85rem; font-weight: 800; cursor: pointer;
+}
+.list-detail-send:hover { border-color: var(--list-accent); color: var(--list-accent); }
+body.theme-dark .list-detail-send { background: #0f172a; border-color: #334155; color: #f8fafc; }
+@media (max-width: 600px) {
+  .list-detail-head { flex-wrap: wrap; }
+  .list-detail-titles { flex-basis: 100%; }
+}

@@ -693,6 +693,7 @@
   // the app opens here; ✕ goes to the full board. (Tablets open on the board.)
   const openOnPhone = () => {
     if (!window.matchMedia("(max-width: 600px)").matches) return;
+    if (window.__openingSharedList) return; // a shared list link: go to the list
     if (shown("board-join-screen") || shown("ambient-sleep-overlay")) return;
     const setup = document.getElementById("setup-wizard");
     if (setup && !setup.hidden) return; // a new family is still setting up

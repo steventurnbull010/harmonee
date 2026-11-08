@@ -721,6 +721,10 @@ function renderListDetail(list, index, justTicked) {
           <h2 class="list-detail-title"><span aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span> ${escapeHtml(list.title)}</h2>
           <span class="list-detail-count">${countText}</span>
         </div>
+        <button type="button" class="list-detail-send" data-send-list aria-label="Send ${escapeHtml(list.title)}" title="Send this list">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span>Send</span>
+        </button>
         ${open.length ? `<button type="button" class="list-column-shop" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>` : ""}
         <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
@@ -807,6 +811,11 @@ function onListsBoardClick(e) {
   if (e.target.closest("[data-lists-back]")) {
     listsUi().phoneOpen = false;
     renderListsView();
+    return;
+  }
+  if (e.target.closest("[data-send-list]")) {
+    const id = e.target.closest("[data-list-id]").getAttribute("data-list-id");
+    sendList(id);
     return;
   }
   const fold = e.target.closest("[data-fold-section]");
@@ -1284,3 +1293,85 @@ window.handleAddItemToList = handleAddItemToList;
 window.handleToggleListItem = handleToggleListItem;
 window.handleDeleteListItem = handleDeleteListItem;
 window.handleClearCompletedListItems = handleClearCompletedListItems;
+
+
+// ---------------------------------------------------------------------------
+// Send a list (the Send button): a link to this list for someone in the
+// family (WhatsApp, Messages... via the phone's share menu), or the list as
+// text for anyone. Opening the link goes straight to the list.
+// ---------------------------------------------------------------------------
+function listShareUrl(listId) {
+  const u = new URL(window.location.origin + window.location.pathname);
+  u.searchParams.set("board", window.currentBoardId || "");
+  u.searchParams.set("list", listId);
+  return u.toString();
+}
+
+function listAsText(list) {
+  const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
+  const open = (list.items || []).filter(i => !i.checked);
+  const head = `${list.emoji || "📋"} ${list.title}`;
+  if (!open.length) return `${head}\n(nothing on it right now)`;
+  if (window.Aisles && window.Aisles.isGroceryList(list)) {
+    const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
+    open.forEach(i => groups.get(window.Aisles.aisleFor(textOf(i), list.aisles)).push(i));
+    return [head, ...window.Aisles.AISLES.filter(a => groups.get(a.key).length)
+      .map(a => `\n${a.icon} ${a.label}\n${groups.get(a.key).map(i => `• ${textOf(i)}`).join("\n")}`)].join("\n");
+  }
+  return `${head}\n\n${open.map(i => `• ${textOf(i)}`).join("\n")}`;
+}
+
+async function shareOrCopy(data, copied) {
+  if (navigator.share) {
+    try { await navigator.share(data); return; }
+    catch (e) { if (e && e.name === "AbortError") return; } // cancelled: fine
+  }
+  try {
+    await navigator.clipboard.writeText([data.text, data.url].filter(Boolean).join("\n"));
+    if (typeof window.showCalendarToast === "function") window.showCalendarToast(copied);
+  } catch (e) {
+    window.prompt("Copy this:", data.url || data.text);
+  }
+}
+
+async function sendList(listId) {
+  const list = loadFamilyLists().find(l => l.id === listId);
+  if (!list || !window.Sheet) return;
+  const n = (list.items || []).filter(i => !i.checked).length;
+  const how = await window.Sheet.choose({
+    icon: list.emoji || "📋",
+    title: `Send ${list.title}`,
+    options: [
+      { key: "link", icon: "🔗", label: "Send a link", sub: "Opens this list in harmonee, for your family" },
+      { key: "text", icon: "📝", label: "Send as text", sub: `The ${n} thing${n === 1 ? "" : "s"} still to get, for anyone` }
+    ]
+  });
+  if (how === "link") {
+    await shareOrCopy({ title: `${list.title} · harmonee`, text: `${list.emoji || "📋"} ${list.title} on harmonee`, url: listShareUrl(list.id) }, "🔗 Link copied. Paste it into WhatsApp or a message.");
+  } else if (how === "text") {
+    await shareOrCopy({ title: list.title, text: listAsText(list) }, "📝 List copied. Paste it into WhatsApp or a message.");
+  }
+}
+window.sendList = sendList;
+
+// Opened from a shared link (…?board=x&list=groceries): straight to that list
+(function openSharedList() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("list");
+  if (!id) return;
+  window.__openingSharedList = true; // Today at a glance stays shut (js/today-screen.js)
+  params.delete("list");
+  const qs = params.toString();
+  try { history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash); } catch (e) {}
+  const ui = listsUi();
+  ui.selected = id;
+  ui.phoneOpen = true;
+  saveListsUi();
+  const go = () => {
+    if (typeof window.markPageIntroSeen === "function") window.markPageIntroSeen("lists");
+    if (typeof window.closeTodayScreen === "function") window.closeTodayScreen({ quiet: true });
+    if (typeof window.switchSkylightView === "function") window.switchSkylightView("lists");
+  };
+  if (document.readyState === "complete") setTimeout(go, 300);
+  else window.addEventListener("load", () => setTimeout(go, 300));
+})();
