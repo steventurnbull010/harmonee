@@ -115,8 +115,50 @@ window.getTaskRoutineInfo = getTaskRoutineInfo;
 let tasksSelectedDate = new Date();
 tasksSelectedDate.setHours(0, 0, 0, 0);
 
-// Column category filter state: { [memberLower]: 'all' | 'morning' | 'afternoon' | 'evening' | 'chores' }
+// Column category filter state (no longer used per person; kept for old callers)
 let tasksColumnFilters = {};
+
+// ---------------------------------------------------------------------------
+// The board's filter bar: Morning / Afternoon / Evening / Chores, for every
+// column at once. Today, before 12 shows Morning and Chores; from 12 shows
+// Afternoon, Evening and Chores (the others are greyed out but a tap away).
+// Taps hold until the next switchover (midday, or the next family day).
+// Any other day shows everything.
+// ---------------------------------------------------------------------------
+const TASK_SLOTS = [
+  { key: "morning", icon: "🌤️", label: "Morning" },
+  { key: "afternoon", icon: "⛅", label: "Afternoon" },
+  { key: "evening", icon: "🌙", label: "Evening" },
+  { key: "chores", icon: "🧹", label: "Chores" }
+];
+let tasksSlotChoice = null; // { period, on: Set } after a tap
+function tasksSlotPeriod(viewingToday) {
+  if (!viewingToday) return "other-day";
+  const now = new Date();
+  const h = now.getHours();
+  return `${familyDayKey(now)}|${h >= 4 && h < 12 ? "am" : "pm"}`; // midnight-4am still counts as the evening before
+}
+function tasksSlotsOn(viewingToday) {
+  const period = tasksSlotPeriod(viewingToday);
+  if (tasksSlotChoice && tasksSlotChoice.period === period) return tasksSlotChoice.on;
+  if (!viewingToday) return new Set(TASK_SLOTS.map(x => x.key));
+  return new Set(period.endsWith("|am") ? ["morning", "chores"] : ["afternoon", "evening", "chores"]);
+}
+function toggleTaskSlot(key, viewingToday) {
+  const on = new Set(tasksSlotsOn(viewingToday));
+  if (on.has(key)) on.delete(key); else on.add(key);
+  tasksSlotChoice = { period: tasksSlotPeriod(viewingToday), on };
+}
+// Midday (or a new day) while the board is up: the defaults move on
+let tasksLastSlotPeriod = null;
+setInterval(() => {
+  const p = tasksSlotPeriod(true);
+  if (tasksLastSlotPeriod && p !== tasksLastSlotPeriod) {
+    const view = document.getElementById("view-chores");
+    if (view && view.style.display !== "none" && typeof renderSkylightTasksPage === "function") renderSkylightTasksPage();
+  }
+  tasksLastSlotPeriod = p;
+}, 60000);
 
 // Active filter in Tasks Filter Dropdown (member visibility)
 let tasksActiveMemberFilter = null; // null = all visible, or array of member names
@@ -309,6 +351,7 @@ function renderSkylightTasksPage() {
     const isToday = (new Date()).toDateString() === tasksSelectedDate.toDateString();
     dateSubBar.textContent = isToday ? `Today • ${dow}, ${dt} ${mon}` : `${dow}, ${dt} ${mon} ${yr}`;
   }
+  renderTasksSlotBar(container);
 
   const selectedDateStr = getLocalDateKey(tasksSelectedDate);
   const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -351,8 +394,9 @@ function renderSkylightTasksPage() {
     totalTasksAllBoard += totalCount;
     completedTasksAllBoard += completedCount;
 
-    // Filter pills (Morning, Afternoon, Evening, Chores)
-    const activeFilter = tasksColumnFilters[mLower] || "all";
+    // Which sections show: the board's filter bar (Anytime goes with Chores)
+    const slotsOn = tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
+    const showSlot = (k) => slotsOn.has(k === "anytime" ? "chores" : k);
 
     // Group tasks
     const morningTasks = [];
@@ -383,43 +427,7 @@ function renderSkylightTasksPage() {
     const hasAnytime = anytimeTasks.length > 0;
     const hasChores = generalChores.length > 0;
 
-    let filterPillsHtml = "";
-    if (hasMorning || hasAfternoon || hasEvening || hasAnytime || hasChores) {
-      filterPillsHtml = `
-        <div class="tasks-col-routine-filters">
-          ${hasMorning ? `
-            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'morning' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="morning" title="Show Morning routines">
-              <div class="circle-icon-wrap">🌤️</div>
-              <span class="circle-label">Morning</span>
-            </button>
-          ` : ''}
-          ${hasAfternoon ? `
-            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'afternoon' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="afternoon" title="Show Afternoon routines">
-              <div class="circle-icon-wrap">⛅</div>
-              <span class="circle-label">Afternoon</span>
-            </button>
-          ` : ''}
-          ${hasEvening ? `
-            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'evening' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="evening" title="Show Evening routines">
-              <div class="circle-icon-wrap">🌙</div>
-              <span class="circle-label">Evening</span>
-            </button>
-          ` : ''}
-          ${hasAnytime ? `
-            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'anytime' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="anytime" title="Show Anytime routines">
-              <div class="circle-icon-wrap">🕑</div>
-              <span class="circle-label">Anytime</span>
-            </button>
-          ` : ''}
-          ${hasChores ? `
-            <button type="button" class="routine-filter-circle-btn ${activeFilter === 'chores' ? 'active' : ''}" data-member="${escapeHtml(colMember)}" data-filter="chores" title="Show Chores">
-              <div class="circle-icon-wrap">🧹</div>
-              <span class="circle-label">Chores</span>
-            </button>
-          ` : ''}
-        </div>
-      `;
-    }
+    const filterPillsHtml = ""; // the filter bar is board-wide now (renderTasksSlotBar)
 
     // Render task cards helper
     const renderCard = (t) => {
@@ -482,21 +490,11 @@ function renderSkylightTasksPage() {
       `;
     } else {
       let sectionsToShow = [];
-      if (activeFilter === "all" || activeFilter === "morning") {
-        if (morningTasks.length > 0) sectionsToShow.push({ key: "morning", title: "Morning", emoji: "🌤️", list: morningTasks });
-      }
-      if (activeFilter === "all" || activeFilter === "afternoon") {
-        if (afternoonTasks.length > 0) sectionsToShow.push({ key: "afternoon", title: "Afternoon", emoji: "⛅", list: afternoonTasks });
-      }
-      if (activeFilter === "all" || activeFilter === "evening") {
-        if (eveningTasks.length > 0) sectionsToShow.push({ key: "evening", title: "Evening", emoji: "🌙", list: eveningTasks });
-      }
-      if (activeFilter === "all" || activeFilter === "anytime") {
-        if (anytimeTasks.length > 0) sectionsToShow.push({ key: "anytime", title: "Anytime", emoji: "🕑", list: anytimeTasks });
-      }
-      if (activeFilter === "all" || activeFilter === "chores") {
-        if (generalChores.length > 0) sectionsToShow.push({ key: "chores", title: "Chores", emoji: "🧹", list: generalChores });
-      }
+      if (showSlot("morning") && morningTasks.length > 0) sectionsToShow.push({ key: "morning", title: "Morning", emoji: "🌤️", list: morningTasks });
+      if (showSlot("afternoon") && afternoonTasks.length > 0) sectionsToShow.push({ key: "afternoon", title: "Afternoon", emoji: "⛅", list: afternoonTasks });
+      if (showSlot("evening") && eveningTasks.length > 0) sectionsToShow.push({ key: "evening", title: "Evening", emoji: "🌙", list: eveningTasks });
+      if (showSlot("anytime") && anytimeTasks.length > 0) sectionsToShow.push({ key: "anytime", title: "Anytime", emoji: "🕑", list: anytimeTasks });
+      if (showSlot("chores") && generalChores.length > 0) sectionsToShow.push({ key: "chores", title: "Chores", emoji: "🧹", list: generalChores });
 
       bodySectionsHtml = sectionsToShow.map(sec => {
         // To-do cards first, finished ones after, each keeping its own order
@@ -548,6 +546,12 @@ function renderSkylightTasksPage() {
           </div>
         `;
       }).join("");
+      // Everything for this person is in a slot that's switched off
+      if (!sectionsToShow.length) bodySectionsHtml = `
+        <div class="tasks-col-empty-card is-filtered">
+          <span class="tasks-col-empty-icon">✨</span>
+          <span class="tasks-col-empty-label">All clear for now</span>
+        </div>`;
     }
 
     const isAllDone = totalCount > 0 && completedCount === totalCount;
@@ -1921,6 +1925,28 @@ function markTasksPersonTab(member) {
     t.classList.toggle("is-active", on);
     t.setAttribute("aria-selected", on ? "true" : "false");
   });
+}
+
+function renderTasksSlotBar(grid) {
+  if (!grid) return;
+  let bar = document.getElementById("tasks-slot-filters");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "tasks-slot-filters";
+    bar.className = "tasks-slot-filters";
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "Show");
+    grid.parentNode.insertBefore(bar, grid);
+    bar.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-slot-filter]");
+      if (!b) return;
+      toggleTaskSlot(b.getAttribute("data-slot-filter"), familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
+      if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+      renderSkylightTasksPage();
+    });
+  }
+  const on = tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
+  bar.innerHTML = TASK_SLOTS.map(x => `<button type="button" class="tasks-slot-pill${on.has(x.key) ? " is-on" : ""}" data-slot-filter="${x.key}" aria-pressed="${on.has(x.key)}"><span aria-hidden="true">${x.icon}</span> ${x.label}</button>`).join("");
 }
 
 function renderTasksFilterMenu() {
