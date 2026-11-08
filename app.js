@@ -6679,25 +6679,25 @@ function initSkylightNavigation() {
   // Helper to ensure dropdown menus never clip outside the viewport
   function alignDropdownOnScreen(menuEl, buttonEl) {
     if (!menuEl || !buttonEl) return;
-    // Default to right-aligned with the button for header dropdowns
-    menuEl.style.right = "0";
-    menuEl.style.left = "auto";
+    // Right-aligned with the button by default; if that runs off the left of
+    // the screen (a button on the left), open to the right of it instead.
+    // "important" because some menus pin left/right with !important in CSS.
+    const put = (left, right) => {
+      menuEl.style.setProperty("left", left, "important");
+      menuEl.style.setProperty("right", right, "important");
+    };
+    put("auto", "0px");
     if (typeof menuEl.getBoundingClientRect !== "function") return;
-    const rect = menuEl.getBoundingClientRect();
     const vw = (typeof window !== "undefined" && window.innerWidth) || 400;
-
-    // Check if right edge overflows viewport
-    if (rect.right > vw - 12) {
-      const overflow = rect.right - (vw - 12);
-      menuEl.style.right = `${Math.round(overflow)}px`;
+    let rect = menuEl.getBoundingClientRect();
+    if (rect.left < 8) {
+      put("0px", "auto");
+      rect = menuEl.getBoundingClientRect();
     }
-    // Check if left edge overflows viewport
-    const updatedRect = menuEl.getBoundingClientRect();
-    if (updatedRect.left < 10) {
-      menuEl.style.left = "10px";
-      menuEl.style.right = "auto";
-    }
+    // Still too wide for the screen: nudge it back on
+    if (rect.right > vw - 8) put(`${Math.round(-(rect.right - (vw - 8)))}px`, "auto");
   }
+  window.alignDropdownOnScreen = alignDropdownOnScreen;
 
   // Skylight Calendar View Dropdown Wiring
   const btnViewDropdown = document.getElementById("btn-view-dropdown");

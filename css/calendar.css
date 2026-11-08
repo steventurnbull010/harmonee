@@ -5769,3 +5769,12 @@ body.theme-dark .countdown-list-date, body.theme-dark .countdown-list-head { col
   .days-3 .ev-block.is-tiny .ev-block-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .days-3 .ev-block.is-tiny .ev-block-inline-time { display: none; }
 }
+
+/* Countdown on phones: one slim pill ("💃 2 sleeps") instead of a big tile */
+@media (max-width: 600px) {
+  .header-countdown-chip, .header-countdown-chip.is-compact { height: 32px; padding: 0 8px 0 3px; gap: 4px; border-radius: 16px; }
+  .header-countdown-num { flex-direction: row; align-items: center; gap: 3px; height: 26px; min-width: 0; padding: 0 8px; border-radius: 13px; }
+  .header-countdown-num b { font-size: 0.9rem; }
+  .header-countdown-num small { margin-top: 0; font-size: 0.62rem; }
+  .header-countdown-icon, .header-countdown-chip.is-compact .header-countdown-icon { font-size: 1rem; }
+}

@@ -574,7 +574,12 @@ function renderSkylightTasksPage() {
     `;
   });
 
+  // Phones: which person's column is showing (kept across redraws)
+  const phoneTabs = isTasksPhone();
+  const shownMember = phoneTabs ? (tasksPhoneShown || tasksPhoneMember(container)) : null;
+
   container.innerHTML = columnsHtml;
+  renderTasksPersonTabs(container, shownMember);
 
   // Put each column back where it was scrolled to, then slide the cards of a
   // just-ticked column from their old places to their new ones (FLIP).
@@ -1778,8 +1783,8 @@ function initSkylightTaskDrawerEvents() {
       btnTasksFilter.classList.toggle("is-open", !isOpen);
       if (!isOpen) {
         renderTasksFilterMenu();
-        if (typeof alignDropdownOnScreen === "function") {
-          alignDropdownOnScreen(tasksFilterMenu, btnTasksFilter);
+        if (typeof window.alignDropdownOnScreen === "function") {
+          window.alignDropdownOnScreen(tasksFilterMenu, btnTasksFilter);
         }
       }
     };
@@ -1804,6 +1809,8 @@ function initSkylightTaskDrawerEvents() {
 
     tasksGrid.addEventListener("touchstart", (e) => {
       if (e.touches.length !== 1) return;
+      // Phones: a sideways swipe moves between people, not days
+      if (isTasksPhone()) { isTracking = false; return; }
       if (e.target.closest("button, .skylight-task-card, .routine-filter-circle-btn")) return;
       tStartX = e.touches[0].clientX;
       tStartY = e.touches[0].clientY;
@@ -1832,6 +1839,86 @@ function initSkylightTaskDrawerEvents() {
       }
     });
   }
+}
+
+// ============================================================================
+// PHONES: ONE PERSON AT A TIME
+// Five columns don't fit a phone, so (like Skylight's phone app) each person
+// gets the full width and a row of tabs at the top shows everyone with their
+// tally. Tap a tab, or swipe sideways, to move between people. Tablets keep
+// the side-by-side columns.
+// ============================================================================
+let tasksPhoneShown = null;      // the person whose column is showing
+let tasksPhoneTabScrollUntil = 0; // while a tapped tab slides into view
+function isTasksPhone() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 600px)").matches;
+}
+
+// The column that's in view right now (by scroll position)
+function tasksPhoneMember(grid) {
+  const cols = [...grid.querySelectorAll(".skylight-tasks-col")];
+  if (!cols.length || !grid.clientWidth) return null;
+  const i = Math.round(grid.scrollLeft / grid.clientWidth);
+  const col = cols[Math.max(0, Math.min(cols.length - 1, i))];
+  return col ? col.getAttribute("data-col-member") : null;
+}
+
+function renderTasksPersonTabs(grid, showMember) {
+  let bar = document.getElementById("tasks-person-tabs");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "tasks-person-tabs";
+    bar.className = "tasks-person-tabs";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Whose tasks");
+    grid.parentNode.insertBefore(bar, grid);
+    bar.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-person-tab]");
+      if (!tab) return;
+      const col = [...grid.querySelectorAll(".skylight-tasks-col")].find(c => c.getAttribute("data-col-member") === tab.getAttribute("data-person-tab"));
+      if (!col) return;
+      tasksPhoneShown = tab.getAttribute("data-person-tab");
+      tasksPhoneTabScrollUntil = Date.now() + 700;
+      grid.scrollTo({ left: col.offsetLeft - grid.offsetLeft, behavior: tasksReducedMotion() ? "auto" : "smooth" });
+      markTasksPersonTab(tasksPhoneShown);
+    });
+    let raf = 0;
+    grid.addEventListener("scroll", () => {
+      if (raf || !isTasksPhone()) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (Date.now() < tasksPhoneTabScrollUntil) return; // passing other people on the way
+        tasksPhoneShown = tasksPhoneMember(grid);
+        markTasksPersonTab(tasksPhoneShown);
+      });
+    }, { passive: true });
+  }
+  const cols = [...grid.querySelectorAll(".skylight-tasks-col")];
+  bar.innerHTML = cols.map(col => {
+    const m = col.getAttribute("data-col-member");
+    const avatar = col.querySelector(".tasks-col-avatar");
+    const tally = col.querySelector(".tasks-col-progress-tally");
+    const done = tally && tally.classList.contains("all-done");
+    return `<button type="button" class="tasks-person-tab${done ? " is-done" : ""}" role="tab" data-person-tab="${escapeHtml(m)}" style="--tab-color: ${avatar ? avatar.style.background : "#94a3b8"};">
+      <span class="tasks-person-tab-avatar">${avatar ? avatar.innerHTML : ""}</span>
+      <span class="tasks-person-tab-name">${escapeHtml(displayMemberName(m))}</span>
+      <span class="tasks-person-tab-tally">${tally ? escapeHtml(tally.textContent.trim()) : ""}</span>
+    </button>`;
+  }).join("");
+  if (!isTasksPhone()) return;
+  // Stay on the same person after a redraw
+  const target = cols.find(c => c.getAttribute("data-col-member") === showMember) || cols[0];
+  if (target) grid.scrollLeft = target.offsetLeft - grid.offsetLeft;
+  tasksPhoneShown = target ? target.getAttribute("data-col-member") : null;
+  markTasksPersonTab(tasksPhoneShown);
+}
+
+function markTasksPersonTab(member) {
+  document.querySelectorAll("#tasks-person-tabs .tasks-person-tab").forEach(t => {
+    const on = t.getAttribute("data-person-tab") === member;
+    t.classList.toggle("is-active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
 }
 
 function renderTasksFilterMenu() {

@@ -2667,3 +2667,80 @@ body.theme-dark .skylight-task-grab-handle { color: #cbd5e1; }
 /* The clock sits on the text's line, so "Overdue" lines up with "• 10 pts" */
 .skylight-task-overdue svg { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 body.theme-dark .skylight-task-overdue { color: #fbbf24; }
+
+/* ==========================================================================
+   PHONES: ONE PERSON AT A TIME (js/tasks.js renderTasksPersonTabs)
+   A row of person tabs (avatar, name, tally) over full-width columns that
+   snap into place as you swipe. Hidden on tablets.
+   ========================================================================== */
+.tasks-person-tabs { display: none; }
+
+@media (max-width: 600px) {
+  .tasks-person-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0 0;
+  }
+  .tasks-person-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px;
+    border: 1.5px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-secondary, #475569);
+    font: inherit;
+    cursor: pointer;
+  }
+  .tasks-person-tab.is-active {
+    background: var(--card-bg, #ffffff);
+    border-color: var(--tab-color);
+    color: var(--text-primary, #0f172a);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+  .tasks-person-tab-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--tab-color);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  .tasks-person-tab-name {
+    max-width: 100%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tasks-person-tab-tally { font-size: 0.66rem; font-weight: 600; color: var(--text-muted, #64748b); }
+  .tasks-person-tab.is-done .tasks-person-tab-tally { color: #16a34a; }
+  body.theme-dark .tasks-person-tab.is-active { background: #1e293b; color: #f8fafc; }
+
+  body #view-chores #tasks-columns-grid {
+    gap: 0 !important;
+    padding: 8px 0 96px !important;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  #view-chores .skylight-tasks-columns-grid::-webkit-scrollbar { display: none; }
+  #view-chores .skylight-tasks-col {
+    flex: 0 0 100%;
+    min-width: 0;
+    max-width: none;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  /* The tabs already say whose column it is */
+  #view-chores .skylight-tasks-col .tasks-col-top-row { display: none; }
+}
