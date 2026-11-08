@@ -20,9 +20,9 @@
       { key: "dinner", icon: "🍝", label: "Dinner" }] },
     mood: { q: "In the mood for…", opts: [
       { key: "veggie", icon: "🥬", label: "Veggie" },
-      { key: "chicken", icon: "🍗", label: "Chicken" },
       { key: "meat", icon: "🥩", label: "Meat" },
       { key: "fish", icon: "🐟", label: "Fish" },
+      { key: "light", icon: "🥗", label: "Light & healthy" },
       { key: "any", icon: "🤷", label: "Anything" }] },
     flavour: { q: "What flavours?", opts: [
       { key: "comfort", icon: "🇬🇧", label: "Comfort classics" },
@@ -43,6 +43,9 @@
   };
   const MEAT = /\b(beef|lamb|pork|bacon|sausages?|mince|ham|turkey|chorizo|steak|veal|duck|pancetta|prosciutto|salami|black pudding|goat meat|venison)\b/i;
   const CHICKEN = /\bchicken\b/i;
+  // Light & healthy: soups, salads, stir-fries, grills and veg; not cream, pastry or fried
+  const LIGHT = /\b(soup|salad|stir[- ]?fry|grilled|steamed|broth|gazpacho|bowl|wrap|lentils?|dal|dhal|quinoa|vegetables?|veg|courgette|spinach|chickpeas?|beans|tofu|fish|salmon|prawns?|chicken breast)\b/i;
+  const HEAVY = /\b(double cream|cream|butter|cheese|cheddar|pastry|puff|suet|deep[- ]?fr|fried|bacon|sausages?|mayonnaise|chips|batter|pie)\b/gi;
   const SPICY = /\b(spicy|curry|chilli|chili|masala|tikka|jalfrezi|korma|dal|dhal|vindaloo|harissa|jerk|sriracha|cajun|madras|biryani)\b/i;
   const FISH = /\b(fish|salmon|cod|tuna|prawns?|shrimp|haddock|mackerel|anchov(y|ies)|sardines?|crab|mussels?|squid|tilapia|trout|seafood)\b/i;
 
@@ -92,8 +95,11 @@
       else score -= 10;
       if (a.mood === "veggie" && !isVeggie(r)) return null; // strict
       if (a.mood === "veggie") score += 3;
-      if (a.mood === "chicken") score += CHICKEN.test(text) ? 6 : -5;
-      if (a.mood === "meat") score += MEAT.test(text) ? 6 : -5;
+      if (a.mood === "meat") score += (MEAT.test(text) || CHICKEN.test(text)) ? 6 : -5; // chicken counts as meat
+      if (a.mood === "light") {
+        score += LIGHT.test(r.title) ? 4 : LIGHT.test(text) ? 1 : 0;
+        score -= Math.min(4, (text.match(HEAVY) || []).length);
+      }
       if (a.mood === "fish") score += FISH.test(text) ? 6 : -5;
       if (a.flavour && a.flavour !== "any") {
         if ((FLAVOURS[a.flavour] || []).includes(cuisineOf(r))) score += 4;

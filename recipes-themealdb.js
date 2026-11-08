@@ -5,7 +5,7 @@
 // ingredients, methods and photos are theirs, unchanged; each recipe links
 // to its original source and is credited on the recipe card. TheMealDB gives
 // no times, servings or calories, so none are set here.
-// Fetched 2026-11-07.
+// Fetched 2026-11-07; more added 2026-11-08 (scripts/fetch-mealdb.mjs).
 // ============================================================================
 
 export const MEALDB_RECIPES = [
@@ -2416,6 +2416,1471 @@ export const MEALDB_RECIPES = [
     ],
     "instructions": [
       "Heat the oil in a non-stick wok. Add the broccoli, then fry on a high heat for 5 mins or until just tender, adding a little water if it begins to catch. Add the garlic and chilli, fry for 1 min, then toss through the spring onions, soya beans, pak choi and tofu. Stir-fry for 2-3 mins. Add the hoisin, soy and nuts to warm through."
+    ]
+  },
+  {
+    "id": "mealdb-53165",
+    "title": "Torrijas with sherry",
+    "subtitle": "Spanish · Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/f3ee3y1763309332.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/torrijas-sherry",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53165",
+    "ingredients": [
+      "2 medium Egg",
+      "2 tbsp Double Cream",
+      "2 tblsp Milk",
+      "3 tsp Golden Caster Sugar",
+      "3  tablespoons Sweet Sherry",
+      "4 thick slices Bread",
+      "For frying Olive Oil",
+      "To serve Icing Sugar",
+      "To serve Creme Fraiche"
+    ],
+    "instructions": [
+      "In a wide, shallow bowl, beat the eggs with the cream, milk, golden caster sugar and sherry. Cut each slice of bread in two and dip them into the egg mix, turning to make sure they get a good coating on either side. Soak bread in egg mixture for 10 mins to absorb the liquid (carefully turn them over from time to time and make sure they don’t get too soggy).",
+      "Heat 1½ tbsp olive oil in a large frying pan and cook the bread for about 3 mins on each side until dark golden and crisp on the edge. Keep the slices warm in a low oven as you cook the rest.",
+      "Divide the torrijas between plates and dust with the icing sugar. Serve with crème fraîche or Greek yogurt on the side."
+    ]
+  },
+  {
+    "id": "mealdb-53430",
+    "title": "Antiguan Breakfast (Chop Up and ‘Saltfish’)",
+    "subtitle": "Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/jvjnoh1780086318.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.atastefortravel.ca/24626-antigua-chop-up/#recipe",
+    "sourceName": "atastefortravel.ca",
+    "mealdbUrl": "https://www.themealdb.com/meal/53430",
+    "ingredients": [
+      "4 Egg Plants",
+      "8 oz Callaloo",
+      "1 lb Pumpkin",
+      "3 cloves Chopped Garlic",
+      "1 Diced Onion",
+      "2 oz Butter",
+      "1/2 tsp Salt",
+      "1/4 tsp Black Pepper"
+    ],
+    "instructions": [
+      "Peel and chop eggplant and pumpkin into medium-sized pieces.",
+      "Heat butter and add onions and garlic in a medium sized pot set to medium to high heat. Sauté for 2 minutes until softened but not browned.",
+      "Add pumpkin and eggplant. Sauté for an additional two to three minutes.",
+      "Add water just to cover the vegetables. Bring to a boil, reduce heat to a simmer and cook until the vegetables are soft.",
+      "Add the chopped spinach, stir and cook for an additional 3 minutes.",
+      "Pour the vegetable mixture into a colander and let drain.",
+      "After vegetable mixture has been drained return it to the pot and mash vigorously with a potato masher or a thick whisk.",
+      "Add salt and pepper. Adjust seasoning to taste."
+    ]
+  },
+  {
+    "id": "mealdb-53076",
+    "title": "Bread omelette",
+    "subtitle": "India · Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/hqaejl1695738653.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/53076",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/53076",
+    "ingredients": [
+      "2 Bread",
+      "2 Egg",
+      "0.5 Salt"
+    ],
+    "instructions": [
+      "Make and enjoy"
+    ]
+  },
+  {
+    "id": "mealdb-52965",
+    "title": "Breakfast Potatoes",
+    "subtitle": "Canadian · Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/1550441882.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "http://www.vodkaandbiscuits.com/2014/03/06/bangin-breakfast-potatoes/",
+    "sourceName": "vodkaandbiscuits.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52965",
+    "ingredients": [
+      "3 Medium Potatoes",
+      "1 tbs Olive Oil",
+      "2 strips Bacon",
+      "Minced Garlic Clove",
+      "1 tbs Maple Syrup",
+      "Garnish Parsley",
+      "Pinch Salt",
+      "Pinch Pepper",
+      "To taste Allspice"
+    ],
+    "instructions": [
+      "Before you do anything, freeze your bacon slices that way when you're ready to prep, it'll be so much easier to chop!",
+      "Wash the potatoes and cut medium dice into square pieces. To prevent any browning, place the already cut potatoes in a bowl filled with water.",
+      "In the meantime, heat 1-2 tablespoons of oil in a large skillet over medium-high heat. Tilt the skillet so the oil spreads evenly.",
+      "Once the oil is hot, drain the potatoes and add to the skillet. Season with salt, pepper, and Old Bay as needed.",
+      "Cook for 10 minutes, stirring the potatoes often, until brown. If needed, add a tablespoon more of oil.",
+      "Chop up the bacon and add to the potatoes. The bacon will start to render and the fat will begin to further cook the potatoes. Toss it up a bit! The bacon will take 5-6 minutes to crisp.",
+      "Once the bacon is cooked, reduce the heat to medium-low, add the minced garlic and toss. Season once more. Add dried or fresh parsley. Control heat as needed.",
+      "Let the garlic cook until fragrant, about one minute.",
+      "Just before serving, drizzle over the maple syrup and toss. Let that cook another minute, giving the potatoes a caramelized effect.",
+      "Serve in a warm bowl with a sunny side up egg!"
+    ]
+  },
+  {
+    "id": "mealdb-53413",
+    "title": "Flija Layered Pancake / Crepe",
+    "subtitle": "Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/eqnf3p1779649407.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.myalbanianfood.com/recipe/albanian-flija-pancake/",
+    "sourceName": "myalbanianfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53413",
+    "ingredients": [
+      "1 kg Flour",
+      "1 L Water",
+      "1 tsp Salt",
+      "220g Melted Butter",
+      "200ml Vegetable Oil",
+      "5 tablespoons Greek Yogurt",
+      "220g Melted Butter",
+      "200ml Vegetable Oil",
+      "3  tablespoons Clotted Cream",
+      "220g Melted Butter",
+      "500ml Sour Cream",
+      "3  tablespoons Olive Oil"
+    ],
+    "instructions": [
+      "Prepare the Flour Batter",
+      "Mix together the flour, water and salt ensuring all the lumps are dissolved. The mixture should be thick but still of a pouring consistency, add a little extra water if required. Put to one side.",
+      "Prepare the Batter Filling",
+      "Mix together the butter, oil and chosen yogurt / cream ensuring all the lumps are dissolved. The mixture should be runny, leave to rest for 10 minutes before given it another good mix. The consistency should be similar to custard. Put to one side.",
+      "Baking",
+      "Preheat the gill to a medium setting (I use mark 4 of 6). Take a large deep baking tray or pie pan and rub some olive oil over the base. Make the first layer of flour batter using a squirty bottle or laydel, don't try to pour the batter as it will be too thick in the pan. You need to make a star effect by leaving triangles between each line of batter layers. Place under the grill until golden brown. This will take between 3 - 5 minutes.",
+      "Remove from under the grill and using a brush or the back of spoon rub over the whole pan (both battered and un-battered areas) a layer of the batter filling. Then, add a layer of the flour filling, use the same star effect this time placing the lines of batter through the gaps left from the previous layering. Also, leaving the same triangle shapes between each line. Place under the grill until golden brown. This will take between 3 - 5 minutes.",
+      "Repeat step 4 until all the mixture has been used and ensuring each triangle gap is filled with flour batter on each layer - this will take around 2 hours. After every couple of layers, use one layer just to fill up any spaces (large gaps between the batter stars) that may have started to show.",
+      "Serving",
+      "Once the Flija is ready serve straight away with honey or yogurt."
+    ]
+  },
+  {
+    "id": "mealdb-52957",
+    "title": "Fruit and Cream Cheese Breakfast Pastries",
+    "subtitle": "United States · Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/1543774956.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/52957",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/52957",
+    "ingredients": [
+      "1 1/4 oz Cream Cheese",
+      "1 1/4 cup Sugar",
+      "1 teaspoon Vanilla Extract",
+      "Flour",
+      "2 Puff Pastry",
+      "Strawberries",
+      "Raspberries",
+      "Blackberries"
+    ],
+    "instructions": [
+      "Preheat oven to 400ºF (200ºC), and prepare two cookie sheets with parchment paper. In a bowl, mix cream cheese, sugar, and vanilla until fully combined. Lightly flour the surface and roll out puff pastry on top to flatten. Cut each sheet of puff pastry into 9 equal squares. On the top right and bottom left of the pastry, cut an L shape approximately ½ inch (1 cm) from the edge.",
+      "NOTE: This L shape should reach all the way down and across the square, however both L shapes should not meet at the ends. Your pastry should look like a picture frame with two corners still intact.",
+      "Take the upper right corner and fold down towards the inner bottom corner. You will now have a diamond shape.",
+      "Place 1 to 2 teaspoons of the cream cheese filling in the middle, then place berries on top.",
+      "Repeat with the remaining pastry squares and place them onto the parchment covered baking sheet.",
+      "Bake for 15-20 minutes or until pastry is golden brown and puffed.",
+      "Enjoy!"
+    ]
+  },
+  {
+    "id": "mealdb-53450",
+    "title": "Grits",
+    "subtitle": "Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/bfok4w1780242078.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bahamas.gov.bs/native-dishes",
+    "sourceName": "bahamas.gov.bs",
+    "mealdbUrl": "https://www.themealdb.com/meal/53450",
+    "ingredients": [
+      "1/4 cup Grits",
+      "1 tsp Salt",
+      "1 cup Water"
+    ],
+    "instructions": [
+      "Bring water with salt to a boil then add grits; reduce heat and cover. occasionally stirring. Cook approximately 15 minutes or until grits have desired consistency. Cool then serve"
+    ]
+  },
+  {
+    "id": "mealdb-52967",
+    "title": "Home-made Mandazi",
+    "subtitle": "Kenyan · Breakfast",
+    "emoji": "🍳",
+    "image": "https://www.themealdb.com/images/media/meals/thazgm1555350962.jpg",
+    "category": "breakfast",
+    "mealType": "breakfast",
+    "tags": [
+      "breakfast"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "http://chef-raphael.com/home-made-mandazi-recipe/#more-106",
+    "sourceName": "chef-raphael.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52967",
+    "ingredients": [
+      "750g Self-raising Flour",
+      "6 tablespoons Sugar",
+      "2 Eggs",
+      "1 cup Milk"
+    ],
+    "instructions": [
+      "This is one recipe a lot of people have requested and I have tried to make it as simple as possible and I hope it will work for you. Make sure you use the right flour which is basically one with raising agents. Adjust the amount of sugar to your taste and try using different flavours to have variety whenever you have them.",
+      "You can use Coconut milk instead of regular milk, you can also add desiccated coconut to the dry flour or other spices like powdered cloves or cinnamon.",
+      "For “healthy looking” mandazis do not roll the dough too thin before frying and use the procedure I have indicated above.",
+      "Mix the flour,cinnamon and sugar in a suitable bowl.",
+      "In a separate bowl whisk the egg into the milk",
+      "Make a well at the centre of the flour and add the milk and egg mixture and slowly mix to form a dough.",
+      "Knead the dough for 3-4 minutes or until it stops sticking to the sides of the bowl and you have a smooth surface.",
+      "Cover the dough with a damp cloth  and allow to rest for 15 minutes.",
+      "Roll the dough on a lightly floured surface into a 1cm thick piece.",
+      "Using a sharp small knife, cut the dough into the desired size setting aside ready for deep frying.",
+      "Heat your oil in a suitable pot and gently dip the mandazi pieces to cook until light brown on the first side then turn to cook on the second side.",
+      "Serve them warm or cold"
+    ]
+  },
+  {
+    "id": "mealdb-53169",
+    "title": "Ajo blanco",
+    "subtitle": "Spanish",
+    "emoji": "🍽️",
+    "image": "https://www.themealdb.com/images/media/meals/5jdtie1763289302.jpg",
+    "category": "lunch",
+    "mealType": "lunch",
+    "tags": [
+      "lunch"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/ajo-blanco",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53169",
+    "ingredients": [
+      "150g White bread",
+      "200g Almonds",
+      "50 ml Extra Virgin Olive Oil",
+      "1 Garlic Clove",
+      "1 ½ tbsp Red Wine Vinegar"
+    ],
+    "instructions": [
+      "Tip the bread into a bowl and pour over 350ml water. Leave to soak for 10 mins.",
+      "Blend the ingredients together with 350ml water and 1 tsp salt.",
+      "Let the soup cool in the fridge for 1 hr or so, then serve with a drizzle of oil and some black pepper."
+    ]
+  },
+  {
+    "id": "mealdb-53173",
+    "title": "Quick gazpacho",
+    "subtitle": "Spanish",
+    "emoji": "🍽️",
+    "image": "https://www.themealdb.com/images/media/meals/h5qmn31763304965.jpg",
+    "category": "lunch",
+    "mealType": "lunch",
+    "tags": [
+      "lunch"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/quick-gazpacho",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53173",
+    "ingredients": [
+      "250g Passata",
+      "1 chopped Red Pepper",
+      "1 chopped Red Chilli",
+      "1 clove peeled crushed Garlic",
+      "1 teaspoon Sherry vinegar",
+      "Juice of 1/2 Lime"
+    ],
+    "instructions": [
+      "In a blender (or with a stick blender), whizz together the passata, red pepper, chilli, garlic, sherry vinegar and lime juice until smooth. Season to taste, then serve with ice cubes"
+    ]
+  },
+  {
+    "id": "mealdb-53158",
+    "title": "Air fryer patatas bravas",
+    "subtitle": "Spanish · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/3m8yae1763257951.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/air-fryer-patatas-bravas",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53158",
+    "ingredients": [
+      "900g Potatoes",
+      "3  tablespoons Olive Oil",
+      "1 chopped Onion",
+      "1 clove peeled crushed Garlic",
+      "1 tblsp Paprika",
+      "1 tblsp Tomato Puree",
+      "225g Tinned Tomatos",
+      "To serve Basil Leaves"
+    ],
+    "instructions": [
+      "Soak the potatoes in just-boiled water for 30 mins, then drain and leave to air-dry for 5 mins. Heat the air fryer to 200C. Tip the potatoes into a bowl and drizzle over 1 tbsp of the oil and add 1/2 tsp each of salt and freshly ground black pepper. Mix to coat the potatoes all over, then tip into the air fryer basket and cook for 20-30 mins until crisp and golden.",
+      "Meanwhile, heat the remaining oil in a small pan over a medium-low heat and fry the onion for 8-10 mins until softened but not golden. Stir in the garlic and cook for a minute before adding the paprika and cooking for 30 seconds more. Stir in the tomato purée, cook for 1 min, then tip in the chopped tomatoes. Cook for 5-10 mins over a medium heat until thickened slightly.",
+      "Once the potatoes are cooked, tip out onto a platter and pour over the tomato sauce. Sprinkle with the basil leaves, then serve."
+    ]
+  },
+  {
+    "id": "mealdb-53372",
+    "title": "Chinese Tomato Egg Stir Fry",
+    "subtitle": "Chinese · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/rwvw8q1765660071.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.simplyrecipes.com/chinese-tomato-egg-recipe-7562056",
+    "sourceName": "simplyrecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53372",
+    "ingredients": [
+      "1 lb Plum Tomatoes",
+      "1 tablespoon Vegetable Oil",
+      "5 Large Eggs",
+      "1 tsp Sesame Seed Oil",
+      "2 tsp Chicken Bouillon Powder",
+      "2 tsp Sugar",
+      "1/2 tsp Pepper",
+      "1/4 tsp Salt",
+      "1 Spring Onions",
+      "2 cups Jasmine Rice"
+    ],
+    "instructions": [
+      "You can use chicken broth in place of the chicken bouillon powder. Add 1/4 cup of broth followed by 2 teaspoons of cornstarch dissolved in 1 tablespoPrepare the tomatoes:",
+      "Slice the tomatoes in half. Remove the tough stem from each half that connects to the vine. Cut each half into equal thirds (you’ll get 6 slices from each tomato).",
+      "Make the soft scrambled eggs:",
+      "In a cold, 8 to 10-inch nonstick skillet, add the vegetable oil and beaten eggs. Turn the heat to medium. Once a thin layer of eggs is just beginning to cook on the bottom, push the eggs in one direction to create layers of scrambled eggs.",
+      "Cook, gently stirring the whole time, until the scramble eggs are mostly set but still slightly wet and shiny, 2 to 5 minutes. Remove the eggs to a plate and, if needed, wipe out the pan.",
+      "Stir-fry the tomatoes and seasonings:",
+      "Add the sesame oil to the pan followed by the tomatoes and stir-fry over medium heat until the tomatoes are softened but not mushy, about 3 minutes. Add the chicken bouillon powder, sugar, and white pepper. Toss until combined and the sugar and bouillon have dissolved, about 1 minute.",
+      "Add eggs, stir-fry, and garnish:",
+      "Add the eggs back to the pan with the tomatoes. Stir-fry for about 2 minutes to heat through and combine. Taste, adding salt only if needed. Sprinkle with the green onions and serve with steamed rice.on of water, plus salt to taste."
+    ]
+  },
+  {
+    "id": "mealdb-52955",
+    "title": "Egg Drop Soup",
+    "subtitle": "Chinese · Vegetarian",
+    "emoji": "🥣",
+    "image": "https://www.themealdb.com/images/media/meals/1529446137.jpg",
+    "category": "lunch",
+    "mealType": "lunch",
+    "tags": [
+      "veggie",
+      "lunch"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://sueandgambo.com/pages/egg-drop-soup",
+    "sourceName": "sueandgambo.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52955",
+    "ingredients": [
+      "3 cups Chicken Stock",
+      "1/4 tsp Salt",
+      "1/4 tsp Sugar",
+      "pinch Pepper",
+      "1 tsp Sesame Seed Oil",
+      "1/3 cup Peas",
+      "1/3 cup Mushrooms",
+      "1 tbs Cornstarch",
+      "2 tbs Water",
+      "1/4 cup Spring Onions"
+    ],
+    "instructions": [
+      "In a wok add chicken broth and wait for it to boil.",
+      "Next add salt, sugar, white pepper, sesame seed oil.",
+      "When the chicken broth is boiling add the vegetables to the wok.",
+      "To thicken the sauce, whisk together 1 Tablespoon of cornstarch and 2 Tablespoon of water in a bowl and slowly add to your soup until it's the right thickness.",
+      "Next add 1 egg slightly beaten with a knife or fork and add it to the soup slowly and stir for 8 seconds",
+      "Serve the soup in a bowl and add the green onions on top."
+    ]
+  },
+  {
+    "id": "mealdb-53012",
+    "title": "Gigantes Plaki",
+    "subtitle": "Greek · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/b79r6f1585566277.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/gigantes-plaki",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53012",
+    "ingredients": [
+      "400g Butter Beans",
+      "3 tbs Olive Oil",
+      "1 chopped Onion",
+      "2 chopped Garlic Clove",
+      "2 tbs Tomato Puree",
+      "800g Tomatoes",
+      "1 tbs Sugar",
+      "1 tbs Dried Oregano",
+      "Pinch Cinnamon",
+      "2 tbs Chopped Parsley"
+    ],
+    "instructions": [
+      "Soak the beans overnight in plenty of water. Drain, rinse, then place in a pan covered with water. Bring to the boil, reduce the heat, then simmer for approx 50 mins until slightly tender but not soft. Drain, then set aside.",
+      "Heat oven to 180C/160C fan/gas 4. Heat the olive oil in a large frying pan, tip in the onion and garlic, then cook over a medium heat for 10 mins until softened but not browned. Add the tomato purée, cook for a further min, add remaining ingredients, then simmer for 2-3 mins. Season generously, then stir in the beans. Tip into a large ovenproof dish, then bake for approximately 1 hr, uncovered and without stirring, until the beans are tender. The beans will absorb all the fabulous flavours and the sauce will thicken. Allow to cool, then scatter with parsley and drizzle with a little more olive oil to serve."
+    ]
+  },
+  {
+    "id": "mealdb-53047",
+    "title": "Moroccan Carrot Soup",
+    "subtitle": "Moroccan · Vegetarian",
+    "emoji": "🥣",
+    "image": "https://www.themealdb.com/images/media/meals/jcr46d1614763831.jpg",
+    "category": "lunch",
+    "mealType": "lunch",
+    "tags": [
+      "veggie",
+      "lunch"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.sanjeevkapoor.com/Recipe/Moroccan-Carrot-Soup.html",
+    "sourceName": "sanjeevkapoor.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53047",
+    "ingredients": [
+      "6 chopped Carrots",
+      "1 sliced Onion",
+      "4 Garlic Clove",
+      "1 tsp Cumin",
+      "1/2 tsp Coriander",
+      "1 tbs Olive Oil",
+      "1/4 tsp Garam Masala",
+      "1 tsp Lemon Juice"
+    ],
+    "instructions": [
+      "Preheat oven to 180° C.",
+      "Combine carrots, onion, garlic, cumin seeds, coriander seeds, salt and olive oil in a bowl and mix well. Transfer on a baking tray.",
+      "Put the baking tray in preheated oven and roast for 10-12 minutes or till carrots soften. Remove from heat and cool.",
+      "Grind the baked carrot mixture along with some water to make a smooth paste and strain in a bowl.",
+      "Heat the carrot mixture in a non-stick pan. Add two cups of water and bring to a boil. Add garam masala powder and mix. Add salt and mix well.",
+      "Remove from heat, add lemon juice and mix well.",
+      "Serve hot."
+    ]
+  },
+  {
+    "id": "mealdb-53160",
+    "title": "Pisto con huevos",
+    "subtitle": "Spanish · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/0nswfe1763279040.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/pisto-con-huevos",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53160",
+    "ingredients": [
+      "2 tblsp Olive Oil",
+      "2 Onion",
+      "4 Chopped Garlic Clove",
+      "5 Mixed peppers",
+      "1 teaspoon Oregano",
+      "Sprigs of fresh Thyme",
+      "4 leaves Bay Leaves",
+      "2 chopped Courgettes",
+      "1 chopped Aubergine",
+      "4 large Tomato",
+      "4 large Egg",
+      "Handful Parsley"
+    ],
+    "instructions": [
+      "Heat the oil in a large flameproof casserole dish or a cast-iron skillet over a low heat. Add the onions and a sprinkle of salt, cover and cook gently for 15 mins, stirring occasionally. Add the garlic and cook for another 2 mins.",
+      "Next, throw in the peppers and cook over a medium heat, covered, for about 5 mins, stirring every so often, until the peppers are just tender.",
+      "Mix in the oregano, thyme, bay leaves, some black pepper and a little salt, if needed. Tip in the courgettes and aubergine, combine thoroughly, and cook over a medium heat, covered, for 10 mins. Stir in the tomatoes, cover and cook for 20 mins, stirring occasionally.",
+      "Carefully crack the eggs over the pisto – try not to break the yolks. Cook in the sauce on a medium heat for 5-6 mins until the eggs are cooked through but still a little soft, then scatter with parsley before serving"
+    ]
+  },
+  {
+    "id": "mealdb-52811",
+    "title": "Ribollita",
+    "subtitle": "Italian · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/xrrwpx1487347049.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://cooking.nytimes.com/recipes/1016052-ribollita",
+    "sourceName": "cooking.nytimes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52811",
+    "ingredients": [
+      "5 tablespoons Olive Oil",
+      "1 chopped Onion",
+      "1 chopped Carrots",
+      "1 stalk chopped Celery",
+      "1 tablespoon minced Garlic",
+      "2 cups Cannellini Beans",
+      "1 Canned tomatoes",
+      "4 cups Water",
+      "1 fresh sprig Rosemary",
+      "1 fresh sprig Thyme",
+      "1 pound chopped Kale",
+      "4 thick slices Wholegrain Bread",
+      "1 thinly sliced Red Onions",
+      "½ cup freshly grated Parmesan"
+    ],
+    "instructions": [
+      "Put 2 tablespoons of the oil in a large pot over medium heat. When it’s hot, add onion, carrot, celery and garlic; sprinkle with salt and pepper and cook, stirring occasionally, until vegetables are soft, 5 to 10 minutes.",
+      "Heat the oven to 500 degrees. Drain the beans; if they’re canned, rinse them as well. Add them to the pot along with tomatoes and their juices and stock, rosemary and thyme. Bring to a boil, then reduce heat so the soup bubbles steadily; cover and cook, stirring once or twice to break up the tomatoes, until the flavors meld, 15 to 20 minutes.",
+      "Fish out and discard rosemary and thyme stems, if you like, and stir in kale. Taste and adjust seasoning. Lay bread slices on top of the stew so they cover the top and overlap as little as possible. Scatter red onion slices over the top, drizzle with the remaining 3 tablespoons oil and sprinkle with Parmesan.",
+      "Put the pot in the oven and bake until the bread, onions and cheese are browned and crisp, 10 to 15 minutes. (If your pot fits under the broiler, you can also brown the top there.) Divide the soup and bread among 4 bowls and serve."
+    ]
+  },
+  {
+    "id": "mealdb-53374",
+    "title": "Sichuan Eggplant",
+    "subtitle": "Chinese · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/1oz4nb1765687990.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.simplyrecipes.com/recipes/sichuan_eggplant/",
+    "sourceName": "simplyrecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53374",
+    "ingredients": [
+      "1.5 pounds sliced Egg Plants",
+      "2 tablespoons Peanut Oil",
+      "1/4 cup Chicken Stock",
+      "2 tsp Sugar",
+      "1/2 tsp Soy Sauce",
+      "1 ½ tbsp Chilli Bean Paste",
+      "2 tsp Sichuan Pepper",
+      "2 tsp Ginger",
+      "5 cloves Garlic",
+      "1 tsp Cornstarch",
+      "2 tsp Apple Cider Vinegar",
+      "4 Chopped Scallions",
+      "Garnish Cilantro"
+    ],
+    "instructions": [
+      "This recipe calls for asian eggplants, or Japanese eggplants. They are long and thin compared to a European or globe eggplant, and much more tender and delicate. If you can't find them you can substitute globe eggplant, but the dish is really best with the asian eggplant.",
+      "*A lot of grocery stores have Asian ingredient aisles now. You should be able to find chili-bean paste, a mixture of preserved chilies mixed with mashed soybeans, there or at any Asian market. (Do not confuse with black bean paste or chili-garlic paste.)",
+      "**Sichuan peppercorns are available at some stores and online for quite cheap. They aren't spicy like other peppers but rather have a citrusy flavor and induce a tingly, numbing sensation like a carbonated drink.",
+      "Prep eggplant, chili sauce, cornstarch slurry, vinegar and scallions:",
+      "Begin your mise en place. Quarter the eggplant lengthwise and chop into large batons and set aside.",
+      "In a small bowl, mix together the chicken stock, sugar, and soy sauce and set it aside.",
+      "In a second bowl, mix together the chili bean paste, garlic, ginger, and sichuan peppercorns and set it aside.",
+      "In a third bowl, mix together the cornstarch with a tablespoon of water and set it aside.",
+      "Lastly, in a fourth bowl, mix together the scallions and vinegar and set it aside.",
+      "Sauté eggplant:",
+      "Place the oil in a wok or large sauté pan over medium-high heat until the oil is almost smoking. Add the eggplant and sauté, allowing it to sit for a few seconds each time you move it to allow it to brown and blister. If the eggplant absorbs all the oil and some pieces don't get any then add a little more oil.",
+      "Add the chili bean paste, garlic, ginger, and sichuan peppercorns and sauté:",
+      "until fragrant, about 30 seconds.",
+      "Add the chicken stock mixture:",
+      "turn the heat to medium-low and simmer for 90 seconds.",
+      "Add the cornstarch mixture:",
+      "and stir together until the sauce thickens a bit.",
+      "Add the scallions and vinegar:",
+      "and cook for 15 seconds to diffuse their harsh flavors a bit.",
+      "Garnish with cilantro and serve."
+    ]
+  },
+  {
+    "id": "mealdb-53371",
+    "title": "Sichuan Style Stir-Fried Chinese Long Beans",
+    "subtitle": "Chinese · Vegetarian",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/i0610h1765659464.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.simplyrecipes.com/recipes/sichuan_style_stir_fried_chinese_long_beans/",
+    "sourceName": "simplyrecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53371",
+    "ingredients": [
+      "1/2 lb Chinese Long Beans",
+      "1 tablespoon Peanut Oil",
+      "6 Dried Chillies",
+      "1 tsp Sichuan Pepper",
+      "1/4 tsp Salt",
+      "1/2 tsp Sugar",
+      "1 tablespoon Sesame Seed Oil",
+      "Splash Soy Sauce"
+    ],
+    "instructions": [
+      "Chinese long beans can be found in both green and purple varieties. Both have similar flavors and textures, and either kind can be used for this recipe.",
+      "If you don't have a wok, use a sturdy, large sauté pan that has at least a two-inch lip."
+    ]
+  },
+  {
+    "id": "mealdb-52942",
+    "title": "Roast fennel and aubergine paella",
+    "subtitle": "Spanish · Vegan",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/1520081754.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.homestylemag.co.uk/recipe/517/main-courses/roast-fennel-and-aubergine-paella",
+    "sourceName": "homestylemag.co.uk",
+    "mealdbUrl": "https://www.themealdb.com/meal/52942",
+    "ingredients": [
+      "6 small Baby Aubergine",
+      "4 small Fennel",
+      "1 thinly sliced Red Pepper",
+      "1 medium Courgettes",
+      "1 finely chopped Onion",
+      "300g Paella Rice",
+      "1 tsp Paprika",
+      "pinch Saffron",
+      "200ml White Wine",
+      "700ml Vegetable Stock",
+      "100g Frozen Peas",
+      "1 chopped Lemon",
+      "Handful Parsley",
+      "pinch Salt",
+      "pinch Black Pepper"
+    ],
+    "instructions": [
+      "1 Put the fennel, aubergine, pepper and courgette in a roasting tray. Add a glug of olive oil, season with salt and pepper and toss around to coat the veggies in the oil. Roast in the oven for 20 minutes, turning a couple of times until the veg are pretty much cooked through and turning golden.",
+      "2 Meanwhile, heat a paella pan or large frying pan over a low– medium heat and add a glug of olive oil. Sauté the onion for 8–10 minutes until softened. Increase the heat to medium and stir in the rice, paprika and saffron. Cook for around 1 minute to start toasting the rice, then add the white wine. Reduce by about half before stirring in two-thirds of the stock. Reduce to a simmer and cook for 10 minutes without a lid, stirring a couple of times.",
+      "3 Stir in the peas, add some seasoning, then gently mix in the roasted veg. Pour over the remaining stock, arrange the lemon wedges on top and cover with a lid or some aluminium foil. Cook for a further 10 minutes.",
+      "4 To ensure you get the classic layer of toasted rice at the bottom of the pan, increase the heat to high until you hear a slight crackle. Remove from the heat and sit for 5 minutes before sprinkling over the parsley and serving."
+    ]
+  },
+  {
+    "id": "mealdb-53250",
+    "title": "Vegan banh mi",
+    "subtitle": "Vietnamese · Vegan",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/sonirb1763782831.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/boxing-day-banh-mi",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53250",
+    "ingredients": [
+      "150g Raw Vegetables",
+      "3  tablespoons Vegan White Wine Vinegar",
+      "1 tsp Golden Caster Sugar",
+      "1 large Baguette",
+      "100g Hummus",
+      "175g Tempeh",
+      "Handful Coriander",
+      "Handful Mint",
+      "To serve Hotsauce"
+    ],
+    "instructions": [
+      "Put the shredded veg in a bowl and add the vinegar, sugar and 1 tsp salt. Toss everything together, then set aside to pickle quickly while you prepare the rest of the sandwich.",
+      "Heat oven to 180C/160C fan/gas 4. Cut the baguette into four, then slice each piece horizontally in half. Put the baguette pieces in the oven for 5 mins until lightly toasted and warm. Spread each piece with a layer of hummus, then top four pieces with the tempeh slices and pile the pickled veg on top. To serve, sprinkle over the herbs and squeeze over some hot sauce, then top with the other baguette pieces to make sandwiches."
+    ]
+  },
+  {
+    "id": "mealdb-52775",
+    "title": "Vegan Lasagna",
+    "subtitle": "Italian · Vegan",
+    "emoji": "🥗",
+    "image": "https://www.themealdb.com/images/media/meals/rvxxuy1468312893.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "veggie",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/52775",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/52775",
+    "ingredients": [
+      "1 cups green red lentils",
+      "1 Carrots",
+      "1 onion",
+      "1 small zucchini",
+      "sprinking coriander",
+      "150g spinach",
+      "10 lasagne sheets",
+      "35g vegan butter",
+      "4 tablespoons flour",
+      "300ml soya milk",
+      "1.5 teaspoons mustard",
+      "1 teaspoon vinegar"
+    ],
+    "instructions": [
+      "Preheat oven to 180 degrees celcius.",
+      "Boil vegetables for 5-7 minutes, until soft. Add lentils and bring to a gentle simmer, adding a stock cube if desired. Continue cooking and stirring until the lentils are soft, which should take about 20 minutes.",
+      "Blanch spinach leaves for a few minutes in a pan, before removing and setting aside.",
+      "Top up the pan with water and cook the lasagne sheets. When cooked, drain and set aside.",
+      "To make the sauce, melt the butter and add the flour, then gradually add the soya milk along with the mustard and the vinegar. Cook and stir until smooth and then assemble the lasagne as desired in a baking dish.",
+      "Bake in the preheated oven for about 25 minutes."
+    ]
+  },
+  {
+    "id": "mealdb-53147",
+    "title": "Arroz con gambas y calamar",
+    "subtitle": "Spanish · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/jc6oub1763196663.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/arroz-con-gambas-y-calamar",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53147",
+    "ingredients": [
+      "24 Raw King Prawns",
+      "2 tbsp Olive Oil",
+      "1 small Onion",
+      "1 Bay Leaf",
+      "1 pinch Saffron",
+      "450g Paella Rice",
+      "2 teaspoons Tomato Puree",
+      "200ml White Wine",
+      "650ml Seafood stock",
+      "3 Medium Squid"
+    ],
+    "instructions": [
+      "Peel and devein most of the prawns (a fishmonger should be able to do this for you), keeping a few whole for decoration, if you like. Heat the olive oil in a large frying pan or shallow flameproof casserole over a medium-low heat and fry the onion for 5 mins until softened. Add the bay leaf, saffron, rice and tomato purée, and cook for 1-2 mins more, stirring.",
+      "Pour in the wine and bubble for 1-2 mins, then pour in the seafood stock and 150ml water. Cook for 5 mins, then add the squid, season well and stir to combine. Bring to the boil, then cover and reduce the heat to a gentle simmer. Cook for 12 mins more, adding a little more water if the mixture starts to look dry.",
+      "Uncover the pan and stir through the peeled prawns, then arrange any whole prawns on top of the rice mixture. Cover again and simmer for a further 5-6 mins until the prawns are pink and cooked through. Leave to stand for a couple of minutes before serving from the pan."
+    ]
+  },
+  {
+    "id": "mealdb-53239",
+    "title": "Bang bang prawn salad",
+    "subtitle": "Vietnamese · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/4xcfai1763765676.jpg",
+    "category": "lunch",
+    "mealType": "lunch",
+    "tags": [
+      "lunch"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/bang-bang-prawn-salad",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53239",
+    "ingredients": [
+      "140g Rice Noodles",
+      "3 tablespoons Peanut Butter",
+      "4 tablespoons Coconut Milk",
+      "3  tablespoons sweet chilli sauce",
+      "3 sliced thinly Spring Onions",
+      "1 sliced Cucumber",
+      "300g Bean Sprouts",
+      "200g Prawns"
+    ],
+    "instructions": [
+      "Cook the noodles following pack instructions, then rinse under cold water and drain thoroughly. In a small saucepan melt together the peanut butter, coconut milk, sweet chilli sauce and half the spring onions, adding 1-2 tbsp of water to loosen the mixture to a drizzling consistency.",
+      "Mix the noodles, cucumber and beansprouts in a serving dish. Top with the prawns, drizzle over the peanut sauce and scatter over the remaining spring onions."
+    ]
+  },
+  {
+    "id": "mealdb-52819",
+    "title": "Cajun spiced fish tacos",
+    "subtitle": "Mexican · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/uvuyxu1503067369.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://realfood.tesco.com/recipes/cajun-spiced-fish-tacos.html",
+    "sourceName": "realfood.tesco.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52819",
+    "ingredients": [
+      "2 tbsp cajun",
+      "1 tsp cayenne pepper",
+      "4 fillets white fish",
+      "1 tsp vegetable oil",
+      "8 flour tortilla",
+      "1 sliced avocado",
+      "2 shredded little gem lettuce",
+      "4 shredded Spring Onions",
+      "1 x 300ml salsa",
+      "1 pot sour cream",
+      "1 lemon",
+      "1 clove finely chopped garlic"
+    ],
+    "instructions": [
+      "Cooking in a cajun spice and cayenne pepper marinade makes this fish super succulent and flavoursome. Top with a zesty dressing and serve in a tortilla for a quick, fuss-free main that's delightfully summery.",
+      "On a large plate, mix the cajun spice and cayenne pepper with a little seasoning and use to coat the fish all over.",
+      "Heat a little oil in a frying pan, add in the fish and cook over a medium heat until golden. Reduce the heat and continue frying until the fish is cooked through, about 10 minutes. Cook in batches if you don’t have enough room in the pan.",
+      "Meanwhile, prepare the dressing by combining all the ingredients with a little seasoning.",
+      "Soften the tortillas by heating in the microwave for 5-10 seconds. Pile high with the avocado, lettuce and spring onion, add a spoonful of salsa, top with large flakes of fish and drizzle over the dressing."
+    ]
+  },
+  {
+    "id": "mealdb-53154",
+    "title": "Clam, chorizo & white bean stew",
+    "subtitle": "Spanish · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/92wbmf1763252334.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/clam-chorizo-white-bean-stew",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53154",
+    "ingredients": [
+      "50g Chorizo",
+      "1 chopped Onion",
+      "1 Garlic Clove",
+      "Bunch Parsley",
+      "200ml Vegetable Stock",
+      "400g Tinned Tomatos",
+      "400g Butter Beans",
+      "1 teaspoon Sherry vinegar",
+      "600g Clams",
+      "To serve Crusty Bread"
+    ],
+    "instructions": [
+      "Fry the chorizo in a large frying pan with a lid, over a medium heat until it is starting to crisp up and release its oil. Add the onion and cook for 5 mins until starting to soften. Then add the garlic and finely chopped parsley, and fry for 1 min more.",
+      "Pour on the stock and tomatoes. Bring to the boil, reduce the heat, then add the beans and sherry vinegar. Simmer for 10 mins until the liquid is slightly reduced.",
+      "Scatter over the clams, cover with the lid and steam for 2-4 mins, shaking the pan occasionally until the clams are open. Have a little taste before seasoning, as the clams can be quite salty. Then scatter over the chopped parsley. Eat with lots of crusty bread."
+    ]
+  },
+  {
+    "id": "mealdb-53370",
+    "title": "Egg Foo Young",
+    "subtitle": "Chinese · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/47y6ii1765658818.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.simplyrecipes.com/egg-foo-young-recipe-6890222",
+    "sourceName": "simplyrecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53370",
+    "ingredients": [
+      "1 cup Unsalted Beef Stock",
+      "1 tablespoon Soy Sauce",
+      "1 tablespoon Shaoxing Wine",
+      "1 tablespoon Oyster Sauce",
+      "1/2 tsp Pepper",
+      "1 tablespoon Cornstarch",
+      "1 tablespoon Water",
+      "1 tablespoon Cornstarch",
+      "1 tablespoon Water",
+      "8 large Egg",
+      "1/2 tsp Kosher Salt",
+      "1/4 tsp Sugar",
+      "1 Spring Onions",
+      "1 cup Mung Bean Sprouts",
+      "20 Shrimp",
+      "3 Cups Vegetable Oil",
+      "2 cups Jasmine Rice"
+    ],
+    "instructions": [
+      "Make the gravy:",
+      "In a small saucepan, add the beef stock, soy sauce, Shaoxing wine, oyster sauce, and white pepper powder over medium heat. Whisk together and bring to a simmer.",
+      "Combine the cornstarch and water in a small bowl and whisk to dissolve. Add to the saucepan and whisk until the gravy thickens and coats the back of the spoon, 2 to 3 minutes. Cover the saucepan with a lid and keep it warm on the lowest possible heat.",
+      "Make the egg foo young batter:",
+      "In a medium bowl, whisk together the cornstarch and water until dissolved. Add the eggs, salt, and sugar. Whisk until well combined and there are no more egg white clumps.",
+      "Add the green onion, bean sprouts, and shrimp. Stir until everything is evenly coated.",
+      "Fry the egg foo young:",
+      "Add the vegetable oil to a large wok; it should reach about 2 inches up the sides. Heat the oil over medium-high heat to 350°F, or until vigorous bubbles form around an inserted wooden chopstick.",
+      "With a ladle, gently and slowly add 1/4 of the omelet batter. Egg foo young should immediately bubble and puff up like magic. Fry until golden brown and crispy on each side, about 2 minutes per side. If there are any light spots, use a ladle to gently baste it with hot oil.",
+      "Tip",
+      "Egg foo young can be a bit tricky to flip. The easiest method is to put a tool in each hand (a spider, slotted spoon, tongs, and large chopsticks are all good candidates) and gently coax the omelet over, pulling up on one side and pushing down and around on the other.",
+      "Remove the omelet and place it on a paper towel-lined baking sheet. Let it cool for 5 minutes. Meanwhile, repeat with the remaining batter to make 4 omelets. If needed, add more oil to the pan between batches.",
+      "Serve and enjoy:",
+      "Plate each egg foo young over a bed of rice. Spoon the warm gravy over the top and serve immediately."
+    ]
+  },
+  {
+    "id": "mealdb-53178",
+    "title": "Fried calamari",
+    "subtitle": "Spanish · Seafood",
+    "emoji": "🐟",
+    "image": "https://www.themealdb.com/images/media/meals/yhi46r1763330279.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/crispy-squid-capers",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53178",
+    "ingredients": [
+      "300g Squid",
+      "200g Plain Flour",
+      "2 tblsp Capers",
+      "1 clove peeled crushed Garlic",
+      "5 tblsp Mayonnaise",
+      "For frying Vegetable Oil",
+      "To serve Lemon"
+    ],
+    "instructions": [
+      "Cut the squid into rings about ½cm thick. Tip the flour into a freezer bag and season well. Add the capers, then give everything a good shake to mix together. Tip the squid into the bag, then shake again until all the rings are well coated. Mix together the garlic and mayonnaise, then place in a serving bowl.",
+      "Pour some oil into a large pan until it comes about 7cm up the sides, but the pan is no more than a third full. Place over a medium heat and let the oil warm up. To test that the oil is ready, place a small piece of bread in the pan – it should sizzle when it touches the oil.",
+      "Remove a handful of squid from the flour and shake off any excess. Gently drop into the oil, then cook for about 3 mins until crisp. Remove with a slotted spoon and place on kitchen paper. Repeat with the remaining squid. Serve straight away with the mayonnaise and lemon wedges."
+    ]
+  },
+  {
+    "id": "mealdb-53161",
+    "title": "Chicken & chorizo rice pot",
+    "subtitle": "Spanish · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/fk80jp1763280767.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/chicken-chorizo-rice-pot",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53161",
+    "ingredients": [
+      "1 tblsp Oil",
+      "1 whole Chicken",
+      "1 Large Chopped Onion",
+      "1 chopped Red Pepper",
+      "3 Cloves Crushed Garlic",
+      "225g Chorizo",
+      "1 tblsp Tomato Puree",
+      "1 tablespoon chopped Thyme",
+      "150ml White Wine",
+      "800ml Chicken Stock",
+      "400g Rice",
+      "2 tbs chopped Parsley"
+    ],
+    "instructions": [
+      "Heat the oil in a large flameproof casserole dish and brown the chicken pieces on all sides – you may have to do this in batches. Remove from the dish and put to one side.",
+      "Lower the heat, add the onion and pepper, and gently cook for 10 mins until softened. Add the garlic and chorizo, and cook for a further 2 mins until the chorizo has released some of its oils into the dish. Stir in the tomato purée and cook for 1 min more.",
+      "Return the chicken pieces to the dish along with the thyme, white wine and stock. Bring the liquid to a boil, cover the dish with a tight-fitting lid and lower the heat. Cook for 30 mins.",
+      "Tip in the rice and stir everything together. Cover, set over a low heat and cook for a further 15 mins, or until the rice is cooked and has absorbed most of the cooking liquid. Remove from the heat and leave the dish to sit for 10 mins to absorb any remaining liquid. Season to taste and scatter with parsley to serve."
+    ]
+  },
+  {
+    "id": "mealdb-52796",
+    "title": "Chicken Alfredo Primavera",
+    "subtitle": "Italian · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/syqypv1486981727.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/52796",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/52796",
+    "ingredients": [
+      "2 tablespoons Butter",
+      "3 tablespoons Olive Oil",
+      "5 boneless Chicken",
+      "1 teaspoon Salt",
+      "1 cut into 1/2-inch cubes Squash",
+      "1 Head chopped Broccoli",
+      "8-ounce sliced mushrooms",
+      "1 red Pepper",
+      "1 chopped onion",
+      "3 cloves garlic",
+      "1/2 teaspoon red pepper flakes",
+      "1/2 cup white wine",
+      "1/2 cup milk",
+      "1/2 cup heavy cream",
+      "1 cup grated Parmesan cheese",
+      "16 ounces bowtie pasta",
+      "pinch Salt",
+      "pinch Pepper",
+      "chopped Parsley"
+    ],
+    "instructions": [
+      "Heat 1 tablespoon of butter and 2 tablespoons of olive oil in a large skillet over medium-high heat. Season both sides of each chicken breast with seasoned salt and a pinch of pepper. Add the chicken to the skillet and cook for 5-7 minutes on each side, or until cooked through.  While the chicken is cooking, bring a large pot of water to a boil. Season the boiling water with a few generous pinches of kosher salt. Add the pasta and give it a stir. Cook, stirring occasionally, until al dente, about 12 minutes. Reserve 1/2 cup of  pasta water before draining the pasta.  Remove the chicken from the pan and transfer it to a cutting board; allow it to rest. Turn the heat down to medium and dd the remaining 1 tablespoon of butter and olive oil to the same pan you used to cook the chicken. Add the veggies (minus the garlic) and red pepper flakes to the pan and stir to coat with the oil and butter (refrain from seasoning with salt until the veggies are finished browning). Cook, stirring often, until the veggies are tender, about 5 minutes. Add the garlic and a generous pinch of salt and pepper to the pan and cook for 1 minute.  Deglaze the pan with the white wine. Continue to cook until the wine has reduced by half, about 3 minutes. Stir in the milk, heavy cream, and reserved pasta water. Bring the mixture to a gentle boil and allow to simmer and reduce for 2-3 minutes. Turn off the heat and add the Parmesan cheese and cooked pasta. Season with salt and pepper to taste. Garnish with Parmesan cheese and chopped parsley, if desired."
+    ]
+  },
+  {
+    "id": "mealdb-52956",
+    "title": "Chicken Congee",
+    "subtitle": "Chinese · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/1529446352.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://sueandgambo.com/pages/chicken-congee",
+    "sourceName": "sueandgambo.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52956",
+    "ingredients": [
+      "8 oz Chicken",
+      "pinch Salt",
+      "pinch Pepper",
+      "1 tsp Ginger Cordial",
+      "1 tsp Ginger",
+      "1 tbs Spring Onions",
+      "1/2 cup Rice",
+      "8 cups Water",
+      "2 oz Coriander"
+    ],
+    "instructions": [
+      "- MARINATING THE CHICKEN",
+      "In a bowl, add chicken, salt, white pepper, ginger juice and then mix it together well.",
+      "Set the chicken aside.",
+      "- RINSE THE WHITE RICE",
+      "Rinse the rice in a metal bowl or pot a couple times and then drain the water.",
+      "- BOILING THE WHITE RICE",
+      "Next add 8 cups of water and then set the stove on high heat until it is boiling. Once rice porridge starts to boil, set the stove on low heat and then stir it once every 8-10 minutes for around 20-25 minutes.",
+      "After 25 minutes, this is optional but you can add a little bit more water to make rice porridge to make it less thick or to your preference.",
+      "Next add the marinated chicken to the rice porridge and leave the stove on low heat for another 10 minutes.",
+      "After an additional 10 minutes add the green onions, sliced ginger, 1 pinch of salt, 1 pinch of white pepper and stir for 10 seconds.",
+      "Serve the rice porridge in a bowl",
+      "Optional: add Coriander on top of the rice porridge."
+    ]
+  },
+  {
+    "id": "mealdb-52831",
+    "title": "Chicken Karaage",
+    "subtitle": "Japanese · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/tyywsw1505930373.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://norecipes.com/karaage-recipe",
+    "sourceName": "norecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52831",
+    "ingredients": [
+      "450 grams Boneless skin Chicken",
+      "1 tablespoon Ginger",
+      "1 clove Garlic",
+      "2 tablespoons Soy sauce",
+      "1 tablespoon Sake",
+      "2 teaspoon Granulated sugar",
+      "1/3 cup Potato starch",
+      "1/3 cup Vegetable oil",
+      "1/3 cup Lemon"
+    ],
+    "instructions": [
+      "Add the ginger, garlic, soy sauce, sake and sugar to a bowl and whisk to combine. Add the chicken, then stir to coat evenly. Cover and refrigerate for at least 1 hour.",
+      "Add 1 inch of vegetable oil to a heavy bottomed pot and heat until the oil reaches 360 degrees F. Line a wire rack with 2 sheets of paper towels and get your tongs out. Put the potato starch in a bowl",
+      "Add a handful of chicken to the potato starch and toss to coat each piece evenly.",
+      "Fry the karaage in batches until the exterior is a medium brown and the chicken is cooked through. Transfer the fried chicken to the paper towel lined rack. If you want the karaage to stay crispy longer, you can fry the chicken a second time, until it's a darker color after it's cooled off once. Serve with lemon wedges."
+    ]
+  },
+  {
+    "id": "mealdb-53186",
+    "title": "Chicken with saffron, raisins & pine nuts",
+    "subtitle": "Spanish · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/4mhr3u1763481087.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/chicken-saffron-raisins-pine-nuts",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53186",
+    "ingredients": [
+      "1.25kg Chicken",
+      "2 tblsp Olive Oil",
+      "3 cloves Chopped Garlic",
+      "Pinch Saffron",
+      "125ml Dry sherry",
+      "200ml Chicken Stock",
+      "1 tbsp Thyme",
+      "50g Raisins",
+      "2 tbsp Pine Nuts",
+      "Handful Parsley"
+    ],
+    "instructions": [
+      "Heat a large frying pan on a high heat and season the chicken. Add the olive oil to the pan, then the chicken. Brown for about 5 mins on each side, remove onto a plate, then set aside.",
+      "Lower the heat to medium. In the remaining fat, fry the onions for 3 mins, then add the garlic and saffron. Cook for 3-4 mins more. Add the sherry, then simmer for 3-5 mins until syrupy.",
+      "Put the chicken leg pieces back into the pan, tip in the stock, thyme and raisins, cover, then gently cook on a low heat for 20 mins. Add the breast meat and any juices left on the plate. Simmer for 10 mins more until cooked through and the sauce in the pan has reduced.",
+      "While the chicken is cooking, heat oven to 200C/180C fan/gas 6. Scatter the pine nuts over a baking sheet, then roast for 10 mins until golden and toasted. Once the chicken has cooked through, season to taste, scatter with pine nuts and parsley, then serve with rice."
+    ]
+  },
+  {
+    "id": "mealdb-53365",
+    "title": "Chinese Orange Chicken",
+    "subtitle": "Chinese · Chicken",
+    "emoji": "🍗",
+    "image": "https://www.themealdb.com/images/media/meals/s73ytv1765567838.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.simplyrecipes.com/recipes/chinese_orange_chicken/",
+    "sourceName": "simplyrecipes.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/53365",
+    "ingredients": [
+      "Zest of 1 Orange",
+      "1/4 cup Orange Juice",
+      "1/4 cup Soy Sauce",
+      "1/4 cup Water",
+      "1/3 cup Rice Vinegar",
+      "1 tablespoon Cornstarch",
+      "1 tablespoon Sesame Seed Oil",
+      "1/2 cup Sugar",
+      "650g Chicken Thighs",
+      "2 large Egg",
+      "1 tsp Salt",
+      "1/4 tsp Black Pepper",
+      "1/2 cup Cornstarch",
+      "1/2 cup All purpose flour",
+      "2 cups Vegetable Oil",
+      "2 cloves chopped Garlic",
+      "1 chopped Shallots",
+      "Sliced Scallions",
+      "Garnish Sesame Seed",
+      "To serve Rice"
+    ],
+    "instructions": [
+      "Make the orange sauce:",
+      "Whisk together sauce ingredients in a medium bowl. Set aside.",
+      "Prep the chicken:",
+      "Cut chicken into about 1-inch cubes. Whisk eggs with salt and black pepper in a bowl and add chicken. Stir together.",
+      "In a separate bowl, whisk together flour and cornstarch. Remove chicken from eggs with a slotted spoon or tongs, letting excess egg drain off, then transfer to cornstarch mixture and coat well.",
+      "Fry the chicken:",
+      "Add oil to a large 10- to 12-inch skillet. Heat over medium-high heat until it reaches 350°F. If you don’t have a thermometer, you can also test the temperature by sprinkling in some flour. If the oil is hot enough, it should fizzle immediately.",
+      "Once oil is hot, fry the chicken in two batches. The oil might not completely cover the chicken—that’s okay. Cook for 3 to 4 minutes. Flip the chicken pieces and cook until the chicken is cooked through, about 3 to 4 more minutes. Total cook time is about 6 to 8 minutes.",
+      "Remove fried chicken cubes and transfer to a plate lined with paper towels, so the chicken can drain. Repeat until all the chicken is cooked.",
+      "Simmer the chicken in the sauce:",
+      "Once chicken is done, pour out hot oil and wipe pan clean. Add a fresh tablespoon of oil along with chopped garlic and shallot. Cook for a minute and then add the sauce. Simmer the sauce until it starts to thicken.",
+      "Once the sauce is lightly bubbling, add fried chicken and toss together to coat. The sauce should continue to thicken and stick to the chicken. Let simmer for a minute or two more. Serve orange chicken over cooked white rice, garnished with sesame seeds and fresh scallions.",
+      "Did you love this recipe? Let us know with a rating and review!",
+      "LEFTOVERS! The orange chicken keeps well in the fridge for 5 days. Reheat in a skillet with a splash of water over low heat. Freeze the orange chicken for up to 3 months, but be sure to thaw it before reheating so the chicken doesn’t clump together."
+    ]
+  },
+  {
+    "id": "mealdb-52839",
+    "title": "Chilli prawn linguine",
+    "subtitle": "Italian · Pasta",
+    "emoji": "🍝",
+    "image": "https://www.themealdb.com/images/media/meals/usywpp1511189717.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "pasta",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/1269/chilli-prawn-linguine",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52839",
+    "ingredients": [
+      "280g Linguine Pasta",
+      "200g Sugar Snap Peas",
+      "2 tblsp Olive Oil",
+      "2 cloves chopped Garlic Clove",
+      "1 large Red Chilli",
+      "24 Skinned King Prawns",
+      "12 Cherry Tomatoes",
+      "Handful Basil Leaves",
+      "Leaves Lettuce",
+      "to serve Bread",
+      "2 tbsp Fromage Frais",
+      "Grated Zest of 2 Lime",
+      "2 tsp Caster Sugar"
+    ],
+    "instructions": [
+      "Mix the dressing ingredients in a small bowl and season with salt and pepper. Set aside.",
+      "Cook the pasta according to the packet instructions. Add the sugar snap peas for the last minute or so of cooking time.",
+      "Meanwhile, heat the oil in a wok or large frying pan, toss in the garlic and chilli and cook over a fairly gentle heat for about 30 seconds without letting the garlic brown. Tip in the prawns and cook over a high heat, stirring frequently, for about 3 minutes until they turn pink.",
+      "Add the tomatoes and cook, stirring occasionally, for 3 minutes until they just start to soften. Drain the pasta and sugar snaps well, then toss into the prawn mixture. Tear in the basil leaves, stir, and season with salt and pepper.",
+      "Serve with salad leaves drizzled with the lime dressing, and warm crusty bread."
+    ]
+  },
+  {
+    "id": "mealdb-52837",
+    "title": "Pilchard puttanesca",
+    "subtitle": "Italian · Pasta",
+    "emoji": "🍝",
+    "image": "https://www.themealdb.com/images/media/meals/vvtvtr1511180578.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "pasta",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/pilchard-puttanesca",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52837",
+    "ingredients": [
+      "300g Spaghetti",
+      "1 tbls Olive Oil",
+      "1 finely chopped Onion",
+      "2 cloves minced Garlic",
+      "1 Red Chilli",
+      "1 tbls Tomato Puree",
+      "425g Pilchards",
+      "70g Black Olives",
+      "Shaved Parmesan"
+    ],
+    "instructions": [
+      "Cook the pasta following pack instructions. Heat the oil in a non-stick frying pan and cook the onion, garlic and chilli for 3-4 mins to soften. Stir in the tomato purée and cook for 1 min, then add the pilchards with their sauce. Cook, breaking up the fish with a wooden spoon, then add the olives and continue to cook for a few more mins.",
+      "Drain the pasta and add to the pan with 2-3 tbsp of the cooking water. Toss everything together well, then divide between plates and serve, scattered with Parmesan."
+    ]
+  },
+  {
+    "id": "mealdb-52838",
+    "title": "Venetian Duck Ragu",
+    "subtitle": "Italian · Pasta",
+    "emoji": "🍝",
+    "image": "https://www.themealdb.com/images/media/meals/qvrwpt1511181864.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "pasta",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbcgoodfood.com/recipes/venetian-duck-ragu",
+    "sourceName": "bbcgoodfood.com",
+    "mealdbUrl": "https://www.themealdb.com/meal/52838",
+    "ingredients": [
+      "1 tbls Olive Oil",
+      "4 Duck Legs",
+      "2 finely chopped Onions",
+      "2 cloves minced Garlic",
+      "2 tsp ground Cinnamon",
+      "2 tsp Plain Flour",
+      "250ml Red Wine",
+      "800g Chopped Tomatoes",
+      "1 Chicken Stock Cube",
+      "3 sprigs Rosemary",
+      "2 Bay Leaves",
+      "1 tsp Sugar",
+      "2 tbs Milk",
+      "600g Paccheri Pasta",
+      "Grated Parmesan Cheese"
+    ],
+    "instructions": [
+      "Heat the oil in a large pan. Add the duck legs and brown on all sides for about 10 mins. Remove to a plate and set aside. Add the onions to the pan and cook for 5 mins until softened. Add the garlic and cook for a further 1 min, then stir in the cinnamon and flour and cook for a further min. Return the duck to the pan, add the wine, tomatoes, stock, herbs, sugar and seasoning. Bring to a simmer, then lower the heat, cover with a lid and cook for 2 hrs, stirring every now and then.",
+      "Carefully lift the duck legs out of the sauce and place on a plate – they will be very tender so try not to lose any of the meat. Pull off and discard the fat, then shred the meat with 2 forks and discard the bones. Add the meat back to the sauce with the milk and simmer, uncovered, for a further 10-15 mins while you cook the pasta.",
+      "Cook the pasta following pack instructions, then drain, reserving a cup of the pasta water, and add the pasta to the ragu. Stir to coat all the pasta in the sauce and cook for 1 min more, adding a splash of cooking liquid if it looks dry. Serve with grated Parmesan, if you like."
+    ]
+  },
+  {
+    "id": "mealdb-52878",
+    "title": "Beef and Oyster pie",
+    "subtitle": "British · Beef",
+    "emoji": "🥩",
+    "image": "https://www.themealdb.com/images/media/meals/wrssvt1511556563.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "meat",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbc.co.uk/food/recipes/beef_and_oyster_pie_65230",
+    "sourceName": "bbc.co.uk",
+    "mealdbUrl": "https://www.themealdb.com/meal/52878",
+    "ingredients": [
+      "900g Beef",
+      "3 tbs Olive Oil",
+      "3 Shallots",
+      "2 cloves minced Garlic",
+      "125g Bacon",
+      "1 tbs chopped Thyme",
+      "2 Bay Leaf",
+      "330ml Stout",
+      "400ml Beef Stock",
+      "2 tbs Corn Flour",
+      "8 Oysters",
+      "400g Plain Flour",
+      "pinch Salt",
+      "250g Butter",
+      "To Glaze Eggs"
+    ],
+    "instructions": [
+      "Season the beef cubes with salt and black pepper. Heat a tablespoon of oil in the frying pan and fry the meat over a high heat. Do this in three batches so that you don’t overcrowd the pan, transferring the meat to a large flameproof casserole dish once it is browned all over. Add extra oil if the pan seems dry.",
+      "In the same pan, add another tablespoon of oil and cook the shallots for 4-5 minutes, then add the garlic and fry for 30 seconds. Add the bacon and fry until slightly browned. Transfer the onion and bacon mixture to the casserole dish and add the herbs.",
+      "Preheat the oven to 180C/350F/Gas 4.",
+      "Pour the stout into the frying pan and bring to the boil, stirring to lift any stuck-on browned bits from the bottom of the pan. Pour the stout over the beef in the casserole dish and add the stock. Cover the casserole and place it in the oven for 1½-2 hours, or until the beef is tender and the sauce is reduced.",
+      "Skim off any surface fat, taste and add salt and pepper if necessary, then stir in the cornflour paste. Put the casserole dish on the hob – don’t forget that it will be hot – and simmer for 1-2 minutes, stirring, until thickened. Leave to cool.",
+      "Increase the oven to 200C/400F/Gas 6. To make the pastry, put the flour and salt in a very large bowl. Grate the butter and stir it into the flour in three batches. Gradually add 325ml/11fl oz cold water – you may not need it all – and stir with a round-bladed knife until the mixture just comes together. Knead the pastry lightly into a ball on a lightly floured surface and set aside 250g/9oz for the pie lid.",
+      "Roll the rest of the pastry out until about 2cm/¾in larger than the dish you’re using. Line the dish with the pastry then pile in the filling, tucking the oysters in as well. Brush the edge of the pastry with beaten egg.",
+      "Roll the remaining pastry until slightly larger than your dish and gently lift over the filling, pressing the edges firmly to seal, then trim with a sharp knife. Brush with beaten egg to glaze. Put the dish on a baking tray and bake for 25-30 minutes, or until the pastry is golden-brown and the filling is bubbling."
+    ]
+  },
+  {
+    "id": "mealdb-52997",
+    "title": "Beef Banh Mi Bowls with Sriracha Mayo, Carrot & Pickled Cucumber",
+    "subtitle": "Vietnamese · Beef",
+    "emoji": "🥩",
+    "image": "https://www.themealdb.com/images/media/meals/z0ageb1583189517.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "meat",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.themealdb.com/meal/52997",
+    "sourceName": "TheMealDB",
+    "mealdbUrl": "https://www.themealdb.com/meal/52997",
+    "ingredients": [
+      "White Rice",
+      "1 Onion",
+      "1 Lime",
+      "3 Garlic Clove",
+      "1 Cucumber",
+      "3 oz Carrots",
+      "1 lb Ground Beef",
+      "2 oz Soy Sauce"
+    ],
+    "instructions": [
+      "Add'l ingredients: mayonnaise, siracha",
+      "Place rice in a fine-mesh sieve and rinse until water runs clear. Add to a small pot with 1 cup water (2 cups for 4 servings) and a pinch of salt. Bring to a boil, then cover and reduce heat to low. Cook until rice is tender, 15 minutes. Keep covered off heat for at least 10 minutes or until ready to serve.",
+      "Meanwhile, wash and dry all produce. Peel and finely chop garlic. Zest and quarter lime (for 4 servings, zest 1 lime and quarter both). Trim and halve cucumber lengthwise; thinly slice crosswise into half-moons. Halve, peel, and medium dice onion. Trim, peel, and grate carrot.",
+      "In a medium bowl, combine cucumber, juice from half the lime, ¼ tsp sugar (½ tsp for 4 servings), and a pinch of salt. In a small bowl, combine mayonnaise, a pinch of garlic, a squeeze of lime juice, and as much sriracha as you’d like. Season with salt and pepper.",
+      "Heat a drizzle of oil in a large pan over medium-high heat. Add onion and cook, stirring, until softened, 4-5 minutes. Add beef, remaining garlic, and 2 tsp sugar (4 tsp for 4 servings). Cook, breaking up meat into pieces, until beef is browned and cooked through, 4-5 minutes. Stir in soy sauce. Turn off heat; taste and season with salt and pepper.",
+      "Fluff rice with a fork; stir in lime zest and 1 TBSP butter. Divide rice between bowls. Arrange beef, grated carrot, and pickled cucumber on top. Top with a squeeze of lime juice. Drizzle with sriracha mayo."
+    ]
+  },
+  {
+    "id": "mealdb-52873",
+    "title": "Beef Dumpling Stew",
+    "subtitle": "British · Beef",
+    "emoji": "🥩",
+    "image": "https://www.themealdb.com/images/media/meals/uyqrrv1511553350.jpg",
+    "category": "dinner",
+    "mealType": "dinner",
+    "tags": [
+      "meat",
+      "dinner"
+    ],
+    "source": "TheMealDB",
+    "sourceUrl": "https://www.bbc.co.uk/food/recipes/beefstewwithdumpling_87333",
+    "sourceName": "bbc.co.uk",
+    "mealdbUrl": "https://www.themealdb.com/meal/52873",
+    "ingredients": [
+      "2 tbs Olive Oil",
+      "25g Butter",
+      "750g Beef",
+      "2 tblsp Plain Flour",
+      "2 cloves minced Garlic",
+      "175g Onions",
+      "150g Celery",
+      "150g Carrots",
+      "2 chopped Leek",
+      "200g Swede",
+      "150ml Red Wine",
+      "500g Beef Stock",
+      "2 Bay Leaf",
+      "3 tbs Thyme",
+      "3 tblsp chopped Parsley",
+      "125g Plain Flour",
+      "1 tsp Baking Powder",
+      "60g Suet",
+      "Splash Water"
+    ],
+    "instructions": [
+      "Preheat the oven to 180C/350F/Gas 4.",
+      "For the beef stew, heat the oil and butter in an ovenproof casserole and fry the beef until browned on all sides.",
+      "Sprinkle over the flour and cook for a further 2-3 minutes.",
+      "Add the garlic and all the vegetables and fry for 1-2 minutes.",
+      "Stir in the wine, stock and herbs, then add the Worcestershire sauce and balsamic vinegar, to taste. Season with salt and freshly ground black pepper.",
+      "Cover with a lid, transfer to the oven and cook for about two hours, or until the meat is tender.",
+      "For the dumplings, sift the flour, baking powder and salt into a bowl.",
+      "Add the suet and enough water to form a thick dough.",
+      "With floured hands, roll spoonfuls of the dough into small balls.",
+      "After two hours, remove the lid from the stew and place the balls on top of the stew. Cover, return to the oven and cook for a further 20 minutes, or until the dumplings have swollen and are tender. (If you prefer your dumplings with a golden top, leave the lid off when returning to the oven.)",
+      "To serve, place a spoonful of mashed potato onto each of four serving plates and top with the stew and dumplings. Sprinkle with chopped parsley."
     ]
   }
 ];
