@@ -145,3 +145,62 @@ body.theme-dark .genie-foot.is-sticky { background: #1e293b; border-color: #3341
 .genie-safe { display: inline-block; margin: 0 0 16px; padding: 4px 12px; border-radius: 999px; background: #dcfce7; color: #14532d; font-size: 0.84rem; font-weight: 700; }
 body.theme-dark .genie-food.is-on { background: #e11d48; border-color: #e11d48; color: #ffffff; }
 body.theme-dark .genie-safe { background: rgba(22, 163, 74, 0.2); color: #bbf7d0; }
+
+/* ---- One person: diet + won't-eat checklist (2026-11-08) ---------------- */
+.genie-label { margin: 24px 0 8px; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #64748b); }
+.genie-card .genie-label + .genie-hint { margin-top: -4px; margin-bottom: 16px; }
+.genie-diets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.genie-diet {
+  min-height: 48px; padding: 8px 16px;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 16px;
+  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 0.92rem; font-weight: 700; cursor: pointer;
+}
+.genie-diet.is-on { border-color: #16a34a; background: #f0fdf4; color: #14532d; box-shadow: inset 0 0 0 1px #16a34a; }
+
+
+.genie-search {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 0 16px;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 16px;
+  background: var(--card-bg, #ffffff);
+}
+.genie-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; font-size: 1rem; color: var(--text-primary, #0f172a); }
+.genie-search:focus-within { border-color: #7c3aed; }
+.genie-add {
+  width: 100%; min-height: 48px; margin-top: 8px; padding: 8px 16px;
+  border: 1.5px dashed #7c3aed; border-radius: 16px;
+  background: #f5f3ff; color: #5b21b6;
+  font: inherit; font-size: 0.95rem; font-weight: 800; text-align: left; cursor: pointer;
+}
+.genie-add[hidden] { display: none; }
+.genie-checklist { margin-top: 8px; }
+.genie-group[hidden], .genie-check[hidden] { display: none; }
+.genie-group-title { margin: 16px 0 8px; font-size: 0.9rem; font-weight: 800; color: var(--text-primary, #0f172a); }
+.genie-checks { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 601px) { .genie-checks { grid-template-columns: repeat(2, 1fr); } }
+.genie-check {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 48px; padding: 8px 16px; box-sizing: border-box;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 12px;
+  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 0.95rem; font-weight: 600; text-align: left; cursor: pointer;
+}
+.genie-box {
+  width: 24px; height: 24px; flex-shrink: 0; box-sizing: border-box;
+  border: 2px solid #cbd5e1; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: #ffffff; font-size: 0.85rem; font-weight: 900;
+}
+.genie-check.is-on { border-color: #e11d48; background: #fff1f2; }
+.genie-check.is-on .genie-box { background: #e11d48; border-color: #e11d48; }
+.genie-check.is-on .genie-box::after { content: "✕"; }
+.genie-check-icon { font-size: 1.15rem; width: 24px; text-align: center; }
+.genie-check-label { flex: 1; min-width: 0; }
+.genie-allergy { margin: 24px 0 0; font-size: 0.82rem; color: var(--text-secondary, #64748b); }
+.genie-plan:disabled { opacity: 0.45; cursor: default; }
+body.theme-dark .genie-diet, body.theme-dark .genie-search, body.theme-dark .genie-check { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .genie-diet.is-on { background: rgba(22, 163, 74, 0.18); border-color: #16a34a; color: #bbf7d0; }
+body.theme-dark .genie-check.is-on { background: rgba(225, 29, 72, 0.15); border-color: #e11d48; }
+body.theme-dark .genie-group-title { color: #f8fafc; }
+body.theme-dark .genie-add { background: rgba(124, 58, 237, 0.18); color: #ddd6fe; }

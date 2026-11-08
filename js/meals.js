@@ -935,7 +935,7 @@ function renderDrawerRecipeList() {
       + (favs.length ? favs.map(recipeRowHtml).join("") : `<p class="drawer-fav-empty">Tap the <span aria-hidden="true">♡</span> on any recipe to keep your family's favourites here.</p>`)
       + (own.length ? `<p class="drawer-recipes-heading">Your recipes</p>${own.map(recipeRowHtml).join("")}` : "")
       + `<p class="drawer-recipes-heading">A few ${slotWord} ideas</p>`
-      + (tasteful && pool !== builtIn ? `<p class="drawer-ideas-note">Picked around everyone's won't-eats</p>` : "")
+      + (tasteful && pool !== builtIn ? `<p class="drawer-ideas-note">Picked to suit everyone</p>` : "")
       + ideas.map(recipeRowHtml).join("")
       + `<button type="button" class="drawer-recipes-more" data-drawer-show-all>Browse all ${recipes.length} ${slotWord} recipes</button>`;
     wireDrawerRecipeRows(container);
@@ -979,8 +979,8 @@ function renderDrawerMagicHero() {
   const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner" }[currentPlanningSlot] || "meal";
   const names = window.MealGenie && window.MealGenie.peopleWithTastes ? window.MealGenie.peopleWithTastes() : [];
   const who = names.length === 0 ? "Answer a few quick questions, get three ideas."
-    : names.length <= 2 ? `Knows what ${names.join(" and ")} won't eat.`
-    : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} won't eat.`;
+    : names.length <= 2 ? `Knows what ${names.join(" and ")} eat${names.length === 1 ? "s" : ""}.`
+    : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} eat.`;
   hero.innerHTML = `<div class="magic-hero">
       <button type="button" class="magic-hero-main" data-drawer-genie>
         <span class="magic-hero-wand" aria-hidden="true">🪄</span>
@@ -991,7 +991,7 @@ function renderDrawerMagicHero() {
         </span>
         <span class="magic-hero-cta">Find me a ${escapeHtml(slotWord)} ✨</span>
       </button>
-      <button type="button" class="magic-hero-tastes" data-drawer-tastes>🚫 Won't-eat lists${names.length ? ` · ${names.length}` : ""}</button>
+      <button type="button" class="magic-hero-tastes" data-drawer-tastes>🍽️ Who eats what</button>
     </div>`;
   // A gentle glow each time the drawer opens (not on every search keystroke)
   if (drawerHeroGlow) { drawerHeroGlow = false; hero.classList.remove("is-glowing"); void hero.offsetWidth; hero.classList.add("is-glowing"); }
