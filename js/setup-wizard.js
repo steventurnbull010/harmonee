@@ -167,7 +167,8 @@
     const nJobs = JOBS.filter(j => s.picked.has(j.key)).length;
     return `
       <div class="setup-done-mark" aria-hidden="true">🎉</div>
-      <h1 class="setup-title" id="setup-title">All set, ${esc(s.familyName || "your family")}!</h1>
+      <h1 class="setup-title" id="setup-title">You're all set!</h1>
+      ${s.familyName ? `<p class="setup-family-badge">🏡 ${esc(s.familyName)}</p>` : ""}
 
       <ul class="setup-summary">
         <li><span aria-hidden="true">👥</span><span>${s.people.map(p => `<span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>`).join("")} ${esc(s.people.map(p => p.name).join(", "))}</span></li>
@@ -305,10 +306,22 @@
     }
     const btn = document.querySelector("#setup-wizard [data-act='next']");
     if (btn) { btn.disabled = true; btn.textContent = "Creating…"; }
+    // A little celebration (it's this tap, so the sound is allowed), then
+    // open the new board once the confetti has had its moment
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try { if (window.sfx && window.sfx.playCelebrationChime) window.sfx.playCelebrationChime(); } catch (e) {}
+    if (!reduce && typeof window.confetti === "function") {
+      try {
+        const colors = ["#38bdf8", "#0284c7", "#f59e0b", "#10b981", "#ec4899"];
+        window.confetti({ zIndex: 200000, particleCount: 90, spread: 80, startVelocity: 45, origin: { x: 0.5, y: 0.75 }, colors });
+        setTimeout(() => window.confetti({ zIndex: 200000, particleCount: 60, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors }), 180);
+        setTimeout(() => window.confetti({ zIndex: 200000, particleCount: 60, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors }), 300);
+      } catch (e) {}
+    }
     const go = new URL(window.location.origin + window.location.pathname);
     go.searchParams.set("board", boardId);
     go.searchParams.set("template", "setup");
-    window.location.href = go.toString();
+    setTimeout(() => { window.location.href = go.toString(); }, reduce ? 300 : 1400);
   }
 
   function onClick(e) {

@@ -601,3 +601,11 @@ body.theme-dark .setup-who.is-on { background: var(--who); border-color: var(--w
 /* Big families (6+): the circles go under the title rather than squash it */
 .setup-routine.is-crowded { flex-wrap: wrap; }
 .setup-routine.is-crowded .setup-routine-who { flex-basis: 100%; justify-content: flex-end; }
+/* Summary: the family's name on its own, so any name reads well */
+.setup-family-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 8px 0 0; padding: 6px 16px;
+  border-radius: 999px; background: #f0f9ff; color: #0369a1;
+  font-size: 1.05rem; font-weight: 800;
+}
+body.theme-dark .setup-family-badge { background: rgba(2, 132, 199, 0.18); color: #bae6fd; }
