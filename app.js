@@ -931,8 +931,16 @@ function loadDateMeals() {
   return dateMealsStore;
 }
 
+// Something on the board changed (here or on another device): Today at a
+// glance, and anything else listening, redraws straight away
+function notifyBoardChanged() {
+  try { document.dispatchEvent(new CustomEvent("harmonee:data")); } catch (e) {}
+}
+window.notifyBoardChanged = notifyBoardChanged;
+
 function saveDateMeals(meals) {
   dateMealsStore = meals;
+  notifyBoardChanged();
   try {
     localStorage.setItem(boardCacheKey("turnbull_meals_v4"), JSON.stringify(meals));
     localStorage.setItem(boardCacheKey("turnbull_meals_v3"), JSON.stringify(meals));
@@ -1110,6 +1118,7 @@ window.saveFamilyEvents = saveFamilyEvents;
 function saveFamilyEvents(events) {
   familyEvents = events;
   window.familyEvents = events;
+  notifyBoardChanged();
   try {
     localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(events));
   } catch (e) {
@@ -1655,6 +1664,7 @@ function listenToFirestoreBoard() {
       if (typeof window.applyBoardFamilyLists === "function") {
         window.applyBoardFamilyLists(data.familyLists, data.familyListsDeleted);
       }
+      notifyBoardChanged();
       if (shouldRender) {
         renderApp();
     renderSkylightTasksPage();
@@ -1854,6 +1864,7 @@ function loadLocalTasks() {
 function saveLocalCache(tasks) {
   currentTasks = tasks;
   window.currentTasks = tasks;
+  notifyBoardChanged();
   try {
     localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
   } catch (e) {

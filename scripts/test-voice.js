@@ -40,9 +40,12 @@ const CASES = [
   ["trip to the theater this Wednesday at 7.30pm", { kind: "event", title: "Trip to the theatre", date: "2026-11-04", start: "19:30" }],
   ["Swimming on Saturday at 10am", { kind: "event", title: "Swimming", date: "2026-11-07", start: "10:00" }],
   ["Parents evening Thursday at 6", { kind: "event", date: "2026-11-05", start: "18:00" }],
-  ["Bin day on Friday", { kind: "event", title: "Bin day", date: "2026-11-06", allDay: true }],
+  ["Bin day on Friday", { kind: "event", title: "Bin day", date: "2026-11-06", allDay: false, start: null, length: 60 }],
   ["haircut wednesday week at 11", { kind: "event", title: "Haircut", date: "2026-11-18", start: "11:00" }],
-  ["Party on the 14th", { kind: "event", title: "Party", date: "2026-11-14", allDay: true }],
+  ["Party on the 14th", { kind: "event", title: "Party", date: "2026-11-14", allDay: false }],
+  ["Bin day on Friday all day", { kind: "event", title: "Bin day", date: "2026-11-06", allDay: true }],
+  ["Inset day all day on Monday", { kind: "event", title: "Inset day", allDay: true }],
+  ["Football practice on Saturday for 2 hours", { kind: "event", title: "Football practice", start: null, length: 120 }],
   ["Granny's birthday on the 14th of November", { kind: "event", title: "Granny's birthday", date: "2026-11-14" }],
   ["Flights on 2nd December at 6am", { kind: "event", title: "Flights", date: "2026-12-02", start: "06:00" }],
   ["Christmas concert on December the 16th at 2", { kind: "event", title: "Christmas concert", date: "2026-12-16", start: "14:00" }],
@@ -60,7 +63,7 @@ const CASES = [
   ["Add an event for Saturday called car boot sale", { kind: "event", title: "Car boot sale", date: "2026-11-07" }],
   ["Add a doctor's appointment on Thursday at 11:15", { kind: "event", title: "Doctor's appointment", date: "2026-11-05", start: "11:15" }],
   ["put the school play in the calendar for next Friday at 1", { kind: "event", title: "School play", date: "2026-11-06", start: "13:00" }],
-  ["dentist", { kind: "event", title: "Dentist", allDay: true }, { want: "event" }],
+  ["dentist", { kind: "event", title: "Dentist", allDay: false, length: 60 }, { want: "event" }],
 
   // ---- Events: people
   ["Ava's dentist on Tuesday at 4", { kind: "event", title: "Ava's dentist", members: ["Ava"], start: "16:00" }],
@@ -89,7 +92,7 @@ const CASES = [
   ["Add a task for Kid 1 to set the table", { kind: "task", title: "Set the table", people: ["Kid 1"] }, { members: ["Mom", "Dad", "Kid 1", "Kid 2"] }],
 
   // ---- Repeats (phase 2)
-  ["Bins every Thursday", { kind: "event", title: "Bins", date: "2026-11-05", repeat: "weekly", allDay: true }],
+  ["Bins every Thursday", { kind: "event", title: "Bins", date: "2026-11-05", repeat: "weekly", allDay: false }],
   ["Swimming every Saturday at 10", { kind: "event", title: "Swimming", date: "2026-11-07", start: "10:00", repeat: "weekly" }],
   ["Football on Tuesdays at 6", { kind: "event", title: "Football", date: "2026-11-10", start: "18:00", repeat: "weekly" }],
   ["School run every weekday at 8:15", { kind: "event", title: "School run", start: "08:15", repeat: "weekdays" }],

@@ -455,6 +455,17 @@
       </form>`;
   }
 
+  // Anything on the board changed (an event saved, a task ticked, a meal
+  // planned, here or on another device): redraw, once, a moment later
+  let dataTimer = null;
+  document.addEventListener("harmonee:data", () => {
+    clearTimeout(dataTimer);
+    dataTimer = setTimeout(() => {
+      const el = document.getElementById("today-screen");
+      if (el && !el.hidden) paint(el);
+    }, 150);
+  });
+
   // Fresh weather (every half hour) or film listings: redraw
   document.addEventListener("harmonee:films", () => {
     const el = document.getElementById("today-screen");

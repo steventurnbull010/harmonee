@@ -7,6 +7,7 @@
 //     -> { kind: "list", listId: "groceries", items: ["vinegar"] }
 //   VoiceIntent.parse("a trip to the theatre next wednesday at 7:30", ctx)
 //     -> { kind: "event", title: "Trip to the theatre", date, start: "19:30", end: "20:30", allDay: false, members: [] }
+//     (no time said: start null and length 60, an hour; "all day" said: allDay true)
 //   VoiceIntent.parse("ava needs to tidy her room on saturday", ctx)
 //     -> { kind: "task", title: "Tidy her room", people: ["Ava"], date, daily: false }
 //   VoiceIntent.parse("we're having tacos tonight", ctx)
@@ -178,7 +179,7 @@
   }
   const TIME = "(?:noon|midday|midnight|half past \\d{1,2}(?:am|pm)?|(?:a )?quarter (?:past|to) \\d{1,2}(?:am|pm)?|\\d{1,2}(?::\\d{2}| \\d{2})?(?:am|pm)?)";
   function findTime(s, part, eveningHint) {
-    let start = null, end = null;
+    let start = null, end = null, length = null;
     // "from 9 till 5", "9 to 5", "6-7", "between 2 and 4"
     const range = s.match(new RegExp(`\\b(?:from |between )?(${TIME})\\s*(?:till|until|to|-|and)\\s*(${TIME})\\b`));
     if (range) {
@@ -207,10 +208,11 @@
       const n = /half/.test(dur[1]) ? 0.5 : (dur[1] === "an" || dur[1] === "a" ? 1 : Number(dur[1]));
       const mins = /^h/.test(dur[2]) ? Math.round(n * 60) : Math.round(n);
       if (start !== null && mins > 0) end = start + mins;
+      if (mins > 0) length = mins;
       s = squash(s.replace(dur[0], " "));
     }
     if (start !== null && end === null) end = start + 60;
-    return { start, end, rest: s };
+    return { start, end, length, rest: s };
   }
 
   // ---------------------------------------------------------------- people ---
@@ -467,11 +469,13 @@
 
     // 4. Events: anything with a day or a time, or that says "event" / "appointment"
     const rep = findRepeat(s);
-    const d = findDate(rep.rest, now);
+    // Only all day when someone says so; otherwise an hour (the panel picks the time)
+    const saidAllDay = /\ball[ -]day\b/.test(rep.rest);
+    const d = findDate(squash(rep.rest.replace(/\b(?:for |is )?(?:the )?all[ -]day\b/, " ")), now);
     const eveningHint = EVENING_HINTS.test(s);
     const t = findTime(d.rest, d.part, eveningHint);
     const saidEvent = /\b(event|appointment|calendar|diary)\b/.test(s);
-    if (d.date || t.start !== null || saidEvent || rep.repeat || want === "event") {
+    if (d.date || t.start !== null || saidEvent || saidAllDay || rep.repeat || want === "event") {
       const ppl = findPeople(t.rest, members);
       const title = tidyTitle(ppl.rest.replace(/\b(?:in the |this |tomorrow )?(?:morning|afternoon|evening)\b/g, " "));
       return {
@@ -481,7 +485,8 @@
         dateSaid: !!d.date,
         start: t.start !== null ? hhmm(t.start) : null,
         end: t.start !== null ? hhmm(t.end) : null,
-        allDay: t.start === null,
+        allDay: saidAllDay,
+        length: t.start === null ? (t.length || 60) : null, // minutes, when no time was said
         members: ppl.family ? ["Family"] : ppl.people,
         repeat: rep.repeat || "none"
       };

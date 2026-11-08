@@ -247,11 +247,18 @@
     const modal = document.getElementById("event-modal");
     if (modal && modal.open && (document.getElementById("event-id-input") || {}).value) { retitle("event-title-input", intent.title); return; }
     if (typeof window.openEventModal !== "function") return;
-    let slot = { duration: "All Day" };
-    if (!intent.allDay && intent.start) {
+    const length = (mins) => (typeof window.formatEventDuration === "function" ? window.formatEventDuration(mins) : "1 hour");
+    let slot;
+    if (intent.allDay) slot = { duration: "All Day" };
+    else if (intent.start) {
       let len = toMins(intent.end) - toMins(intent.start);
       if (len <= 0) len += 24 * 60;
-      slot = { start: intent.start, duration: typeof window.formatEventDuration === "function" ? window.formatEventDuration(len) : "1 hour" };
+      slot = { start: intent.start, duration: length(len) };
+    } else {
+      // No time said: an hour. Today, the panel's next half hour; another day, 9am
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const sameDay = intent.date && new Date(intent.date).setHours(0, 0, 0, 0) === today.getTime();
+      slot = sameDay ? { duration: length(intent.length || 60) } : { start: "09:00", duration: length(intent.length || 60) };
     }
     window.openEventModal(null, null, dateKey(intent.date), slot, { title: intent.title, members: intent.members, repeat: intent.repeat });
   }

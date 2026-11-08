@@ -110,6 +110,7 @@ function setFamilyListsInMemory(lists) {
   window.familyLists = lists;
   try { listsLastKnownJson = JSON.stringify(lists || []); } catch (e) { listsLastKnownJson = "[]"; }
   try { localStorage.setItem(boardCacheKey("turnbull_family_lists"), listsLastKnownJson); } catch (e) {}
+  if (typeof window.notifyBoardChanged === "function") window.notifyBoardChanged();
 }
 
 function pendingKey() { return boardCacheKey("harmonee_lists_pending"); }
