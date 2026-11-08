@@ -255,12 +255,19 @@ async function archivePreviousWeekendCompletedTasks() {
 }
 
 // Automatically wipe points and archive weekly totals on Sunday at midnight (start of new week)
+// Runs once per device per week (the week is recorded first, so an error can't make it
+// re-run on every snapshot), and only clears ticks from earlier weeks: a device that's
+// opened late in the week must not wipe what was ticked this week on another device.
+let weeklyResetRunning = false;
 async function checkWeeklySundayReset() {
   const currentWeek = getIsoWeekKey();
   const lastActiveWeek = localStorage.getItem(`last_active_week_${currentBoardId}`);
 
   // If a new week has started, snapshot the previous week's totals before clearing
-  if (lastActiveWeek && lastActiveWeek !== currentWeek) {
+  if (lastActiveWeek && lastActiveWeek !== currentWeek && !weeklyResetRunning) {
+    weeklyResetRunning = true;
+    localStorage.setItem(`last_active_week_${currentBoardId}`, currentWeek);
+    try {
     const isMoney = boardSettings.gameMode === "money";
     const currency = boardSettings.currency || "£";
 
@@ -334,21 +341,20 @@ async function checkWeeklySundayReset() {
           const isWeekly = t.repeat === "weekly";
           const docRef = getTaskDocRef(t.id);
           if (isRecurringDaily) {
-            batch.update(docRef, {
-              done: false,
-              completedBy: null,
-              completedAt: null,
-              completedWeek: null,
-              completedDays: {}
-            });
+            const kept = keepThisWeeksDays(t.completedDays, currentWeek);
+            const rootIsOld = t.completedWeek !== currentWeek;
+            const changes = { completedDays: kept };
+            if (rootIsOld) Object.assign(changes, { done: false, completedBy: null, completedAt: null, completedWeek: null });
+            batch.update(docRef, changes);
           } else if (isWeekly) {
+            if (t.completedWeek === currentWeek) return; // ticked this week: leave it
             batch.update(docRef, {
               done: false,
               completedBy: null,
               completedAt: null,
               completedWeek: null
             });
-          } else if (t.done) {
+          } else if (t.done && t.completedWeek !== currentWeek) {
             batch.update(docRef, {
               archived: true,
               archivedAt: new Date().toISOString(),
@@ -366,24 +372,42 @@ async function checkWeeklySundayReset() {
       .map(t => {
         const isRecurringDaily = t.day === "Daily" || t.taskType === "Daily Task" || t.repeat === "daily";
         const isWeekly = t.repeat === "weekly";
+        const thisWeek = t.completedWeek === currentWeek;
         if (isRecurringDaily) {
-          return { ...t, done: false, completedBy: null, completedAt: null, completedWeek: null, completedDays: {} };
+          const kept = keepThisWeeksDays(t.completedDays, currentWeek);
+          return thisWeek ? { ...t, completedDays: kept } : { ...t, done: false, completedBy: null, completedAt: null, completedWeek: null, completedDays: kept };
         } else if (isWeekly) {
-          return { ...t, done: false, completedBy: null, completedAt: null, completedWeek: null };
+          return thisWeek ? t : { ...t, done: false, completedBy: null, completedAt: null, completedWeek: null };
         }
         return t;
       })
       .filter(t => {
-        const isRecurringDaily = t.day === "Daily" || t.taskType === "Daily Task";
-        return isRecurringDaily || !t.done;
+        const isRecurringDaily = t.day === "Daily" || t.taskType === "Daily Task" || t.repeat === "daily";
+        return isRecurringDaily || t.repeat === "weekly" || !t.done || t.completedWeek === currentWeek;
       });
+    window.currentTasks = currentTasks;
 
-    saveLocalTasks(currentTasks);
+    saveLocalCache(currentTasks);
     renderApp();
     renderSkylightTasksPage();
+    } catch (err) {
+      console.error("Weekly reset failed:", err);
+    } finally {
+      weeklyResetRunning = false;
+    }
+    return;
   }
 
   localStorage.setItem(`last_active_week_${currentBoardId}`, currentWeek);
+}
+
+// A daily chore's ticks, keeping only ones made this week (each tick records its week)
+function keepThisWeeksDays(completedDays, currentWeek) {
+  const kept = {};
+  Object.entries(completedDays || {}).forEach(([day, rec]) => {
+    if (rec && typeof rec === "object" && rec.completedWeek === currentWeek) kept[day] = rec;
+  });
+  return kept;
 }
 
 function loadLocalBoardSettings() {
