@@ -78,6 +78,7 @@
   function savePrefs(name, prefs) {
     const all = { ...prefsAll(), [name]: prefs };
     if (typeof window.saveBoardSettingsNow === "function") window.saveBoardSettingsNow({ foodPrefs: all });
+    document.dispatchEvent(new CustomEvent("harmonee:tastes-changed"));
   }
   const people = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
   const foodLabel = (k) => (FOODS.find(f => f.key === k) || { label: k }).label.toLowerCase();
@@ -142,7 +143,7 @@
       if (a.effort === "quick") score += isQuick(r) ? 2 : -1;
       if (a.effort === "cook") score += isQuick(r) ? 0 : 1;
       if (!String(r.id || "").startsWith("mealdb-")) score += 1.5; // the family's own
-      if (r.isFavorite) score += 1.5;
+      if (r.isFavorite || (typeof window.isFavouriteRecipe === "function" && window.isFavouriteRecipe(r))) score += 2;
       if (planned.has(String(r.title || "").trim().toLowerCase())) score -= 4;
       // Fussy eaters: anything they won't eat is out; foods they like count
       const fans = [];
@@ -227,8 +228,9 @@
       </div>`;
       return;
     }
-    if (state.step < steps.length && steps[state.step] === "fussy") {
-      const chosen = state.answers.fussy || [];
+    const tastes = state.mode === "tastes";
+    if (tastes || (state.step < steps.length && steps[state.step] === "fussy")) {
+      const chosen = tastes ? [] : (state.answers.fussy || []);
       // "pasta, rice +4": short enough for one line on a phone
       const few = (keys) => keys.length <= 3 ? keys.map(foodLabel).join(", ") : `${keys.slice(0, 2).map(foodLabel).join(", ")} +${keys.length - 2}`;
       const line = (name) => {
@@ -236,13 +238,18 @@
         if (!p.likes.length && !p.dislikes.length) return `<small>Tap ✏️ to say what they like</small>`;
         return (p.likes.length ? `<small>👍 ${esc(few(p.likes))}</small>` : "") + (p.dislikes.length ? `<small>👎 ${esc(few(p.dislikes))}</small>` : "");
       };
-      dlg.innerHTML = `<div class="genie-card">${head}${dots}
-        <p class="genie-q">Anyone fussy tonight?</p>
+      dlg.innerHTML = `<div class="genie-card">${head}${tastes ? "" : dots}
+        <p class="genie-q">${tastes ? "Family tastes" : "Anyone fussy tonight?"}</p>
+        ${tastes ? `<p class="genie-sub genie-tastes-sub">What everyone likes and won't eat. Magic Mealtime and meal ideas steer around the won't-eats.</p>` : ""}
         <ul class="genie-people">${people().map(n => `<li class="genie-person${chosen.includes(n) ? " is-on" : ""}">
-          <button type="button" class="genie-person-pick" data-genie="fussy-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>
+          ${tastes
+            ? `<button type="button" class="genie-person-pick" data-genie="edit" data-name="${esc(n)}"><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`
+            : `<button type="button" class="genie-person-pick" data-genie="fussy-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`}
           <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="What ${esc(n)} likes">✏️</button>
         </li>`).join("")}</ul>
-        <div class="genie-foot is-sticky"><button type="button" class="genie-back" data-genie="back">‹ Back</button><button type="button" class="genie-plan" data-genie="fussy-next">${chosen.length ? "Next" : "No, all good"}</button></div>
+        <div class="genie-foot is-sticky">${tastes
+          ? `<span></span><button type="button" class="genie-plan" data-genie="close">Done</button>`
+          : `<button type="button" class="genie-back" data-genie="back">‹ Back</button><button type="button" class="genie-plan" data-genie="fussy-next">${chosen.length ? "Next" : "No, all good"}</button>`}</div>
       </div>`;
       return;
     }
@@ -314,7 +321,7 @@
       savePrefs(state.editing, state.draft);
       const n = state.editing;
       state.editing = null;
-      if (!(state.answers.fussy || []).includes(n)) state.answers.fussy = [...(state.answers.fussy || []), n];
+      if (state.mode !== "tastes" && !(state.answers.fussy || []).includes(n)) state.answers.fussy = [...(state.answers.fussy || []), n];
       draw();
       return;
     }
@@ -365,7 +372,23 @@
     if (!dlg.open) dlg.showModal();
   }
 
-  window.MealGenie = { open: start };
+  // Family tastes on their own (from the plan-a-meal drawer)
+  function openTastes() {
+    state = { step: 0, answers: { meal: "dinner" }, page: 0, results: [], shuffle: 0, mode: "tastes" };
+    getDialog();
+    draw();
+    if (!dlg.open) dlg.showModal();
+  }
+  // Does a recipe avoid every family member's won't-eats?
+  function fitsEveryone(r) {
+    const all = prefsAll();
+    const text = rawText(r);
+    return Object.keys(all).every(name => (all[name].dislikes || []).every(k => { const f = FOODS.find(x => x.key === k); return !f || !foodHit(f, text); }));
+  }
+  // "Ava, Dara" — people with tastes saved, for a friendly line elsewhere
+  const peopleWithTastes = () => people().filter(n => { const p = prefsOf(n); return p.likes.length || p.dislikes.length; });
+
+  window.MealGenie = { open: start, openTastes, fitsEveryone, peopleWithTastes };
   document.addEventListener("click", (e) => {
     if (e.target.closest && e.target.closest("[data-open-genie]")) start();
   });

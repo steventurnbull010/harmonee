@@ -276,7 +276,20 @@ let currentPlanningSlot = "dinner";
 let currentDrawerTab = "recipes"; // 'recipes' | 'new-entry'
 let currentDrawerCategory = "dinner"; // 'breakfast' | 'lunch' | 'dinner' | 'snack'
 let currentDrawerTag = "all";
-let drawerShowAll = false; // the recipe picker shows a short list until asked for all (reset when the drawer opens)
+let drawerShowAll = false;
+let drawerHeroGlow = false;
+// Family favourites: hearted recipe ids, saved with the board (boardSettings.favouriteRecipes)
+function favouriteIds() { return ((window.boardSettings || {}).favouriteRecipes) || []; }
+function isFavouriteRecipe(r) { return !!r && (favouriteIds().includes(String(r.id)) || !!r.isFavorite); }
+function toggleFavouriteRecipe(id) {
+  const ids = favouriteIds();
+  const on = !ids.includes(String(id));
+  const next = on ? [...ids, String(id)] : ids.filter(x => x !== String(id));
+  if (typeof window.saveBoardSettingsNow === "function") window.saveBoardSettingsNow({ favouriteRecipes: next });
+  if (on && typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+  return on;
+}
+window.isFavouriteRecipe = isFavouriteRecipe; // the recipe picker shows a short list until asked for all (reset when the drawer opens)
 
 // Grocery List Storage & Helpers
 // The grocery list IS the "Groceries" list on the Lists page (js/lists.js),
@@ -718,6 +731,7 @@ function openPlanMealDrawer(dateStr, slot = "dinner", prefill = null) {
   currentPlanningSlot = slot || "dinner";
   currentDrawerCategory = currentPlanningSlot;
   drawerShowAll = false;
+  drawerHeroGlow = true;
 
   const drawer = document.getElementById("plan-meal-drawer");
   if (!drawer) return;
@@ -899,20 +913,30 @@ function renderDrawerRecipeList() {
   const browsing = !query && (!currentDrawerTag || currentDrawerTag === "all");
   const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner", snack: "snack" }[currentDrawerCategory] || "meal";
   let visible = recipes, footer = "";
+  renderDrawerMagicHero();
   if (browsing && !drawerShowAll && recipes.length > 8) {
-    const own = recipes.filter(r => !String(r.id || "").startsWith("mealdb-") || r.isFavorite);
-    const builtIn = recipes.filter(r => !own.includes(r));
-    // Six ideas, a different six each day
+    const favs = recipes.filter(isFavouriteRecipe);
+    const own = recipes.filter(r => !favs.includes(r) && !String(r.id || "").startsWith("mealdb-"));
+    const fits = (r) => !window.MealGenie || !window.MealGenie.fitsEveryone || window.MealGenie.fitsEveryone(r);
+    const builtIn = recipes.filter(r => !favs.includes(r) && !own.includes(r));
+    const pool = builtIn.filter(fits).length >= 6 ? builtIn.filter(fits) : builtIn;
+    // Six ideas spread across the whole list (it's grouped by kind), a different six each day
     const day = Math.floor(Date.now() / 86400000);
-    const start = builtIn.length ? (day * 7) % builtIn.length : 0;
-    const ideas = [...builtIn.slice(start), ...builtIn.slice(0, start)].slice(0, 6);
-    const genieCard = `<button type="button" class="drawer-genie-card" data-drawer-genie>
-        <span class="drawer-genie-icon" aria-hidden="true">🪄</span>
-        <span class="drawer-genie-words"><strong>Not sure what to make?</strong><small>Magic Mealtime asks a few quick questions</small></span>
-      </button>`;
-    container.innerHTML = genieCard
+    const step = Math.max(1, Math.floor(pool.length / 6));
+    const start = pool.length ? (day * 7) % pool.length : 0;
+    const ideas = [];
+    for (let i = 0; ideas.length < Math.min(6, pool.length) && i < pool.length * 2; i++) {
+      const r = pool[(start + i * step + Math.floor(i / 6)) % pool.length];
+      if (!ideas.includes(r)) ideas.push(r);
+    }
+    const tasteful = window.MealGenie && window.MealGenie.peopleWithTastes && window.MealGenie.peopleWithTastes().length;
+    container.innerHTML =
+      `<p class="drawer-recipes-heading">❤️ Family favourites</p>`
+      + (favs.length ? favs.map(recipeRowHtml).join("") : `<p class="drawer-fav-empty">Tap the <span aria-hidden="true">♡</span> on any recipe to keep your family's favourites here.</p>`)
       + (own.length ? `<p class="drawer-recipes-heading">Your recipes</p>${own.map(recipeRowHtml).join("")}` : "")
-      + `<p class="drawer-recipes-heading">A few ${slotWord} ideas</p>${ideas.map(recipeRowHtml).join("")}`
+      + `<p class="drawer-recipes-heading">A few ${slotWord} ideas</p>`
+      + (tasteful && pool !== builtIn ? `<p class="drawer-ideas-note">Picked around everyone's won't-eats</p>` : "")
+      + ideas.map(recipeRowHtml).join("")
       + `<button type="button" class="drawer-recipes-more" data-drawer-show-all>Browse all ${recipes.length} ${slotWord} recipes</button>`;
     wireDrawerRecipeRows(container);
     return;
@@ -937,7 +961,58 @@ function renderDrawerRecipeList() {
   wireDrawerRecipeRows(container);
 }
 
+// Magic Mealtime, front and centre in the drawer (above the search)
+function renderDrawerMagicHero() {
+  const pane = document.getElementById("pane-from-recipes");
+  if (!pane) return;
+  let hero = document.getElementById("drawer-magic-hero");
+  if (!hero) {
+    hero = document.createElement("div");
+    hero.id = "drawer-magic-hero";
+    pane.insertBefore(hero, pane.firstChild);
+    hero.addEventListener("click", (e) => {
+      if (!window.MealGenie) return;
+      if (e.target.closest("[data-drawer-tastes]")) { window.MealGenie.openTastes(); return; }
+      if (e.target.closest("[data-drawer-genie]")) window.MealGenie.open(currentPlanningSlot, { date: currentPlanningDateStr });
+    });
+  }
+  const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner" }[currentPlanningSlot] || "meal";
+  const names = window.MealGenie && window.MealGenie.peopleWithTastes ? window.MealGenie.peopleWithTastes() : [];
+  const who = names.length === 0 ? "Answer a few quick questions, get three ideas."
+    : names.length <= 2 ? `Knows what ${names.join(" and ")} will eat.`
+    : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} will eat.`;
+  hero.innerHTML = `<div class="magic-hero">
+      <button type="button" class="magic-hero-main" data-drawer-genie>
+        <span class="magic-hero-wand" aria-hidden="true">🪄</span>
+        <span class="magic-hero-words">
+          <span class="magic-hero-kicker">Magic Mealtime</span>
+          <strong>Not sure what to make?</strong>
+          <small>${escapeHtml(who)}</small>
+        </span>
+        <span class="magic-hero-cta">Find me a ${escapeHtml(slotWord)} ✨</span>
+      </button>
+      <button type="button" class="magic-hero-tastes" data-drawer-tastes>👍👎 Family tastes${names.length ? ` · ${names.length}` : ""}</button>
+    </div>`;
+  // A gentle glow each time the drawer opens (not on every search keystroke)
+  if (drawerHeroGlow) { drawerHeroGlow = false; hero.classList.remove("is-glowing"); void hero.offsetWidth; hero.classList.add("is-glowing"); }
+}
+document.addEventListener("harmonee:tastes-changed", () => {
+  if (document.getElementById("drawer-recipes-list")) renderDrawerRecipeList();
+});
+
 function wireDrawerRecipeRows(container) {
+  container.querySelectorAll("[data-fav]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const on = toggleFavouriteRecipe(btn.getAttribute("data-fav"));
+      btn.classList.toggle("is-on", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.innerHTML = on ? "♥" : "♡";
+      if (on) { btn.classList.remove("pop"); void btn.offsetWidth; btn.classList.add("pop"); }
+      // Move it into (or out of) Family favourites after the little pop
+      setTimeout(renderDrawerRecipeList, on ? 450 : 0);
+    };
+  });
   container.querySelectorAll(".drawer-recipe-card").forEach(card => {
     card.onclick = () => {
       const rId = card.getAttribute("data-recipe-id");
@@ -949,10 +1024,6 @@ function wireDrawerRecipeRows(container) {
   });
   const more = container.querySelector("[data-drawer-show-all]");
   if (more) more.onclick = () => { drawerShowAll = true; renderDrawerRecipeList(); };
-  const genie = container.querySelector("[data-drawer-genie]");
-  if (genie) genie.onclick = () => {
-    if (window.MealGenie) window.MealGenie.open(currentPlanningSlot, { date: currentPlanningDateStr });
-  };
 }
 
 function recipeRowHtml(recipe) {
@@ -985,6 +1056,7 @@ function recipeRowHtml(recipe) {
           <div class="recipe-row-title">${escapeHtml(recipe.title)}</div>
           <div class="recipe-row-time">${timeDisplay ? `⏱️ ${timeDisplay} • ` : ""}${escapeHtml(recipe.subtitle || "")}</div>
         </div>
+        <button type="button" class="recipe-row-fav${isFavouriteRecipe(recipe) ? " is-on" : ""}" data-fav="${escapeHtml(String(recipe.id))}" aria-pressed="${isFavouriteRecipe(recipe)}" aria-label="Family favourite">${isFavouriteRecipe(recipe) ? "♥" : "♡"}</button>
         <div class="recipe-row-arrow" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
