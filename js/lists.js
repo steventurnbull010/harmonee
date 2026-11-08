@@ -598,6 +598,7 @@ function renderListsView() {
             <button type="button" class="list-usuals-edit" data-edit-usuals aria-pressed="${editing}">${editing ? "Done" : "Edit"}</button>
           </div>` : "";
         })()}
+        <div class="list-items-wrap">
         <ul class="list-column-items">
           ${(() => {
             // Groceries: grouped by aisle, in shop order (js/aisles.js)
@@ -612,6 +613,8 @@ function renderListsView() {
           ${done.map(itemHtml).join("")}
           ${items.length === 0 ? `<li class="list-column-empty">Nothing on this list yet. Add something above.</li>` : ""}
         </ul>
+        <button type="button" class="list-more" data-list-more hidden><span class="list-more-n"></span> more <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
         ${done.length ? `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>` : ""}
       </section>`;
   }).join("");
@@ -635,7 +638,17 @@ function renderListsView() {
     board.setAttribute("data-wired", "true");
     board.addEventListener("click", onListsBoardClick);
     board.addEventListener("submit", onListsBoardSubmit);
+    // "4 more ⌄": scroll the list down a screenful
+    board.addEventListener("click", (e) => {
+      const more = e.target.closest && e.target.closest("[data-list-more]");
+      if (!more) return;
+      const ul = more.parentElement.querySelector(".list-column-items");
+      if (ul) ul.scrollBy({ top: Math.max(120, ul.clientHeight * 0.8), behavior: "smooth" });
+    });
+    board.addEventListener("scroll", (e) => { if (e.target.classList && e.target.classList.contains("list-column-items")) updateListMoreHints(board); }, true);
+    window.addEventListener("resize", () => updateListMoreHints(board));
   }
+  requestAnimationFrame(() => updateListMoreHints(board));
 
   const btnNewList = document.getElementById("btn-create-new-list");
   if (btnNewList && !btnNewList.hasAttribute("data-wired")) {
@@ -644,6 +657,30 @@ function renderListsView() {
   }
 }
 window.renderListsView = renderListsView;
+
+// A list taller than its card (tablets: each list scrolls inside its card):
+// a "4 more ⌄" pill and a soft fade at the bottom, until you reach the end
+function updateListMoreHints(board) {
+  if (!board) return;
+  board.querySelectorAll(".list-items-wrap").forEach(wrap => {
+    const ul = wrap.querySelector(".list-column-items");
+    const btn = wrap.querySelector("[data-list-more]");
+    if (!ul || !btn) return;
+    const left = ul.scrollHeight - ul.scrollTop - ul.clientHeight;
+    let hidden = 0;
+    if (left > 8) {
+      const bottom = ul.getBoundingClientRect().bottom;
+      ul.querySelectorAll(".list-row").forEach(r => { if (r.getBoundingClientRect().top >= bottom - 12) hidden++; });
+    }
+    const show = left > 8 && hidden > 0;
+    btn.hidden = !show;
+    wrap.classList.toggle("has-more", show);
+    if (show) {
+      btn.querySelector(".list-more-n").textContent = String(hidden);
+      btn.setAttribute("aria-label", `${hidden} more on this list: scroll down`);
+    }
+  });
+}
 
 // Same header as Tasks and Meals: family name and the time (the weather
 // badge is filled in by js/weather.js)

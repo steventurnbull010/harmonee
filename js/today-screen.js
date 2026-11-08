@@ -104,26 +104,16 @@
     return { meal, cooks, photo };
   }
 
-  // Today's events. When "isToday", finished ones fade and the next (or the
-  // one happening now) is marked.
+  // Today's events. When "isToday", finished ones fade. (No "Next"/"Now" badge:
+  // the next event is only "next" for the people going to it.)
   function eventsListHtml(events, nowMins, isToday) {
     if (!events.length) return `<p class="today-empty">${isToday ? "Nothing on the calendar today." : "Nothing on the calendar."}</p>`;
-    let markedNext = false;
     return `<ul class="today-list">${events.map(({ evt, allDay }) => {
       let state = "";
-      let badge = "";
-      if (isToday && !allDay) {
-        const start = startMins(evt);
-        const end = start + lengthMins(evt);
-        if (end <= nowMins) state = " is-past";
-        else if (!markedNext) {
-          markedNext = true;
-          badge = `<span class="today-badge${start <= nowMins ? " is-now" : ""}">${start <= nowMins ? "Now" : "Next"}</span>`;
-        }
-      }
+      if (isToday && !allDay && startMins(evt) + lengthMins(evt) <= nowMins) state = " is-past";
       return `<li class="today-row${state}">
         <span class="today-time">${allDay ? "All day" : esc(rangeText(evt))}</span>
-        <span class="today-row-title">${esc(evt.icon || "📅")} ${esc(evt.title || "Event")}${badge}</span>
+        <span class="today-row-title">${esc(evt.icon || "📅")} ${esc(evt.title || "Event")}</span>
         <span class="today-avatars">${peopleIn(evt).map(avatar).join("")}</span>
       </li>`;
     }).join("")}</ul>`;
@@ -554,7 +544,7 @@
     // "h" or after the board was left alone, it stays until someone taps
     if (openedFrom === "wake") autoCloseTimer = setTimeout(closeTodayScreen, AUTO_CLOSE_MS);
     clearInterval(refreshTimer);
-    refreshTimer = setInterval(() => { if (!el.hidden) paint(el); }, 60000); // times, "Next", jobs left
+    refreshTimer = setInterval(() => { if (!el.hidden) paint(el); }, 60000); // times, finished events fading, jobs left
     setTimeout(() => { try { document.getElementById("btn-today-start").focus({ preventScroll: true }); } catch (err) {} }, 50);
   }
   window.showTodayScreen = showTodayScreen;
