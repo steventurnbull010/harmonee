@@ -676,19 +676,8 @@ body.theme-dark .btn-meals-back:hover {
     gap: 4px !important;
   }
 
-  .btn-header-magic-scan {
-    padding: 6px 10px !important;
-    font-size: 0.82rem !important;
-    gap: 4px !important;
-  }
 
-  .btn-header-magic-scan .scan-text-long {
-    display: none !important;
-  }
 
-  .btn-header-magic-scan .scan-text-short {
-    display: inline !important;
-  }
 
   .btn-header-note {
     padding: 6px 10px !important;
@@ -722,10 +711,7 @@ body.theme-dark .btn-meals-back:hover {
     font-size: 0.78rem !important;
     gap: 3px !important;
   }
-  .btn-header-magic-scan {
-    padding: 5px 8px !important;
-    font-size: 0.78rem !important;
-  }
+
   .btn-header-note {
     padding: 5px 8px !important;
     font-size: 0.78rem !important;

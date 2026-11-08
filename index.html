@@ -55,20 +55,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Parisienne&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css?v=144">
-  <link rel="stylesheet" href="css/navigation.css?v=3">
+  <link rel="stylesheet" href="css/navigation.css?v=4">
   <link rel="stylesheet" href="css/tasks.css?v=30">
-  <link rel="stylesheet" href="css/meals.css?v=30">
-  <link rel="stylesheet" href="css/calendar.css?v=26">
+  <link rel="stylesheet" href="css/meals.css?v=31">
+  <link rel="stylesheet" href="css/calendar.css?v=27">
   <link rel="stylesheet" href="css/lists.css?v=13">
   <link rel="stylesheet" href="css/rewards.css?v=5">
   <link rel="stylesheet" href="css/widgets.css?v=4">
   <link rel="stylesheet" href="css/modals.css?v=36">
-  <link rel="stylesheet" href="css/magic-ai.css?v=1">
   <link rel="stylesheet" href="css/celebrations.css?v=3">
   <link rel="stylesheet" href="css/side-panel.css?v=7">
   <link rel="stylesheet" href="css/page-intro.css?v=10">
-  <link rel="stylesheet" href="css/page-spacing.css?v=7">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=6">
+  <link rel="stylesheet" href="css/page-spacing.css?v=8">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=7">
   <link rel="stylesheet" href="css/setup.css?v=25">
   <link rel="stylesheet" href="css/tablet-fit.css?v=8">
   <link rel="stylesheet" href="css/voice.css?v=5">
@@ -281,11 +280,6 @@
             </div>
 
             <div class="calendar-header-controls">
-              <!-- Magic Calendar Schedule Import Dropdown / Button (Subtle grey text like other header items) -->
-              <button type="button" class="skylight-header-dropdown-btn btn-header-magic-scan" id="btn-calendar-magic-scan" title="Magic Import Schedule from Photo or PDF">
-                <span>Magic Import</span>
-                <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </button>
 
               <!-- View Selector Dropdown: Schedule (3-Day), Day, Week, Month -->
               <div class="skylight-dropdown-wrap" id="view-dropdown-wrap">
@@ -371,13 +365,6 @@
         <!-- Floating Add Speed-Dial Container (Add Event or Add Chore) -->
         <div class="calendar-fab-container" id="calendar-fab-container">
           <div class="calendar-fab-menu" id="calendar-fab-menu" role="menu" aria-label="Add options">
-            <button type="button" class="calendar-fab-option fab-option-magic" id="fab-action-magic-import" role="menuitem">
-              <span class="fab-option-icon">🪄</span>
-              <span class="fab-option-text">
-                <span class="fab-option-title">Magic Import</span>
-                <span class="fab-option-sub">Scan schedule with AI</span>
-              </span>
-            </button>
             <button type="button" class="calendar-fab-option fab-option-event" id="fab-action-add-event" role="menuitem">
               <span class="fab-option-icon">📅</span>
               <span class="fab-option-text">
@@ -401,9 +388,6 @@
           </button>
         </div>
 
-        <!-- Hidden Inputs for Calendar AI Schedule & Flyer Scanning -->
-        <input type="file" id="calendar-camera-input" accept="image/*" capture="environment" style="display: none;">
-        <input type="file" id="calendar-gallery-input" accept="image/*" style="display: none;">
       </div>
 
       <!-- VIEW 3: MEALS & RECIPE PLANNER (Skylight 4-Tier Matrix + Plan Meal Drawer) -->
@@ -503,7 +487,7 @@
 
             <!-- TAB 1: FROM RECIPES -->
             <div class="drawer-tab-pane" id="pane-from-recipes">
-              <!-- Search Bar with Vertical Overlay Dropdown Filter & Add from Photo -->
+              <!-- Search bar and filter -->
               <div class="drawer-search-filter-row">
                 <div class="drawer-input-row drawer-search-bar">
                   <span class="drawer-input-icon search-icon" aria-hidden="true">🔍</span>
@@ -536,36 +520,7 @@
                       </button>
                     </div>
                   </div>
-
-                  <!-- Add from Photo Button & Choices Popover -->
-                  <div class="drawer-photo-dropdown-wrap" id="photo-import-dropdown-wrap">
-                    <button type="button" class="btn-drawer-add-photo" id="btn-trigger-add-from-photo" aria-haspopup="true" aria-expanded="false" title="Add Recipe from Photo">
-                      <span class="photo-btn-icon">📸</span>
-                      <span class="photo-btn-text">Add from Photo</span>
-                      <svg class="icon-chevron-tiny" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                    <div class="drawer-photo-menu" id="photo-import-menu" style="display: none;">
-                      <button type="button" class="photo-menu-opt" id="opt-photo-camera">
-                        <span class="opt-icon">📷</span>
-                        <div class="opt-text-wrap">
-                          <span class="opt-title">Take Photo</span>
-                          <span class="opt-desc">Snap cookbook or recipe card</span>
-                        </div>
-                      </button>
-                      <button type="button" class="photo-menu-opt" id="opt-photo-gallery">
-                        <span class="opt-icon">🖼️</span>
-                        <div class="opt-text-wrap">
-                          <span class="opt-title">Choose from Gallery</span>
-                          <span class="opt-desc">Upload from camera roll</span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
                 </div>
-
-                <!-- Hidden file inputs for Camera and Gallery -->
-                <input type="file" id="recipe-camera-input" accept="image/*" capture="environment" style="display: none;">
-                <input type="file" id="recipe-gallery-input" accept="image/*" style="display: none;">
               </div>
 
               <!-- Recipe List -->
@@ -576,17 +531,6 @@
 
             <!-- TAB 2: NEW ENTRY (Custom Meal on the Fly) -->
             <div class="drawer-tab-pane" id="pane-new-entry" style="display: none;">
-              <!-- Quick Photo Scan Prompt Card -->
-              <div class="pane-photo-prompt-card" id="btn-new-entry-photo-card" title="Scan a cookbook page or recipe photo" hidden>
-                <div class="photo-card-left">
-                  <span class="photo-card-icon">📸</span>
-                  <div class="photo-card-text">
-                    <strong>Have a recipe photo or cookbook?</strong>
-                    <span>Snap with camera or upload from gallery</span>
-                  </div>
-                </div>
-                <button type="button" class="btn-photo-card-action">Add from Photo</button>
-              </div>
 
               <form id="form-custom-meal" class="drawer-custom-form">
                 <div class="drawer-input-row">
@@ -1791,65 +1735,6 @@
       </div>
     </dialog>
 
-    <!-- MAGIC AI CHORE CREATOR MODAL -->
-    <dialog id="ai-modal" class="ai-dialog" aria-modal="true" aria-labelledby="ai-modal-title">
-      <div class="modal-backdrop-blur"></div>
-      <div class="modal-content modal-content-wide">
-        <button type="button" class="btn-modal-close" id="btn-close-ai-modal" aria-label="Close modal" title="Close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-
-        <div class="modal-header">
-          <div class="modal-trophy">✨</div>
-          <h2 id="ai-modal-title" class="modal-title">Magic AI Chore Creator</h2>
-          <p class="modal-subtitle">Speak or type naturally. AI breaks it down into individual chores for your board!</p>
-        </div>
-
-        <!-- Voice & Text Input Form -->
-        <div class="ai-input-wrapper">
-          <div class="ai-textarea-container">
-            <textarea id="ai-prompt-input" rows="4" placeholder="Speak or type: 'Sam clean the kitchen and feed the cat for £1.50 each, Alex vacuum upstairs on Saturday for £2...'"></textarea>
-            
-            <button type="button" id="btn-voice-dictate" class="btn-voice-dictate" title="Tap to dictate by voice">
-              <span class="mic-icon" id="mic-icon">🎙️</span>
-              <span class="mic-label" id="mic-label">Dictate</span>
-            </button>
-          </div>
-
-          <div class="ai-quick-examples">
-            <span class="quick-examples-label">Try:</span>
-            <button type="button" class="btn-example-pill" data-example="Weekend reset: Sam tidy bedrooms and empty dishwasher for £1 each, Alex clean living room rugs">Weekend Reset</button>
-            <button type="button" class="btn-example-pill" data-example="Feed cats fresh water daily, scoop litter trays, take out bins Friday">Daily Routine</button>
-          </div>
-
-          <button type="button" id="btn-generate-ai-tasks" class="btn-primary-action btn-full-width">
-            <span>Generate Chores with AI</span>
-            <span>✨</span>
-          </button>
-        </div>
-
-        <!-- Loading Spinner -->
-        <div id="ai-loading-state" class="ai-loading-state" style="display: none;">
-          <div class="ai-spinner"></div>
-          <span class="ai-loading-text">Magic AI is organizing your chores...</span>
-        </div>
-
-        <!-- Preview Results Checklist -->
-        <div id="ai-results-preview" class="ai-results-preview" style="display: none;">
-          <h3 class="preview-heading">📋 Generated Chores (<span id="ai-tasks-count">0</span>):</h3>
-          <div id="ai-tasks-list" class="ai-tasks-list">
-            <!-- Dynamic task preview cards -->
-          </div>
-          <div class="modal-footer button-row">
-            <button type="button" class="btn-cancel" id="btn-discard-ai">Clear</button>
-            <button type="button" class="btn-primary-modal" id="btn-confirm-add-ai-tasks">Add All to Board 🚀</button>
-          </div>
-        </div>
-      </div>
-    </dialog>
 
     <!-- FIREBASE CONFIG MODAL -->
     <dialog id="config-modal" class="config-dialog" aria-modal="true" aria-labelledby="config-modal-title">
@@ -2216,95 +2101,7 @@
     </div>
     </dialog>
 
-  <!-- PHOTO RECIPE SCANNING MODAL (Animated AI scanning state) -->
-  <dialog id="photo-recipe-scanning-modal" class="photo-scan-dialog" aria-modal="true" aria-labelledby="photo-scan-title">
-    <div class="modal-backdrop-blur"></div>
-    <div class="modal-content photo-scan-content">
-      <div class="photo-scan-preview-wrapper">
-        <img id="photo-scan-img-preview" class="photo-scan-img" src="" alt="Recipe Photo">
-        <div class="photo-scan-laser"></div>
-      </div>
-      <div class="photo-scan-status-wrap">
-        <div class="photo-scan-spinner"></div>
-        <h3 id="photo-scan-title" class="photo-scan-heading">Scanning Recipe...</h3>
-        <p id="photo-scan-status-text" class="photo-scan-sub">Gemini AI is reading ingredients & instructions</p>
-      </div>
-      <button type="button" class="btn-cancel" id="btn-cancel-photo-scan" style="margin-top: 6px; width: auto; min-width: 100px;">Cancel</button>
-    </div>
-    </dialog>
 
-  <!-- PHOTO RECIPE REVIEW & EDIT MODAL (Review AI Extraction) -->
-  <dialog id="photo-recipe-review-modal" class="photo-review-dialog" aria-modal="true" aria-labelledby="photo-review-title">
-    <div class="modal-backdrop-blur"></div>
-    <div class="modal-content photo-review-content">
-      <div class="modal-header photo-review-header">
-        <button type="button" class="btn-modal-close" id="btn-close-photo-review" aria-label="Close modal">✕</button>
-        <div class="photo-review-badge">✨ AI Recipe Extraction</div>
-        <h2 id="photo-review-title" class="modal-title">Review Scanned Recipe</h2>
-        <p class="modal-subtitle">Review details before saving to your family cookbook</p>
-      </div>
-
-      <div class="photo-review-body">
-        <div class="photo-review-hero-preview">
-          <img id="photo-review-hero-img" class="review-hero-thumb" src="" alt="Recipe Photo">
-          <div class="review-hero-info">
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label for="review-recipe-title" class="form-label-compact">Dish Title *</label>
-              <input type="text" id="review-recipe-title" class="form-input review-input-title" placeholder="e.g. Grandma's Apple Pie" required>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="review-recipe-subtitle" class="form-label-compact">Short Description</label>
-              <input type="text" id="review-recipe-subtitle" class="form-input" placeholder="e.g. Fluffy warm cinnamon spiced crust...">
-            </div>
-          </div>
-        </div>
-
-        <div class="photo-review-meta-grid">
-          <div class="form-group">
-            <label class="form-label-compact">Category</label>
-            <select id="review-recipe-category" class="form-input">
-              <option value="dinner">Dinner</option>
-              <option value="lunch">Lunch</option>
-              <option value="breakfast">Breakfast</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label-compact">Prep Time</label>
-            <input type="text" id="review-recipe-prep" class="form-input" placeholder="e.g. 15 mins">
-          </div>
-          <div class="form-group">
-            <label class="form-label-compact">Cook Time</label>
-            <input type="text" id="review-recipe-cook" class="form-input" placeholder="e.g. 30 mins">
-          </div>
-          <div class="form-group">
-            <label class="form-label-compact">Servings</label>
-            <input type="number" id="review-recipe-servings" class="form-input" min="1" max="24" value="4">
-          </div>
-        </div>
-
-        <div class="photo-review-split">
-          <div class="form-group review-split-col">
-            <label for="review-recipe-ingredients" class="form-label-compact">🛒 Ingredients (one per line)</label>
-            <textarea id="review-recipe-ingredients" class="form-input review-textarea" rows="6" placeholder="e.g. 500g minced beef&#10;1 onion (diced)&#10;2 cloves garlic..."></textarea>
-          </div>
-          <div class="form-group review-split-col">
-            <label for="review-recipe-instructions" class="form-label-compact">👨‍🍳 Cooking Method (one step per line)</label>
-            <textarea id="review-recipe-instructions" class="form-input review-textarea" rows="6" placeholder="e.g. Brown beef and onion in a pan&#10;Add tomato sauce and simmer for 20 mins&#10;Serve with crusty bread..."></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="photo-review-footer">
-        <button type="button" class="btn-cancel" id="btn-cancel-photo-review">Cancel</button>
-        <button type="button" class="btn-primary-action btn-save-and-plan" id="btn-save-and-plan-recipe">
-          <span>📅 Save & Add to Plan</span>
-        </button>
-        <button type="button" class="btn-skylight-plan-confirm" id="btn-save-photo-recipe">
-          <span>✓ Save to Recipes</span>
-        </button>
-      </div>
-    </div>
-    </dialog>
 
   <!-- FAMILY GROCERY SHOPPING LIST MODAL -->
   <dialog id="grocery-list-modal" class="grocery-list-dialog" aria-modal="true" aria-labelledby="grocery-modal-title">
@@ -2652,106 +2449,8 @@
     </div>
   </dialog>
 
-  <!-- MAGIC CALENDAR EVENT IMPORT MODALS -->
 
-  <!-- 1. Source Picker Modal (Camera vs Gallery) -->
-  <dialog id="calendar-source-picker-modal" class="skylight-modal magic-source-dialog" aria-modal="true" aria-labelledby="magic-source-title">
-    <div class="modal-backdrop-blur"></div>
-    <div class="modal-content magic-source-content">
-      <div class="modal-header">
-        <button type="button" class="btn-modal-close" id="btn-close-magic-source" aria-label="Close modal">✕</button>
-        <div class="magic-pill-badge">✨ Gemini AI Schedule Scanner</div>
-        <h2 id="magic-source-title" class="modal-title">Magic Schedule Import</h2>
-        <p class="modal-subtitle">Snap or upload a photo of a school newsletter, timetable, fixture card, or club flyer</p>
-      </div>
-      <div class="magic-source-grid">
-        <button type="button" class="magic-source-card" id="btn-magic-source-camera">
-          <div class="source-card-icon">📷</div>
-          <div class="source-card-title">Take Photo</div>
-          <div class="source-card-sub">Use tablet or phone camera</div>
-        </button>
-        <button type="button" class="magic-source-card" id="btn-magic-source-gallery">
-          <div class="source-card-icon">🖼️</div>
-          <div class="source-card-title">Upload Photo</div>
-          <div class="source-card-sub">From photo library or files</div>
-        </button>
-      </div>
-      <div class="magic-source-tips">
-        <span class="source-tips-icon">💡</span>
-        <span><strong>Works great with:</strong> School newsletters, swimming schedules, karate fixtures, sports timetables, party invitations & doctor appointments.</span>
-      </div>
-    </div>
-  </dialog>
 
-  <!-- 2. AI Scanning Progress Modal -->
-  <dialog id="calendar-magic-scanning-modal" class="photo-scan-dialog magic-scanning-dialog" aria-modal="true" aria-labelledby="magic-scan-heading">
-    <div class="modal-backdrop-blur"></div>
-    <div class="modal-content photo-scan-content">
-      <div class="photo-scan-preview-wrapper">
-        <img id="magic-scan-img-preview" class="photo-scan-img" src="" alt="Schedule Preview">
-        <div class="photo-scan-laser"></div>
-      </div>
-      <div class="photo-scan-status-wrap">
-        <div class="photo-scan-spinner"></div>
-        <h3 id="magic-scan-heading" class="photo-scan-heading">Reading Schedule with AI...</h3>
-        <p id="magic-scan-status-text" class="photo-scan-sub">Gemini is extracting dates, times, activities & family members</p>
-      </div>
-      <button type="button" class="btn-cancel" id="btn-cancel-magic-scan" style="margin-top: 6px; width: auto; min-width: 100px;">Cancel</button>
-    </div>
-  </dialog>
-
-  <!-- 3. Review & Confirmation Dialog -->
-  <dialog id="calendar-magic-review-modal" class="skylight-modal magic-review-dialog" aria-modal="true" aria-labelledby="magic-review-title">
-    <div class="modal-backdrop-blur"></div>
-    <div class="modal-content magic-review-content">
-      <div class="modal-header magic-review-header">
-        <button type="button" class="btn-modal-close" id="btn-close-magic-review" aria-label="Close modal">✕</button>
-        <div class="magic-pill-badge">✨ AI Schedule Extraction</div>
-        <h2 id="magic-review-title" class="modal-title">Review Extracted Events</h2>
-        <p class="modal-subtitle" id="magic-review-subtitle">Review, edit, or adjust events before adding them to your calendar</p>
-      </div>
-
-      <!-- Scanned Image Thumbnail / Details Toggle Bar -->
-      <div class="magic-review-flyer-bar" id="magic-review-flyer-bar">
-        <div class="flyer-bar-left">
-          <img id="magic-review-flyer-thumb" class="flyer-bar-thumb" src="" alt="Flyer">
-          <div class="flyer-bar-info">
-            <strong id="magic-review-doc-title">Paper Schedule</strong>
-            <span id="magic-review-count-badge">Found 0 events</span>
-          </div>
-        </div>
-        <div class="flyer-bar-actions">
-          <button type="button" class="btn-flyer-toggle" id="btn-toggle-flyer-preview">
-            <span>🔍 View Original Photo</span>
-          </button>
-          <button type="button" class="btn-flyer-toggle" id="btn-magic-select-all">Select All</button>
-        </div>
-      </div>
-
-      <!-- Collapsible Full Flyer Preview (Expanded on demand) -->
-      <div class="magic-flyer-expanded-preview" id="magic-flyer-expanded-preview" style="display: none;">
-        <img id="magic-flyer-full-img" src="" alt="Full Flyer Photo">
-      </div>
-
-      <!-- Events List Container -->
-      <div class="magic-events-review-container">
-        <div class="magic-events-review-list" id="magic-events-review-list">
-          <!-- Rendered dynamically -->
-        </div>
-        <button type="button" class="btn-magic-add-another" id="btn-magic-add-another">
-          <span>+ Add Another Event Manually</span>
-        </button>
-      </div>
-
-      <!-- Modal Footer Actions -->
-      <div class="magic-review-footer">
-        <button type="button" class="btn-cancel" id="btn-cancel-magic-review">Cancel</button>
-        <button type="button" class="btn-skylight-plan-confirm btn-import-magic-events" id="btn-confirm-magic-import">
-          <span>🪄 Import Selected to Calendar</span>
-        </button>
-      </div>
-    </div>
-  </dialog>
 
   <!-- Ambient Scheduled Sleep Screen (Lights-Out Overnight) -->
   <div id="ambient-sleep-overlay" class="ambient-sleep-overlay" aria-hidden="true" style="display: none;">
@@ -2774,7 +2473,7 @@
   <script src="js/seed-data.js?v=3"></script>
   <script src="js/audio.js?v=3"></script>
   <script src="js/firsts.js?v=2"></script>
-  <script src="js/offline.js?v=2"></script>
+  <script src="js/offline.js?v=3"></script>
   <script src="js/sheet.js?v=2"></script>
   <script src="js/meal-genie.js?v=16"></script>
   <script src="js/join-qr.js?v=1"></script>
@@ -2785,12 +2484,11 @@
   <script src="js/lists.js?v=26"></script>
   <script src="js/aisles.js?v=3"></script>
   <script src="js/shop-mode.js?v=3"></script>
-  <script src="js/magic-scanner.js?v=7"></script>
   <script src="js/rewards.js?v=8"></script>
   <script src="js/reward-goals.js?v=5"></script>
   <script src="js/page-intro.js?v=6"></script>
   <script src="js/sticky-note.js?v=5"></script>
-  <script src="js/calendar.js?v=31"></script>
+  <script src="js/calendar.js?v=32"></script>
   <script src="js/date-picker.js?v=1"></script>
   <script src="js/tasks.js?v=39"></script>
   <script src="js/code-words.js?v=1"></script>
@@ -2808,8 +2506,8 @@
   <script src="js/film-night.js?v=5"></script>
   <script src="js/today-screen.js?v=31"></script>
   <script src="js/side-panel.js?v=10"></script>
-  <script type="module" src="js/meals.js?v=49"></script>
-  <script type="module" src="app.js?v=250"></script>
+  <script type="module" src="js/meals.js?v=50"></script>
+  <script type="module" src="app.js?v=251"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

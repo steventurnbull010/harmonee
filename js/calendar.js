@@ -2091,7 +2091,7 @@ function renderWeekCalendar() {
         <div class="skylight-day-empty-state">
           <div class="empty-icon">📅</div>
           <div class="empty-title">No events scheduled for ${dayTitleHeading}</div>
-          <div class="empty-sub">Tap the ＋ button at bottom-right or Magic Import above to add an event.</div>
+          <div class="empty-sub">Tap the ＋ button at bottom-right to add an event.</div>
         </div>
       `;
     } else {

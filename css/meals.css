@@ -2684,44 +2684,7 @@ body.theme-dark .meal-recipe-quick-link-arrow {
 
 
 
-/* ==========================================================================
-   ADD RECIPE FROM PHOTO (Gemini Multimodal Vision Import)
-   ========================================================================== */
 
-/* Dropdown Container in Meal Drawer Header */
-.drawer-photo-dropdown-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-/* "Add from Photo" Button */
-.btn-drawer-add-photo {
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  padding: 7px 11px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.btn-drawer-add-photo:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-  background: linear-gradient(135deg, #0369a1, #0284c7);
-}
-
-.btn-drawer-add-photo:active {
-  transform: translateY(0);
-}
 
 .photo-btn-icon {
   font-size: 0.95rem;
@@ -2732,141 +2695,24 @@ body.theme-dark .meal-recipe-quick-link-arrow {
   letter-spacing: -0.01em;
 }
 
-/* Photo Choices Popover Menu */
-.drawer-photo-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  width: 230px;
-  background: var(--modal-bg, #ffffff);
-  border: 1.5px solid var(--card-border);
-  border-radius: 14px;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
-  padding: 6px;
-  z-index: 125;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  animation: popoverFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
-}
 
-body.theme-dark .drawer-photo-menu {
-  background: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
-}
 
-.photo-menu-opt {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s ease;
-}
 
-.photo-menu-opt:hover {
-  background: var(--bg-hover, #f1f5f9);
-}
 
-body.theme-dark .photo-menu-opt:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
 
-.photo-menu-opt .opt-icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
 
-.photo-menu-opt .opt-text-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
 
-.photo-menu-opt .opt-title {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
 
-.photo-menu-opt .opt-desc {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
 
-/* Prompt Card at Top of New Entry Pane */
-.pane-photo-prompt-card {
-  margin: 0 20px 14px 20px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(14, 165, 233, 0.12));
-  border: 1.5px dashed rgba(2, 132, 199, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
 
-.pane-photo-prompt-card:hover {
-  border-color: #0284c7;
-  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(14, 165, 233, 0.18));
-}
 
-body.theme-dark .pane-photo-prompt-card {
-  background: rgba(2, 132, 199, 0.12);
-  border-color: rgba(56, 189, 248, 0.3);
-}
 
-.photo-card-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.photo-card-icon {
-  font-size: 1.4rem;
-}
 
-.photo-card-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 
-.photo-card-text strong {
-  font-size: 0.82rem;
-  color: var(--text-primary);
-}
 
-.photo-card-text span {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
 
-.btn-photo-card-action {
-  background: #0284c7;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 11px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
 
-.btn-photo-card-action:hover {
-  background: #0369a1;
-}
 
 /* Centering & Backdrop for Photo Modals */
 .photo-scan-dialog[open],
@@ -3695,10 +3541,8 @@ body.theme-dark .skylight-plan-drawer .cat-bubble.active {
 /* Search, Filter and Add from photo: one height, quiet outline buttons */
 .skylight-plan-drawer .drawer-search-input { font-size: 1rem; }
 .skylight-plan-drawer .drawer-filter-actions-row { gap: 8px; }
-.skylight-plan-drawer .drawer-filter-dropdown-wrap,
-.skylight-plan-drawer .drawer-photo-dropdown-wrap { flex: 1; }
-.skylight-plan-drawer #btn-recipe-filter-dropdown,
-.skylight-plan-drawer #btn-trigger-add-from-photo {
+.skylight-plan-drawer .drawer-filter-dropdown-wrap { flex: 1; }
+.skylight-plan-drawer #btn-recipe-filter-dropdown {
   width: 100%;
   min-height: 48px;
   justify-content: center;
@@ -3710,10 +3554,8 @@ body.theme-dark .skylight-plan-drawer .cat-bubble.active {
   font-weight: 600;
   box-shadow: none;
 }
-.skylight-plan-drawer #btn-trigger-add-from-photo:hover,
 .skylight-plan-drawer #btn-recipe-filter-dropdown:hover { border-color: #0284c7; transform: none; background: var(--card-bg, #ffffff); }
-body.theme-dark .skylight-plan-drawer #btn-recipe-filter-dropdown,
-body.theme-dark .skylight-plan-drawer #btn-trigger-add-from-photo { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .skylight-plan-drawer #btn-recipe-filter-dropdown { background: #0f172a; border-color: #334155; color: #f8fafc; }
 
 /* Recipe cards: same corners, border and spacing as the Tasks cards */
 .skylight-plan-drawer .drawer-recipe-card { border-radius: 16px; border: 1px solid rgba(15, 23, 42, 0.1); background: var(--card-bg, #ffffff); }

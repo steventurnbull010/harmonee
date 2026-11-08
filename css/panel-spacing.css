@@ -132,11 +132,9 @@ dialog.side-panel #btn-close-grocery-footer { padding: 8px 24px !important; }
 .skylight-plan-drawer .drawer-tab-pane { gap: 16px !important; }
 .skylight-plan-drawer .drawer-search-filter-row { padding: 0 !important; gap: 8px !important; }
 .skylight-plan-drawer .drawer-search-bar { padding: 8px 16px !important; gap: 16px !important; min-height: 48px; }
-.skylight-plan-drawer #btn-recipe-filter-dropdown,
-.skylight-plan-drawer #btn-trigger-add-from-photo { padding: 8px 16px !important; gap: 8px !important; }
+.skylight-plan-drawer #btn-recipe-filter-dropdown { padding: 8px 16px !important; gap: 8px !important; }
 .skylight-plan-drawer .drawer-filter-opt { padding: 8px !important; }
-.skylight-plan-drawer #opt-photo-camera,
-.skylight-plan-drawer #opt-photo-gallery { padding: 8px !important; gap: 8px !important; }
+
 .skylight-plan-drawer .opt-text-wrap { gap: 0 !important; }
 .skylight-plan-drawer #drawer-recipes-list { padding: 0 !important; gap: 8px !important; }
 .skylight-plan-drawer .drawer-recipe-card { padding: 16px !important; gap: 16px !important; }

@@ -10,7 +10,8 @@
       "**/node_modules/**",
       "scripts/**",
       "CLAUDE.md",
-      "README.md"
+      "README.md",
+      "TODO.md"
     ],
     "headers": [
       {

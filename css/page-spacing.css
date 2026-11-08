@@ -52,7 +52,6 @@
 #view-calendar .skylight-card-title-row { gap: 8px !important; }
 #view-calendar .skylight-card-avatar-wrap { gap: 0 !important; }
 #view-calendar #calendar-fab-menu { gap: 8px !important; }
-#view-calendar #fab-action-magic-import,
 #view-calendar #fab-action-add-event,
 #view-calendar #fab-action-add-note { padding: 8px 16px !important; gap: 16px !important; }
 #view-calendar .skylight-split-day-container { padding: 24px 32px !important; gap: 40px !important; }

@@ -1963,7 +1963,6 @@ function wireMealsHeaderAndDrawerListeners() {
   }
 
   // Wire Add Recipe from Photo (Camera & Gallery Import using Gemini AI)
-  if (typeof wirePhotoRecipeImportListeners === "function") wirePhotoRecipeImportListeners();
 }
 window.wireMealsEventListeners = wireMealsHeaderAndDrawerListeners;
 

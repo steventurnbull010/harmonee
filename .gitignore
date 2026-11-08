@@ -18,3 +18,6 @@ ui-debug.log
 
 # API keys used by the page (deployed with the site, never committed)
 js/secret-keys.js
+
+# Private to-do list (mentions unfixed weaknesses; never publish)
+TODO.md

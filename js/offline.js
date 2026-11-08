@@ -6,9 +6,9 @@
 //  - shows a small "Offline" pill while the device has no connection, so
 //    nobody wonders why the other devices haven't caught up
 //  - gives the few things that really need the internet (voice to words,
-//    Magic Import, weather search, joining or setting up a family) one
+//    weather search, joining or setting up a family) one
 //    friendly message instead of a confusing failure:
-//      if (window.needsInternet("Magic Import")) return;
+//      if (window.needsInternet("Weather search")) return;
 //  - window.isOffline() for anything else that wants to check
 // A weak signal still counts as "online" to the browser, so features that
 // talk to the internet should also handle slow or failed requests.
@@ -48,7 +48,7 @@
     }
   }
 
-  // "Magic Import needs the internet": a short message, and true if offline
+  // "Weather search needs the internet": a short message, and true if offline
   function needsInternet(what) {
     if (!isOffline()) return false;
     const msg = `${what} needs the internet. Try again when you're back online.`;
