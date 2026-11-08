@@ -79,7 +79,14 @@
         <li><span aria-hidden="true">🛒</span>Shopping lists</li>
       </ul>
       <button type="button" class="setup-btn is-primary setup-start" data-act="start">Let's get started</button>
-      <p class="setup-join-note is-short">👋 <strong>Joining your family?</strong> Ask them for the join link in <strong>Settings › Access</strong>.</p>`;
+      <div class="setup-join-note is-short">
+        <p>👋 <strong>Joining your family?</strong> Scan their QR code or open their join link.${s.pasteOpen ? "" : ` <button type="button" class="setup-paste-link" data-act="paste">Paste a link</button>`}</p>
+        ${s.pasteOpen ? `<form class="setup-paste-form" data-paste-form>
+          <input id="setup-paste" class="setup-input" type="text" inputmode="url" placeholder="Paste the join link" autocomplete="off" enterkeyhint="go" aria-label="Join link">
+          <button type="submit" class="setup-btn is-primary">Join</button>
+        </form>
+        ${s.pasteError ? `<p class="setup-paste-error" role="alert">${esc(s.pasteError)}</p>` : ""}` : ""}
+      </div>`;
     if (s.step === 1) return `
       <h1 class="setup-title" id="setup-title">Let's set up your family board</h1>
       <p class="setup-lead">It takes about a minute, and you can change anything later.</p>
@@ -294,6 +301,12 @@
     const s = state;
     if (act === "next") return next();
     if (act === "start") { s.step = 1; s.cameFromIntro = true; return render(); }
+    if (act === "paste") {
+      s.pasteOpen = true; s.pasteError = "";
+      render();
+      setTimeout(() => { const i = document.getElementById("setup-paste"); if (i) i.focus(); }, 50);
+      return;
+    }
     if (act === "back") { s.error = ""; s.step = Math.max(s.cameFromIntro ? 0 : 1, s.step - 1); return render(); }
     if (act === "add-person") return addPerson();
     if (act === "remove") { s.people.splice(i, 1); s.openColour = null; return render(); }
@@ -324,6 +337,29 @@
       document.body.appendChild(el);
       el.addEventListener("click", onClick);
       el.addEventListener("keydown", onKey);
+      // A pasted join link (…?board=the-bakers-k3m9&code=MINT-FROG-LAMP):
+      // open it here, which joins this device (needed in an iPhone
+      // home-screen app, where tapping a link opens Safari instead)
+      el.addEventListener("submit", (e) => {
+        if (!e.target.closest("[data-paste-form]")) return;
+        e.preventDefault();
+        // Find the link even inside a pasted message ("Join us! https://…")
+        const pasted = (document.getElementById("setup-paste").value || "").trim();
+        const typed = (pasted.match(/\S*[?&](?:board|b)=\S+/) || [pasted])[0];
+        let link = null;
+        try { link = new URL(/^https?:\/\//i.test(typed) ? typed : `https://${typed}`); } catch (err) {}
+        const board = link && (link.searchParams.get("board") || link.searchParams.get("b"));
+        const code = link && (link.searchParams.get("code") || link.searchParams.get("join"));
+        if (!board || !code) {
+          state.pasteError = "That isn't a join link. Copy it from Settings › Access.";
+          render();
+          return;
+        }
+        const go = new URL(window.location.origin + window.location.pathname);
+        go.searchParams.set("board", board);
+        go.searchParams.set("code", code);
+        window.location.href = go.toString();
+      });
       el.addEventListener("input", (e) => {
         if (e.target.id === "setup-family") {
           state.familyName = e.target.value;
@@ -353,21 +389,22 @@
     if (welcomeShowing) return;
     welcomeShowing = true;
     try { localStorage.removeItem(key); localStorage.removeItem(`harmonee_setup_tasks_${boardId}`); } catch (e) {}
-    const name = ((window.boardSettings || {}).familyName) || "your family";
+    const name = ((window.boardSettings || {}).familyName) || "";
     const dlg = document.createElement("dialog");
     dlg.className = "setup-welcome-dialog";
     dlg.setAttribute("aria-labelledby", "setup-welcome-title");
     dlg.innerHTML = `
       <div class="setup-welcome-card">
         <div class="setup-done-mark" aria-hidden="true">🏡</div>
-        <h2 class="setup-title" id="setup-welcome-title">Welcome, ${esc(name)}!</h2>
-        <p class="setup-lead">To use harmonee on another phone or tablet, open the link below on it, or enter this family code:</p>
-        <p class="setup-code">${esc(info.code)}</p>
+        <h2 class="setup-title" id="setup-welcome-title">${name ? `Welcome, ${esc(name)}!` : "You're all set!"}</h2>
+        <p class="setup-lead">Bring the family in: they point their phone camera at this code, or you send them the link.</p>
+        ${window.JoinQR && window.JoinQR.svg(info.joinUrl) ? `<div class="setup-welcome-qr">${window.JoinQR.svg(info.joinUrl)}</div>` : ""}
+        <p class="setup-code-small">Family code <strong>${esc(info.code)}</strong></p>
         <div class="setup-welcome-actions">
           <button type="button" class="setup-btn is-secondary" data-welcome="copy">Copy join link</button>
           <button type="button" class="setup-btn is-primary" data-welcome="close">Let's go</button>
         </div>
-        <p class="setup-hint">You'll find this again in Settings › Access.</p>
+        <p class="setup-hint">Find this again any time in Settings › Access.</p>
       </div>`;
     document.body.appendChild(dlg);
     dlg.addEventListener("click", async (e) => {

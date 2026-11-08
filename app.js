@@ -5425,6 +5425,7 @@ function setupEventListeners() {
       <div class="family-access-row">
         <span class="family-access-code" aria-label="Family code">${escapeHtml(info.code)}</span>
         <button type="button" class="family-access-small-btn" id="btn-copy-join-link">Copy join link</button>
+        <button type="button" class="family-access-small-btn" id="btn-show-join-qr">Show QR code</button>
       </div>
       <p class="settings-box-desc" style="margin-top: 12px;">Joined devices (${info.devices.length})</p>
       <ul class="family-access-devices">${devicesHtml}</ul>
@@ -5442,6 +5443,11 @@ function setupEventListeners() {
         setTimeout(() => { copyBtn.textContent = "Copy join link"; }, 2000);
       };
     }
+    const qrBtn = document.getElementById("btn-show-join-qr");
+    if (qrBtn) qrBtn.onclick = () => window.JoinQR && window.JoinQR.show({
+      url: info.joinUrl, code: info.code,
+      familyName: isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || "")
+    });
     box.querySelectorAll("[data-remove-device]").forEach(btn => {
       btn.onclick = async () => {
         if (!window.confirm("Remove this device? It will need the family code to get back in.")) return;
