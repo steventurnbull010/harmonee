@@ -145,14 +145,21 @@
       if (r.isFavorite) score += 1.5;
       if (planned.has(String(r.title || "").trim().toLowerCase())) score -= 4;
       // Fussy eaters: anything they won't eat is out; foods they like count
-      const why = [];
+      const fans = [];
+      let firstLiked = [];
       for (const name of (a.fussy || [])) {
         const p = prefsOf(name);
         if (p.dislikes.some(k => { const f = FOODS.find(x => x.key === k); return f && foodHit(f, rawText(r)); })) return null;
         const liked = p.likes.filter(k => { const f = FOODS.find(x => x.key === k); return f && foodHit(f, text); });
-        if (liked.length) { score += Math.min(6, liked.length * 3); why.push(`👍 ${name} likes ${liked.slice(0, 2).map(foodLabel).join(" & ")}`); }
+        if (liked.length) { score += Math.min(6, liked.length * 3); fans.push(name); if (!firstLiked.length) firstLiked = liked; }
       }
-      if (why.length) whyOf.set(r, why.join(" · "));
+      // One fan: "👍 Ava likes pasta & cheese"; more: "👍 Steven, Sorcha & Ava like this" (+N)
+      if (fans.length === 1) whyOf.set(r, `👍 ${fans[0]} likes ${firstLiked.slice(0, 2).map(foodLabel).join(" & ")}`);
+      else if (fans.length > 1) {
+        const shown = fans.length <= 3 ? fans : fans.slice(0, 2), extra = fans.length - shown.length;
+        const names = extra ? `${shown.join(", ")} +${extra}` : `${shown.slice(0, -1).join(", ")} & ${shown[shown.length - 1]}`;
+        whyOf.set(r, `👍 ${names} like this`);
+      }
       // A little shuffle so "Show me others" and repeat visits vary
       score += ((i * 7919 + state.shuffle * 104729) % 97) / 97;
       return { r, score };
@@ -216,16 +223,18 @@
         <p class="genie-q">What does ${esc(name)} like?</p>
         <p class="genie-label">👍 Likes</p>${chips(p.likes, "likes")}
         <p class="genie-label">👎 Won't eat</p>${chips(p.dislikes, "dislikes")}
-        <div class="genie-foot"><button type="button" class="genie-back" data-genie="edit-cancel">‹ Back</button><button type="button" class="genie-plan" data-genie="edit-save">Save for ${esc(name)}</button></div>
+        <div class="genie-foot is-sticky"><button type="button" class="genie-back" data-genie="edit-cancel">‹ Back</button><button type="button" class="genie-plan" data-genie="edit-save">Save for ${esc(name)}</button></div>
       </div>`;
       return;
     }
     if (state.step < steps.length && steps[state.step] === "fussy") {
       const chosen = state.answers.fussy || [];
+      // "pasta, rice +4": short enough for one line on a phone
+      const few = (keys) => keys.length <= 3 ? keys.map(foodLabel).join(", ") : `${keys.slice(0, 2).map(foodLabel).join(", ")} +${keys.length - 2}`;
       const line = (name) => {
         const p = prefsOf(name);
         if (!p.likes.length && !p.dislikes.length) return `<small>Tap ✏️ to say what they like</small>`;
-        return `<small>${p.likes.length ? `👍 ${esc(p.likes.map(foodLabel).join(", "))}` : ""}${p.likes.length && p.dislikes.length ? " · " : ""}${p.dislikes.length ? `👎 ${esc(p.dislikes.map(foodLabel).join(", "))}` : ""}</small>`;
+        return (p.likes.length ? `<small>👍 ${esc(few(p.likes))}</small>` : "") + (p.dislikes.length ? `<small>👎 ${esc(few(p.dislikes))}</small>` : "");
       };
       dlg.innerHTML = `<div class="genie-card">${head}${dots}
         <p class="genie-q">Anyone fussy tonight?</p>
@@ -233,7 +242,7 @@
           <button type="button" class="genie-person-pick" data-genie="fussy-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>
           <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="What ${esc(n)} likes">✏️</button>
         </li>`).join("")}</ul>
-        <div class="genie-foot"><button type="button" class="genie-back" data-genie="back">‹ Back</button><button type="button" class="genie-plan" data-genie="fussy-next">${chosen.length ? "Next" : "No, all good"}</button></div>
+        <div class="genie-foot is-sticky"><button type="button" class="genie-back" data-genie="back">‹ Back</button><button type="button" class="genie-plan" data-genie="fussy-next">${chosen.length ? "Next" : "No, all good"}</button></div>
       </div>`;
       return;
     }
@@ -253,7 +262,8 @@
     const slot = state.answers.meal || "dinner";
     const free = nextFreeDay(slot);
     dlg.innerHTML = `<div class="genie-card">${head}
-      <p class="genie-q">${list.length ? "How about one of these?" : "I couldn't find anything for that. Try different answers?"}</p>
+      <p class="genie-q">${list.length ? "How about one of these?" : (state.answers.fussy || []).length ? "Nothing fits everyone's won't-eat lists." : "I couldn't find anything for that. Try different answers?"}</p>
+      ${!list.length && (state.answers.fussy || []).length ? `<p class="genie-sub">Try fewer people, or take something off a won't-eat list.</p><button type="button" class="genie-more" data-genie="to-fussy">‹ Change who's fussy</button>` : ""}
       <ul class="genie-results">${list.map(r => `<li class="genie-result">
         ${r.image ? `<img class="genie-photo" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="genie-photo is-emoji" aria-hidden="true">${esc(r.emoji || "🍽️")}</span>`}
         <div class="genie-result-body">
@@ -288,6 +298,7 @@
       return;
     }
     if (act === "fussy-next") { state.step++; draw(); return; }
+    if (act === "to-fussy") { state.step = stepsFor().indexOf("fussy"); state.page = 0; draw(); return; }
     if (act === "edit") { state.editing = b.getAttribute("data-name"); const p = prefsOf(state.editing); state.draft = { likes: [...p.likes], dislikes: [...p.dislikes] }; draw(); return; }
     if (act === "food") {
       const kind = b.getAttribute("data-kind"), k = b.getAttribute("data-food");

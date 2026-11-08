@@ -122,3 +122,15 @@ body.theme-dark .genie-more { background: rgba(124, 58, 237, 0.2); border-color:
 .genie-why { align-self: flex-start; margin-top: 2px; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #14532d; font-size: 0.76rem; font-weight: 700; }
 body.theme-dark .genie-person-pick, body.theme-dark .genie-person-edit, body.theme-dark .genie-food { background: #0f172a; border-color: #334155; color: #f8fafc; }
 body.theme-dark .genie-person.is-on .genie-person-pick { background: rgba(124, 58, 237, 0.2); border-color: #7c3aed; }
+/* Next / Save stay in reach however many people there are */
+.genie-foot.is-sticky {
+  position: sticky; bottom: -24px; z-index: 1;
+  margin: 8px -24px -24px; padding: 12px 24px 24px;
+  background: var(--card-bg, #ffffff);
+  border-top: 1px solid var(--card-border, #e2e8f0);
+}
+@media (max-width: 600px) {
+  .genie-foot.is-sticky { bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); margin-bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+}
+body.theme-dark .genie-foot.is-sticky { background: #1e293b; border-color: #334155; }
+.genie-why { white-space: normal; line-height: 1.3; }
