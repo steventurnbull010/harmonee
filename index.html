@@ -56,7 +56,7 @@
   
   <link rel="stylesheet" href="style.css?v=21c141cf">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
-  <link rel="stylesheet" href="css/tasks.css?v=815d9ed6">
+  <link rel="stylesheet" href="css/tasks.css?v=3a9f03f7">
   <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
   <link rel="stylesheet" href="css/calendar.css?v=e945f7a8">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
@@ -892,67 +892,58 @@
               <span class="drawer-section-icon">🗓️</span>
               <span class="drawer-section-label">How often</span>
             </div>
-            <div class="drawer-segmented-pills" id="drawer-schedule-pills">
+            <div class="drawer-segmented-pills drawer-pills-3" id="drawer-schedule-pills">
               <button type="button" class="drawer-pill-segment" data-schedule="once" id="btn-schedule-once">Once</button>
+              <button type="button" class="drawer-pill-segment" data-schedule="weekly" id="btn-schedule-weekly">Every week</button>
               <button type="button" class="drawer-pill-segment" data-schedule="daily" id="btn-schedule-daily">Every day</button>
             </div>
           </div>
 
-          <!-- CHORE-SPECIFIC FIELDS -->
+          <!-- CHORE-SPECIFIC FIELDS (Once / Every week): which day, and an optional time -->
           <div id="drawer-chore-fields" class="drawer-dynamic-fields">
-            <!-- Date Switch & Picker -->
-            <div class="drawer-toggle-row">
-              <div class="drawer-toggle-left">
-                <span class="drawer-toggle-icon">📅</span>
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">Date</span>
-                  <span class="drawer-toggle-sub" id="drawer-chore-date-label">Today</span>
-                </div>
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">📅</span>
+                <span class="drawer-section-label" id="drawer-chore-day-heading">On</span>
               </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="drawer-toggle-date" checked>
-                <span class="switch-slider"></span>
-              </label>
+              <!-- Once: the date (opens the date picker) -->
+              <button type="button" class="drawer-date-button" id="drawer-chore-date-btn">
+                <span id="drawer-chore-date-label">Today</span>
+                <span class="drawer-date-button-change" aria-hidden="true">Change</span>
+              </button>
+              <!-- Every week: the day of the week -->
+              <div class="drawer-weekday-pills" id="drawer-chore-weekdays" role="radiogroup" aria-label="Day of the week" hidden>
+                <button type="button" class="drawer-pill-segment" data-weekday="1" aria-label="Monday">Mon</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="2" aria-label="Tuesday">Tue</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="3" aria-label="Wednesday">Wed</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="4" aria-label="Thursday">Thu</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="5" aria-label="Friday">Fri</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="6" aria-label="Saturday">Sat</button>
+                <button type="button" class="drawer-pill-segment" data-weekday="0" aria-label="Sunday">Sun</button>
+              </div>
             </div>
 
-            <!-- Time Switch & Carousel -->
-            <div class="drawer-toggle-row">
-              <div class="drawer-toggle-left">
-                <span class="drawer-toggle-icon">🕒</span>
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">Time</span>
-                  <span class="drawer-toggle-sub" id="drawer-chore-time-label">All Day</span>
-                </div>
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">🕒</span>
+                <span class="drawer-section-label">Time</span>
               </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="drawer-toggle-time">
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-            <div id="drawer-chore-time-selector" class="drawer-time-selector-wrap" style="display: none;">
-              <input type="time" id="drawer-chore-time-input" class="drawer-time-input" value="09:00">
+              <div class="drawer-segmented-pills" id="drawer-chore-time-pills">
+                <button type="button" class="drawer-pill-segment" data-time-mode="any">Any time</button>
+                <button type="button" class="drawer-pill-segment" data-time-mode="set">Set a time</button>
+              </div>
+              <div class="drawer-time-field" id="drawer-chore-time-field" hidden>
+                <input type="time" id="drawer-chore-time-input" class="drawer-time-input-nice" value="19:00" aria-label="Time">
+              </div>
             </div>
 
-            <!-- Repeats Switch -->
-            <div class="drawer-toggle-row">
-              <div class="drawer-toggle-left">
-                <span class="drawer-toggle-icon">🔁</span>
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">Repeats</span>
-                  <span class="drawer-toggle-sub" id="drawer-chore-repeat-label">Does not repeat</span>
-                </div>
-              </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="drawer-toggle-repeat">
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-            <div id="drawer-chore-repeat-selector" class="drawer-repeat-selector-wrap" style="display: none;">
-              <select id="drawer-chore-repeat-select" class="drawer-select-input">
-                <option value="none">Does not repeat</option>
-                <option value="weekly">Weekly on this day</option>
-              </select>
-            </div>
+            <!-- What the save reads (kept as they were, now set by the buttons above) -->
+            <input type="checkbox" id="drawer-toggle-time" hidden>
+            <input type="checkbox" id="drawer-toggle-repeat" hidden>
+            <select id="drawer-chore-repeat-select" hidden aria-hidden="true">
+              <option value="none">Does not repeat</option>
+              <option value="weekly">Weekly on this day</option>
+            </select>
           </div>
 
           <!-- ROUTINE-SPECIFIC FIELDS -->
@@ -2472,7 +2463,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=ed4220ba"></script>
+  <script src="js/build-info.js?v=f62beff6"></script>
   <script src="js/utils.js?v=7e7ddbd6"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
   <script src="js/audio.js?v=c545908c"></script>
@@ -2494,7 +2485,7 @@
   <script src="js/sticky-note.js?v=ca2f184f"></script>
   <script src="js/calendar.js?v=247fe7b9"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
-  <script src="js/tasks.js?v=0d9d9c07"></script>
+  <script src="js/tasks.js?v=1ad15231"></script>
   <script src="js/code-words.js?v=4cda76b6"></script>
   <script src="js/board-access.js?v=fec4f7e0"></script>
   <script src="js/countdowns.js?v=09475303"></script>

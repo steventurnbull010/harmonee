@@ -2795,3 +2795,49 @@ body.theme-dark .tasks-slot-pill.is-on { background: rgba(2, 132, 199, 0.18); bo
   }
   .tasks-slot-pill span { font-size: 1.05rem; }
 }
+
+/* ---- Task drawer: chore timing like the routine pills (2026-11-08) ---------- */
+.skylight-task-drawer .drawer-pill-segment { min-height: 48px; }
+.drawer-pills-3 .drawer-pill-segment { padding-left: 8px !important; padding-right: 8px !important; }
+/* Once: the date as a tidy button */
+.drawer-date-button {
+  width: 100%;
+  min-height: 48px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 0.98rem; font-weight: 700; text-align: left;
+  cursor: pointer;
+}
+.drawer-date-button-change { font-size: 0.85rem; font-weight: 700; color: #0284c7; }
+.drawer-date-button[hidden] { display: none; }
+/* Every week: seven small day pills in one row */
+.drawer-weekday-pills { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.drawer-weekday-pills[hidden] { display: none; }
+.skylight-task-drawer .drawer-weekday-pills .drawer-pill-segment { padding: 8px 0 !important; min-width: 0; font-size: 0.85rem; }
+/* Set a time: a proper box, not the browser's bare one */
+.drawer-time-field { margin-top: 8px; }
+.drawer-time-field[hidden] { display: none; }
+.drawer-time-input-nice {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border: 1.5px solid #0284c7;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 1.1rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.drawer-time-input-nice:focus { outline: none; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18); }
+body.theme-dark .drawer-date-button,
+body.theme-dark .drawer-time-input-nice { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .drawer-time-input-nice { border-color: #38bdf8; color-scheme: dark; }
+body.theme-dark .drawer-date-button-change { color: #38bdf8; }
+.skylight-task-drawer .drawer-pills-3 .drawer-pill-segment { padding: 8px 4px !important; font-size: 0.88rem; white-space: nowrap; }
+#drawer-chore-fields > .drawer-field-group + .drawer-field-group { margin-top: 24px; }

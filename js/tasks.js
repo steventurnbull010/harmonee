@@ -1326,7 +1326,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     }
     const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
     drawerCurrentType = isPersonalRoutine(task) ? "routine" : "chore";
-    drawerSchedule = isDaily ? "daily" : "once";
+    drawerSchedule = isDaily ? "daily" : (task.repeat === "weekly" ? "weekly" : "once");
     // The chore's own day (the panel used to keep whatever date it last had,
     // so saving could move a chore). Overdue: today, so saving moves it here.
     drawerSelectedDate = drawerDateForTask(task);
@@ -1373,11 +1373,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
       if (Array.isArray(prefill.people) && prefill.people.length) drawerSelectedProfiles = [...prefill.people];
       if (prefill.date instanceof Date && !isNaN(prefill.date)) drawerSelectedDate = new Date(prefill.date);
       if (prefill.daily) { drawerSchedule = "daily"; drawerCurrentType = "routine"; drawerRoutineSlot = prefill.slot || "anytime"; }
-      else if (prefill.weekly && repeatToggle) {
-        repeatToggle.checked = true;
-        const repeatSelect = document.getElementById("drawer-chore-repeat-select");
-        if (repeatSelect) repeatSelect.value = "weekly";
-      }
+      else if (prefill.weekly) drawerSchedule = "weekly";
     }
   }
 
@@ -1423,8 +1419,8 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
   // Sync Reward text
   syncDrawerRewardUI();
 
-  // Date label
-  document.getElementById("drawer-chore-date-label").textContent = drawerSelectedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  // Date label, day pills and time (one place does it)
+  syncDrawerTypeUI();
 
   overlay.style.display = "flex";
   if (typeof window.scrollPanelToTop === "function") window.scrollPanelToTop(overlay);
@@ -1514,28 +1510,58 @@ function syncDrawerTypeUI() {
     ? "Something personal everyone does for themselves. It stays with each person."
     : "A household job. Anyone can take it over and get the points.";
 
-  // How often: one date, or every day at a time of day
+  // How often: once (a date), every week (a day of the week) or every day (a time of day)
   document.querySelectorAll("#drawer-schedule-pills [data-schedule]").forEach(b => {
-    b.classList.toggle("active", b.getAttribute("data-schedule") === drawerSchedule);
+    const on = b.getAttribute("data-schedule") === drawerSchedule;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
   });
   updateDrawerWhoSummary();
-  if (choreFields) choreFields.style.display = drawerSchedule === "once" ? "block" : "none";
-  if (routineFields) routineFields.style.display = drawerSchedule === "daily" ? "block" : "none";
+  const isDailySchedule = drawerSchedule === "daily";
+  const isWeeklySchedule = drawerSchedule === "weekly";
+  if (choreFields) choreFields.style.display = isDailySchedule ? "none" : "block";
+  if (routineFields) routineFields.style.display = isDailySchedule ? "block" : "none";
 
-  // Once: show the time and weekly options when switched on
-  const timeToggle = document.getElementById("drawer-toggle-time");
-  const timeWrap = document.getElementById("drawer-chore-time-selector");
-  const timeLabel = document.getElementById("drawer-chore-time-label");
-  const timeInput = document.getElementById("drawer-chore-time-input");
-  if (timeWrap && timeToggle) timeWrap.style.display = timeToggle.checked ? "" : "none";
-  if (timeLabel && timeToggle) timeLabel.textContent = timeToggle.checked && timeInput ? timeInput.value : "All Day";
+  // What the save reads: weekly or not
   const repeatToggle = document.getElementById("drawer-toggle-repeat");
-  const repeatWrap = document.getElementById("drawer-chore-repeat-selector");
-  const repeatLabel = document.getElementById("drawer-chore-repeat-label");
   const repeatSelect = document.getElementById("drawer-chore-repeat-select");
-  if (repeatWrap && repeatToggle) repeatWrap.style.display = repeatToggle.checked ? "" : "none";
-  if (repeatToggle && repeatSelect && repeatToggle.checked && repeatSelect.value === "none") repeatSelect.value = "weekly";
-  if (repeatLabel && repeatToggle) repeatLabel.textContent = repeatToggle.checked && repeatSelect && repeatSelect.value === "weekly" ? "Weekly on this day" : "Does not repeat";
+  if (repeatToggle) repeatToggle.checked = isWeeklySchedule;
+  if (repeatSelect) repeatSelect.value = isWeeklySchedule ? "weekly" : "none";
+
+  // On: a date (once) or a day of the week (every week)
+  const heading = document.getElementById("drawer-chore-day-heading");
+  const dateBtn = document.getElementById("drawer-chore-date-btn");
+  const weekdays = document.getElementById("drawer-chore-weekdays");
+  if (heading) heading.textContent = isWeeklySchedule ? "Every" : "On";
+  if (dateBtn) dateBtn.hidden = isWeeklySchedule;
+  if (weekdays) weekdays.hidden = !isWeeklySchedule;
+  const dateLabel = document.getElementById("drawer-chore-date-label");
+  if (dateLabel && drawerSelectedDate) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(drawerSelectedDate); d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d - today) / 86400000);
+    const nice = drawerSelectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    dateLabel.textContent = diff === 0 ? `Today · ${nice}` : diff === 1 ? `Tomorrow · ${nice}` : nice;
+  }
+  if (weekdays && drawerSelectedDate) {
+    const wd = String(drawerSelectedDate.getDay());
+    weekdays.querySelectorAll("[data-weekday]").forEach(b => {
+      const on = b.getAttribute("data-weekday") === wd;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+  }
+
+  // Time: any time, or a set time
+  const timeToggle = document.getElementById("drawer-toggle-time");
+  const timeField = document.getElementById("drawer-chore-time-field");
+  const timed = !!(timeToggle && timeToggle.checked);
+  document.querySelectorAll("#drawer-chore-time-pills [data-time-mode]").forEach(b => {
+    const on = (b.getAttribute("data-time-mode") === "set") === timed;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  if (timeField) timeField.hidden = !timed;
 }
 
 function syncDrawerRewardUI() {
@@ -1559,9 +1585,27 @@ function initSkylightTaskDrawerEvents() {
   document.querySelectorAll("#drawer-schedule-pills [data-schedule]").forEach(b => {
     b.onclick = () => { drawerSchedule = b.getAttribute("data-schedule"); syncDrawerTypeUI(); };
   });
-  ["drawer-toggle-time", "drawer-toggle-repeat", "drawer-chore-time-input", "drawer-chore-repeat-select"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("change", syncDrawerTypeUI);
+  // Every week: tap a day; it starts on the next one from today (never in the past)
+  document.querySelectorAll("#drawer-chore-weekdays [data-weekday]").forEach(b => {
+    b.onclick = () => {
+      const want = Number(b.getAttribute("data-weekday"));
+      const next = new Date(); next.setHours(0, 0, 0, 0);
+      next.setDate(next.getDate() + ((want - next.getDay() + 7) % 7));
+      drawerSelectedDate = next;
+      syncDrawerTypeUI();
+    };
+  });
+  // Time: any time, or set one (opens the time box)
+  document.querySelectorAll("#drawer-chore-time-pills [data-time-mode]").forEach(b => {
+    b.onclick = () => {
+      const timeToggle = document.getElementById("drawer-toggle-time");
+      if (timeToggle) timeToggle.checked = b.getAttribute("data-time-mode") === "set";
+      syncDrawerTypeUI();
+      if (timeToggle && timeToggle.checked) {
+        const input = document.getElementById("drawer-chore-time-input");
+        if (input && !(window.isTouchScreen && window.isTouchScreen())) input.focus();
+      }
+    };
   });
 
   // Emoji accordion
@@ -1650,12 +1694,9 @@ function initSkylightTaskDrawerEvents() {
     };
   }
 
-  // Date picker trigger on Date row
-  const choreDateLabel = document.getElementById("drawer-chore-date-label");
-  if (choreDateLabel) {
-    choreDateLabel.style.cursor = "pointer";
-    choreDateLabel.onclick = () => { openSkylightDatePickerModal(); };
-  }
+  // Once: the date button opens the date picker
+  const choreDateBtn = document.getElementById("drawer-chore-date-btn");
+  if (choreDateBtn) choreDateBtn.onclick = () => { openSkylightDatePickerModal(); };
 
   // Form submit
   const form = document.getElementById("skylight-task-drawer-form");
@@ -2042,7 +2083,7 @@ function openSkylightDatePickerModal() {
     value: drawerSelectedDate,
     onSelect: (d) => {
       drawerSelectedDate = d;
-      document.getElementById("drawer-chore-date-label").textContent = drawerSelectedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      syncDrawerTypeUI();
     }
   });
 }
