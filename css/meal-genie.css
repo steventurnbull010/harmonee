@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MEAL GENIE (js/meal-genie.js): a slide-up helper (css/sheet.css does the
+   MAGIC MEALTIME (js/meal-genie.js): a slide-up helper (css/sheet.css does the
    sliding). Questions as big tap tiles, then three suggestion cards.
    ========================================================================== */
 .meal-genie { border: none; padding: 0; background: transparent; margin: auto; max-width: none; max-height: none; }
@@ -84,3 +84,41 @@ body.theme-dark .genie-more { background: rgba(124, 58, 237, 0.2); border-color:
 @media (max-width: 600px) {
   #btn-open-grocery-list .pill-text { display: none; }
 }
+
+/* Fussy eaters: who's fussy tonight, and what each one likes */
+.genie-people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.genie-person { display: flex; align-items: stretch; gap: 8px; }
+.genie-person-pick {
+  flex: 1; min-width: 0; min-height: 64px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px; box-sizing: border-box;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 16px;
+  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.genie-person.is-on .genie-person-pick { border-color: #7c3aed; background: #f5f3ff; }
+.genie-person-check {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 900; color: #ffffff;
+}
+.genie-person.is-on .genie-person-check { background: #7c3aed; border-color: #7c3aed; }
+.genie-person-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.genie-person-words strong { font-size: 1rem; }
+.genie-person-words small { font-size: 0.8rem; color: var(--text-secondary, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.genie-person-edit { width: 56px; flex-shrink: 0; border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 16px; background: var(--card-bg, #ffffff); font-size: 1.1rem; cursor: pointer; }
+.genie-label { margin: 16px 0 8px; font-size: 0.88rem; font-weight: 800; color: var(--text-secondary, #475569); }
+.genie-foods { display: flex; flex-wrap: wrap; gap: 8px; }
+.genie-food {
+  min-height: 40px; padding: 8px 12px;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 999px;
+  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
+  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+}
+.genie-food.is-on[data-kind="likes"] { border-color: #16a34a; background: #dcfce7; color: #14532d; }
+.genie-food.is-on[data-kind="dislikes"] { border-color: #e11d48; background: #ffe4e6; color: #881337; }
+.genie-foot .genie-plan { min-height: 44px; padding: 8px 24px; font-size: 0.95rem; }
+.genie-foot .genie-back { margin-top: 0; }
+.genie-why { align-self: flex-start; margin-top: 2px; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #14532d; font-size: 0.76rem; font-weight: 700; }
+body.theme-dark .genie-person-pick, body.theme-dark .genie-person-edit, body.theme-dark .genie-food { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .genie-person.is-on .genie-person-pick { background: rgba(124, 58, 237, 0.2); border-color: #7c3aed; }

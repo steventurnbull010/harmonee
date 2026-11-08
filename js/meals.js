@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=151";
+} from "../recipes-data.js?v=152";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;

@@ -1,5 +1,5 @@
 // ============================================================================
-// MEAL GENIE (js/meal-genie.js)
+// MAGIC MEALTIME (js/meal-genie.js; it began as "Meal Genie")
 // "Not sure what to cook?" A few quick taps (which meal, what you're in the
 // mood for, which flavours, how much effort), then three suggestions from
 // the family's recipes and the built-in library, each with "Plan for <day>"
@@ -49,7 +49,41 @@
   const SPICY = /\b(spicy|curry|chilli|chili|masala|tikka|jalfrezi|korma|dal|dhal|vindaloo|harissa|jerk|sriracha|cajun|madras|biryani)\b/i;
   const FISH = /\b(fish|salmon|cod|tuna|prawns?|shrimp|haddock|mackerel|anchov(y|ies)|sardines?|crab|mussels?|squid|tilapia|trout|seafood)\b/i;
 
-  let state = null; // { step, answers, seen: Set, results: [] }
+  // Foods a fussy eater likes or won't eat, and how to spot them in a recipe
+  const FOODS = [
+    { key: "pasta", icon: "🍝", label: "Pasta", re: /\b(pasta|spaghetti|penne|linguine|fettuc+ine|macaroni|lasagn[ea]|rigatoni|fusilli|tagliatelle)\b/i },
+    { key: "rice", icon: "🍚", label: "Rice", re: /\b(rice|risotto|paella|biryani)\b/i },
+    { key: "noodles", icon: "🍜", label: "Noodles", re: /\bnoodles?\b/i },
+    { key: "chicken", icon: "🍗", label: "Chicken", re: /\bchicken\b/i },
+    { key: "mince", icon: "🍔", label: "Mince & burgers", re: /\b(mince|minced|meatballs?|burgers?|bolognese)\b/i },
+    { key: "sausages", icon: "🌭", label: "Sausages", re: /\b(sausages?|chorizo|hot dogs?)\b/i },
+    { key: "fish", icon: "🐟", label: "Fish", re: FISH },
+    { key: "cheese", icon: "🧀", label: "Cheese", re: /\b(cheese|cheddar|parmesan|mozzarella|feta|halloumi|gruy[eè]re|brie)\b/i },
+    { key: "potatoes", icon: "🥔", label: "Potatoes", re: /\b(potato(es)?|chips|mash|fries)\b/i },
+    { key: "eggs", icon: "🥚", label: "Eggs", re: /\beggs?\b/i },
+    { key: "tomatoes", icon: "🍅", label: "Tomatoes", re: /\btomato(es)?\b/i },
+    { key: "peas", icon: "🫛", label: "Peas", re: /\bpeas\b/i },
+    { key: "sweetcorn", icon: "🌽", label: "Sweetcorn", re: /\b(sweetcorn|sweet corn|corn kernels)\b/i },
+    { key: "carrots", icon: "🥕", label: "Carrots", re: /\bcarrots?\b/i },
+    { key: "broccoli", icon: "🥦", label: "Broccoli", re: /\bbroccoli\b/i },
+    { key: "beans", icon: "🫘", label: "Beans", re: /\b(beans|lentils|chickpeas)\b/i },
+    { key: "mushrooms", icon: "🍄", label: "Mushrooms", re: /\bmushrooms?\b/i },
+    { key: "peppers", icon: "🫑", label: "Peppers", re: /\b((red|green|yellow|bell|sweet) peppers?|peppers|capsicum)\b/i },
+    { key: "onions", icon: "🧅", label: "Onions", re: /\bonions?\b/i },
+    { key: "spicy", icon: "🌶️", label: "Spicy food", re: null } // uses SPICY below
+  ];
+  const foodHit = (f, text) => (f.key === "spicy" ? (SPICY.test(text) || /\bchill?i(es)?\b/i.test(text)) : f.re.test(text));
+  const prefsAll = () => (((window.boardSettings || {}).foodPrefs) || {});
+  const prefsOf = (name) => { const p = prefsAll()[name] || {}; return { likes: p.likes || [], dislikes: p.dislikes || [] }; };
+  function savePrefs(name, prefs) {
+    const all = { ...prefsAll(), [name]: prefs };
+    if (typeof window.saveBoardSettingsNow === "function") window.saveBoardSettingsNow({ foodPrefs: all });
+  }
+  const people = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
+  const foodLabel = (k) => (FOODS.find(f => f.key === k) || { label: k }).label.toLowerCase();
+
+  let state = null;
+  const whyOf = new WeakMap(); // why a dish was suggested ("👍 Ava likes pasta"); kept off the recipe itself // { step, answers, seen: Set, results: [] }
 
   // ---- Matching --------------------------------------------------------------------
   function cuisineOf(r) { return String(r.subtitle || r.cuisine || "").split("·")[0].trim().toLowerCase(); }
@@ -110,6 +144,15 @@
       if (!String(r.id || "").startsWith("mealdb-")) score += 1.5; // the family's own
       if (r.isFavorite) score += 1.5;
       if (planned.has(String(r.title || "").trim().toLowerCase())) score -= 4;
+      // Fussy eaters: anything they won't eat is out; foods they like count
+      const why = [];
+      for (const name of (a.fussy || [])) {
+        const p = prefsOf(name);
+        if (p.dislikes.some(k => { const f = FOODS.find(x => x.key === k); return f && foodHit(f, rawText(r)); })) return null;
+        const liked = p.likes.filter(k => { const f = FOODS.find(x => x.key === k); return f && foodHit(f, text); });
+        if (liked.length) { score += Math.min(6, liked.length * 3); why.push(`👍 ${name} likes ${liked.slice(0, 2).map(foodLabel).join(" & ")}`); }
+      }
+      if (why.length) whyOf.set(r, why.join(" · "));
       // A little shuffle so "Show me others" and repeat visits vary
       score += ((i * 7919 + state.shuffle * 104729) % 97) / 97;
       return { r, score };
@@ -152,16 +195,47 @@
   }
   function close() { if (window.Sheet) window.Sheet.close(dlg); else dlg.close(); }
 
-  const ORDER = ["meal", "mood", "flavour", "effort"];
+  const ORDER = ["meal", "fussy", "mood", "flavour", "effort"];
   function stepsFor() { return state.answers.meal === "breakfast" ? ["meal"] : ORDER; }
 
   function draw() {
     const steps = stepsFor();
     const head = `<div class="genie-head">
-      <span class="genie-mark" aria-hidden="true">🧞</span>
-      <div><h2 class="genie-title" id="genie-title">Meal Genie</h2><p class="genie-sub">Not sure what to cook? I'll find you something.</p></div>
+      <span class="genie-mark" aria-hidden="true">🪄</span>
+      <div><h2 class="genie-title" id="genie-title">Magic Mealtime</h2><p class="genie-sub">Not sure what to cook? I'll find you something.</p></div>
       <button type="button" class="genie-x" data-genie="close" aria-label="Close">✕</button>
     </div>`;
+    const dots = `<ol class="genie-dots" aria-label="Question ${Math.min(state.step + 1, steps.length)} of ${steps.length}">${steps.map((_, i) => `<li class="${i === state.step ? "is-now" : i < state.step ? "is-done" : ""}"></li>`).join("")}</ol>`;
+    // Likes & won't-eats for one person
+    if (state.editing) {
+      const name = state.editing;
+      const p = state.draft;
+      const chips = (list, kind) => `<div class="genie-foods">${FOODS.map(f => `<button type="button" class="genie-food${list.includes(f.key) ? " is-on" : ""}" data-genie="food" data-kind="${kind}" data-food="${f.key}" aria-pressed="${list.includes(f.key)}"><span aria-hidden="true">${f.icon}</span> ${esc(f.label)}</button>`).join("")}</div>`;
+      dlg.innerHTML = `<div class="genie-card">${head}
+        <p class="genie-q">What does ${esc(name)} like?</p>
+        <p class="genie-label">👍 Likes</p>${chips(p.likes, "likes")}
+        <p class="genie-label">👎 Won't eat</p>${chips(p.dislikes, "dislikes")}
+        <div class="genie-foot"><button type="button" class="genie-back" data-genie="edit-cancel">‹ Back</button><button type="button" class="genie-plan" data-genie="edit-save">Save for ${esc(name)}</button></div>
+      </div>`;
+      return;
+    }
+    if (state.step < steps.length && steps[state.step] === "fussy") {
+      const chosen = state.answers.fussy || [];
+      const line = (name) => {
+        const p = prefsOf(name);
+        if (!p.likes.length && !p.dislikes.length) return `<small>Tap ✏️ to say what they like</small>`;
+        return `<small>${p.likes.length ? `👍 ${esc(p.likes.map(foodLabel).join(", "))}` : ""}${p.likes.length && p.dislikes.length ? " · " : ""}${p.dislikes.length ? `👎 ${esc(p.dislikes.map(foodLabel).join(", "))}` : ""}</small>`;
+      };
+      dlg.innerHTML = `<div class="genie-card">${head}${dots}
+        <p class="genie-q">Anyone fussy tonight?</p>
+        <ul class="genie-people">${people().map(n => `<li class="genie-person${chosen.includes(n) ? " is-on" : ""}">
+          <button type="button" class="genie-person-pick" data-genie="fussy-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>
+          <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="What ${esc(n)} likes">✏️</button>
+        </li>`).join("")}</ul>
+        <div class="genie-foot"><button type="button" class="genie-back" data-genie="back">‹ Back</button><button type="button" class="genie-plan" data-genie="fussy-next">${chosen.length ? "Next" : "No, all good"}</button></div>
+      </div>`;
+      return;
+    }
     if (state.step < steps.length) {
       const key = steps[state.step];
       const st = STEPS[key];
@@ -184,6 +258,7 @@
         <div class="genie-result-body">
           <strong class="genie-result-title">${esc(r.title)}</strong>
           ${r.subtitle ? `<span class="genie-result-sub">${esc(r.subtitle)}</span>` : ""}
+          ${whyOf.get(r) ? `<span class="genie-why">${esc(whyOf.get(r))}</span>` : ""}
           <div class="genie-result-actions">
             <button type="button" class="genie-plan" data-genie="plan" data-id="${esc(r.id)}">📅 Plan for ${esc(dayLabel(free))}</button>
             <button type="button" class="genie-recipe" data-genie="recipe" data-id="${esc(r.id)}">📖 Recipe</button>
@@ -204,6 +279,33 @@
     const act = b.getAttribute("data-genie");
     if (act === "close") { close(); return; }
     if (act === "back") { state.step = Math.max(0, state.step - 1); draw(); return; }
+    if (act === "fussy-pick") {
+      const n = b.getAttribute("data-name");
+      const list = state.answers.fussy || [];
+      state.answers.fussy = list.includes(n) ? list.filter(x => x !== n) : [...list, n];
+      draw();
+      return;
+    }
+    if (act === "fussy-next") { state.step++; draw(); return; }
+    if (act === "edit") { state.editing = b.getAttribute("data-name"); const p = prefsOf(state.editing); state.draft = { likes: [...p.likes], dislikes: [...p.dislikes] }; draw(); return; }
+    if (act === "food") {
+      const kind = b.getAttribute("data-kind"), k = b.getAttribute("data-food");
+      const other = kind === "likes" ? "dislikes" : "likes";
+      const list = state.draft[kind];
+      state.draft[kind] = list.includes(k) ? list.filter(x => x !== k) : [...list, k];
+      state.draft[other] = state.draft[other].filter(x => x !== k); // can't be both
+      draw();
+      return;
+    }
+    if (act === "edit-cancel") { state.editing = null; draw(); return; }
+    if (act === "edit-save") {
+      savePrefs(state.editing, state.draft);
+      const n = state.editing;
+      state.editing = null;
+      if (!(state.answers.fussy || []).includes(n)) state.answers.fussy = [...(state.answers.fussy || []), n];
+      draw();
+      return;
+    }
     if (act === "restart") { start(state.answers.meal); return; }
     if (act === "pick") {
       state.answers[b.getAttribute("data-key")] = b.getAttribute("data-val");
@@ -227,7 +329,7 @@
       close();
       setTimeout(() => {
         if (typeof window.planRecipeOn === "function") window.planRecipeOn(recipe, keyOf(day), slot);
-        if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🧞 ${recipe.title} planned for ${dayLabel(day)}!`);
+        if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🪄 ${recipe.title} planned for ${dayLabel(day)}!`);
       }, 250);
       return;
     }
