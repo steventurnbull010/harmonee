@@ -2363,12 +2363,29 @@ function renderWeekCalendar() {
       });
       closeGroup();
     }
+    // Phones: side-by-side lanes are too thin to read, so (like Google
+    // Calendar) an event that starts at least 30 minutes after the ones it
+    // overlaps sits on top of them, indented, and keeps most of the width.
+    // Events that start at about the same time stay side by side. The class
+    // only changes the layout under 680px (css/calendar.css).
+    const cascade = new Map(); // evt -> indent level
+    {
+      const items = col.timedEvents.map(evt => ({ evt, start: getEventMinutes(evt), end: getEventMinutes(evt) + Math.max(lenOf(evt), 15) }));
+      items.forEach(it => {
+        const overlaps = items.filter(o => o !== it && o.start < it.end && it.start < o.end);
+        if (!overlaps.length) return;
+        if (overlaps.some(o => Math.abs(o.start - it.start) < 30)) return;
+        cascade.set(it.evt, overlaps.filter(o => o.start < it.start).length);
+      });
+    }
     const laneStyle = (evt) => {
       const l = lanes.get(evt);
       if (!l || l.lanes < 2) return "";
       const w = 1 / l.lanes;
-      // 8px edges as before, 4px gap between side-by-side events
-      return ` left: calc(8px + (100% - 16px) * ${(l.lane * w).toFixed(4)}); right: auto; width: calc((100% - 16px) * ${w.toFixed(4)} - ${l.lane < l.lanes - 1 ? 4 : 0}px);`;
+      // 8px edges and a 4px gap between side-by-side events (slimmer on
+      // phones, set in css/calendar.css with --ev-edge and --ev-gap)
+      const gap = l.lane < l.lanes - 1 ? "var(--ev-gap, 4px)" : "0px";
+      return ` left: calc(var(--ev-edge, 8px) + (100% - 2 * var(--ev-edge, 8px)) * ${(l.lane * w).toFixed(4)}); right: auto; width: calc((100% - 2 * var(--ev-edge, 8px)) * ${w.toFixed(4)} - ${gap});`;
     };
 
     col.timedEvents.forEach(evt => {
@@ -2431,7 +2448,7 @@ function renderWeekCalendar() {
       const inlineTime = sizeClass === "is-tiny" ? `<span class="ev-block-inline-time">${escapeHtml(clock(startMins, true))}</span>` : "";
 
       timedBlocksHtml += `
-        <div class="skylight-timed-event-block skylight-card ev-block ${sizeClass}${(lanes.get(evt) || {}).lanes >= 3 ? " is-narrow" : ""}" ${inlineStyleAttr} data-event-id="${evt.id}" title="${escapeHtml(evt.title)}, ${escapeHtml(timeRange)}">
+        <div class="skylight-timed-event-block skylight-card ev-block ${sizeClass}${(lanes.get(evt) || {}).lanes >= 3 ? " is-narrow" : ""}${(lanes.get(evt) || {}).lanes >= 2 ? " is-laned" : ""}${cascade.has(evt) ? " ev-cascade" : ""}"${cascade.has(evt) ? ` data-indent="${Math.min(cascade.get(evt), 2)}"` : ""} ${inlineStyleAttr} data-event-id="${evt.id}" title="${escapeHtml(evt.title)}, ${escapeHtml(timeRange)}">
           <div class="ev-block-head">
             ${titleHtml}
             ${inlineTime}

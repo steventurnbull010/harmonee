@@ -5709,3 +5709,63 @@ body.theme-dark .countdown-list-date, body.theme-dark .countdown-list-head { col
 .skylight-single-header .calendar-family-title,
 .skylight-single-header .calendar-time-indicator,
 .skylight-single-header .calendar-weather-badge { flex-shrink: 0; white-space: nowrap; }
+
+/* ==========================================================================
+   3-DAY VIEW ON PHONES (Google Calendar style)
+   Three columns are only ~95px wide on a phone, so cards drop the avatars
+   (the card's colour already says whose it is), use smaller text and let the
+   title wrap over as many lines as the card has room for. Tap a card for
+   the full details. The day headers also shrink to sit over their columns.
+   ========================================================================== */
+.skylight-days-header-track { min-width: 0; }
+.skylight-grid-day-header { overflow: hidden; }
+
+@media (max-width: 680px) {
+  .days-3 .skylight-grid-day-header { padding: 8px 4px; justify-content: center; }
+  .days-3 .day-header-main-row { gap: 4px; }
+  .days-3 .grid-header-month { display: none; }
+  .days-3 .skylight-days-header-track { padding-right: 0; }
+  .days-3 .col-nav-arrow { display: none; }
+
+  .days-3 .skylight-gutter-allday-label { font-size: 0.6rem; letter-spacing: 0; text-align: center; }
+
+  /* All-day cards: title only, one line */
+  .days-3 .skylight-allday-col .skylight-card { padding: 4px 6px; gap: 0; min-height: 0; }
+  .days-3 .skylight-allday-col .skylight-card-avatar-wrap,
+  .days-3 .skylight-allday-col .skylight-card-sub { display: none; }
+  .days-3 .skylight-allday-col .skylight-card-title { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+  /* Timed cards: 2px edges instead of 8px, so side-by-side cards get room */
+  .days-3 .skylight-time-col { --ev-edge: 2px; --ev-gap: 2px; }
+  .days-3 .skylight-timed-event-block { left: 2px; right: 2px; }
+  #view-calendar .days-3 .skylight-timed-event-block.ev-block { padding: 4px 3px 4px 5px !important; border-radius: 6px; }
+  .days-3 .ev-block .ev-block-avatars,
+  .days-3 .ev-block .ev-block-people { display: none; }
+  .days-3 .ev-block .ev-block-head { display: block; }
+  .days-3 .ev-block .ev-block-title,
+  .days-3 .ev-block.is-narrow .ev-block-title,
+  .days-3 .ev-block.is-short .ev-block-title {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+  .days-3 .ev-block .ev-block-icon { display: inline; font-size: 0.68rem; margin-right: 2px; }
+  .days-3 .ev-block .ev-block-time,
+  .days-3 .ev-block .ev-block-inline-time { font-size: 0.64rem; line-height: 1.25; white-space: normal; }
+  /* Side by side (same start time): keep words whole, a long one is clipped */
+  .days-3 .ev-block.is-laned:not(.ev-cascade) .ev-block-title { font-size: 0.66rem; overflow-wrap: normal; hyphens: none; -webkit-hyphens: none; }
+  .days-3 .ev-block.is-laned:not(.ev-cascade) .ev-block-icon { display: block; margin: 0 0 1px; }
+
+  /* Overlapping events that start later sit on top, indented */
+  .days-3 .ev-block.ev-cascade { left: 2px !important; right: 2px !important; width: auto !important; }
+  .days-3 .ev-block.ev-cascade[data-indent="1"] { left: 30% !important; z-index: 5; box-shadow: 0 0 0 1.5px #ffffff, 0 2px 6px rgba(0, 0, 0, 0.12); }
+  .days-3 .ev-block.ev-cascade[data-indent="2"] { left: 50% !important; z-index: 6; box-shadow: 0 0 0 1.5px #ffffff, 0 2px 6px rgba(0, 0, 0, 0.12); }
+  body.theme-dark .days-3 .ev-block.ev-cascade[data-indent] { box-shadow: 0 0 0 1.5px #1e293b, 0 2px 6px rgba(0, 0, 0, 0.3); }
+  .days-3 .ev-block.is-tiny .ev-block-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .days-3 .ev-block.is-tiny .ev-block-inline-time { display: none; }
+}
