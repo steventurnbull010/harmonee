@@ -924,6 +924,7 @@ body.theme-dark .list-usual.is-removable, body.theme-dark .list-usual.is-removab
 /* "Pick aisle" on items the app couldn't place */
 .list-row-aisle {
   flex-shrink: 0;
+  align-self: center; /* the row stretches its children; keep the pill level with the text and ✕ */
   height: 28px; padding: 0 8px; margin-right: 4px;
   border: 1px dashed #94a3b8; border-radius: 999px;
   background: transparent; color: #475569;
