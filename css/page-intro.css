@@ -677,3 +677,42 @@ body.theme-dark .intro-list-row {
     flex: 1;
   }
 }
+
+/* Phones: picture first, scaled to fit the width (no fade, nothing cut
+   off), then tighter words, then the dots over a full-width Next, so a
+   step fits on one screen. */
+@media (max-width: 600px) {
+  .page-intro {
+    gap: 16px;
+    padding: 40px 0 24px;
+    align-items: start;
+  }
+  .page-intro-preview {
+    order: -2;
+    zoom: 0.68;
+  }
+  .page-intro-copy { gap: 8px; }
+  .page-intro-title { font-size: 1.5rem; }
+  .page-intro-lead { font-size: 0.92rem; line-height: 1.45; }
+  .page-intro-rows { gap: 8px; margin: 4px 0; }
+  .page-intro-rows li { gap: 8px; font-size: 0.88rem; line-height: 1.35; }
+  .page-intro-icon { width: 32px; height: 32px; font-size: 1.2rem; }
+  /* Boxes round the intro mustn't clip it, or Next can't stay in view */
+  .page-intro-active :has(> #page-intro),
+  .page-intro-active :has(#page-intro) { overflow: visible !important; }
+  /* Next stays in reach above the tab bar while the words scroll */
+  .page-intro-footer {
+    position: sticky;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+    margin: 8px -8px 0;
+    padding: 8px;
+    background: linear-gradient(to bottom, transparent, var(--bg-primary, #edf2f7) 24%);
+  }
+  body.theme-dark .page-intro-footer { background: linear-gradient(to bottom, transparent, #0f172a 24%); }
+  .page-intro-steps { justify-content: center; }
+  .page-intro-next { min-height: 48px; padding: 12px 24px; }
+}

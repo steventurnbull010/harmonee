@@ -3896,6 +3896,13 @@ body.theme-dark .cooking-credit a { color: #7dd3fc; }
 }
 #view-meals .meal-card-v2 .meal-card-cooks { margin-top: 0; }
 #view-meals .meal-card-v2 .ev-block-people { margin-top: 8px; }
+/* Lines keep their height (so a card that's too tall can be spotted) */
+#view-meals .meal-card-v2 { overflow: hidden; }
+#view-meals .meal-card-v2 > * { flex-shrink: 0; }
+/* Too tall for its cell (js/meals.js fitMealCards) */
+#view-meals .meal-card-v2.is-tight { overflow: hidden; }
+#view-meals .meal-card-v2.is-tight .meal-card-cooks { display: none; }
+#view-meals .meal-card-v2.is-tighter .meal-card-title { -webkit-line-clamp: 2; }
 .meal-cook-unknown { background: #94a3b8; }
 body.theme-dark #view-meals .meal-card-v2 .meal-card-title { color: #f8fafc; }
 body.theme-dark #view-meals .meal-card-v2 .meal-card-cooks { color: #cbd5e1; }

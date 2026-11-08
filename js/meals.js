@@ -491,6 +491,8 @@ function renderMealsView() {
   });
 
   matrixContainer.innerHTML = matrixHtml;
+  fitMealCards(matrixContainer);
+  watchMealCardFit(matrixContainer);
 
   // Wire matrix cell click handlers
   matrixContainer.querySelectorAll(".matrix-meal-cell").forEach(cell => {
@@ -1838,3 +1840,32 @@ window.closeMealDetailsPopover = closeMealDetailsPopover;
 window.openCookingRecipeModal = openCookingRecipeModal;
 window.closeCookingRecipeModal = closeCookingRecipeModal;
 window.openGroceryListModal = openGroceryListModal;
+
+
+// ============================================================================
+// MEAL CARDS THAT DON'T FIT
+// On shorter screens (a tablet with the browser's bars showing) a long title
+// pushed the cook's name under the avatars. After drawing, any card that
+// overflows drops the name line (the avatars still show who's cooking); if
+// it still doesn't fit, the title is cut to two lines. Re-checked on resize.
+// ============================================================================
+function fitMealCards(root) {
+  if (!root) return;
+  root.querySelectorAll(".meal-card-v2").forEach(card => {
+    card.classList.remove("is-tight", "is-tighter");
+    if (!card.clientHeight) return;
+    if (card.scrollHeight > card.clientHeight + 1) card.classList.add("is-tight");
+    if (card.scrollHeight > card.clientHeight + 1) card.classList.add("is-tighter");
+  });
+}
+window.fitMealCards = fitMealCards;
+// Re-check whenever the grid changes size (shown, rotated, browser bars)
+function watchMealCardFit(root) {
+  if (!root || typeof ResizeObserver !== "function" || root._fitWatched) return;
+  root._fitWatched = true;
+  let fitTimer = 0;
+  new ResizeObserver(entries => {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => entries.forEach(e => fitMealCards(e.target)), 100);
+  }).observe(root);
+}
