@@ -156,7 +156,8 @@
       };
       return `
         <h1 class="setup-title" id="setup-title">✅ Starter routines</h1>
-        <p class="setup-lead">Tap who does each one. Leave it empty to skip it.</p>
+        <p class="setup-lead">A few ideas to get going. Tap who does each one, or skip it.</p>
+        <p class="setup-later">✨ Add your own any time on the Tasks page</p>
         ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><ul class="setup-routines">${group(slot).map(row).join("")}</ul>`).join("")}
         <h2 class="setup-group">🙋 Up for grabs <span>anyone can do these</span></h2>
         <div class="setup-job-chips">${JOBS.map(j => `<button type="button" class="setup-job-chip${s.picked.has(j.key) ? " is-on" : ""}" data-act="pick" data-key="${j.key}" aria-pressed="${s.picked.has(j.key)}"><span aria-hidden="true">${j.icon}</span> ${esc(j.title)}${j.day ? ` <small>${esc(j.day)}s</small>` : ""}</button>`).join("")}</div>`;
