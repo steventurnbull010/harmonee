@@ -161,6 +161,20 @@ function findTasksCard(taskId, member) {
 
 // The tasks in one column of the Tasks page on a given day: a person's, or
 // "Up for grabs". Shared by the Tasks page and the morning Today screen.
+// A one-off chore (with a date) from an earlier day, not finished: it carries
+// over to today, like Skylight, and shows an "Overdue" clock. Routines and
+// weekly chores don't carry over (they come round again). Nothing is
+// re-dated: it's worked out when shown, so every device agrees.
+function isOverdueOn(task, date, memberLower = null) {
+  if (!task || !task.date || task.archived) return false;
+  const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
+  if (isDaily || task.repeat === "weekly") return false;
+  const shown = getLocalDateKey(date);
+  if (shown !== getLocalDateKey(new Date()) || task.date >= shown) return false; // only on today
+  return !isTaskDoneOnDate(task, date, memberLower);
+}
+window.isOverdueOn = isOverdueOn;
+
 function getTasksForColumn(colMember, date) {
   const isGrabPool = colMember === "Up for grabs";
   const mLower = String(colMember).toLowerCase();
@@ -168,6 +182,11 @@ function getTasksForColumn(colMember, date) {
   const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
   const isSelectedCurrentWeek = (getIsoWeekKey(date) === getIsoWeekKey(new Date()));
   const tasksSelectedDate = date;
+  // Carried over: a one-off chore from an earlier day that nobody finished
+  // shows on today too, until it's ticked or deleted (see isOverdueOn)
+  const todayKey = getLocalDateKey(new Date());
+  const doneLateToday = (task) => task.date < selectedDateStr && selectedDateStr === todayKey && !!task.completedAt && getLocalDateKey(new Date(task.completedAt)) === todayKey;
+  const onDate = (task, who) => task.date === selectedDateStr || isOverdueOn(task, date, who) || doneLateToday(task);
   return (window.currentTasks || []).filter(task => {
       if (!task || typeof task !== "object") return false;
       const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
@@ -185,7 +204,7 @@ function getTasksForColumn(colMember, date) {
         }
         // Unassigned or assigned to Anyone / Up for grabs
         if (assigned === "Up for grabs" || assigned === "Anyone" || assigned === "Family") {
-          if (task.date) return task.date === selectedDateStr;
+          if (task.date) return onDate(task, null);
           if (task.repeat === "weekly") return task.day === dayName;
           return isSelectedCurrentWeek; // a one-off is up for grabs all this week, not in future weeks
         }
@@ -210,7 +229,7 @@ function getTasksForColumn(colMember, date) {
       }
 
       if (isAssignedToThisMember(task.assignedTo)) {
-        if (task.date) return task.date === selectedDateStr;
+        if (task.date) return onDate(task, mLower);
         if (task.repeat === "weekly") return task.day === dayName;
         return isSelectedCurrentWeek && task.day === dayName;
       }
@@ -392,6 +411,10 @@ function renderSkylightTasksPage() {
       const curr = (window.boardSettings || {}).currency || "£";
       const valText = isMoney ? `${curr}${((t.value || 10) / 10).toFixed(2)}` : `${t.value || 10} pts`;
       const timeSubtitle = t.time || (isDaily ? "Daily" : "Today");
+      const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
+      const subHtml = overdue
+        ? `<span class="skylight-task-overdue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Overdue</span>`
+        : escapeHtml(timeSubtitle);
 
       // Up for grabs cards can't be ticked: they must be dragged into a
       // person's column first, which assigns the chore to them.
@@ -419,7 +442,7 @@ function renderSkylightTasksPage() {
             <span class="skylight-task-card-icon">${escapeHtml(tIcon)}</span>
             <div class="skylight-task-card-text">
               <span class="skylight-task-card-title">${escapeHtml(t.title)}</span>
-              <span class="skylight-task-card-sub">${escapeHtml(timeSubtitle)} • ${valText}</span>
+              <span class="skylight-task-card-sub">${subHtml} • ${valText}</span>
             </div>
           </div>
           ${actionHtml}

@@ -2661,3 +2661,8 @@ body.theme-dark .skylight-task-card.is-completed .skylight-task-check-circle {
   color: #ffffff;
 }
 body.theme-dark .skylight-task-grab-handle { color: #cbd5e1; }
+
+/* Carried over from an earlier day and not done yet (js/tasks.js isOverdueOn) */
+.skylight-task-overdue { display: inline-flex; align-items: center; gap: 4px; color: #b45309; font-weight: 700; }
+.skylight-task-overdue svg { flex: 0 0 auto; }
+body.theme-dark .skylight-task-overdue { color: #fbbf24; }
