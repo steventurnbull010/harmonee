@@ -89,7 +89,6 @@
       </div>`;
     if (s.step === 1) return `
       <h1 class="setup-title" id="setup-title">👋 What's your family called?</h1>
-      <ul class="setup-chips" aria-label="About setup"><li>⏱️ About a minute</li><li>✏️ Change it later</li></ul>
       <input id="setup-family" class="setup-input setup-family-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" enterkeyhint="next" aria-label="Family name">
       <p class="setup-label setup-label-row">🌤️ Your town, for the weather <span class="setup-optional">Optional</span></p>
       <div id="setup-weather" class="setup-weather is-compact"></div>`;
@@ -170,7 +169,7 @@
       <div class="setup-card${intro ? " is-intro" : ""}" role="document">
         <div class="setup-top">
           <span class="setup-brand" aria-hidden="true">h</span>
-          ${intro ? "" : `<ol class="setup-dots" aria-label="Step ${s.step} of ${STEPS}">${Array.from({ length: STEPS }, (_, i) => `<li class="${i + 1 === s.step ? "is-now" : (i + 1 < s.step ? "is-done" : "")}"></li>`).join("")}</ol>`}
+          ${intro ? "" : `<span class="setup-step-count" aria-hidden="true">${s.step === STEPS ? "Last step!" : `Step ${s.step} of ${STEPS}`}</span><ol class="setup-dots" aria-label="Step ${s.step} of ${STEPS}">${Array.from({ length: STEPS }, (_, i) => `<li class="${i + 1 === s.step ? "is-now" : (i + 1 < s.step ? "is-done" : "")}"></li>`).join("")}</ol>`}
         </div>
         <div class="setup-body">${stepHtml()}</div>
         <p class="setup-error" role="alert">${esc(s.error || "")}</p>
