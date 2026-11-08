@@ -100,6 +100,11 @@ function checkScheduledSleepWindow() {
   if (Date.now() < sleepScreenTemporaryWakeUntil) {
     return;
   }
+  // Opened from a shared list link (js/lists.js): they came to add something, not to see the clock
+  if (window.__sharedListOpenedAt && Date.now() - window.__sharedListOpenedAt < 30 * 60 * 1000) {
+    if (isSleepScreenActive) deactivateAmbientSleepScreen();
+    return;
+  }
 
   const now = new Date();
   const currentHHMM = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');

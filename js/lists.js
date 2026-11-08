@@ -1334,6 +1334,14 @@ async function shareOrCopy(data, copied) {
   }
 }
 
+// The message that goes with the link (they can still edit it in WhatsApp)
+function listInviteText(list) {
+  const name = list.title || "list";
+  const ours = /^(our|my|the)\b/i.test(name) ? name : `our ${name}`;
+  if (window.Aisles && window.Aisles.isGroceryList(list)) return `🛒 Anything you need from the shop? Add it to ${ours} list 👇`;
+  return `${list.emoji || "📋"} Here's ${ours} list on harmonee. Add anything that's missing 👇`;
+}
+
 async function sendList(listId) {
   const list = loadFamilyLists().find(l => l.id === listId);
   if (!list || !window.Sheet) return;
@@ -1342,12 +1350,12 @@ async function sendList(listId) {
     icon: list.emoji || "📋",
     title: `Send ${list.title}`,
     options: [
-      { key: "link", icon: "🔗", label: "Send a link", sub: "Opens this list in harmonee, for your family" },
-      { key: "text", icon: "📝", label: "Send as text", sub: `The ${n} thing${n === 1 ? "" : "s"} still to get, for anyone` }
+      { key: "link", icon: "🔗", label: "Send a link", sub: "So the family can open it and add to it" },
+      { key: "text", icon: "📝", label: "Send as text", sub: n === 0 ? "Nothing on it right now" : `The ${n} thing${n === 1 ? "" : "s"} still to ${window.Aisles && window.Aisles.isGroceryList(list) ? "get" : "do"}, for anyone` }
     ]
   });
   if (how === "link") {
-    await shareOrCopy({ title: `${list.title} · harmonee`, text: `${list.emoji || "📋"} ${list.title} on harmonee`, url: listShareUrl(list.id) }, "🔗 Link copied. Paste it into WhatsApp or a message.");
+    await shareOrCopy({ title: `${list.title} · harmonee`, text: listInviteText(list), url: listShareUrl(list.id) }, "🔗 Message and link copied. Paste it into WhatsApp or a message.");
   } else if (how === "text") {
     await shareOrCopy({ title: list.title, text: listAsText(list) }, "📝 List copied. Paste it into WhatsApp or a message.");
   }
@@ -1360,6 +1368,7 @@ window.sendList = sendList;
   const id = params.get("list");
   if (!id) return;
   window.__openingSharedList = true; // Today at a glance stays shut (js/today-screen.js)
+  window.__sharedListOpenedAt = Date.now(); // and the Night Clock waits (js/sleep.js)
   params.delete("list");
   const qs = params.toString();
   try { history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash); } catch (e) {}
