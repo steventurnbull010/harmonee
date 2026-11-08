@@ -1015,3 +1015,35 @@ body.theme-dark .reward-goal-preset {
   border-color: #334155;
   background: #0f172a;
 }
+
+/* --------------------------------------------------------------------------
+   Phones: Saving up for, one person at a time (js/reward-goals.js). Same
+   tabs as Tasks (styles in css/tasks.css); the cards snap as you swipe.
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .rewards-goals-tabs { margin-bottom: 8px; }
+  #rewards-goals-grid.rewards-goals-grid {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  #rewards-goals-grid::-webkit-scrollbar { display: none; }
+  #rewards-goals-grid .reward-goals-member {
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  /* The tab already shows who and their points */
+  #rewards-goals-grid .reward-goals-member-head { display: none; }
+}
+
+/* Header week label: the long form on tablets, short on phones */
+.rw-week-short { display: none; }
+@media (max-width: 600px) {
+  .rw-week-long { display: none; }
+  .rw-week-short { display: inline; }
+}

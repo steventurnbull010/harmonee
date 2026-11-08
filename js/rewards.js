@@ -311,7 +311,9 @@ function renderPodiumRewards() {
   const activeWeekKey = getIsoWeekKey();
 
   if (modeBadge) modeBadge.textContent = isMoney ? `Pocket money (${currency})` : "Points";
-  if (weekLabel) weekLabel.textContent = getWeekCommencingLabel(false);
+  // "Week Commencing 2nd Nov" on tablets, "Week of 2nd Nov" on phones (so
+  // the countdown fits on the same line, like the other pages)
+  if (weekLabel) weekLabel.innerHTML = `<span class="rw-week-long">Week Commencing</span><span class="rw-week-short">Week of</span> ${escapeHtml(getWeekCommencingDateStr())}`;
 
   const memberData = computeMemberScores(activeWeekKey);
 

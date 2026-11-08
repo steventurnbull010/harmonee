@@ -150,6 +150,7 @@ function renderRewardGoals() {
   const justReady = []; // goals that have just crossed into "ready" while someone's watching
   const fills = [];     // [element, target %] to animate after the HTML is in
 
+  const shownMember = rewardGoalsPhoneShown || null;
   grid.innerHTML = members.map(member => {
     const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(member) : { primary: "#0284c7", lightBg: "#e0f2fe", border: "#7dd3fc", text: "#075985" };
     const balance = getMemberRewardBalance(member);
@@ -206,7 +207,7 @@ function renderRewardGoals() {
       </div>`;
 
     return `
-      <div class="reward-goals-member" style="${paletteStyle(pal)}">
+      <div class="reward-goals-member" data-goals-member="${escapeHtml(member)}" style="${paletteStyle(pal)}">
         <div class="reward-goals-member-head">
           <button type="button" class="reward-goals-avatar" data-rw-bounce aria-label="${escapeHtml(member)}">${escapeHtml(member.charAt(0).toUpperCase())}</button>
           <div class="reward-goals-member-names">
@@ -220,6 +221,8 @@ function renderRewardGoals() {
         <button type="button" class="reward-goals-add" data-add-goal-for="${escapeHtml(member)}">+ Add goal</button>
       </div>`;
   }).join("");
+
+  renderRewardGoalsTabs(grid, shownMember);
 
   // Bars grow from where they were to where they are now
   grid.querySelectorAll("[data-fill-goal]").forEach(el => fills.push(el));
@@ -442,4 +445,79 @@ function wireRewardGoalPanel() {
     dialog.close();
     renderRewardGoals();
   });
+}
+
+
+// ============================================================================
+// PHONES: ONE PERSON AT A TIME (same as Tasks)
+// Four tall goal cards stacked made the page three screens long. On phones
+// a row of tabs (avatar, name, points to spend) sits over full-width cards
+// that snap as you swipe; tap a tab to jump. Tablets keep the grid.
+// ============================================================================
+var rewardGoalsPhoneShown = null;
+var rewardGoalsTabScrollUntil = 0;
+function rewardGoalsIsPhone() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 600px)").matches;
+}
+function rewardGoalsShownByScroll(grid) {
+  const cards = [...grid.querySelectorAll(".reward-goals-member")];
+  if (!cards.length || !grid.clientWidth) return null;
+  const i = Math.max(0, Math.min(cards.length - 1, Math.round(grid.scrollLeft / grid.clientWidth)));
+  return cards[i].getAttribute("data-goals-member");
+}
+function markRewardGoalsTab(member) {
+  document.querySelectorAll("#rewards-goals-tabs .tasks-person-tab").forEach(t => {
+    const on = t.getAttribute("data-goals-tab") === member;
+    t.classList.toggle("is-active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+function renderRewardGoalsTabs(grid, showMember) {
+  let bar = document.getElementById("rewards-goals-tabs");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "rewards-goals-tabs";
+    bar.className = "tasks-person-tabs rewards-goals-tabs";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Whose goals");
+    grid.parentNode.insertBefore(bar, grid);
+    bar.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-goals-tab]");
+      if (!tab) return;
+      const card = [...grid.querySelectorAll(".reward-goals-member")].find(c => c.getAttribute("data-goals-member") === tab.getAttribute("data-goals-tab"));
+      if (!card) return;
+      rewardGoalsPhoneShown = tab.getAttribute("data-goals-tab");
+      rewardGoalsTabScrollUntil = Date.now() + 700;
+      const reduce = typeof window.rewardsReduceMotion === "function" && window.rewardsReduceMotion();
+      grid.scrollTo({ left: card.offsetLeft - grid.offsetLeft, behavior: reduce ? "auto" : "smooth" });
+      markRewardGoalsTab(rewardGoalsPhoneShown);
+    });
+    let raf = 0;
+    grid.addEventListener("scroll", () => {
+      if (raf || !rewardGoalsIsPhone()) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (Date.now() < rewardGoalsTabScrollUntil) return;
+        rewardGoalsPhoneShown = rewardGoalsShownByScroll(grid);
+        markRewardGoalsTab(rewardGoalsPhoneShown);
+      });
+    }, { passive: true });
+  }
+  const cards = [...grid.querySelectorAll(".reward-goals-member")];
+  bar.innerHTML = cards.map(card => {
+    const m = card.getAttribute("data-goals-member");
+    const avatar = card.querySelector(".reward-goals-avatar");
+    const bal = card.querySelector(".reward-goals-balance strong");
+    const color = avatar ? getComputedStyle(avatar).backgroundColor : "#94a3b8";
+    return `<button type="button" class="tasks-person-tab" role="tab" data-goals-tab="${escapeHtml(m)}" style="--tab-color: ${color};">
+      <span class="tasks-person-tab-avatar">${escapeHtml(m.charAt(0).toUpperCase())}</span>
+      <span class="tasks-person-tab-name">${escapeHtml(m)}</span>
+      <span class="tasks-person-tab-tally">${bal ? escapeHtml(bal.textContent.trim()) : ""}</span>
+    </button>`;
+  }).join("");
+  if (!rewardGoalsIsPhone()) return;
+  const target = cards.find(c => c.getAttribute("data-goals-member") === showMember) || cards[0];
+  if (target) grid.scrollLeft = target.offsetLeft - grid.offsetLeft;
+  rewardGoalsPhoneShown = target ? target.getAttribute("data-goals-member") : null;
+  markRewardGoalsTab(rewardGoalsPhoneShown);
 }
