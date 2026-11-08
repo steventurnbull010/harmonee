@@ -1374,6 +1374,32 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
 }
 window.openCookingRecipeModal = openCookingRecipeModal;
 
+// Plan a recipe straight onto a day (Meal Genie): the same meal the recipe
+// card's "Add to plan" saves, then the ingredients question slides up
+window.getAllFamilyRecipes = getAllFamilyRecipes;
+window.planRecipeOn = function (recipe, dateStr, slot = "dinner") {
+  if (!recipe || !dateStr) return;
+  const before = (window.getMealForDate || getMealForDate)(dateStr, slot);
+  (window.setMealForDate || setMealForDate)(dateStr, {
+    title: recipe.title,
+    recipeId: recipe.id,
+    emoji: recipe.emoji || "🍽️",
+    cook: "",
+    notes: recipe.subtitle || "",
+    tags: (recipe.tags || []).join(" • "),
+    category: slot,
+    hasRecipe: true,
+    ingredients: recipe.ingredients || [],
+    instructions: recipe.instructions || []
+  }, slot);
+  if (typeof sfx !== "undefined" && sfx && sfx.playSuccess) sfx.playSuccess();
+  showMealsWeekFor(dateStr);
+  renderMealsView();
+  if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+  if (typeof window.celebrateFirst === "function") window.celebrateFirst("meal");
+  if (window.MealGroceries) window.MealGroceries.afterPlan({ dateStr, slot, before, meal: (window.getMealForDate || getMealForDate)(dateStr, slot) });
+};
+
 function closeCookingRecipeModal() {
   const modal = document.getElementById("cooking-recipe-modal");
   if (modal && modal.open) {
