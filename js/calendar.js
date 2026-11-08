@@ -1065,6 +1065,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       saveFamilyEvents(window.familyEvents);
       renderWeekCalendar();
       closeEventModal();
+      if (existingIdx < 0 && typeof window.celebrateFirst === "function") window.celebrateFirst("event");
       if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
     };

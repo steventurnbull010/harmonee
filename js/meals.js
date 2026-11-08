@@ -1237,6 +1237,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       (window.renderWeekCalendar || renderWeekCalendar)();
       // Shopping list: take off what the replaced meal needed, add what this one needs
       if (window.MealGroceries) window.MealGroceries.afterPlan({ dateStr: selectedDate, slot: selectedSlot, before: existing, meal: (window.getMealForDate || getMealForDate)(selectedDate, selectedSlot) });
+      if (typeof window.celebrateFirst === "function") window.celebrateFirst("meal");
     };
   }
 
@@ -1807,6 +1808,7 @@ function wireMealsHeaderAndDrawerListeners() {
       if (titleInput) titleInput.value = "";
       if (notesInput) notesInput.value = "";
 
+      if (typeof window.celebrateFirst === "function") window.celebrateFirst("meal");
       // Shopping list: a typed meal that matches a recipe gets its ingredients too
       if (window.MealGroceries) {
         const plannedOn = currentPlanningDateStr;

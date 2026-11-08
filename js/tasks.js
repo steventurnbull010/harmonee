@@ -974,6 +974,7 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
 
   // Play crisp completion chime
   if (typeof sfx !== "undefined" && sfx && sfx.playTaskDone) sfx.playTaskDone();
+  if (typeof window.celebrateFirst === "function") window.celebrateFirst("tick");
 
   renderSkylightTasksPage();
 
@@ -1729,6 +1730,7 @@ function initSkylightTaskDrawerEvents() {
         };
         (window.currentTasks || []).push(newTask);
         saveLocalCache(window.currentTasks || []);
+        if (typeof window.celebrateFirst === "function") window.celebrateFirst("chore");
         if (db) {
           try {
             const docRef = getTaskDocRef(newId);

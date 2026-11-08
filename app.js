@@ -1423,6 +1423,8 @@ async function tryJoinBoard(code) {
 }
 
 async function createBoardWithAccess() {
+  // A new family gets the first-time celebrations (js/firsts.js)
+  if (!boardSettings.firsts) saveLocalBoardSettings({ firsts: {} });
   const code = generateFamilyCode();
   const batch = writeBatch(db);
   batch.set(doc(db, "boards", currentBoardId), {

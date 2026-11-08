@@ -965,6 +965,7 @@ function addTextsToList(listId, texts) {
     if (key) byKey.set(key, item); // "milk" twice in one go counts once
   });
   if (fresh.length) mutateFamilyLists({ type: "addItems", listId, items: fresh });
+  if (fresh.length && typeof window.celebrateFirst === "function") window.celebrateFirst("list");
   res.added = fresh;
   const noted = [...fresh.map(i => i.text), ...res.back.map(i => i.text)];
   if (noted.length) mutateFamilyLists({ type: "noteUsuals", listId, texts: noted });
