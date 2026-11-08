@@ -175,6 +175,17 @@ function isOverdueOn(task, date, memberLower = null) {
 }
 window.isOverdueOn = isOverdueOn;
 
+// The family day runs until 4am: a chore ticked at 12:20am counts as done the
+// day before, which is how a family thinks of a late evening
+const FAMILY_DAY_ENDS_HOUR = 4;
+function familyDayKey(when) {
+  const d = new Date(when);
+  if (isNaN(d)) return "";
+  d.setHours(d.getHours() - FAMILY_DAY_ENDS_HOUR);
+  return getLocalDateKey(d);
+}
+window.familyDayKey = familyDayKey;
+
 function getTasksForColumn(colMember, date) {
   const isGrabPool = colMember === "Up for grabs";
   const mLower = String(colMember).toLowerCase();
@@ -188,7 +199,7 @@ function getTasksForColumn(colMember, date) {
   // to come; once its day has passed, today while it's not done (Overdue),
   // and the day it was done once it's ticked. Past days show what was done then.
   const todayKey = getLocalDateKey(new Date());
-  const doneDay = (task) => (task.completedAt ? getLocalDateKey(new Date(task.completedAt)) : task.date);
+  const doneDay = (task) => (task.completedAt ? familyDayKey(task.completedAt) : task.date);
   const onDate = (task, who) => {
     const done = isTaskDoneOnDate(task, date, who);
     if (task.date === selectedDateStr && selectedDateStr >= todayKey) return true;
