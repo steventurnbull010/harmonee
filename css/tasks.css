@@ -2726,9 +2726,16 @@ body.theme-dark .skylight-task-overdue { color: #fbbf24; }
   .tasks-person-tab.is-done .tasks-person-tab-tally { color: #16a34a; }
   body.theme-dark .tasks-person-tab.is-active { background: #1e293b; color: #f8fafc; }
 
+  /* The columns end just above the tab bar (they used to be at least
+     540px tall, so the bottom of a list sat behind the tab bar and the
+     last item could never be scrolled into view) */
+  body #view-chores .skylight-tasks-page-container {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
   body #view-chores #tasks-columns-grid {
+    min-height: 0 !important;
     gap: 0 !important;
-    padding: 8px 0 96px !important;
+    padding: 8px 0 8px !important;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -2741,6 +2748,8 @@ body.theme-dark .skylight-task-overdue { color: #fbbf24; }
     scroll-snap-align: start;
     scroll-snap-stop: always;
   }
+  /* Room under the last card so it scrolls clear of the + button */
+  body #view-chores .skylight-tasks-col .tasks-col-body { padding-bottom: 88px !important; }
   /* The tabs already say whose column it is */
   #view-chores .skylight-tasks-col .tasks-col-top-row { display: none; }
 }

@@ -3970,3 +3970,73 @@ body.theme-dark .meal-groc-all { color: #7dd3fc; }
   .meal-groc-actions { flex-direction: column-reverse; }
   .meal-groc-btn { width: 100%; }
 }
+
+
+/* ==========================================================================
+   PHONES: ONE DAY AT A TIME (js/meals.js renderMealDayTabs)
+   Day tabs over full-width day cards that snap as you swipe. The tabs share
+   the Tasks tab look (css/tasks.css) and show a dot per meal planned.
+   ========================================================================== */
+.meals-day-tabs { display: none; }
+@media (max-width: 768px) {
+  .meals-day-tabs.tasks-person-tabs { display: flex; gap: 4px; padding: 0; }
+  .meals-day-tab.tasks-person-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    border: 1.5px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-secondary, #475569);
+    font: inherit;
+    cursor: pointer;
+  }
+  .meals-day-tab.is-active {
+    background: var(--card-bg, #ffffff);
+    border-color: #0284c7;
+    color: var(--text-primary, #0f172a);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+  body.theme-dark .meals-day-tab.is-active { background: #1e293b; color: #f8fafc; }
+  .meals-day-tab-name { font-size: 0.72rem; font-weight: 700; }
+  .meals-day-tab-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary, #0f172a);
+  }
+  body.theme-dark .meals-day-tab-num { color: #f8fafc; }
+  .meals-day-tab.is-today .meals-day-tab-num { background: #ef4444; color: #ffffff; }
+  .meals-day-tab-dots { display: flex; gap: 3px; height: 6px; }
+  .meals-day-tab-dots i { width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0; }
+  body.theme-dark .meals-day-tab-dots i { background: #334155; }
+  .meals-day-tab-dots i.dot-breakfast.is-on { background: #10b981; }
+  .meals-day-tab-dots i.dot-lunch.is-on { background: #06b6d4; }
+  .meals-day-tab-dots i.dot-dinner.is-on { background: #8b5cf6; }
+
+  body #view-meals #meals-mobile-cards-feed.meals-mobile-cards-feed {
+    flex-direction: row;
+    gap: 0 !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    align-items: flex-start;
+  }
+  #meals-mobile-cards-feed::-webkit-scrollbar { display: none; }
+  #meals-mobile-cards-feed .meals-mobile-day-card {
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}

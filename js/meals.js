@@ -532,7 +532,7 @@ function renderMealsView() {
 
       // Vertical Day Card
       feedHtml += `
-        <div class="meals-mobile-day-card ${isToday ? 'is-today-card' : ''}" id="mobile-meal-day-${dateStr}">
+        <div class="meals-mobile-day-card ${isToday ? 'is-today-card' : ''}" id="mobile-meal-day-${dateStr}" data-day="${dateStr}" data-day-short="${dayShort}" data-day-num="${dateNum}" data-planned="${categories.map(cat => { const m = (window.getMealForDate || getMealForDate)(colDate, cat.key); return m && m.title && m.title.trim() ? 1 : 0; }).join("")}">
           <div class="mobile-day-card-header">
             <div class="mobile-day-title-wrap">
               <span class="mobile-day-weekday">${dayFull}</span>
@@ -608,7 +608,9 @@ function renderMealsView() {
       `;
     });
 
+    const shownDay = mealsPhoneShownDay;
     mobileCardsContainer.innerHTML = feedHtml;
+    renderMealDayTabs(mobileCardsContainer, shownDay, todayStr);
 
     // Wire mobile slot card clicks (open details)
     mobileCardsContainer.querySelectorAll(".mobile-slot-card").forEach(card => {
@@ -1868,4 +1870,89 @@ function watchMealCardFit(root) {
     clearTimeout(fitTimer);
     fitTimer = setTimeout(() => entries.forEach(e => fitMealCards(e.target)), 100);
   }).observe(root);
+}
+
+
+// ============================================================================
+// PHONES: ONE DAY AT A TIME (like Tasks' person tabs)
+// A row of day tabs (Mon 2 ... Sun 8, with a dot for each meal planned) over
+// full-width day cards that snap as you swipe. Opens on today. The tabs use
+// the Tasks tab styles (css/tasks.css) plus css/meals.css.
+// ============================================================================
+var mealsPhoneShownDay = null;
+var mealsDayTabScrollUntil = 0;
+function mealsDayFromScroll(feed) {
+  const cards = [...feed.querySelectorAll(".meals-mobile-day-card")];
+  if (!cards.length || !feed.clientWidth) return null;
+  // The card whose left edge is nearest the feed's left edge
+  const left = feed.getBoundingClientRect().left;
+  let best = cards[0], bestD = Infinity;
+  cards.forEach(c => { const d = Math.abs(c.getBoundingClientRect().left - left); if (d < bestD) { bestD = d; best = c; } });
+  return best.getAttribute("data-day");
+}
+function markMealDayTab(day) {
+  document.querySelectorAll("#meals-day-tabs .tasks-person-tab").forEach(t => {
+    const on = t.getAttribute("data-day-tab") === day;
+    t.classList.toggle("is-active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+function renderMealDayTabs(feed, showDay, todayStr) {
+  let bar = document.getElementById("meals-day-tabs");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "meals-day-tabs";
+    bar.className = "tasks-person-tabs meals-day-tabs";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Day");
+    feed.parentNode.insertBefore(bar, feed);
+    bar.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-day-tab]");
+      if (!tab) return;
+      const card = [...feed.querySelectorAll(".meals-mobile-day-card")].find(c => c.getAttribute("data-day") === tab.getAttribute("data-day-tab"));
+      if (!card) return;
+      mealsPhoneShownDay = tab.getAttribute("data-day-tab");
+      mealsDayTabScrollUntil = Date.now() + 700;
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      feed.scrollTo({ left: card.offsetLeft - feed.offsetLeft, behavior: reduce ? "auto" : "smooth" });
+      markMealDayTab(mealsPhoneShownDay);
+    });
+    // Drawn while Meals was hidden (no width yet): line up on the right day
+    // once it shows, or after a rotate
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(() => {
+        if (!feed.clientWidth) return;
+        const card = [...feed.querySelectorAll(".meals-mobile-day-card")].find(c => c.getAttribute("data-day") === mealsPhoneShownDay);
+        if (card) { mealsDayTabScrollUntil = Date.now() + 200; feed.scrollLeft = card.offsetLeft - feed.offsetLeft; }
+      }).observe(feed);
+    }
+    let raf = 0;
+    feed.addEventListener("scroll", () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (Date.now() < mealsDayTabScrollUntil || !feed.clientWidth) return;
+        mealsPhoneShownDay = mealsDayFromScroll(feed);
+        markMealDayTab(mealsPhoneShownDay);
+      });
+    }, { passive: true });
+  }
+  const cards = [...feed.querySelectorAll(".meals-mobile-day-card")];
+  const slotNames = ["breakfast", "lunch", "dinner"];
+  bar.innerHTML = cards.map(card => {
+    const day = card.getAttribute("data-day");
+    const planned = (card.getAttribute("data-planned") || "000").split("");
+    const n = planned.filter(x => x === "1").length;
+    return `<button type="button" class="tasks-person-tab meals-day-tab${day === todayStr ? " is-today" : ""}" role="tab" data-day-tab="${day}" aria-label="${card.getAttribute("data-day-short")} ${card.getAttribute("data-day-num")}, ${n} of 3 planned">
+      <span class="meals-day-tab-name">${card.getAttribute("data-day-short")}</span>
+      <span class="meals-day-tab-num">${card.getAttribute("data-day-num")}</span>
+      <span class="meals-day-tab-dots" aria-hidden="true">${planned.map((p, i) => `<i class="dot-${slotNames[i]}${p === "1" ? " is-on" : ""}"></i>`).join("")}</span>
+    </button>`;
+  }).join("");
+  // Same day as before a redraw; the first time, today
+  const target = cards.find(c => c.getAttribute("data-day") === showDay)
+    || cards.find(c => c.getAttribute("data-day") === todayStr) || cards[0];
+  if (target && feed.clientWidth) feed.scrollLeft = target.offsetLeft - feed.offsetLeft;
+  mealsPhoneShownDay = target ? target.getAttribute("data-day") : null;
+  markMealDayTab(mealsPhoneShownDay);
 }
