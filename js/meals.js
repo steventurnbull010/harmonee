@@ -276,6 +276,7 @@ let currentPlanningSlot = "dinner";
 let currentDrawerTab = "recipes"; // 'recipes' | 'new-entry'
 let currentDrawerCategory = "dinner"; // 'breakfast' | 'lunch' | 'dinner' | 'snack'
 let currentDrawerTag = "all";
+let drawerShowAll = false; // the recipe picker shows a short list until asked for all (reset when the drawer opens)
 
 // Grocery List Storage & Helpers
 // The grocery list IS the "Groceries" list on the Lists page (js/lists.js),
@@ -716,6 +717,7 @@ function openPlanMealDrawer(dateStr, slot = "dinner", prefill = null) {
   currentPlanningDateStr = dateStr || (window.getLocalDateKey || getLocalDateKey)(new Date());
   currentPlanningSlot = slot || "dinner";
   currentDrawerCategory = currentPlanningSlot;
+  drawerShowAll = false;
 
   const drawer = document.getElementById("plan-meal-drawer");
   if (!drawer) return;
@@ -893,6 +895,33 @@ function renderDrawerRecipeList() {
     });
   }
 
+  // Nothing searched or filtered yet: a short list, not all 200
+  const browsing = !query && (!currentDrawerTag || currentDrawerTag === "all");
+  const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner", snack: "snack" }[currentDrawerCategory] || "meal";
+  let visible = recipes, footer = "";
+  if (browsing && !drawerShowAll && recipes.length > 8) {
+    const own = recipes.filter(r => !String(r.id || "").startsWith("mealdb-") || r.isFavorite);
+    const builtIn = recipes.filter(r => !own.includes(r));
+    // Six ideas, a different six each day
+    const day = Math.floor(Date.now() / 86400000);
+    const start = builtIn.length ? (day * 7) % builtIn.length : 0;
+    const ideas = [...builtIn.slice(start), ...builtIn.slice(0, start)].slice(0, 6);
+    const genieCard = `<button type="button" class="drawer-genie-card" data-drawer-genie>
+        <span class="drawer-genie-icon" aria-hidden="true">🪄</span>
+        <span class="drawer-genie-words"><strong>Not sure what to make?</strong><small>Magic Mealtime asks a few quick questions</small></span>
+      </button>`;
+    container.innerHTML = genieCard
+      + (own.length ? `<p class="drawer-recipes-heading">Your recipes</p>${own.map(recipeRowHtml).join("")}` : "")
+      + `<p class="drawer-recipes-heading">A few ${slotWord} ideas</p>${ideas.map(recipeRowHtml).join("")}`
+      + `<button type="button" class="drawer-recipes-more" data-drawer-show-all>Browse all ${recipes.length} ${slotWord} recipes</button>`;
+    wireDrawerRecipeRows(container);
+    return;
+  }
+  if (!drawerShowAll && recipes.length > 30) {
+    visible = recipes.slice(0, 30);
+    footer = `<button type="button" class="drawer-recipes-more" data-drawer-show-all>Show ${recipes.length - 30} more</button>`;
+  }
+
   if (recipes.length === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 30px 10px; color: var(--text-muted);">
@@ -904,14 +933,31 @@ function renderDrawerRecipeList() {
     return;
   }
 
-  const categoryBadgeMap = {
-    breakfast: "badge-b",
-    lunch: "badge-l",
-    dinner: "badge-d",
-    snack: "badge-s"
-  };
+  container.innerHTML = visible.map(recipeRowHtml).join("") + footer;
+  wireDrawerRecipeRows(container);
+}
 
-  container.innerHTML = recipes.map(recipe => {
+function wireDrawerRecipeRows(container) {
+  container.querySelectorAll(".drawer-recipe-card").forEach(card => {
+    card.onclick = () => {
+      const rId = card.getAttribute("data-recipe-id");
+      const recipe = findRecipeByIdOrTitle(rId);
+      if (recipe) {
+        openCookingRecipeModal(recipe, currentPlanningDateStr, currentPlanningSlot);
+      }
+    };
+  });
+  const more = container.querySelector("[data-drawer-show-all]");
+  if (more) more.onclick = () => { drawerShowAll = true; renderDrawerRecipeList(); };
+  const genie = container.querySelector("[data-drawer-genie]");
+  if (genie) genie.onclick = () => {
+    if (window.MealGenie) window.MealGenie.open(currentPlanningSlot, { date: currentPlanningDateStr });
+  };
+}
+
+function recipeRowHtml(recipe) {
+  const categoryBadgeMap = { breakfast: "badge-b", lunch: "badge-l", dinner: "badge-d", snack: "badge-s" };
+  {
     const mealType = recipe.mealType || recipe.category || "dinner";
     const badgeClass = categoryBadgeMap[mealType] || "badge-d";
     // Smart total & prep time display with hours formatting for >= 60 mins
@@ -944,18 +990,7 @@ function renderDrawerRecipeList() {
         </div>
       </div>
     `;
-  }).join("");
-
-  // Wire clicking recipe row to open full recipe card with planning flow
-  container.querySelectorAll(".drawer-recipe-card").forEach(card => {
-    card.onclick = () => {
-      const rId = card.getAttribute("data-recipe-id");
-      const recipe = findRecipeByIdOrTitle(rId);
-      if (recipe) {
-        openCookingRecipeModal(recipe, currentPlanningDateStr, currentPlanningSlot);
-      }
-    };
-  });
+  }
 }
 
 // Open Meal Details Popover (Matching Photo 1)

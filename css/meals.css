@@ -4070,3 +4070,28 @@ body.theme-dark .meal-groc-all { color: #7dd3fc; }
   }
   #meals-mobile-cards-feed .meals-week-edge span { font-size: 1.6rem; }
 }
+
+/* Recipe picker: a short list until they search or filter (js/meals.js renderDrawerRecipeList) */
+.drawer-genie-card {
+  width: 100%; min-height: 64px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px; box-sizing: border-box;
+  border: 1.5px solid #c4b5fd; border-radius: 16px;
+  background: linear-gradient(135deg, #f5f3ff, #f0f9ff);
+  color: var(--text-primary, #0f172a);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.drawer-genie-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+.drawer-genie-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.drawer-genie-words strong { font-size: 0.98rem; }
+.drawer-genie-words small { font-size: 0.8rem; color: var(--text-secondary, #64748b); }
+.drawer-recipes-heading { margin: 8px 0 0; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary, #64748b); }
+.drawer-recipes-more {
+  width: 100%; min-height: 48px; margin-top: 8px;
+  border: 1.5px dashed var(--card-border, #cbd5e1); border-radius: 16px;
+  background: transparent; color: #0369a1;
+  font: inherit; font-size: 0.92rem; font-weight: 800; cursor: pointer;
+}
+body.theme-dark .drawer-genie-card { background: rgba(124, 58, 237, 0.15); border-color: #7c3aed; color: #f8fafc; }
+body.theme-dark .drawer-genie-icon { background: #1e293b; }
+body.theme-dark .drawer-recipes-more { color: #7dd3fc; border-color: #334155; }

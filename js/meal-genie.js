@@ -164,6 +164,7 @@
 
   // The next day (from today) with nothing planned for this meal
   function nextFreeDay(slot) {
+    if (state && state.date && slot === state.dateSlot) return state.date; // the day they tapped
     const get = window.getMealForDate;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     for (let i = 0; i < 14; i++) {
@@ -326,8 +327,10 @@
     const slot = state.answers.meal || "dinner";
     if (act === "plan") {
       const day = nextFreeDay(slot);
+      const fromDrawer = !!(state.date && slot === state.dateSlot);
       close();
       setTimeout(() => {
+        if (fromDrawer && typeof window.closePlanMealDrawer === "function") window.closePlanMealDrawer();
         if (typeof window.planRecipeOn === "function") window.planRecipeOn(recipe, keyOf(day), slot);
         if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🪄 ${recipe.title} planned for ${dayLabel(day)}!`);
       }, 250);
@@ -340,10 +343,12 @@
   }
 
   // Opens with a guess at the meal from the time of day (still asked)
-  function start(meal) {
+  // From the plan-a-meal drawer it knows the day: open(slot, { date: "2026-11-09" })
+  function start(meal, opts) {
     const h = new Date().getHours();
-    const guess = meal || (h < 10 ? "breakfast" : h < 14 ? "lunch" : "dinner");
-    state = { step: 0, answers: { meal: guess }, page: 0, results: [], shuffle: Math.floor(Date.now() / 60000) % 1000 };
+    const guess = (typeof meal === "string" && meal) || (h < 10 ? "breakfast" : h < 14 ? "lunch" : "dinner");
+    const date = opts && opts.date ? new Date(`${opts.date}T00:00:00`) : null;
+    state = { step: date && !isNaN(date) ? 1 : 0, answers: { meal: guess }, page: 0, results: [], shuffle: Math.floor(Date.now() / 60000) % 1000, date: date && !isNaN(date) ? date : null, dateSlot: guess };
     getDialog();
     draw();
     if (!dlg.open) dlg.showModal();
