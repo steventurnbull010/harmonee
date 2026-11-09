@@ -36,22 +36,55 @@
   // 200 x 200, flat and friendly. Parts that move have bd-* classes
   // (css/buddies.css): bd-blink eyes, plus each buddy's own move.
   const DRAW = {
+    // Soft 3D ("Pixar-like"): lit from the top left, glossy eyes, soft shadows
     dragon: () => `
-      <g class="bd-tail"><path d="M58 150 C30 150 22 128 34 116 C40 132 52 136 66 134 Z" fill="#0f766e"/><path d="M28 112 l-8 -6 l10 -2 z" fill="#f59e0b"/></g>
-      <g class="bd-wing bd-wing-l"><path d="M70 104 C44 84 30 92 26 110 C40 104 50 112 54 122 C60 112 66 110 72 116 Z" fill="#2dd4bf" stroke="#0f766e" stroke-width="3" stroke-linejoin="round"/></g>
-      <g class="bd-wing bd-wing-r"><path d="M130 104 C156 84 170 92 174 110 C160 104 150 112 146 122 C140 112 134 110 128 116 Z" fill="#2dd4bf" stroke="#0f766e" stroke-width="3" stroke-linejoin="round"/></g>
-      <ellipse cx="100" cy="140" rx="40" ry="36" fill="#14b8a6"/>
-      <ellipse cx="100" cy="148" rx="24" ry="24" fill="#fcd34d"/>
-      <path d="M86 138 h28 M84 148 h32 M86 158 h28" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
-      <ellipse cx="80" cy="174" rx="12" ry="7" fill="#0f766e"/><ellipse cx="120" cy="174" rx="12" ry="7" fill="#0f766e"/>
-      <path d="M74 56 l-6 -20 l16 12 z" fill="#f59e0b"/><path d="M126 56 l6 -20 l-16 12 z" fill="#f59e0b"/>
-      <circle cx="100" cy="80" r="36" fill="#14b8a6"/>
-      <ellipse cx="100" cy="96" rx="24" ry="15" fill="#5eead4"/>
-      <circle cx="92" cy="96" r="2.5" fill="#0f766e"/><circle cx="108" cy="96" r="2.5" fill="#0f766e"/>
-      <g class="bd-blink"><ellipse cx="86" cy="76" rx="6" ry="8" fill="#134e4a"/><ellipse cx="114" cy="76" rx="6" ry="8" fill="#134e4a"/>
-        <circle cx="88" cy="73" r="2.2" fill="#fff"/><circle cx="116" cy="73" r="2.2" fill="#fff"/></g>
-      <path d="M92 104 q8 6 16 0" stroke="#0f766e" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <g class="bd-puff"><circle cx="146" cy="70" r="9" fill="none" stroke="#cbd5e1" stroke-width="4"/><circle cx="162" cy="56" r="6" fill="none" stroke="#e2e8f0" stroke-width="3"/></g>`,
+      <defs>
+        <radialGradient id="dg-body" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#7cf3e0"/><stop offset="0.45" stop-color="#22c3ad"/><stop offset="1" stop-color="#0b6f63"/></radialGradient>
+        <radialGradient id="dg-head" cx="34%" cy="26%" r="78%"><stop offset="0" stop-color="#8af6e6"/><stop offset="0.5" stop-color="#25c7b1"/><stop offset="1" stop-color="#0c7a6c"/></radialGradient>
+        <radialGradient id="dg-belly" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="#fff6d5"/><stop offset="0.55" stop-color="#fcd770"/><stop offset="1" stop-color="#e9a51c"/></radialGradient>
+        <radialGradient id="dg-snout" cx="40%" cy="25%" r="80%"><stop offset="0" stop-color="#c7fbf2"/><stop offset="1" stop-color="#3fd4bf"/></radialGradient>
+        <linearGradient id="dg-wing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8fbef"/><stop offset="0.5" stop-color="#3cd3be"/><stop offset="1" stop-color="#0e8073"/></linearGradient>
+        <linearGradient id="dg-horn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset="0.5" stop-color="#f6b93b"/><stop offset="1" stop-color="#c27a0e"/></linearGradient>
+        <radialGradient id="dg-iris" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#f4b860"/><stop offset="0.55" stop-color="#9a5a12"/><stop offset="1" stop-color="#3b2106"/></radialGradient>
+        <radialGradient id="dg-sclera" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe7ee"/></radialGradient>
+        <radialGradient id="dg-cheek" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff9a5c" stop-opacity="0.55"/><stop offset="1" stop-color="#ff9a5c" stop-opacity="0"/></radialGradient>
+        <filter id="dg-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+      </defs>
+      <ellipse cx="100" cy="188" rx="46" ry="7" fill="#0f172a" opacity="0.22" filter="url(#dg-soft)"/>
+      <g class="bd-tail"><path d="M66 158 C36 162 20 140 30 120 C38 136 52 142 70 140 Z" fill="url(#dg-body)"/><path d="M30 120 l-12 -2 l8 -10 l4 12z" fill="url(#dg-horn)"/></g>
+      <g class="bd-wing bd-wing-l"><path d="M72 112 C46 82 22 86 16 108 C30 100 42 108 46 122 C52 110 60 108 70 120 Z" fill="url(#dg-wing)"/><path d="M68 112 C50 94 34 92 22 102" stroke="#0e8073" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/></g>
+      <g class="bd-wing bd-wing-r"><path d="M128 112 C154 82 178 86 184 108 C170 100 158 108 154 122 C148 110 140 108 130 120 Z" fill="url(#dg-wing)"/><path d="M132 112 C150 94 166 92 178 102" stroke="#0e8073" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/></g>
+      <path d="M100 104 C132 104 142 128 142 150 C142 172 124 182 100 182 C76 182 58 172 58 150 C58 128 68 104 100 104 Z" fill="url(#dg-body)"/>
+      <path d="M100 118 C118 118 126 134 126 152 C126 168 114 176 100 176 C86 176 74 168 74 152 C74 134 82 118 100 118 Z" fill="url(#dg-belly)"/>
+      <path d="M84 140 q16 6 32 0 M82 152 q18 6 36 0 M86 164 q14 5 28 0" stroke="#d58a0c" stroke-width="2.2" fill="none" opacity="0.45" stroke-linecap="round"/>
+      <ellipse cx="62" cy="142" rx="9" ry="12" fill="url(#dg-body)" transform="rotate(25 62 142)"/>
+      <ellipse cx="138" cy="142" rx="9" ry="12" fill="url(#dg-body)" transform="rotate(-25 138 142)"/>
+      <ellipse cx="80" cy="182" rx="15" ry="9" fill="#0c7a6c"/><ellipse cx="120" cy="182" rx="15" ry="9" fill="#0c7a6c"/>
+      <circle cx="72" cy="185" r="3.2" fill="#3fd4bf"/><circle cx="80" cy="187" r="3.2" fill="#3fd4bf"/><circle cx="88" cy="185" r="3.2" fill="#3fd4bf"/>
+      <circle cx="112" cy="185" r="3.2" fill="#3fd4bf"/><circle cx="120" cy="187" r="3.2" fill="#3fd4bf"/><circle cx="128" cy="185" r="3.2" fill="#3fd4bf"/>
+      <ellipse cx="100" cy="112" rx="34" ry="9" fill="#06463e" opacity="0.35" filter="url(#dg-soft)"/>
+      <path d="M70 46 C64 30 66 18 74 12 C76 24 82 34 88 40 Z" fill="url(#dg-horn)"/>
+      <path d="M130 46 C136 30 134 18 126 12 C124 24 118 34 112 40 Z" fill="url(#dg-horn)"/>
+      <path d="M96 34 l4 -10 l4 10 z M88 36 l3 -7 l4 8 z M108 37 l4 -8 l3 7 z" fill="url(#dg-horn)"/>
+      <path d="M100 32 C138 32 148 58 148 78 C148 102 128 116 100 116 C72 116 52 102 52 78 C52 58 62 32 100 32 Z" fill="url(#dg-head)"/>
+      <path d="M66 50 C74 40 88 36 100 36" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.45" stroke-linecap="round"/>
+      <ellipse cx="100" cy="98" rx="27" ry="15" fill="url(#dg-snout)"/>
+      <ellipse cx="91" cy="94" rx="2.4" ry="1.8" fill="#0c5f55"/><ellipse cx="109" cy="94" rx="2.4" ry="1.8" fill="#0c5f55"/>
+      <path d="M86 102 Q100 114 114 102 Q100 108 86 102 Z" fill="#1d3b37"/>
+      <path d="M95 106 Q100 111 105 106 Q100 108 95 106 Z" fill="#ff8a4c"/>
+      <ellipse cx="70" cy="90" rx="9" ry="6" fill="url(#dg-cheek)"/><ellipse cx="130" cy="90" rx="9" ry="6" fill="url(#dg-cheek)"/>
+      <g class="bd-blink">
+        <ellipse cx="81" cy="72" rx="14" ry="16" fill="url(#dg-sclera)"/><ellipse cx="119" cy="72" rx="14" ry="16" fill="url(#dg-sclera)"/>
+        <circle cx="83" cy="73" r="10" fill="url(#dg-iris)"/><circle cx="117" cy="73" r="10" fill="url(#dg-iris)"/>
+        <circle cx="83" cy="74" r="5.5" fill="#120b03"/><circle cx="117" cy="74" r="5.5" fill="#120b03"/>
+        <circle cx="79" cy="68" r="3.8" fill="#fff"/><circle cx="113" cy="68" r="3.8" fill="#fff"/>
+        <circle cx="87" cy="78" r="1.6" fill="#fff" opacity="0.9"/><circle cx="121" cy="78" r="1.6" fill="#fff" opacity="0.9"/>
+        <path d="M67 64 Q81 52 95 64" stroke="#0c6e61" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
+        <path d="M105 64 Q119 52 133 64" stroke="#0c6e61" stroke-width="3" fill="none" opacity="0.5" stroke-linecap="round"/>
+      </g>
+      <path d="M70 52 q10 -6 20 -2" stroke="#0a5a50" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+      <path d="M110 50 q10 -4 20 2" stroke="#0a5a50" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+      <g class="bd-puff"><circle cx="150" cy="70" r="9" fill="none" stroke="#e2e8f0" stroke-width="4" opacity="0.9"/><circle cx="166" cy="56" r="6" fill="none" stroke="#f1f5f9" stroke-width="3" opacity="0.8"/></g>`,
 
     robot: () => `
       <g class="bd-antenna"><line x1="100" y1="44" x2="100" y2="24" stroke="#4b5563" stroke-width="4" stroke-linecap="round"/><circle class="bd-antenna-light" cx="100" cy="20" r="8" fill="#a3e635"/></g>
