@@ -241,6 +241,14 @@ function applyListOp(lists, tomb, op, now) {
       res.removed.forEach(id => { tomb[id] = now; });
       return res;
     }
+    case "groceryClearPastMeals": {
+      // Meals whose day has gone: their ingredients come off (Grocery.clearPastMeals)
+      const list = findListForOp(lists, tomb, GROCERIES_LIST_ID);
+      if (!list || !window.Grocery || !window.Grocery.clearPastMeals) return { removed: [], titles: [] };
+      const res = window.Grocery.clearPastMeals(list.items, op.today || "");
+      res.removed.forEach(id => { tomb[id] = now; });
+      return res;
+    }
     case "noteUsuals": {
       // "Your usuals": what gets added to this list, and how often, kept
       // with the list so every device sees the same ones
@@ -1530,3 +1538,27 @@ window.sendList = sendList;
   if (document.readyState === "complete") setTimeout(go, 300);
   else window.addEventListener("load", () => setTimeout(go, 300));
 })();
+
+// ---- Shopping for meals that have passed -------------------------------------------
+// Once a planned meal's day has gone, the ingredients only it needed come off
+// the Groceries list (Grocery.clearPastMeals). Checked whenever the board's
+// data changes and when the tablet wakes up, so it happens the morning after.
+let clearingPastMeals = false;
+function clearPastMealGroceries() {
+  if (clearingPastMeals || !window.Grocery || !window.Grocery.hasPastMeals) return;
+  const groc = (loadFamilyLists() || []).find(l => l.id === GROCERIES_LIST_ID);
+  const today = typeof getLocalDateKey === "function" ? getLocalDateKey(new Date()) : new Date().toISOString().slice(0, 10);
+  if (!groc || !window.Grocery.hasPastMeals(groc.items || [], today)) return;
+  clearingPastMeals = true;
+  try {
+    const res = mutateFamilyLists({ type: "groceryClearPastMeals", today }) || { removed: [], titles: [] };
+    if (res.removed.length && typeof window.showCalendarToast === "function") {
+      const meals = res.titles.length === 1 ? res.titles[0] : `${res.titles.length} meals you've had`;
+      window.showCalendarToast(`🧹 Took ${res.removed.length} item${res.removed.length === 1 ? "" : "s"} off the shopping list for ${meals}`);
+    }
+    if (typeof window.renderListsView === "function") window.renderListsView();
+  } finally { clearingPastMeals = false; }
+}
+window.clearPastMealGroceries = clearPastMealGroceries;
+document.addEventListener("harmonee:data", () => setTimeout(clearPastMealGroceries, 0));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) clearPastMealGroceries(); });

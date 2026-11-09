@@ -124,7 +124,15 @@ function applyUpdate(path, args) {
   changed(path);
 }
 export async function setDoc(ref, data, opts) {
-  store[ref.path] = opts && opts.merge ? { ...(store[ref.path] || {}), ...resolve(data, store[ref.path]) } : resolve(data);
+  const old = store[ref.path] || {};
+  if (opts && Array.isArray(opts.mergeFields)) {
+    // mergeFields: only these fields are replaced; the rest of the document stays
+    const next = { ...old };
+    opts.mergeFields.forEach(f => { const v = resolve(data[f], old[f]); if (v === undefined) delete next[f]; else next[f] = v; });
+    store[ref.path] = next;
+  } else {
+    store[ref.path] = opts && opts.merge ? { ...old, ...resolve(data, old) } : resolve(data);
+  }
   changed(ref.path);
 }
 export async function updateDoc(ref, ...args) {

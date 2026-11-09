@@ -79,7 +79,10 @@ function sampleStore() {
       ],
       meals: { [keyOf(today)]: { dinner: { title: "Spaghetti bolognese", emoji: "🍝", cook: "Alex" } } },
       familyLists: [
-        { id: "groceries", title: "Groceries", emoji: "🛒", color: "sky", isDefault: true, items: [{ id: "g1", text: "Milk", checked: false }, { id: "g2", text: "Bread", checked: false }, { id: "g3", text: "Apples", checked: true }] },
+        { id: "groceries", title: "Groceries", emoji: "🛒", color: "sky", isDefault: true, items: [{ id: "g1", text: "Milk", checked: false }, { id: "g2", text: "Bread", checked: false }, { id: "g3", text: "Apples", checked: true },
+          // For yesterday's dinner (clears itself) and tomorrow's breakfast (a teaspoon: just "Cinnamon")
+          { id: "g4", text: "500g Beef mince", checked: false, source: "Lasagne", grocery: { key: "beef mince", name: "Beef mince", label: "Beef mince", amounts: { mass: 500 }, sources: ["Lasagne"], sourceKeys: [`Lasagne|${keyOf(new Date(today.getTime() - 86400000))}|dinner`] } },
+          { id: "g5", text: "1 tsp Cinnamon", checked: false, source: "Muffins", grocery: { key: "cinnamon", name: "Cinnamon", label: "Cinnamon", amounts: { spoon: 1 }, sources: ["Muffins"], sourceKeys: [`Muffins|${keyOf(tomorrow)}|breakfast`] } }] },
         { id: "packing", title: "Holiday packing", emoji: "🧳", color: "mint", items: [{ id: "p1", text: "Suncream", checked: false }] }
       ]
     },
@@ -417,6 +420,22 @@ const PAGES = [
     if (!none) throw new Error("no 'No dates found' message");
     await p.evaluate(() => document.getElementById("magic-import").close());
   }],
+  // Shopping list: yesterday's meal's mince has gone by itself, and a
+  // teaspoon of cinnamon reads just "Cinnamon"
+  ["shopping-list", async (p) => {
+    await goTo("lists")(p);
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(() => {
+      const groc = (window.loadFamilyLists() || []).find(l => l.id === "groceries");
+      const items = (groc && groc.items) || [];
+      return { mince: items.some(i => i.id === "g4"), cinnamon: (items.find(i => i.id === "g5") || {}), shown: window.Grocery.displayText(items.find(i => i.id === "g5") || {}) };
+    });
+    if (r.mince) throw new Error("yesterday's meal's mince is still on the shopping list");
+    // Saving the list must leave the rest of the board alone (it once replaced it all in the fake)
+    const events = await p.evaluate(() => ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).events || []).length);
+    if (events < 4) throw new Error(`saving the shopping list lost the board's events (${events} left)`);
+    if (r.shown !== "Cinnamon") throw new Error(`a teaspoon of cinnamon shows as "${r.shown}"`);
+  }],
   // The family's own recipe (house recipe): photo, times, 12 servings, credit
   ["house-recipe", async (p) => {
     await goTo("meals")(p);
@@ -467,7 +486,10 @@ const PAGES = [
   ["today", async (p) => {
     await p.evaluate(() => window.showTodayScreen({ from: "preview" }));
     await p.waitForTimeout(300);
-    if (!(await p.locator("#today-screen .today-countdown").count())) throw new Error("no countdown card on Today at a glance");
+    if (!(await p.locator("#today-screen .today-countdown").count())) {
+      const dbg = await p.evaluate(() => ({ ev: (window.familyEvents || []).map(e => e.title + ":" + !!e.countdown), cd: (window.getUpcomingCountdowns ? window.getUpcomingCountdowns() : []).length, cards: [...document.querySelectorAll("#today-screen .today-card")].map(c => c.className) }));
+      throw new Error("no countdown card on Today at a glance " + JSON.stringify(dbg));
+    }
   }],
   ["settings", async (p) => { await goTo("calendar")(p); await p.evaluate(() => window.openSettingsModal()); }]
 ];

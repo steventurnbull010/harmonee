@@ -13,7 +13,11 @@
 //    recipe puts it back as a fresh item.
 //  - Salt, pepper, cooking oil and water are left out unless the family asks
 //    for them (a setting on this device).
-//  - Each item remembers which meals it's for ("For: Cumberland Pie").
+//  - Kitchen measures aren't shopping amounts: a teaspoon, pinch, clove or
+//    sprig of something shows just its name ("Salt", "Garlic"). Amounts you
+//    buy stay: grams, millilitres, cans, jars, packs, bunches and counts.
+//  - Each item remembers which meals it's for ("For: Cumberland Pie"), and
+//    comes off by itself once those meals have passed (clearPastMeals).
 //  - Adding the same meal (same dish and day) twice doesn't double up.
 //
 // Items keep a readable `text`, so anything that shows a list still works;
@@ -46,6 +50,8 @@
     pinch:  { dim: "pinch", f: 1,     words: ["pinch", "pinches"] },
     dash:   { dim: "dash", f: 1,      words: ["dash", "dashes", "splash", "drizzle"] },
     knob:   { dim: "knob", f: 1,      words: ["knob", "knobs"] },
+    leaf:   { dim: "leaf", f: 1,      words: ["leaf", "leaves"] },
+    sprinkle: { dim: "sprinkle", f: 1, words: ["sprinkle", "sprinkles", "sprinkling", "scattering"] },
   };
   const UNIT_BY_WORD = {};
   Object.entries(UNITS).forEach(([u, def]) => def.words.forEach(w => { UNIT_BY_WORD[w] = u; }));
@@ -117,6 +123,8 @@
     let qty = null, unit = null;
     const num = readNumber(s);
     if (num) { qty = num.qty; s = num.rest; }
+    // "a pinch of salt", "an onion": "a" or "an" is one
+    else if (/^an?\s+/i.test(s)) { qty = 1; s = s.replace(/^an?\s+/i, ""); }
     // "3 400g cans", "2 x 400g tins": count times the size
     const pack = qty !== null && s.match(/^\s*(?:x\s*)?(\d+(?:\.\d+)?)\s*(g|kg|ml|l|oz)\b\s*/i);
     if (pack) { qty = qty * parseFloat(pack[1]); unit = UNIT_BY_WORD[pack[2].toLowerCase()]; s = s.slice(pack[0].length); }
@@ -179,6 +187,9 @@
   // Units that just count things: a bare "3 Thyme" next to "3 sprigs Thyme"
   // reads as 6 sprigs
   const COUNT_DIMS = ["sprig", "bunch", "clove", "stick", "slice", "head", "handful", "knob"];
+  // What you'd actually buy an amount of. The rest (spoons, pinches, cloves,
+  // sprigs, slices…) are kitchen measures, so the item shows just its name.
+  const SHOP_DIMS = new Set(["mass", "vol", "can", "jar", "pack", "bunch", "head"]);
   function describe(g) {
     let amounts = g.amounts;
     const countDims = COUNT_DIMS.filter(d => amounts[d]);
@@ -186,6 +197,7 @@
       amounts = { ...amounts, [countDims[0]]: round(amounts[countDims[0]] + amounts.each) };
       delete amounts.each;
     }
+    amounts = Object.fromEntries(Object.entries(amounts).filter(([dim]) => dim === "each" || dim === "loose" || SHOP_DIMS.has(dim)));
     const parts = amountParts(amounts);
     const each = amounts.each;
     if (!parts.length && each) return `${nice(each)} ${each > 1 ? plural(g.name) : g.name}`;
@@ -290,6 +302,39 @@
     return res;
   }
 
+  // ---- Meals that have passed ------------------------------------------------------
+  // A meal's items are tagged "Title|YYYY-MM-DD|slot". Once that day is before
+  // `today` (YYYY-MM-DD), the meal's been and gone: items only it needed come
+  // off; items another (upcoming) meal needs, or typed in by hand, stay and
+  // just forget the old meal. Bought (ticked) items are left alone.
+  // returns { removed: [item ids], titles: [meals cleared] }
+  const mealDate = (k) => String(k).split("|")[1] || "";
+  function pastMealKeys(item, today) {
+    const g = item && !item.checked && item.grocery;
+    if (!g || !Array.isArray(g.sourceKeys)) return [];
+    return g.sourceKeys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(mealDate(k)) && mealDate(k) < today);
+  }
+  function hasPastMeals(items, today) {
+    return (items || []).some(it => pastMealKeys(it, today).length);
+  }
+  function clearPastMeals(items, today) {
+    const res = { removed: [], titles: [] };
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      const past = pastMealKeys(it, today);
+      if (!past.length) continue;
+      const g = it.grocery;
+      past.forEach(k => { const t = k.split("|")[0]; if (t && !res.titles.includes(t)) res.titles.push(t); });
+      const others = g.sourceKeys.filter(k => !past.includes(k));
+      if (!others.length && !byHand(it)) { res.removed.push(it.id); items.splice(i, 1); continue; }
+      g.sourceKeys = others;
+      g.sources = (g.sources || []).filter(t => others.some(k => k.split("|")[0] === t) || !past.some(k => k.split("|")[0] === t));
+      it.grocery = g;
+      it.text = describe(g);
+    }
+    return res;
+  }
+
   // Put on the list by someone typing it (or a usual), not by a recipe
   const byHand = (it) => !it.source || it.source === "Manual";
 
@@ -342,5 +387,5 @@
     return item ? item.text : "";
   }
 
-  window.Grocery = { parseLine, addLinesToItems, removeMealFromItems, mealItemsOnList, lineText, describe, detailsOf, sourcesLabel, summary, displayText, includeBasics, setIncludeBasics };
+  window.Grocery = { parseLine, addLinesToItems, removeMealFromItems, clearPastMeals, hasPastMeals, mealItemsOnList, lineText, describe, detailsOf, sourcesLabel, summary, displayText, includeBasics, setIncludeBasics };
 })();

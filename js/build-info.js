@@ -1,2 +1,2 @@
 // Written by scripts/stamp-versions.mjs: don't edit by hand. Shown at the bottom of Settings.
-window.HARMONEE_BUILD = { id: "4ca484c", builtAt: "2026-11-09T17:07" };
+window.HARMONEE_BUILD = { id: "56f543d", builtAt: "2026-11-09T17:30" };
