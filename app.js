@@ -4200,27 +4200,13 @@ async function handleConfirmClaim() {
   } else {
     sfx.playCelebrationChime();
   }
-  triggerConfettiBurst();
 
-  const isMoney = boardSettings.gameMode === "money";
-  const currency = boardSettings.currency || "£";
-  const rewardVal = window.taskReward(task, isMoney);
-
-  // Gamified celebration announcement toast
-  showGamifiedCelebration({
-    claimValue,
-    rewardVal,
-    isMoney,
-    currency,
-    taskTitle: task.title
-  });
-
-  // Once the tick below is saved on this device: has anyone just finished
-  // their day? (Team effort counts for everyone.) Their buddy says well done.
+  // Once the tick below is saved on this device: confetti and "+7 points"
+  // with this week's leaderboard, or the buddy if that finished someone's
+  // day (Team effort counts for everyone). js/tick-cheer.js
+  const cheerDate = claimTargetDate ? new Date(claimTargetDate) : new Date();
   setTimeout(() => {
-    if (!window.Buddies) return;
-    const who = claimValue === "Team Effort" ? familyMembers : claimValue.split(",").map(s => s.trim());
-    window.Buddies.checkFinished(who, claimTargetDate ? new Date(claimTargetDate) : new Date());
+    if (window.TickCheer) window.TickCheer.afterTick(claimValue, task, cheerDate);
   }, 0);
 
   const timestamp = new Date().toISOString();

@@ -1090,8 +1090,10 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
 
   renderSkylightTasksPage();
 
-  // Has this person just finished their day? Their buddy says well done
-  if (window.Buddies) window.Buddies.checkFinished(completer, tickDate);
+  // Confetti and "+7 points" with this week's leaderboard; or, if that
+  // finished their day, their buddy (js/tick-cheer.js, js/buddies.js)
+  if (window.TickCheer) window.TickCheer.afterTick(completer, task, tickDate);
+  else if (window.Buddies) window.Buddies.checkFinished(completer, tickDate);
 
   // Check if ALL tasks for today are now completed!
   checkAllTasksCompletedCelebration();

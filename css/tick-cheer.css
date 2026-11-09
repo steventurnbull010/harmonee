@@ -1,0 +1,109 @@
+/* ==========================================================================
+   THE TICK POP-UP (js/tick-cheer.js): "+7 points for Ava!" and this week's
+   leaderboard. Phone: a card above the bottom bar. Tablet and laptop: a
+   centred card. Goes by itself (the line along the bottom shows how long
+   is left) or on a tap. 8px spacing steps.
+   ========================================================================== */
+.tick-cheer {
+  position: fixed;
+  inset: 0;
+  z-index: 100020; /* above panels; the buddy (100000+) never shows at the same time */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+  cursor: pointer;
+}
+.tick-cheer.is-in { background: rgba(15, 23, 42, 0.28); }
+.tick-cheer.is-out { background: rgba(15, 23, 42, 0); }
+
+.tick-cheer-card {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: calc(100vh - 32px); /* never off the screen, e.g. a phone on its side */
+  overflow-y: auto;
+  padding: 24px 24px 24px;
+  border-radius: 24px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary, #0f172a);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px) scale(0.92);
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(.2, 1.4, .4, 1);
+}
+.tick-cheer.is-in .tick-cheer-card { opacity: 1; transform: none; }
+.tick-cheer.is-out .tick-cheer-card { opacity: 0; transform: translateY(8px) scale(0.97); transition-duration: 0.2s; }
+body.theme-dark .tick-cheer-card { background: #1e293b; color: #f8fafc; }
+
+/* What it earned */
+.tick-cheer-head { display: flex; align-items: center; gap: 16px; }
+.tick-cheer-avatars { display: flex; flex: none; }
+.tick-cheer-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff; font: 800 1.4rem var(--font-heading, sans-serif);
+  box-shadow: 0 0 0 4px var(--card-bg, #fff);
+}
+.tick-cheer-avatar + .tick-cheer-avatar { margin-left: -16px; }
+body.theme-dark .tick-cheer-avatar { box-shadow: 0 0 0 4px #1e293b; }
+.tick-cheer-text { min-width: 0; }
+.tick-cheer-earned {
+  margin: 0; font: 800 2rem/1.1 var(--font-heading, sans-serif); color: var(--who);
+}
+.tick-cheer.is-in .tick-cheer-earned { animation: tick-cheer-pop 0.5s cubic-bezier(.2, 1.6, .4, 1) 0.15s both; }
+.tick-cheer-for { margin: 4px 0 0; font-size: 0.95rem; color: var(--text-secondary, #334155); overflow-wrap: anywhere; }
+body.theme-dark .tick-cheer-for { color: #cbd5e1; }
+.tick-cheer-total, .tick-cheer-moved {
+  margin: 16px 0 0; padding: 8px 16px; border-radius: 16px;
+  font-weight: 700; font-size: 0.95rem;
+  background: color-mix(in srgb, var(--who) 12%, transparent);
+}
+.tick-cheer-moved { color: var(--who); }
+
+/* This week's leaderboard */
+.tick-cheer-board-title { margin: 16px 0 8px; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted, #64748b); }
+.tick-cheer-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tick-cheer-row {
+  display: grid; grid-template-columns: 32px minmax(56px, auto) 1fr auto; align-items: center; gap: 8px;
+  padding: 4px 8px; border-radius: 12px;
+}
+.tick-cheer-row.is-lit { background: color-mix(in srgb, var(--row) 14%, transparent); }
+.tick-cheer-place { text-align: center; font-weight: 800; color: var(--text-muted, #64748b); }
+.tick-cheer-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tick-cheer-bar { height: 10px; border-radius: 999px; background: rgba(148, 163, 184, 0.25); overflow: hidden; }
+.tick-cheer-bar i { display: block; height: 100%; width: var(--to); border-radius: inherit; background: var(--row); }
+.tick-cheer.is-in .tick-cheer-row.is-lit .tick-cheer-bar i { animation: tick-cheer-grow 0.8s cubic-bezier(.2, .8, .2, 1) 0.3s both; }
+.tick-cheer-score { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; min-width: 48px; }
+
+/* How long is left */
+.tick-cheer-timer { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--who); transform-origin: left; }
+.tick-cheer.is-in .tick-cheer-timer { animation: tick-cheer-time 4s linear forwards; }
+
+@keyframes tick-cheer-pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tick-cheer-grow { from { width: var(--from); } to { width: var(--to); } }
+@keyframes tick-cheer-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* Phone: a card just above the bottom bar */
+@media (max-width: 600px) {
+  .tick-cheer { align-items: flex-end; padding: 16px 16px calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .tick-cheer-card { padding: 16px 16px 24px; }
+  .tick-cheer-avatar { width: 48px; height: 48px; font-size: 1.2rem; }
+  .tick-cheer-earned { font-size: 1.6rem; }
+}
+/* Short screens (a laptop with a small window, a phone on its side) */
+@media (max-height: 560px) {
+  .tick-cheer-card { padding: 16px 16px 16px; }
+  .tick-cheer-avatar { width: 40px; height: 40px; font-size: 1rem; }
+  .tick-cheer-earned { font-size: 1.4rem; }
+  .tick-cheer-board-title { margin-top: 8px; }
+  .tick-cheer-board { gap: 4px; }
+  .tick-cheer-total, .tick-cheer-moved { margin-top: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tick-cheer-card, .tick-cheer { transition: opacity 0.2s ease; transform: none !important; }
+  .tick-cheer.is-in .tick-cheer-earned, .tick-cheer.is-in .tick-cheer-row.is-lit .tick-cheer-bar i { animation: none; }
+}
