@@ -1409,6 +1409,8 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     }).length;
 
     const cellMeal = getMealForDate(cellDate);
+    // A bank holiday (js/bank-holidays.js) sits above the dinner
+    const holidaySnippet = (!isOtherMonth && window.BankHolidays) ? window.BankHolidays.chipHtml(dateStr, "month") : "";
     const dinnerSnippet = (cellMeal && cellMeal.title && !isOtherMonth)
       ? `<div class="month-cell-dinner" data-date-str="${dateStr}" title="Planned Dinner: ${escapeHtml(cellMeal.title)} — Tap to view recipe">
            <span class="month-dinner-icon">${escapeHtml(cellMeal.emoji || '🍽️')}</span>
@@ -1470,7 +1472,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
         <div class="month-cell-header">
           <span class="month-cell-date">${dayNum}</span>
         </div>
-        ${dinnerSnippet}
+        ${holidaySnippet}${dinnerSnippet}
         ${monthContentHtml}
       </div>
     `;
@@ -2034,12 +2036,13 @@ function renderWeekCalendar() {
       let countSubtitle = evtCount === 1 ? "1 event" : (evtCount > 1 ? `${evtCount} events` : "No events");
 
       const colMeal = getMealForDate(colDate);
-      const mealHtml = (colMeal && colMeal.title)
+      const holidayHtml = window.BankHolidays ? window.BankHolidays.chipHtml(colDateStr, "box") : "";
+      const mealHtml = holidayHtml + ((colMeal && colMeal.title)
         ? `<div class="skylight-box-meal is-planned" data-date="${colDateStr}" data-day="${dayName}" title="Dinner: ${escapeHtml(colMeal.title)} — Tap to view recipe">
             <span class="box-meal-icon">${escapeHtml(colMeal.emoji || '🍽️')}</span>
             <span class="box-meal-title">${escapeHtml(colMeal.title)}</span>
           </div>`
-        : "";
+        : "");
 
       // Real-time day weather forecast from Open-Meteo
       const dayWeather = getForecastForDate(colDateStr);
@@ -2263,9 +2266,9 @@ function renderWeekCalendar() {
 
     // Optional Dinner banner for the day
     const dayMeal = getMealForDate(currentDayDate);
-    let mealBannerHtml = "";
+    let mealBannerHtml = window.BankHolidays ? window.BankHolidays.chipHtml(colDateStr, "banner") : "";
     if (dayMeal && dayMeal.title) {
-      mealBannerHtml = `
+      mealBannerHtml += `
         <div class="skylight-day-dinner-banner" data-date="${colDateStr}" data-day="${dayName}" title="Dinner: ${escapeHtml(dayMeal.title)} — Tap to view recipe">
           <span class="day-dinner-icon">${escapeHtml(dayMeal.emoji || '🍽️')}</span>
           <div class="day-dinner-text">
@@ -2439,7 +2442,7 @@ function renderWeekCalendar() {
     `;
 
     // Top All-day / Dinner banner slot
-    let bannerItemsHtml = "";
+    let bannerItemsHtml = window.BankHolidays ? window.BankHolidays.chipHtml(col.colDateStr, "box") : "";
     if (col.colMeal && col.colMeal.title) {
       bannerItemsHtml += `
         <div class="skylight-box-meal is-planned" data-date="${col.colDateStr}" data-day="${col.dayName}" title="Dinner: ${escapeHtml(col.colMeal.title)} — Tap to view recipe">

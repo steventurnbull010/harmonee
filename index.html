@@ -60,7 +60,7 @@
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
   <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
-  <link rel="stylesheet" href="css/calendar.css?v=1c5009b2">
+  <link rel="stylesheet" href="css/calendar.css?v=94300d0c">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
   <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
@@ -1464,6 +1464,29 @@
               <p class="settings-box-desc">For the whole board. Leave it empty and there's no weather.</p>
               <div id="weather-settings" class="weather-settings"></div>
             </div>
+            <label class="ev-field settings-idle-field" for="settings-bank-holidays">
+              <span class="ev-field-label">Bank holidays on the calendar</span>
+              <div class="select-chevron-wrapper">
+                <select id="settings-bank-holidays" class="ev-native-input form-select-with-chevron">
+                  <option value="england-and-wales">England &amp; Wales</option>
+                  <option value="scotland">Scotland</option>
+                  <option value="northern-ireland">Northern Ireland</option>
+                  <option value="off">Don't show them</option>
+                </select>
+              </div>
+            </label>
+            <label class="ev-field settings-idle-field" for="settings-event-chime">
+              <span class="ev-field-label">Chime before events (this device)</span>
+              <div class="select-chevron-wrapper">
+                <select id="settings-event-chime" class="ev-native-input form-select-with-chevron">
+                  <option value="0">No chime</option>
+                  <option value="5">5 minutes before</option>
+                  <option value="10">10 minutes before</option>
+                  <option value="15">15 minutes before</option>
+                  <option value="30">30 minutes before</option>
+                </select>
+              </div>
+            </label>
             <label class="ev-field settings-idle-field" for="settings-today-idle">
               <span class="ev-field-label">When the board is left alone</span>
               <div class="select-chevron-wrapper">
@@ -2515,11 +2538,11 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=30aa054e"></script>
+  <script src="js/build-info.js?v=8ccaf6a0"></script>
   <script src="js/utils.js?v=53ae68b2"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
-  <script src="js/audio.js?v=c545908c"></script>
+  <script src="js/audio.js?v=005ca0f4"></script>
   <script src="js/firsts.js?v=e8a999ca"></script>
   <script src="js/offline.js?v=a698b4e4"></script>
   <script src="js/sheet.js?v=3b47ea6d"></script>
@@ -2536,7 +2559,10 @@
   <script src="js/reward-goals.js?v=b2601339"></script>
   <script src="js/page-intro.js?v=43b29fd5"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar.js?v=b06a28b7"></script>
+  <script src="js/calendar.js?v=555f5d6d"></script>
+  <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
+  <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
+  <script src="js/event-chime.js?v=b9ba3896"></script>
   <script src="js/date-picker.js?v=047b5be3"></script>
   <script src="js/tasks.js?v=71a274fa"></script>
   <script src="js/quick-grabs.js?v=7602afaa"></script>
@@ -2561,10 +2587,10 @@
   <script src="js/settings-fold.js?v=687c868e"></script>
   <script src="js/secret-keys.js?v=56739ba9"></script>
   <script src="js/film-night.js?v=bed9b5e2"></script>
-  <script src="js/today-screen.js?v=bb953dbe"></script>
+  <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
   <script type="module" src="js/meals.js?v=e5d7ffaa"></script>
-  <script type="module" src="app.js?v=0fe37f5c"></script>
+  <script type="module" src="app.js?v=9eca8ef8"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

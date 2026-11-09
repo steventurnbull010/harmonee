@@ -5495,6 +5495,8 @@ function setupEventListeners() {
     if (window.FilmNight) window.FilmNight.renderSettings();
     if (window.renderWeatherSettings) window.renderWeatherSettings();
     if (window.HarmoneeErrors) window.HarmoneeErrors.renderSettings();
+    if (window.BankHolidays) window.BankHolidays.renderSettings();
+    if (window.EventChime) window.EventChime.renderSettings();
     renderRosterModalList();
     wireBoardNameField();
     wireSettingsSectionNav();

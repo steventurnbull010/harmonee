@@ -200,6 +200,45 @@ const PAGES = [
     const elsewhere = where.filter(v => v !== "view-calendar");
     if (elsewhere.length) throw new Error(`the countdown is also on ${elsewhere.join(", ")}`);
   }],
+  // Bank holidays: Christmas Day shows in every calendar view
+  ["bank-holidays", async (p) => {
+    await goTo("calendar")(p);
+    for (const view of ["schedule", "week", "day", "month"]) {
+      const found = await p.evaluate(async (v) => {
+        window.setCalendarView(v, new Date(2026, 11, 25));
+        if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+        await new Promise(r => setTimeout(r, 300));
+        return [...document.querySelectorAll("#view-calendar .bank-holiday-chip")].filter(c => c.offsetParent !== null).map(c => c.textContent.trim());
+      }, view);
+      if (!found.some(t => /Christmas Day/.test(t))) throw new Error(`no "Christmas Day" chip in the ${view} view`);
+      if (view === "schedule") await p.screenshot({ path: path.join(SHOTS, `${p.__size}-bank-holiday-chip.png`) });
+    }
+    await p.evaluate(() => { window.setCalendarView("schedule"); window.renderWeekCalendar && window.renderWeekCalendar(); });
+  }],
+  // Event chime: an event 10 minutes away gets one banner (and a chime)
+  ["event-chime", async (p) => {
+    const r = await p.evaluate(async () => {
+      const now = new Date();
+      if (now.getHours() * 60 + now.getMinutes() > 23 * 60 + 40) return { skipped: true }; // too near midnight to test
+      const at = new Date(now.getTime() + 10 * 60000);
+      const hhmm = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+      localStorage.setItem("harmonee_event_chime_minutes", "15");
+      localStorage.removeItem("harmonee_event_chime_done");
+      window.familyEvents.push({ id: "smoke-chime", title: "Piano lesson", date: window.getLocalDateKey(now), time: hhmm, duration: "30 mins", repeat: "none", member: "Max", icon: "🎹" });
+      const first = window.EventChime.check(now).map(x => x.evt.id);
+      await new Promise(res => setTimeout(res, 400));
+      const banner = document.getElementById("event-chime-banner");
+      const text = banner && !banner.hidden ? banner.textContent.replace(/\s+/g, " ") : "";
+      const second = window.EventChime.check(now).length;
+      return { first, text, second };
+    });
+    if (r.skipped) return;
+    if (!r.first.includes("smoke-chime")) throw new Error("the chime didn't pick up an event 10 minutes away");
+    if (!/Piano lesson in (9|10) minutes/.test(r.text) || !/Max/.test(r.text)) throw new Error(`the banner says "${r.text}"`);
+    if (r.second) throw new Error("it chimed the same event twice");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-chime-banner.png`) });
+    await p.evaluate(() => { window.EventChime.hide(); window.familyEvents = window.familyEvents.filter(e => e.id !== "smoke-chime"); });
+  }],
   ["tasks", goTo("chores")],
   ["meals", goTo("meals")],
   ["lists", goTo("lists")],

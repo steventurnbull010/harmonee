@@ -47,6 +47,30 @@ class SoundEffects {
     }
   }
 
+  // A soft "ding-dong" for an event that's coming up (js/event-chime.js)
+  playReminderChime() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      [{ f: 880, t: 0 }, { f: 659.25, t: 0.32 }].forEach(n => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.f, now + n.t);
+        gain.gain.setValueAtTime(0.0001, now + n.t);
+        gain.gain.exponentialRampToValueAtTime(0.22, now + n.t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + 0.9);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + n.t);
+        osc.stop(now + n.t + 0.95);
+      });
+    } catch (e) {
+      console.warn('playReminderChime error:', e);
+    }
+  }
+
   // Play a triumphant, shimmering celebratory synth chime
   playCelebrationChime() {
     try {

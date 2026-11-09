@@ -5815,3 +5815,43 @@ body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background:
 #event-modal .ev-time-row-nice .ev-time-arrow { flex: none; padding-bottom: 12px; color: var(--text-secondary, #94a3b8); }
 #event-modal .ev-time-row-nice .ev-field > input { width: 100%; min-width: 0; }
 #event-modal [hidden] { display: none !important; } /* the kept-for-saving fields stay out of sight */
+
+/* ==========================================================================
+   Bank holidays (js/bank-holidays.js): a chip beside the day's dinner in
+   each calendar view, and a line on Today at a glance
+   ========================================================================== */
+.bank-holiday-chip {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  margin-bottom: 4px; padding: 4px 8px; border-radius: 10px;
+  background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;
+  font-size: 0.8rem; font-weight: 700;
+}
+.bank-holiday-chip .bank-holiday-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bank-holiday-chip.is-month { padding: 2px 4px; font-size: 0.7rem; gap: 4px; }
+.bank-holiday-chip.is-banner { padding: 8px 16px; margin-bottom: 8px; border-radius: 14px; font-size: 1rem; gap: 16px; }
+.bank-holiday-chip.is-banner .bank-holiday-icon { font-size: 1.4rem; }
+.bank-holiday-chip .bank-holiday-text { display: flex; flex-direction: column; min-width: 0; }
+.bank-holiday-chip .bank-holiday-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.8; }
+body.theme-dark .bank-holiday-chip { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
+.today-holiday { margin: 0 0 8px; padding: 8px 16px; border-radius: 12px; background: #ecfdf5; color: #065f46; font-weight: 700; }
+body.theme-dark .today-holiday { background: rgba(16, 185, 129, 0.15); color: #a7f3d0; }
+
+/* Event chime (js/event-chime.js): a banner at the top, a little before an event */
+.event-chime-banner {
+  position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); z-index: 100700;
+  transform: translate(-50%, -24px); opacity: 0;
+  width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box;
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 8px 16px 16px; border-radius: 20px;
+  background: #0f172a; color: #f8fafc; cursor: pointer;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
+  transition: transform 0.3s cubic-bezier(.2, 1.4, .4, 1), opacity 0.2s ease;
+}
+.event-chime-banner[hidden] { display: none; }
+.event-chime-banner.is-in { transform: translate(-50%, 0); opacity: 1; }
+.event-chime-icon { font-size: 2rem; line-height: 1; }
+.event-chime-text { display: flex; flex-direction: column; min-width: 0; }
+.event-chime-text strong { font: 800 1.15rem/1.3 var(--font-body); }
+.event-chime-text small { font-size: 0.9rem; color: #cbd5e1; }
+.event-chime-close { flex: none; width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.12); color: #f8fafc; font-size: 1rem; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .event-chime-banner { transition: opacity 0.2s ease; } }

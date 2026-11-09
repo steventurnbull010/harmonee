@@ -336,6 +336,9 @@
         }).join("")}</ul>`
       : `<p class="today-empty">No tasks today.</p>`;
 
+    // Bank holidays (js/bank-holidays.js), today and tomorrow
+    const holiday = (d) => (window.BankHolidays ? window.BankHolidays.on(window.getLocalDateKey ? window.getLocalDateKey(d) : "") : null);
+    const holidayLine = (name) => name ? `<p class="today-holiday">🎉 Bank holiday: ${esc(name)}</p>` : "";
     // Next countdown
     const next = typeof window.getUpcomingCountdowns === "function" ? window.getUpcomingCountdowns()[0] : null;
     const countdownHtml = next
@@ -349,6 +352,7 @@
       const tDinner = dinnerOn(tomorrow);
       tomorrowHtml = `<section class="today-card today-card-tomorrow">
         <h3 class="today-card-title">🌅 Tomorrow · ${DAY_NAMES[tomorrow.getDay()]}</h3>
+        ${holiday(tomorrow) ? `<p class="today-holiday">🎉 Bank holiday: ${esc(holiday(tomorrow))}</p>` : ""}
         ${eventsListHtml(tEvents, 0, false)}
         <p class="today-sub today-tomorrow-dinner">🍽️ ${tDinner ? `${esc(tDinner.meal.title)}${tDinner.cooks.length ? ` · ${tDinner.cooks.length === 1 ? "Chef" : "Chefs"}: ${esc(tDinner.cooks.length === 1 ? tDinner.cooks[0] : `${tDinner.cooks.slice(0, -1).join(", ")} & ${tDinner.cooks[tDinner.cooks.length - 1]}`)}` : ""}` : "Dinner not planned yet"}</p>
       </section>`;
@@ -363,7 +367,7 @@
     const quietCard = (icon, title, text) => `<section class="today-card today-card-quiet"><span class="today-quiet-icon" aria-hidden="true">${icon}</span><span class="today-quiet-text"><strong>${title}</strong> · ${text}</span></section>`;
     const groceriesEmpty = () => { const l = (typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : []).find(x => x.id === "groceries"); return !!l && !(l.items || []).some(i => !i.checked); };
     const cardHtml = {
-      events: () => !cardOn("events") ? "" : (quiet && !eventsOn(today).length) ? quietCard("📅", "Today", "Nothing on the calendar") : `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>`,
+      events: () => !cardOn("events") ? "" : (quiet && !eventsOn(today).length) ? quietCard("📅", "Today", holiday(today) ? `🎉 ${esc(holiday(today))}` : "Nothing on the calendar") : `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${holidayLine(holiday(today))}${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>`,
       // Evenings show "Tomorrow" in full (with the Today card); otherwise "Tomorrow's first thing"
       tomorrow: () => part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : ""),
       countdown: () => cardOn("countdown") ? countdownHtml : "",
