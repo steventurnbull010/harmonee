@@ -2858,3 +2858,96 @@ body.theme-dark .drawer-date-button-change { color: #38bdf8; }
 .skylight-task-card.is-important { box-shadow: inset 4px 0 0 #ef4444; }
 body.theme-dark .skylight-task-important { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 .skylight-task-drawer .drawer-important-row { margin-top: 0; }
+
+/* ==========================================================================
+   UP FOR GRABS: "Hand out", "+N more" and the panel (js/grabs-panel.js)
+   The column shows its first few jobs; the panel lists them all, each with
+   the family's names to tap. 8px spacing steps.
+   ========================================================================== */
+.tasks-grab-handout {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font: 700 0.85rem var(--font-body);
+  cursor: pointer;
+}
+.tasks-grab-handout:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+.tasks-grab-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  margin-top: 8px;
+  padding: 16px 8px;
+  border: 1.5px dashed #fca5a5;
+  border-radius: 16px;
+  background: rgba(254, 242, 242, 0.7);
+  color: #991b1b;
+  font: inherit;
+  cursor: pointer;
+}
+.tasks-grab-more-count { font: 800 1rem var(--font-heading); }
+/* Room below "+N more" so it can scroll clear of the round + button */
+.skylight-tasks-col[data-col-member="Up for grabs"] .tasks-col-body { padding-bottom: 80px; }
+.tasks-grab-more-hint { font-size: 0.8rem; color: #b91c1c; }
+body.theme-dark .tasks-grab-more { background: rgba(239, 68, 68, 0.12); border-color: rgba(248, 113, 113, 0.5); color: #fecaca; }
+body.theme-dark .tasks-grab-more-hint { color: #fca5a5; }
+
+/* The panel */
+.grabs-intro { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.95rem; }
+.grabs-list { list-style: none; margin: 0; padding: 0 0 24px; display: grid; gap: 8px; }
+.grabs-job {
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+.grabs-job.is-important { border-color: #fca5a5; }
+.grabs-job.is-given { background: rgba(22, 163, 74, 0.08); border-color: rgba(22, 163, 74, 0.35); }
+.grabs-job-top { display: flex; align-items: flex-start; gap: 16px; }
+.grabs-job-icon {
+  flex: none; width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center; font-size: 1.3rem;
+  background: #fef2f2;
+}
+body.theme-dark .grabs-job-icon { background: rgba(239, 68, 68, 0.14); }
+.grabs-job-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.grabs-job-title { font: 700 1rem var(--font-heading); color: var(--text-primary); overflow-wrap: anywhere; }
+.grabs-job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 0.8rem; color: var(--text-muted); }
+.grabs-tag { padding: 0 8px; border-radius: 999px; font-weight: 800; font-size: 0.72rem; }
+.grabs-tag.is-important { background: #fee2e2; color: #b91c1c; }
+.grabs-tag.is-overdue { background: #fef3c7; color: #92400e; }
+body.theme-dark .grabs-tag.is-overdue { background: rgba(251, 191, 36, 0.16); color: #fbbf24; }
+
+.grabs-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 16px; }
+.grabs-person {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0;
+  min-height: 64px; padding: 8px 4px;
+  border: 1.5px solid var(--person);
+  border-radius: 16px;
+  background: var(--person-light);
+  color: var(--text-primary);
+  font: 600 0.85rem var(--font-body);
+  cursor: pointer;
+}
+.grabs-person:hover { filter: brightness(0.97); }
+.grabs-person:active { transform: scale(0.97); }
+.grabs-person:focus-visible { outline: 2px solid var(--person); outline-offset: 2px; }
+.grabs-person-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grabs-person-avatar {
+  flex: none; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--person); color: #fff; font-weight: 800; font-size: 0.85rem;
+}
+body.theme-dark .grabs-person { background: rgba(255, 255, 255, 0.04); color: #f8fafc; }
+.grabs-given { margin: 16px 0 0; font-weight: 700; color: #15803d; }
+body.theme-dark .grabs-given { color: #4ade80; }
+.grabs-empty { padding: 32px 16px; text-align: center; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { .grabs-person:active { transform: none; } }

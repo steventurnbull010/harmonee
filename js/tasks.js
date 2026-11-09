@@ -116,6 +116,7 @@ window.getTaskRoutineInfo = getTaskRoutineInfo;
 // 15. SKYLIGHT TASKS PAGE (Multi-Column Profiles Board & Gestures)
 // ============================================================================
 let tasksSelectedDate = new Date();
+const GRAB_COLUMN_SHOWN = 5; // Up for grabs jobs shown in the column; the rest are in the panel
 tasksSelectedDate.setHours(0, 0, 0, 0);
 
 // Column category filter state (no longer used per person; kept for old callers)
@@ -394,6 +395,21 @@ function renderSkylightTasksPage() {
       if (isTaskDoneOnDate(task, tasksSelectedDate, mLower)) completedCount++;
     });
 
+    // Up for grabs shows its first few jobs (important and overdue first);
+    // the rest are in the Up for grabs panel (js/grabs-panel.js), so a long
+    // list never needs scrolling and dragging
+    let grabOpenCount = 0;
+    let grabHidden = 0;
+    if (isGrabPool && typeof window.grabJobs === "function") {
+      const open = window.grabJobs(tasksSelectedDate);
+      grabOpenCount = open.length;
+      if (open.length > GRAB_COLUMN_SHOWN) {
+        const keep = new Set(open.slice(0, GRAB_COLUMN_SHOWN).map(t => t.id));
+        grabHidden = open.length - keep.size;
+        memberTasks = memberTasks.filter(t => keep.has(t.id));
+      }
+    }
+
     totalTasksAllBoard += totalCount;
     completedTasksAllBoard += completedCount;
 
@@ -566,6 +582,18 @@ function renderSkylightTasksPage() {
 
     const isAllDone = totalCount > 0 && completedCount === totalCount;
     const initialLetter = isGrabPool ? "⚡" : colMember.charAt(0).toUpperCase();
+    // Always there when anything's up for grabs: phones can't drag between
+    // columns, and their column headers (with "Hand out") are hidden
+    if (isGrabPool && grabOpenCount > 0) {
+      bodySectionsHtml += `
+        <button type="button" class="tasks-grab-more" data-open-grabs>
+          <span class="tasks-grab-more-count">${grabHidden > 0 ? `+${grabHidden} more` : "Hand them out"}</span>
+          <span class="tasks-grab-more-hint">${grabHidden > 0 ? "Tap to hand them out" : "Tap a name to give each one to someone"}</span>
+        </button>`;
+    }
+    const grabHeaderBtn = isGrabPool && grabOpenCount > 0
+      ? `<button type="button" class="tasks-grab-handout" data-open-grabs aria-label="Hand out the ${grabOpenCount} job${grabOpenCount === 1 ? "" : "s"} up for grabs">Hand out</button>`
+      : "";
 
     columnsHtml += `
       <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="--card-color: ${pal.primary}; background: ${pal.lightBg}22; border-color: ${pal.border};">
@@ -575,9 +603,9 @@ function renderSkylightTasksPage() {
               <div class="tasks-col-avatar" style="background: ${pal.primary};">${escapeHtml(initialLetter)}</div>
               <span class="tasks-col-name">${escapeHtml(displayMemberName(colMember))}</span>
             </div>
-            <span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
+            ${isGrabPool ? grabHeaderBtn : `<span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
               ${isAllDone ? '✓' : ''} ${completedCount}/${totalCount}
-            </span>
+            </span>`}
           </div>
           ${filterPillsHtml}
         </div>
@@ -628,6 +656,14 @@ function renderSkylightTasksPage() {
       renderSkylightTasksPage();
     }, Math.max(0, nextHoldMs) + 20);
   }
+
+  // Up for grabs: "Hand out" and "+N more" open the panel
+  container.querySelectorAll("[data-open-grabs]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof window.openGrabsPanel === "function") window.openGrabsPanel(tasksSelectedDate);
+    };
+  });
 
   // Wire the "all done" line (open it) and its header (fold it up again)
   container.querySelectorAll(".tasks-section-done-chip, .tasks-section-done-toggle").forEach(btn => {
@@ -1186,7 +1222,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   const hint = document.getElementById("quick-card-hint");
   const isGrabPool = colMember === "Up for grabs" || (!colMember && !shown.length);
   let hintText = "";
-  if (isGrabPool && !isDone) hintText = "Drag it into someone's column to claim it.";
+  if (isGrabPool && !isDone) hintText = "Tap Hand out to give it to someone, or drag it into their column.";
   else if (isFuture) hintText = "You can tick this off on the day.";
   compBtn.style.display = hintText ? "none" : "";
   hint.textContent = hintText;
