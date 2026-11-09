@@ -16,9 +16,9 @@
 (function () {
   const POOL = "Up for grabs";
   const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const SHOW_FIRST = 6;          // tablet and laptop: pills before "+3 more"
   const ALL_GRABBED_MS = 3000;   // "All grabbed 🎉" before the tray folds away
-  let expanded = false;          // "+3 more" opened, or the phone chip opened
+  let expanded = false;          // the phone chip opened
+  let scrollX = 0;               // where the row of pills was scrolled to
   let lastCount = null;          // pills shown last time, for "All grabbed"
   let lastDateKey = null;
   let allGrabbedUntil = 0;
@@ -97,6 +97,12 @@
     else grid.parentNode.insertBefore(tray, grid);
     tray.addEventListener("click", (e) => {
       if (e.target.closest("[data-quick-grabs-more]")) { expanded = !expanded; window.renderSkylightTasksPage(); return; }
+      const arrow = e.target.closest("[data-quick-grabs-scroll]");
+      if (arrow) {
+        const row = tray.querySelector(".quick-grabs-pills");
+        if (row) row.scrollBy({ left: Number(arrow.getAttribute("data-quick-grabs-scroll")) * Math.max(200, row.clientWidth * 0.8), behavior: "smooth" });
+        return;
+      }
       const pill = e.target.closest("[data-quick-grab]");
       if (!pill || (typeof grabDragJustEnded !== "undefined" && grabDragJustEnded)) return;
       openSkylightTaskQuickModal(pill.getAttribute("data-task-id"), pill.getAttribute("data-day"), POOL, pill.getAttribute("data-date"));
@@ -138,25 +144,43 @@
     const phone = typeof isTasksPhone === "function" && isTasksPhone();
     const n = jobs.length;
     const label = `${n} quick grab${n === 1 ? "" : "s"}`;
+    const oldRow = tray.querySelector(".quick-grabs-pills");
+    if (oldRow) scrollX = oldRow.scrollLeft;
     tray.hidden = false;
     tray.className = `quick-grabs${phone ? " is-phone" : ""}${phone && !expanded ? " is-folded" : ""}`;
+    // One row of pills that swipes sideways (arrows for a mouse), so the board
+    // keeps its room however many jobs are waiting
+    const row = `<div class="quick-grabs-row">
+        <button type="button" class="quick-grabs-arrow is-prev" data-quick-grabs-scroll="-1" aria-label="Earlier quick grabs" hidden>‹</button>
+        <div class="quick-grabs-pills" role="list">${jobs.map(t => pillHtml(t, date)).join("")}</div>
+        <button type="button" class="quick-grabs-arrow is-next" data-quick-grabs-scroll="1" aria-label="More quick grabs" hidden>›</button>
+      </div>`;
     if (phone) {
       tray.innerHTML = `
         <button type="button" class="quick-grabs-chip" data-quick-grabs-more aria-expanded="${expanded}">
           <span aria-hidden="true">⚡</span> ${label}<span class="quick-grabs-chev" aria-hidden="true">${expanded ? "▴" : "▾"}</span>
         </button>
-        ${expanded ? `<p class="quick-grabs-hint">Hold one and drop it on a name, or tap it</p>
-          <div class="quick-grabs-pills">${jobs.map(t => pillHtml(t, date)).join("")}</div>` : ""}`;
+        ${expanded ? `<p class="quick-grabs-hint">Swipe to see them all. Hold one and drop it on a name, or tap it</p>${row}` : ""}`;
     } else {
-      const shown = expanded ? jobs : jobs.slice(0, SHOW_FIRST);
-      const more = n - shown.length;
       tray.innerHTML = `
-        <p class="quick-grabs-head"><span class="quick-grabs-title"><span aria-hidden="true">⚡</span> Quick grabs</span><span class="quick-grabs-hint">drag one to your column</span></p>
-        <div class="quick-grabs-pills">
-          ${shown.map(t => pillHtml(t, date)).join("")}
-          ${more > 0 ? `<button type="button" class="quick-grabs-more" data-quick-grabs-more aria-expanded="false">+${more} more</button>`
-            : (expanded && n > SHOW_FIRST ? `<button type="button" class="quick-grabs-more" data-quick-grabs-more aria-expanded="true">Show fewer</button>` : "")}
-        </div>`;
+        <p class="quick-grabs-head"><span class="quick-grabs-title"><span aria-hidden="true">⚡</span> ${label}</span><span class="quick-grabs-hint">drag one to your column</span></p>
+        ${row}`;
+    }
+    const pills = tray.querySelector(".quick-grabs-pills");
+    if (pills) {
+      pills.scrollLeft = scrollX;
+      // Arrows and edge fades only where there's more to see that way
+      const sync = () => {
+        const max = pills.scrollWidth - pills.clientWidth;
+        // A few pixels either way (scroll snapping) still counts as the end
+        const atStart = pills.scrollLeft <= 12, atEnd = pills.scrollLeft >= max - 12;
+        tray.querySelector(".is-prev").hidden = max <= 12 || atStart;
+        tray.querySelector(".is-next").hidden = max <= 12 || atEnd;
+        pills.classList.toggle("fade-start", max > 12 && !atStart);
+        pills.classList.toggle("fade-end", max > 12 && !atEnd);
+      };
+      pills.addEventListener("scroll", sync, { passive: true });
+      requestAnimationFrame(sync);
     }
     if (typeof wireGrabDraggable === "function") tray.querySelectorAll(".quick-grab-pill").forEach(p => wireGrabDraggable(p, grid));
   }

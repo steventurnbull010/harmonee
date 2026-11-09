@@ -3044,7 +3044,34 @@ body.theme-dark .grabs-given { color: #4ade80; }
 .quick-grabs-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
 .quick-grabs-title { font: 800 0.95rem var(--font-body); color: #92400e; }
 .quick-grabs-hint { font-size: 0.85rem; color: #a16207; }
-.quick-grabs-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+/* One row that swipes sideways (a swipe scrolls; press and hold picks one up),
+   with arrows for a mouse and soft fades where there's more */
+.quick-grabs-row { position: relative; display: flex; align-items: center; }
+.quick-grabs-pills {
+  flex: 1; min-width: 0;
+  display: flex; flex-wrap: nowrap; gap: 8px;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  padding: 4px; margin: -4px;
+  scroll-snap-type: x proximity; scroll-padding-inline: 4px; scrollbar-width: none;
+}
+.quick-grabs-pills::-webkit-scrollbar { display: none; }
+.quick-grabs-pills .quick-grab-pill { flex: none; scroll-snap-align: start; }
+.quick-grabs-pills.fade-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
+.quick-grabs-pills.fade-start { -webkit-mask-image: linear-gradient(to right, transparent, #000 48px); mask-image: linear-gradient(to right, transparent, #000 48px); }
+.quick-grabs-pills.fade-start.fade-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); }
+.quick-grabs-arrow {
+  position: absolute; top: 50%; z-index: 1; transform: translateY(-50%);
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid #fcd34d; background: #ffffff; color: #92400e;
+  font: 800 1.4rem/1 var(--font-body); cursor: pointer;
+  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.18);
+}
+.quick-grabs-arrow[hidden] { display: none; }
+.quick-grabs-arrow.is-prev { left: -8px; }
+.quick-grabs-arrow.is-next { right: -8px; }
+/* Touch screens swipe; the arrows are for a mouse */
+@media (hover: none) and (pointer: coarse) { .quick-grabs-arrow { display: none; } }
+body.theme-dark .quick-grabs-arrow { background: #1e293b; color: #fde68a; border-color: rgba(245, 158, 11, 0.5); }
 .quick-grab-pill {
   display: inline-flex; align-items: center; gap: 8px;
   min-height: 48px; padding: 8px 8px 8px 16px;
@@ -3068,11 +3095,6 @@ body.theme-dark .grabs-given { color: #4ade80; }
   background: #fde68a; color: #78350f;
   font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
-.quick-grabs-more {
-  min-height: 48px; padding: 8px 16px; border-radius: 999px;
-  border: 1.5px solid #fcd34d; background: transparent; color: #92400e;
-  font: 700 0.9rem var(--font-body); cursor: pointer;
-}
 /* The pill being dragged stays as a faint outline; the ghost follows the finger */
 .quick-grab-pill.is-drag-source { opacity: 0.35; border-style: dashed; transform: none; }
 .quick-grab-pill.skylight-task-drag-ghost { width: auto !important; border-style: solid; }
@@ -3094,9 +3116,6 @@ body.is-grab-dragging .quick-grabs:not(.is-drop-target) .quick-grab-pill:not(.is
 }
 .quick-grabs-chev { font-size: 0.8rem; }
 .quick-grabs.is-phone .quick-grabs-hint { display: block; margin: 8px 0; }
-/* One row that scrolls sideways (a swipe scrolls; press and hold picks one up) */
-.quick-grabs.is-phone .quick-grabs-pills { flex-wrap: nowrap; overflow-x: auto; padding: 4px 4px 8px; margin: 0 -4px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
-.quick-grabs.is-phone .quick-grab-pill { flex: none; scroll-snap-align: start; }
 @media (max-width: 600px) { .task-move-toast { border-radius: 24px; } }
 
 /* In a column: taken from Quick grabs for today */
@@ -3125,7 +3144,7 @@ body.is-grab-dragging .quick-grabs:not(.is-drop-target) .quick-grab-pill:not(.is
 
 body.theme-dark .quick-grabs { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); }
 body.theme-dark .quick-grabs.is-phone.is-folded { background: transparent; border-color: transparent; }
-body.theme-dark .quick-grabs-title, body.theme-dark .quick-grabs-done, body.theme-dark .quick-grabs-more { color: #fcd34d; }
+body.theme-dark .quick-grabs-title, body.theme-dark .quick-grabs-done { color: #fcd34d; }
 body.theme-dark .quick-grabs-hint { color: #fbbf24; }
 body.theme-dark .quick-grab-pill { background: #1e293b; color: #f8fafc; }
 body.theme-dark .quick-grab-pts { background: rgba(245, 158, 11, 0.25); color: #fde68a; }

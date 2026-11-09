@@ -935,8 +935,13 @@ function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
 
   const where = displayMemberName(toMember);
   const quick = isDaily && window.QuickGrabs && window.QuickGrabs.isQuickGrab(task);
+  // "⚡ Ava grabbed Litter trays · +1 point when it's ticked"
+  const isMoney = (window.boardSettings || {}).gameMode === "money";
+  const worth = isMoney
+    ? `+${(window.boardSettings || {}).currency || "£"}${taskReward(task, true).toFixed(2)}`
+    : `+${taskPoints(task)} point${taskPoints(task) === 1 ? "" : "s"}`;
   const text = fromMember === "Up for grabs" && toMember !== "Up for grabs"
-    ? `⚡ ${where} grabbed ${task.title}${quick ? " for today" : ""}`
+    ? `⚡ ${where} grabbed ${task.title} · ${worth} when it's ticked`
     : (toMember === "Up for grabs" && quick ? `${task.title} is back in Quick grabs` : `${task.title} moved to ${where}`);
   showTaskMoveToast(text, () => {
     Object.assign(task, before);

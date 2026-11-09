@@ -79,6 +79,9 @@ function sampleStore() {
     [`${b}/tasks/t7`]: t("t7", "Feed the cats", "Anyone", { icon: "🐾", value: 1 }),
     [`${b}/tasks/t8`]: t("t8", "Water the plants", null, { icon: "🪴", value: 1 }),
     [`${b}/tasks/t9`]: t("t9", "Clear the garden", null, { icon: "🌳", value: 5, grabSize: "big" }),
+    [`${b}/tasks/t11`]: t("t11", "Take the bins out", null, { icon: "🗑️", value: 2 }),
+    [`${b}/tasks/t12`]: t("t12", "Wipe the kitchen sides", null, { icon: "🧼", value: 1 }),
+    [`${b}/tasks/t13`]: t("t13", "Sort the recycling", null, { icon: "♻️", value: 1 }),
     [`${b}/tasks/t10`]: t("t10", "Wash the car", "Up for grabs", { taskType: "Standard", day: "Saturday", repeat: "weekly", icon: "🚗", value: 5 })
   };
 }
@@ -173,6 +176,21 @@ const PAGES = [
     await p.waitForTimeout(300);
     const phone = await p.evaluate(() => window.matchMedia("(max-width: 600px)").matches);
     if (phone) await p.click("[data-quick-grabs-more]");
+    // One row that scrolls sideways; a mouse gets an arrow that scrolls it
+    const tops = await p.$$eval(".quick-grab-pill", els => [...new Set(els.map(e => Math.round(e.getBoundingClientRect().top)))]);
+    if (tops.length > 1) throw new Error(`the quick grabs wrap onto ${tops.length} rows`);
+    const overflow = await p.$eval(".quick-grabs-pills", el => el.scrollWidth > el.clientWidth + 2);
+    const mouse = await p.evaluate(() => !window.matchMedia("(hover: none)").matches);
+    if (!phone && overflow && mouse) {
+      const next = p.locator(".quick-grabs-arrow.is-next");
+      if (!(await next.isVisible())) throw new Error("no arrow to see more quick grabs");
+      await next.click();
+      await p.waitForTimeout(500);
+      if ((await p.$eval(".quick-grabs-pills", el => el.scrollLeft)) < 20) throw new Error("the arrow didn't scroll the quick grabs");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-quick-grabs-scrolled.png`) });
+      await p.$eval(".quick-grabs-pills", el => { el.scrollLeft = 0; });
+      await p.waitForTimeout(300);
+    }
     const pill = p.locator(".quick-grab-pill").first();
     const title = (await pill.locator(".quick-grab-title").textContent()).trim();
     const before = await p.locator(".quick-grab-pill").count();
