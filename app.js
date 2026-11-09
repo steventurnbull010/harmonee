@@ -2296,7 +2296,7 @@ function updateTaskFormAssigneeOptions() {
   if (!select) return;
 
   const currentVal = select.value;
-  select.innerHTML = `<option value="">⚡ Grab it (anyone)</option>`;
+  select.innerHTML = `<option value="">⚡ Anyone</option>`;
 
   familyMembers.forEach(name => {
     const opt = document.createElement("option");
@@ -2660,7 +2660,7 @@ function renderTaskLists() {
       grabsHeader.innerHTML = `
         <span class="assigned-subgroup-title">
           <span>⚡</span>
-          <span>Grab it — bonus tasks</span>
+          <span>Anyone — bonus tasks</span>
         </span>
         <span class="assigned-subgroup-badge">${upForGrabs.length} available</span>
       `;
@@ -2765,7 +2765,7 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
 
   // Up for Grabs Badge for unassigned tasks
   if (!isDone && getAssigneeNames(task.assignedTo).every(n => n.toLowerCase() === "anyone")) {
-    badgesHtml += `<span class="badge badge-up-for-grabs">⚡ Grab it</span>`;
+    badgesHtml += `<span class="badge badge-up-for-grabs">⚡ Anyone</span>`;
   }
 
   // Reward Badge (Gamified Points / Money Pill positioned next to Avatar)
@@ -2850,7 +2850,7 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
     `;
   } else {
     avatarRightHtml = `
-      <button type="button" class="card-assignee-avatar-btn unassigned btn-open-assign" data-task-id="${task.id}" title="Grab it — tap to assign" aria-label="Grab it — tap to assign">
+      <button type="button" class="card-assignee-avatar-btn unassigned btn-open-assign" data-task-id="${task.id}" title="Anyone — tap to assign" aria-label="Anyone — tap to assign">
         <div class="avatar-ring-unassigned">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -3067,7 +3067,7 @@ function renderDailyRosterInputs(task, activeTargetDay = null) {
     card.setAttribute("data-day", day);
     card.setAttribute("data-assignee", assignedPerson);
     card.id = `roster-card-${day}`;
-    card.title = `Tap to assign ${day} (Currently: ${assignedPerson || "Grab it"})`;
+    card.title = `Tap to assign ${day} (Currently: ${assignedPerson || "Anyone"})`;
 
     card.innerHTML = getRosterDayCardInnerHtml(day, assignedPerson, isTarget);
 
@@ -3096,7 +3096,7 @@ function openRosterMemberPopover(day, anchorEl) {
     extraClass: "popover-member-btn",
     attrs: `data-member="${escapeHtml(m)}"`
   })).join("") + window.personPillHtml({
-    label: window.GRAB_LABEL || "Grab it", initial: "⚡", color: "#ef4444", active: !currentAssigned,
+    label: window.GRAB_LABEL || "Anyone", initial: "⚡", color: "#ef4444", active: !currentAssigned,
     extraClass: "popover-member-btn", attrs: `data-member=""`
   });
   membersRow.classList.add("drawer-profiles-pills-row");
@@ -3984,7 +3984,7 @@ function openClaimModal(taskId, targetDay = null, targetDate = null) {
       : task.assignedTo;
     const named = getAssigneeNames(effectiveAssignee).filter(n => !["anyone", "unassigned", "up for grabs"].includes(n.toLowerCase()));
     hintEl.textContent = !named.length
-      ? "⚡ Grab it! Tap who completed this chore to claim the points:"
+      ? "⚡ Tap who did this chore to claim the points:"
       : `Assigned to ${formatAssigneeNames(named)}. Select who completed this chore:`;
   }
 

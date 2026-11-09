@@ -55,7 +55,7 @@
   
   <link rel="stylesheet" href="style.css?v=db2626c8">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
-  <link rel="stylesheet" href="css/tasks.css?v=30a51870">
+  <link rel="stylesheet" href="css/tasks.css?v=e51de6ee">
   <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
@@ -220,7 +220,7 @@
                   <svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
               </div>
-              <!-- Grab it: bigger jobs nobody has taken (js/grabs-panel.js); the day's
+              <!-- Big jobs: bigger jobs nobody has taken (js/grabs-panel.js); the day's
                    date is on the Today button, so there's no separate date line -->
               <div class="tasks-header-grab" id="tasks-date-sub-bar"></div>
             </div>
@@ -740,7 +740,7 @@
           <div class="modal-trophy">👤</div>
           <h2 id="assign-modal-title" class="modal-title">Assign Chore</h2>
           <p class="modal-subtitle" id="assign-modal-task-title">Task Title</p>
-          <p class="modal-hint">Tap a member to assign this chore, or leave it in Grab it</p>
+          <p class="modal-hint">Tap a member to assign this chore, or leave it for anyone</p>
         </div>
 
         <div class="member-selector-grid" id="assign-modal-member-grid">
@@ -749,7 +749,7 @@
 
         <div class="modal-footer modal-actions-stacked">
           <button type="button" class="btn-cancel-secondary" id="btn-unassign-task" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">
-            ⚡ Move to Grab it (unassign)
+            ⚡ Give it back for anyone
           </button>
         </div>
       </div>
@@ -986,13 +986,13 @@
           </div>
 
           <!-- Quick grab or bigger job: a daily job nobody owns is a Quick grabs pill
-               above the board unless this is on (then it's in the Grab it panel) -->
+               above the board unless this is on (then it's in the Big jobs panel) -->
           <div class="drawer-toggle-row drawer-big-job-row" id="drawer-big-job-row" hidden>
             <div class="drawer-toggle-left">
-              <span class="drawer-toggle-icon">🧱</span>
+              <span class="drawer-toggle-icon">🛠️</span>
               <div class="drawer-toggle-texts">
                 <span class="drawer-toggle-title">Bigger job</span>
-                <span class="drawer-toggle-sub">Put it in Grab it instead of the Quick grabs pills</span>
+                <span class="drawer-toggle-sub">Put it in Big jobs instead of the Quick grabs pills</span>
               </div>
             </div>
             <label class="skylight-switch">
@@ -1179,7 +1179,7 @@
             <label for="task-form-assignee" id="task-form-assignee-label">Assigned To</label>
             <div class="select-chevron-wrapper">
               <select id="task-form-assignee" class="form-input form-select-with-chevron">
-                <option value="">⚡ Grab it (anyone)</option>
+                <option value="">⚡ Anyone</option>
                 <!-- Populated dynamically from familyMembers -->
               </select>
             </div>
@@ -2508,8 +2508,8 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=4659f4f9"></script>
-  <script src="js/utils.js?v=919aa0d3"></script>
+  <script src="js/build-info.js?v=8ffef11d"></script>
+  <script src="js/utils.js?v=42d52379"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
   <script src="js/audio.js?v=c545908c"></script>
@@ -2527,13 +2527,13 @@
   <script src="js/shop-mode.js?v=7d6e082d"></script>
   <script src="js/rewards.js?v=321182dd"></script>
   <script src="js/reward-goals.js?v=b2601339"></script>
-  <script src="js/page-intro.js?v=4e31bacf"></script>
+  <script src="js/page-intro.js?v=43b29fd5"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar.js?v=9d62ebe1"></script>
+  <script src="js/calendar.js?v=98a3dcd4"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
-  <script src="js/tasks.js?v=82ecc3a5"></script>
+  <script src="js/tasks.js?v=71a274fa"></script>
   <script src="js/quick-grabs.js?v=7602afaa"></script>
-  <script src="js/grabs-panel.js?v=654a1603"></script>
+  <script src="js/grabs-panel.js?v=b4385634"></script>
   <script src="js/item-drag.js?v=9ca6e1dd"></script>
   <script src="js/calendar-drag.js?v=4950cc8c"></script>
   <script src="js/buddy-art.js?v=f8c669b6"></script>
@@ -2553,10 +2553,10 @@
   <script src="js/settings-fold.js?v=687c868e"></script>
   <script src="js/secret-keys.js?v=56739ba9"></script>
   <script src="js/film-night.js?v=bed9b5e2"></script>
-  <script src="js/today-screen.js?v=51f60d42"></script>
+  <script src="js/today-screen.js?v=7cf31275"></script>
   <script src="js/side-panel.js?v=804be778"></script>
   <script type="module" src="js/meals.js?v=8b653ff2"></script>
-  <script type="module" src="app.js?v=6470ab26"></script>
+  <script type="module" src="app.js?v=9824de41"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

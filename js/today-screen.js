@@ -319,7 +319,7 @@
           return `<li class="today-job${open ? " is-open" : ""}">
             <button type="button" class="today-row today-job-toggle" data-job="${esc(j.name)}" aria-expanded="${open}">
               ${isGrab ? `<span class="today-avatar is-grab" aria-hidden="true">+</span>` : avatar(j.name)}
-              <span class="today-row-title">${isGrab ? "Grab it" : esc(j.name)}</span>
+              <span class="today-row-title">${isGrab ? "Anyone" : esc(j.name)}</span>
               <span class="today-count${j.left === 0 ? " is-done" : ""}">${label}</span>
               <svg class="today-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
@@ -327,7 +327,7 @@
               <button type="button" class="today-job-item${done ? " is-done" : ""}" data-tick-job="${esc(task.id)}" data-job-member="${esc(j.name)}" aria-pressed="${done}" aria-label="${isGrab ? `Open Tasks to grab ${esc(task.title || "this task")}` : `${done ? "Untick" : "Tick"} ${esc(task.title || "task")}`}">
                 <span class="today-job-check" aria-hidden="true">${done ? "✓" : ""}</span>
                 <span class="today-job-name">${esc(icon(task))} ${esc(task.title || "Task")}</span>
-                ${isGrab && !done ? `<span class="today-job-grab">Grab it →</span>` : ""}
+                ${isGrab && !done ? `<span class="today-job-grab">Take it →</span>` : ""}
               </button>
             </li>`).join("")}</ul>` : ""}
           </li>`;

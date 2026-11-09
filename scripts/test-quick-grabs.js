@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Which jobs are Quick grabs pills, which stay in the Grab it panel, and when
+// Which jobs are Quick grabs pills, which stay in the Big jobs panel, and when
 // a job counts as "Grabbed" for a day. Loads js/quick-grabs.js with the few
 // helpers it needs from js/tasks.js.
 // Run: node scripts/test-quick-grabs.js

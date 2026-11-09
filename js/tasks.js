@@ -359,8 +359,9 @@ function renderSkylightTasksPage() {
     // Red when one is important or overdue. While a job is being dragged,
     // dropping it here puts it back up for grabs.
     const jobs = typeof window.grabJobs === "function" ? window.grabJobs(tasksSelectedDate) : [];
-    const urgent = jobs.some(t => t.isPriority || isOverdueOn(t, tasksSelectedDate));
-    const grabLabel = displayMemberName("Up for grabs");
+    // Red when one is marked Important (big jobs are never "overdue")
+    const urgent = jobs.some(t => t.isPriority);
+    const grabLabel = BIG_JOBS_LABEL;
     // The day shown is on the Today button ("Today · Mon 9", or "Tue 10 Nov"),
     // so there's no separate date line taking up the board's room
     const todayBtn = document.getElementById("btn-tasks-today");
@@ -370,11 +371,11 @@ function renderSkylightTasksPage() {
       todayBtn.classList.toggle("is-other-day", !isToday);
     }
     dateSubBar.innerHTML = `<button type="button" class="tasks-grab-btn${jobs.length ? "" : " is-empty"}${urgent ? " is-urgent" : ""}" data-open-grabs data-grab-drop
-        aria-label="${escapeHtml(jobs.length ? `${grabLabel}: ${jobs.length} job${jobs.length === 1 ? "" : "s"} nobody has taken. Hand them out` : `${grabLabel}: nothing waiting`)}">
-        <span class="tasks-grab-btn-icon" aria-hidden="true">⚡</span>
+        aria-label="${escapeHtml(jobs.length ? `${grabLabel}: ${jobs.length} nobody's doing yet. Hand them out` : `${grabLabel}: nothing waiting`)}">
+        <span class="tasks-grab-btn-icon" aria-hidden="true">🛠️</span>
         <span class="tasks-grab-btn-label">${escapeHtml(grabLabel)}</span>
         <span class="tasks-grab-btn-count">${jobs.length}</span>
-        <span class="tasks-grab-btn-drop">Drop to put it up for grabs</span>
+        <span class="tasks-grab-btn-drop">Drop it here for anyone</span>
       </button>`;
   }
   renderTasksSlotBar(container);
@@ -980,7 +981,7 @@ function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
     : `+${taskPoints(task)} point${taskPoints(task) === 1 ? "" : "s"}`;
   const text = fromMember === "Up for grabs" && toMember !== "Up for grabs"
     ? `⚡ ${where} grabbed ${task.title}${anyDay ? " for this week" : ""} · ${worth} when it's ticked`
-    : (toMember === "Up for grabs" && quick ? `${task.title} is back in Quick grabs` : `${task.title} moved to ${where}`);
+    : (toMember === "Up for grabs" ? `${task.title} is back in ${quick ? "Quick grabs" : BIG_JOBS_LABEL}` : `${task.title} moved to ${where}`);
   showTaskMoveToast(text, () => {
     Object.assign(task, before);
     saveTaskAssignment(task, before);
@@ -1304,7 +1305,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   const hint = document.getElementById("quick-card-hint");
   const isGrabPool = colMember === "Up for grabs" || (!colMember && !shown.length);
   let hintText = "";
-  if (isGrabPool && !isDone) hintText = "Tap Grab it, next to the date, to give it to someone.";
+  if (isGrabPool && !isDone) hintText = `Tap ${BIG_JOBS_LABEL}, at the top, to give it to someone.`;
   else if (isFuture) hintText = "You can tick this off on the day.";
   compBtn.style.display = hintText ? "none" : "";
   hint.textContent = hintText;
@@ -1404,7 +1405,7 @@ const TASK_EMOJI_GROUPS = [
   { name: "Cleaning", items: [["🧹","Sweep"],["🧽","Scrub"],["🧼","Soap"],["🪣","Mop"],["🧴","Spray"],["🫧","Bubbles"],["🪟","Windows"],["🛁","Bath"],["🚿","Shower"],["🚽","Toilet"],["🧻","Toilet roll"],["🗑️","Bins"],["♻️","Recycling"],["✨","Tidy up"]] },
   { name: "Kitchen & meals", items: [["🍽️","Dishes"],["🍴","Set the table"],["🍳","Cook"],["🥣","Breakfast"],["🥪","Packed lunch"],["🍱","Lunchbox"],["🥗","Salad"],["🍲","Dinner"],["☕","Tea or coffee"],["🥛","Milk"],["🛒","Shopping"],["🥕","Veg"],["🍎","Fruit"],["🧊","Fridge"]] },
   { name: "Laundry & bedroom", items: [["🧺","Laundry"],["👕","Clothes"],["👖","Trousers"],["🧦","Socks"],["👟","Shoes"],["🧥","Coat"],["👔","Ironing"],["🛏️","Make the bed"],["🧸","Toys"],["🎒","School bag"],["🪞","Mirror"],["🧷","Mending"]] },
-  { name: "DIY & repairs", items: [["🔨","Hammer"],["🪛","Screwdriver"],["🔧","Spanner"],["🪚","Saw"],["🧰","Toolbox"],["🪜","Ladder"],["🖌️","Paint"],["🎨","Decorate"],["🧱","Building"],["📏","Measure"],["💡","Light bulb"],["🔌","Plug"],["🔋","Batteries"],["🪝","Hook"],["🔩","Nuts and bolts"],["🚪","Door"]] },
+  { name: "DIY & repairs", items: [["🔨","Hammer"],["🪛","Screwdriver"],["🔧","Spanner"],["🪚","Saw"],["🧰","Toolbox"],["🪜","Ladder"],["🖌️","Paint"],["🎨","Decorate"],["🛠️","Building"],["📏","Measure"],["💡","Light bulb"],["🔌","Plug"],["🔋","Batteries"],["🪝","Hook"],["🔩","Nuts and bolts"],["🚪","Door"]] },
   { name: "Garden & outside", items: [["🌱","Plant"],["🪴","Pot plant"],["🌻","Flowers"],["🌳","Tree"],["🌿","Weeding"],["🍂","Leaves"],["💧","Water"],["🏡","House"],["🚗","Car"],["🚲","Bike"],["📬","Post"],["📦","Parcel"],["❄️","Snow"],["☔","Rain"]] },
   { name: "Pets", items: [["🐶","Dog"],["🐱","Cat"],["🐟","Fish"],["🐰","Rabbit"],["🐹","Hamster"],["🐦","Bird"],["🐢","Tortoise"],["🦮","Walk the dog"],["🦴","Feed"],["🐾","Pet care"]] },
   { name: "Getting ready & health", items: [["🪥","Brush teeth"],["🛀","Bath time"],["💇","Hair"],["😴","Bedtime"],["⏰","Wake up"],["☀️","Morning"],["🌙","Evening"],["💊","Medicine"],["💪","Exercise"],["🧘","Calm time"],["🚰","Drink water"],["🩺","Doctor"]] },
@@ -1681,10 +1682,10 @@ function updateDrawerWhoSummary() {
     el.classList.toggle("is-quick", quick);
     if (drawerSchedule === "daily" && !big && !routine) el.textContent = "⚡ A quick grab: a pill above the board every day, for anyone to drag into their column.";
     else if (drawerSchedule === "weekly" && drawerWeeklyAnyDay && !big && !routine) el.textContent = "⚡ A quick grab: a pill above the board every day this week until someone does it.";
-    else if (drawerSchedule === "daily") el.textContent = `In ${GRAB_LABEL} every day, for anyone to claim.`;
-    else if (drawerSchedule === "weekly" && drawerWeeklyAnyDay) el.textContent = `In ${GRAB_LABEL} every day this week until someone does it.`;
-    else if (drawerSchedule === "weekly") el.textContent = `In ${GRAB_LABEL} every ${day}, for anyone to claim.`;
-    else el.textContent = `In ${GRAB_LABEL} on ${day}, for anyone to claim.`;
+    else if (drawerSchedule === "daily") el.textContent = `🛠️ In ${BIG_JOBS_LABEL} every day, for anyone to take.`;
+    else if (drawerSchedule === "weekly" && drawerWeeklyAnyDay) el.textContent = `🛠️ In ${BIG_JOBS_LABEL} every day this week until someone does it.`;
+    else if (drawerSchedule === "weekly") el.textContent = `🛠️ In ${BIG_JOBS_LABEL} every ${day}, for anyone to take.`;
+    else el.textContent = `🛠️ In ${BIG_JOBS_LABEL} on ${day}, for anyone to take.`;
   } else if (people.length === 1) {
     el.textContent = `${people[0]} is doing it.`;
   } else {

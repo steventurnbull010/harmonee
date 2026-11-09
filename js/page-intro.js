@@ -73,7 +73,7 @@ const INTRO_PREVIEWS = {
       { icon: chores[i * 2][0], title: chores[i * 2][1], done: i === 0 || (stepIndex === 0 && i === 1) },
       { icon: chores[i * 2 + 1][0], title: chores[i * 2 + 1][1] }
     ])).join("");
-    const grabs = `<div class="intro-grab-row"><span class="intro-grab-pill${stepIndex === 1 ? " page-intro-highlight" : ""}">⚡ ${escapeHtml(GRAB_LABEL)} <b>2</b></span></div>`;
+    const grabs = `<div class="intro-grab-row"><span class="intro-grab-pill${stepIndex === 1 ? " page-intro-highlight" : ""}">🛠️ ${escapeHtml(window.BIG_JOBS_LABEL || "Big jobs")} <b>2</b></span></div>`;
     const fab = stepIndex === 2 ? `<span class="intro-fab page-intro-highlight">+</span>` : "";
     return `${grabs}<div class="intro-task-board">${cols}</div>${fab}`;
   },
@@ -169,8 +169,8 @@ const PAGE_INTROS = {
       { title: "Tasks", lead: "Chores and daily routines for everyone, with a column for each person.",
         rows: [["☀️", "Routines are grouped into Morning, Afternoon, Evening and Anytime."],
                ["✅", "Tap the circle to tick a chore off and earn points."],
-               ["⚡", "Chores nobody has taken yet wait under Grab it, next to the date."]] },
-      { title: "Grab it", lead: "Tap Grab it to see the chores nobody has taken, then tap a name to give each one to someone.",
+               ["⚡", "Small everyday jobs nobody owns are Quick grabs: drag one into your column."]] },
+      { title: "Big jobs", lead: "Tap Big jobs to see the bigger jobs nobody's doing yet, then tap 👤 to give one to someone.",
         rows: [["👆", "Changed your mind? Press and hold a chore, then drag it to someone else."],
                ["🔄", "Set a rota so a chore goes to different people on different days."]] },
       { title: "Add a chore", lead: "Tap + to add a chore or routine, choose who it's for and how many points it's worth.",

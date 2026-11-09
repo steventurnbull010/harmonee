@@ -1906,7 +1906,7 @@ function renderWeekCalendar() {
       const pal = getMemberPalette(completerName);
       choreAvatarsHtml = `<span class="skylight-avatar" style="background: ${pal.primary};" title="Completed by ${escapeHtml(completerName)}">${escapeHtml(completerName.charAt(0).toUpperCase())}</span>`;
     } else if (isUnassigned) {
-      choreAvatarsHtml = `<span class="skylight-avatar avatar-unassigned" title="Grab it">⚡</span>`;
+      choreAvatarsHtml = `<span class="skylight-avatar avatar-unassigned" title="Anyone">⚡</span>`;
     } else if (taskMembers.length > 1) {
       choreAvatarsHtml = taskMembers.map(m => {
         const pal = getMemberPalette(m);

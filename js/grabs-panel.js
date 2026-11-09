@@ -1,6 +1,6 @@
 // ============================================================================
 // UP FOR GRABS PANEL (js/grabs-panel.js)
-// Every bigger job nobody has taken yet (weekly, one-off, or a daily job marked
+// BIG JOBS: every bigger job nobody has taken yet (weekly, one-off, or a daily job marked
 // "Bigger job"; small daily ones are Quick grabs, js/quick-grabs.js), for the
 // day the Tasks page is showing, in
 // the shared side panel. Each one has the family's names under it: tap a name
@@ -20,7 +20,9 @@
   let panelDate = null;
   const justGiven = new Map(); // taskId -> who, shown for a moment before the row goes
   let lastOrder = [];          // the rows as last shown, so they don't jump about
+  let openWho = null;          // the job whose "who's doing it" names are open
   const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const ICON_PERSON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
   const ICON_DELETE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>`;
 
   const esc = (s) => (typeof escapeHtml === "function" ? escapeHtml(String(s ?? "")) : String(s ?? ""));
@@ -49,15 +51,6 @@
     return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
   }
 
-  // When an overdue job was meant for ("Was Saturday")
-  function wasFor(task) {
-    if (!task.date) return "";
-    const [y, m, d] = String(task.date).split("-").map(Number);
-    if (!y) return "";
-    const when = new Date(y, m - 1, d);
-    return `Was for ${DAYS[when.getDay()]} ${when.getDate()} ${MONTHS[when.getMonth()]}`;
-  }
-
   function ensureDialog() {
     let dlg = document.getElementById("grabs-modal");
     if (dlg) return dlg;
@@ -68,9 +61,9 @@
     dlg.innerHTML = `
       <div class="modal-content">
         <button type="button" class="btn-modal-close" id="btn-close-grabs" aria-label="Close">✕</button>
-        <div class="modal-header"><h2 id="grabs-title" class="modal-title">Up for grabs</h2></div>
+        <div class="modal-header"><h2 id="grabs-title" class="modal-title">Big jobs</h2></div>
         <p class="grabs-intro" id="grabs-intro"></p>
-        <button type="button" class="grabs-add" data-grabs-add><span aria-hidden="true">＋</span> Add a job for anyone</button>
+        <button type="button" class="grabs-add" data-grabs-add><span aria-hidden="true">＋</span> Add a big job</button>
         <ul class="grabs-list" id="grabs-list"></ul>
       </div>`;
     document.body.appendChild(dlg);
@@ -78,7 +71,7 @@
     if (typeof window.upgradeToSidePanel === "function") window.upgradeToSidePanel(dlg);
     dlg.addEventListener("click", onClick);
     dlg.addEventListener("close", () => {
-      justGiven.clear(); lastOrder = [];
+      justGiven.clear(); lastOrder = []; openWho = null;
       if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
     });
     return dlg;
@@ -99,49 +92,49 @@
     lastOrder = shown.map(t => t.id);
     const people = members();
     const title = dlg.querySelector("#grabs-title");
-    if (title) title.textContent = nameOf(POOL); // the column's name ("Grab it")
+    if (title) title.textContent = window.BIG_JOBS_LABEL || "Big jobs";
     const intro = dlg.querySelector("#grabs-intro");
     const list = dlg.querySelector("#grabs-list");
     intro.textContent = jobs.length
-      ? `${dayLabel(panelDate)}: ${jobs.length} job${jobs.length === 1 ? "" : "s"} nobody has taken yet. Tap a name to give it to them.`
-      : `${dayLabel(panelDate)}: nothing left up for grabs.`;
+      ? `${dayLabel(panelDate)}: ${jobs.length} job${jobs.length === 1 ? "" : "s"} nobody's doing yet. Tap 👤 to give one to someone.`
+      : `${dayLabel(panelDate)}: every big job has someone doing it.`;
     if (!shown.length) {
       list.innerHTML = `<li class="grabs-empty"><span aria-hidden="true">🎉</span> Everything has someone doing it.</li>`;
       return;
     }
     const isMoney = (window.boardSettings || {}).gameMode === "money";
     const curr = (window.boardSettings || {}).currency || "£";
+    // One slim row each (so a panel full of jobs fits): icon, title, points,
+    // then who's doing it (folds down the names), edit and delete. Big jobs
+    // are just jobs that need doing, so no "Overdue" or "Was for" dates.
     list.innerHTML = shown.map(t => {
       const given = justGiven.get(t.id);
       const icon = t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
-      const overdue = typeof isOverdueOn === "function" && isOverdueOn(t, panelDate);
       const value = isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
+      const open = !given && openWho === t.id;
       const meta = [
         t.isPriority ? `<span class="grabs-tag is-important">Important</span>` : "",
-        overdue ? `<span class="grabs-tag is-overdue">Overdue</span><span>${esc(wasFor(t))}</span>` : "",
         `<span>${esc(value)}</span>`
       ].filter(Boolean).join("");
-      // The same person picker as everywhere else: tap a name to give it to them
       const pills = people.map(p => memberPillHtml(p, {
         active: given === p,
         attrs: `data-give="${esc(t.id)}" data-person="${esc(p)}"${given ? " disabled" : ""}`,
         ariaLabel: `Give ${t.title} to ${nameOf(p)}`
       })).join("");
-      const whoRow = `<div class="drawer-profiles-pills-row grabs-people" role="group" aria-label="Who's doing ${esc(t.title)}">${pills}</div>`
-        + (given ? `<p class="grabs-given" role="status">✓ ${esc(nameOf(given))} is doing it</p>` : "");
-      return `<li class="grabs-job${given ? " is-given" : ""}${t.isPriority ? " is-important" : ""}" data-job="${esc(t.id)}">
+      return `<li class="grabs-job${given ? " is-given" : ""}${open ? " is-open" : ""}${t.isPriority ? " is-important" : ""}" data-job="${esc(t.id)}">
           <div class="grabs-job-top">
             <span class="grabs-job-icon" aria-hidden="true">${esc(icon)}</span>
             <div class="grabs-job-text">
               <span class="grabs-job-title">${esc(t.title)}</span>
-              <span class="grabs-job-meta">${meta}</span>
+              <span class="grabs-job-meta">${given ? `<span class="grabs-given" role="status">✓ ${esc(nameOf(given))} is doing it</span>` : meta}</span>
             </div>
             ${given ? "" : `<div class="grabs-job-actions">
+              <button type="button" class="grabs-icon-btn is-who${open ? " is-on" : ""}" data-grabs-who="${esc(t.id)}" aria-expanded="${open}" aria-label="Who's doing ${esc(t.title)}?" title="Give it to someone">${ICON_PERSON}</button>
               <button type="button" class="grabs-icon-btn" data-grabs-edit="${esc(t.id)}" aria-label="Edit ${esc(t.title)}" title="Edit">${ICON_EDIT}</button>
               <button type="button" class="grabs-icon-btn is-delete" data-grabs-delete="${esc(t.id)}" aria-label="Delete ${esc(t.title)}" title="Delete">${ICON_DELETE}</button>
             </div>`}
           </div>
-          ${whoRow}
+          ${open ? `<div class="drawer-profiles-pills-row grabs-people" role="group" aria-label="Who's doing ${esc(t.title)}">${pills}</div>` : ""}
         </li>`;
     }).join("");
   }
@@ -161,6 +154,8 @@
       if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(edit.getAttribute("data-grabs-edit"));
       return;
     }
+    const whoBtn = e.target.closest("[data-grabs-who]");
+    if (whoBtn) { const jobId = whoBtn.getAttribute("data-grabs-who"); openWho = openWho === jobId ? null : jobId; render(); return; }
     const del = e.target.closest("[data-grabs-delete]");
     if (del) { deleteJob(del.getAttribute("data-grabs-delete")); return; }
     const btn = e.target.closest("[data-give]");
@@ -170,6 +165,7 @@
     if (justGiven.has(id)) return;
     // Show who's doing it for a moment, then let the row go
     justGiven.set(id, who);
+    openWho = null;
     moveTaskBetween(id, getLocalDateKey(panelDate), POOL, who);
     render();
     setTimeout(() => {

@@ -208,8 +208,13 @@ window.detectEmojiForChore = detectEmojiForChore;
 // empty. Always go through this instead of treating it as a string.
 // What the shared pool is called on screen. Tasks still store "Up for grabs"
 // (so existing boards keep working); this is only the label people see.
-const GRAB_LABEL = "Grab it";
+// As a choice of person it's "Anyone"; the bigger jobs nobody has taken are
+// "Big jobs" (the button and panel, js/grabs-panel.js), and the small daily
+// ones are Quick grabs (js/quick-grabs.js).
+const GRAB_LABEL = "Anyone";
 window.GRAB_LABEL = GRAB_LABEL;
+const BIG_JOBS_LABEL = "Big jobs";
+window.BIG_JOBS_LABEL = BIG_JOBS_LABEL;
 function displayMemberName(name) {
   return /^up for grabs$/i.test(String(name || "").trim()) ? GRAB_LABEL : name;
 }

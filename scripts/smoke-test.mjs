@@ -87,13 +87,17 @@ function sampleStore() {
     [`${b}/tasks/t2`]: t("t2", "Brush teeth", "Max", { kind: "routine", routineSlot: "evening", icon: "🪥" }),
     [`${b}/tasks/t3`]: t("t3", "Empty the dishwasher", "Anyone", { icon: "🍽️", value: 3 }),
     [`${b}/tasks/t4`]: t("t4", "Hoover the lounge", "Sam", { taskType: "Weekly Chore", day: "Saturday", repeat: "weekly", icon: "🧹", value: 5 }),
-    // Quick grabs (daily, nobody's) and a bigger daily job that stays in Grab it
+    // Quick grabs (daily, nobody's) and a bigger daily job that stays in Big jobs
     [`${b}/tasks/t5`]: t("t5", "Litter trays", null, { icon: "🐱", value: 1 }),
     [`${b}/tasks/t6`]: t("t6", "Fill the dishwasher", "Up for grabs", { icon: "🧽", value: 1 }),
     [`${b}/tasks/t7`]: t("t7", "Feed the cats", "Anyone", { icon: "🐾", value: 1 }),
     [`${b}/tasks/t8`]: t("t8", "Water the plants", null, { icon: "🪴", value: 1 }),
     [`${b}/tasks/t9`]: t("t9", "Clear the garden", null, { icon: "🌳", value: 5, grabSize: "big" }),
     [`${b}/tasks/t14`]: t("t14", "Change the bedsheets", null, { taskType: "Standard", day: "Anyday", repeat: "weekly", anyDay: true, icon: "🛏️", value: 3 }),
+    // Big jobs nobody's doing: one from an earlier day (no "Overdue" in the panel)
+    [`${b}/tasks/t15`]: t("t15", "Fix the shed door", "Up for grabs", { taskType: "Standard", day: "Saturday", repeat: "none", date: keyOf(new Date(today.getTime() - 2 * 86400000)), icon: "🔨", value: 10 }),
+    [`${b}/tasks/t16`]: t("t16", "Clean the car inside", "Up for grabs", { taskType: "Standard", day: "Friday", repeat: "none", date: keyOf(today), icon: "🚗", value: 5 }),
+    [`${b}/tasks/t17`]: t("t17", "Sort the loft boxes", "Up for grabs", { taskType: "Standard", day: "Sunday", repeat: "none", date: keyOf(today), icon: "📦", value: 8, isPriority: true }),
     [`${b}/tasks/t11`]: t("t11", "Take the bins out", null, { icon: "🗑️", value: 2 }),
     [`${b}/tasks/t12`]: t("t12", "Wipe the kitchen sides", null, { icon: "🧼", value: 1 }),
     [`${b}/tasks/t13`]: t("t13", "Sort the recycling", null, { icon: "♻️", value: 1 }),
@@ -313,6 +317,28 @@ const PAGES = [
     });
     if (!after.done) throw new Error("ticking it didn't mark it done");
     if (after.tomorrow) throw new Error("done this week, but still showing tomorrow");
+  }],
+  // Big jobs: slim rows, no "Overdue", 👤 folds down the names, give one away
+  ["big-jobs", async (p) => {
+    await goTo("chores")(p);
+    const label = await p.$eval(".tasks-grab-btn-label", el => el.textContent.trim());
+    if (label !== "Big jobs") throw new Error(`the button says "${label}"`);
+    await p.click("[data-open-grabs]");
+    await p.waitForTimeout(400);
+    const rows = await p.$$eval("#grabs-list .grabs-job", els => els.map(e => Math.round(e.getBoundingClientRect().height)));
+    if (rows.length < 3) throw new Error(`only ${rows.length} big jobs listed`);
+    if (Math.max(...rows) > 80) throw new Error(`big job rows are up to ${Math.max(...rows)}px tall`);
+    const text = await p.$eval("#grabs-list", el => el.textContent);
+    if (/Overdue|Was for/.test(text)) throw new Error("the panel still says Overdue / Was for");
+    if (await p.locator("#grabs-list .grabs-people").count()) throw new Error("names showing before 👤 is tapped");
+    await p.click('[data-grabs-who="t15"]');
+    await p.waitForTimeout(700); // the panel slides in
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-big-jobs-panel.png`) });
+    await p.click('#grabs-list [data-give="t15"][data-person="Max"]');
+    await p.waitForTimeout(300);
+    const toast = await p.$eval("#task-move-toast", el => el.textContent);
+    if (!/Max grabbed Fix the shed door/.test(toast)) throw new Error(`no grabbed message (${toast})`);
+    await p.evaluate(() => document.getElementById("grabs-modal").close());
   }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine
   ["job-editor", async (p) => {
