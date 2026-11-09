@@ -111,6 +111,79 @@
 .buddy-move-fox.is-in .bd-eye-open { animation: buddy-wink-open 2.4s ease-in-out 1.2s infinite; }
 .buddy-move-fox.is-in .bd-eye-shut { animation: buddy-wink-shut 2.4s ease-in-out 1.2s infinite; }
 
+/* Kitten: a big stretch, then a slow blink */
+.buddy-kitten .bd-body { transform-box: fill-box; transform-origin: center bottom; }
+.buddy-move-kitten.is-in .bd-body { animation: buddy-stretch 1.6s ease-in-out 0.8s 3; }
+.buddy-move-kitten.is-in .bd-slowblink { animation: buddy-slow-blink 2.8s ease-in-out 1.2s infinite; }
+.buddy-kitten .bd-tail { transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-kitten.is-in .bd-tail { animation: buddy-flick 1.2s ease-in-out 0.7s infinite alternate; }
+
+/* Puppy: bounces, tail going wild */
+.buddy-move-puppy.is-in .buddy-svg { animation: buddy-bounce 0.45s ease-in-out 0.8s infinite; }
+.buddy-puppy .bd-tail { transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-puppy.is-in .bd-tail { animation: buddy-wag-fast 0.18s ease-in-out infinite alternate; }
+
+/* Unicorn: spins in a shower of stars */
+.buddy-move-unicorn.is-in .buddy-svg { animation: buddy-spin 1.2s ease-in-out 0.8s 2; }
+.buddy-unicorn .bd-tail { transform-box: fill-box; transform-origin: right center; }
+.buddy-move-unicorn.is-in .bd-tail { animation: buddy-wag 0.9s ease-in-out infinite alternate; }
+
+/* Knight: raises a sword, then a bow */
+.buddy-knight .bd-sword { transform-box: fill-box; transform-origin: center bottom; }
+.buddy-move-knight.is-in .bd-sword { animation: buddy-sword 2.4s ease-in-out 0.8s infinite; }
+.buddy-knight .bd-bow { transform-box: fill-box; transform-origin: center bottom; }
+.buddy-move-knight.is-in .bd-bow { animation: buddy-bow 2.4s ease-in-out 0.8s infinite; }
+.buddy-knight .bd-plume { transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-knight.is-in .bd-plume { animation: buddy-wag 0.7s ease-in-out infinite alternate; }
+
+/* Owl: turns its head, nods, a little flutter */
+.buddy-owl .bd-head { transform-box: fill-box; transform-origin: center bottom; }
+.buddy-move-owl.is-in .bd-head { animation: buddy-owl-head 2.6s ease-in-out 0.8s infinite; }
+.buddy-owl .bd-wing-l { transform-box: fill-box; transform-origin: right top; }
+.buddy-owl .bd-wing-r { transform-box: fill-box; transform-origin: left top; }
+.buddy-move-owl.is-in .bd-wing-l { animation: buddy-flap-l 0.4s ease-in-out 0.8s 4; }
+.buddy-move-owl.is-in .bd-wing-r { animation: buddy-flap-r 0.4s ease-in-out 0.8s 4; }
+
+/* Astronaut: floats up, salutes */
+.buddy-move-astronaut.is-in .bd-float { animation: buddy-float 2.4s ease-in-out 0.8s infinite; }
+.buddy-astronaut .bd-salute { transform-box: fill-box; transform-origin: left top; }
+.buddy-move-astronaut.is-in .bd-salute { animation: buddy-salute 0.6s ease-out 1s forwards; }
+
+/* Octopus: waves all eight arms */
+.buddy-octopus .bd-oct-arm { transform-box: fill-box; transform-origin: top center; }
+.buddy-move-octopus.is-in .bd-oct-arm { animation: buddy-wag 0.5s ease-in-out infinite alternate; }
+.buddy-move-octopus.is-in .bd-oct-arm-2, .buddy-move-octopus.is-in .bd-oct-arm-4, .buddy-move-octopus.is-in .bd-oct-arm-6, .buddy-move-octopus.is-in .bd-oct-arm-8 { animation-delay: 0.25s; }
+.buddy-octopus .bd-oct-arm-7 { transform-origin: right center; }
+.buddy-octopus .bd-oct-arm-8 { transform-origin: left center; }
+
+/* Dinosaur: stomps, happy roar */
+.buddy-move-dinosaur.is-in .buddy-svg { animation: buddy-stomp 0.9s ease-in 0.8s infinite; }
+.buddy-dinosaur .bd-jaw { transform-box: fill-box; transform-origin: center top; }
+.buddy-move-dinosaur.is-in .bd-jaw { animation: buddy-roar 0.9s ease-in-out 0.8s infinite; }
+.buddy-dinosaur .bd-tail { transform-box: fill-box; transform-origin: right center; }
+.buddy-move-dinosaur.is-in .bd-tail { animation: buddy-wag 0.45s ease-in-out infinite alternate; }
+
+/* Sloth: a very slow wave and a slow grin */
+.buddy-sloth .bd-wave { transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-sloth.is-in .bd-wave { animation: buddy-slow-wave 2.6s ease-in-out 0.8s infinite; }
+.buddy-sloth .bd-grin { transform-box: fill-box; transform-origin: center; }
+.buddy-move-sloth.is-in .bd-grin { animation: buddy-grin 3s ease-in-out 1s infinite; }
+
+@keyframes buddy-stretch { 0%, 100% { transform: scale(1, 1); } 40% { transform: scale(0.94, 1.08); } }
+@keyframes buddy-slow-blink { 0%, 30%, 70%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(0.1); } }
+@keyframes buddy-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8%); } }
+@keyframes buddy-wag-fast { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+@keyframes buddy-spin { 0% { transform: rotateY(0); } 100% { transform: rotateY(360deg); } }
+@keyframes buddy-sword { 0%, 100% { transform: rotate(0); } 25%, 55% { transform: rotate(-24deg) translateY(-6px); } }
+@keyframes buddy-bow { 0%, 60%, 100% { transform: rotate(0); } 75%, 88% { transform: rotate(6deg) translateY(4px); } }
+@keyframes buddy-owl-head { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(12deg); } 65% { transform: rotate(0) translateY(4px); } 75% { transform: translateY(0); } }
+@keyframes buddy-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes buddy-salute { to { transform: rotate(-120deg) translate(-4px, -8px); } }
+@keyframes buddy-stomp { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-6%); } 55% { transform: translateY(1%); } }
+@keyframes buddy-roar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.45); } }
+@keyframes buddy-slow-wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(16deg); } }
+@keyframes buddy-grin { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25, 1.35); } }
+
 @keyframes buddy-hop-in { 0% { transform: translateY(120%); } 70% { transform: translateY(-6%); } 100% { transform: translateY(0); } }
 @keyframes buddy-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
 @keyframes buddy-drop-out { to { transform: translateY(120%); } }
@@ -133,9 +206,7 @@
   .buddy-figure, .buddy-stage.is-in .buddy-figure { transform: none; animation: buddy-fade-in 0.4s ease forwards !important; opacity: 0; }
   .buddy-stage.is-out .buddy-figure { animation: none !important; opacity: 0; transition: opacity 0.3s; }
   .buddy-stage * { animation-iteration-count: 1 !important; }
-  .buddy-svg .bd-blink, .buddy-sparkles i,
-  .buddy-stage .bd-wing, .buddy-stage .bd-tail, .buddy-stage .bd-puff, .buddy-stage .bd-antenna-light,
-  .buddy-stage .bd-eye-open, .buddy-stage .bd-eye-shut { animation: none !important; }
+  .buddy-svg, .buddy-svg *, .buddy-sparkles i { animation: none !important; }
   .buddy-move-robot.is-in .bd-arm-r { animation: none !important; transform: rotate(-40deg) translateY(-6px); }
 }
 
