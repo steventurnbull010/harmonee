@@ -97,6 +97,44 @@
       since: since.length ? Math.min(...since) * 1000 : null
     };
   }
+  // A film from the shared list, which any signed-in device can write: rebuilt
+  // from the known fields only, as plain text, with posters only from the
+  // known image host. Anything else in it is dropped, and so is the item if
+  // it's not a family genre or has no id or title.
+  function cleanItem(item) {
+    if (!item || typeof item !== "object") return null;
+    const text = (v, max) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
+    const num = (v, lo, hi) => (typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? Math.round(v) : null);
+    const img = (u) => (typeof u === "string" && u.length <= 500 && u.startsWith(CDN) ? u : null);
+    const id = text(item.id, 40);
+    const title = text(item.title, 120);
+    if (!id || !title) return null;
+    const genres = (Array.isArray(item.genres) ? item.genres : [])
+      .filter(g => typeof g === "string" && Object.prototype.hasOwnProperty.call(GENRE_NAMES, g)).slice(0, 8);
+    if ((Array.isArray(item.genres) ? item.genres : []).some(g => NOT_FOR_FAMILIES.includes(g))) return null;
+    const poster = img(item.poster);
+    return {
+      id,
+      type: item.type === "series" ? "series" : "movie",
+      title,
+      year: num(item.year, 1888, 2100),
+      genres,
+      overview: text(item.overview, 500),
+      runtime: num(item.runtime, 1, 1000),
+      seasons: num(item.seasons, 1, 200),
+      poster,
+      posterBig: img(item.posterBig) || poster,
+      since: num(item.since, 0, 8.64e15)
+    };
+  }
+  // A whole saved or shared list, checked the same way (at most 25 of each)
+  function cleanLists(data) {
+    if (!data || typeof data !== "object") return null;
+    const clean = (arr) => (Array.isArray(arr) ? arr.slice(0, 25).map(cleanItem).filter(Boolean) : []);
+    const fetchedAt = typeof data.fetchedAt === "number" && isFinite(data.fetchedAt) ? data.fetchedAt : 0;
+    return { popular: clean(data.popular), latest: clean(data.latest), fetchedAt };
+  }
+
   function slimList(json, service) {
     return ((json && json.shows) || []).map(s => slim(s, service)).filter(x => x && x.id && x.title);
   }
@@ -131,7 +169,7 @@
 
   // ---- Lists: this device's copy, the shared copy, or a fresh fetch ----------------------
   const LOCAL = "harmonee_streaming_";
-  const local = (svc) => { try { return JSON.parse(localStorage.getItem(LOCAL + svc) || "null"); } catch (e) { return null; } };
+  const local = (svc) => { try { return cleanLists(JSON.parse(localStorage.getItem(LOCAL + svc) || "null")); } catch (e) { return null; } };
   const saveLocal = (svc, data) => { try { localStorage.setItem(LOCAL + svc, JSON.stringify(data)); } catch (e) {} };
   const busy = new Set();
   const failedAt = {};
@@ -153,7 +191,7 @@
     busy.add(svc);
     try {
       // Another family's device may already have fetched it this week
-      const shared = typeof root.streamingListGet === "function" ? await root.streamingListGet(svc) : null;
+      const shared = typeof root.streamingListGet === "function" ? cleanLists(await root.streamingListGet(svc)) : null;
       if (shared && !isStale(shared.fetchedAt)) { saveLocal(svc, shared); return; }
       const fresh = await fetchService(svc);
       saveLocal(svc, { ...fresh, fetchedAt: Date.now() });
@@ -332,7 +370,7 @@
     window.addEventListener("online", () => document.dispatchEvent(new CustomEvent("harmonee:films")));
   }
 
-  const api = { ready, cardHtml, renderSettings, open, urlFor, slim, slimList, merge, isNew, isStale, weekStart, planSlot, SERVICES };
+  const api = { ready, cardHtml, renderSettings, open, urlFor, slim, slimList, cleanItem, cleanLists, merge, isNew, isStale, weekStart, planSlot, SERVICES };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.FilmNight = api;
 })(typeof window !== "undefined" ? window : globalThis);

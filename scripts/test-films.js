@@ -66,6 +66,21 @@ const plan = (when, rt) => { const x = F.planSlot(when, rt); return [x.date.getD
 check("at 5pm: tonight at 7, film length", plan(now, 95), [7, "19:00", 105]);
 check("at 9pm: tomorrow at 7", plan(new Date(2026, 10, 7, 21), 95), [8, "19:00", 105]);
 
+// ---- The shared list can be written by any signed-in device: check it on reading
+const good = { id: "1", type: "movie", title: "A Family Film", year: 2026, genres: ["family", "comedy"], overview: "x", runtime: 95, seasons: null, poster: CDN + "240.jpg", posterBig: CDN + "360.jpg", since: 1793000000000 };
+check("clean item kept as is", F.cleanItem(good), good);
+check("poster from another site dropped", [F.cleanItem({ ...good, poster: "https://tracker.example/p.gif", posterBig: "https://tracker.example/p.gif" }).poster, F.cleanItem({ ...good, posterBig: "https://tracker.example/p.gif" }).posterBig], [null, CDN + "240.jpg"]);
+check("extra fields dropped", Object.keys(F.cleanItem({ ...good, html: "<b>x</b>", onclick: "x" })).sort(), Object.keys(good).sort());
+check("long title cut to 120", F.cleanItem({ ...good, title: "x".repeat(500) }).title.length, 120);
+check("title that isn't text: item dropped", F.cleanItem({ ...good, title: { toString: () => "x" } }), null);
+check("not a family genre: item dropped", F.cleanItem({ ...good, genres: ["horror"] }), null);
+check("unknown genres removed", F.cleanItem({ ...good, genres: ["family", "<script>"] }).genres, ["family"]);
+check("silly numbers removed", [F.cleanItem({ ...good, year: "2026" }).year, F.cleanItem({ ...good, runtime: -5 }).runtime], [null, null]);
+const bigList = { popular: Array(40).fill(good), latest: "nope", fetchedAt: 123 };
+const cleaned = F.cleanLists(bigList);
+check("whole list: at most 25, junk lists emptied", [cleaned.popular.length, cleaned.latest, cleaned.fetchedAt], [25, [], 123]);
+check("nothing shared yet", F.cleanLists(null), null);
+
 // ---- No key: nothing shows
 window.HARMONEE_KEYS = {};
 check("no key: no card", F.cardHtml(), "");
