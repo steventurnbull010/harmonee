@@ -130,6 +130,9 @@ html {
   overflow-x: hidden;
   overflow-x: clip; /* hidden makes a scroll box that breaks the sticky sidebar */
   box-sizing: border-box;
+  /* Pinch-zoom works (for anyone who needs bigger text); quick double taps
+     when ticking jobs off don't zoom by accident */
+  touch-action: manipulation;
 }
 
 *, *:before, *:after {

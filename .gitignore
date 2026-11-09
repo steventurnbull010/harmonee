@@ -21,3 +21,6 @@ js/secret-keys.js
 
 # Private to-do list (mentions unfixed weaknesses; never publish)
 TODO.md
+
+# Smoke test screenshots (scripts/smoke-test.mjs)
+smoke-shots/

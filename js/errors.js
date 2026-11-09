@@ -110,6 +110,11 @@
     log("crash", e.message || textOf(e.error), e.filename ? `${e.filename.replace(location.origin + "/", "").split("?")[0]}:${e.lineno}` : whereOf(e.error));
     showCrashBanner(e.message);
   }, true);
+  // Something the content policy (firebase.json, report-only for now) would
+  // block: logged so real devices show what to allow before it's switched on
+  document.addEventListener("securitypolicyviolation", (e) => {
+    log("policy", `The content policy would block ${String(e.blockedURI || "an inline script or style").split("?")[0]} (${e.effectiveDirective || e.violatedDirective})`, e.sourceFile ? `${String(e.sourceFile).replace(location.origin + "/", "").split("?")[0]}:${e.lineNumber}` : "");
+  });
   window.addEventListener("unhandledrejection", (e) => {
     log("promise", textOf(e.reason) || "A background task failed", whereOf(e.reason));
   });
@@ -144,7 +149,7 @@
   }
 
   // ---- Settings → Diagnostics -------------------------------------------------------
-  const LABEL = { crash: "Crash", promise: "Background task", error: "Error", warning: "Warning", save: "Save failed", load: "File didn't load" };
+  const LABEL = { crash: "Crash", promise: "Background task", error: "Error", warning: "Warning", save: "Save failed", load: "File didn't load", policy: "Content policy" };
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const when = (t) => {
     const d = new Date(t);

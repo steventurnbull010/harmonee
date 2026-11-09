@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <title>harmonee — family life in sync</title>
   <!-- Link previews (WhatsApp, Messages): the same for every harmonee link -->
   <meta name="description" content="Your family's calendar, jobs, meals and shopping lists, together on the kitchen tablet and everyone's phones.">
@@ -47,14 +47,13 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=a59cbe8d">
   <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png?v=827f52a3">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=053ad604">
-  <meta name="description" content="Tablet and mobile-first live synced family calendar, routines, meals, lists, and leaderboard with real-time Firebase Firestore support.">
   
   <!-- Modern Typography (Outfit & Plus Jakarta Sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Parisienne&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=21c141cf">
+  <link rel="stylesheet" href="style.css?v=db2626c8">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
   <link rel="stylesheet" href="css/tasks.css?v=5249b2bf">
   <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
@@ -79,7 +78,7 @@
   <link rel="stylesheet" href="css/meal-genie.css?v=27f8eaef">
   
   <!-- The error log and the "Reload app" banner: first, so it catches everything (Settings → Diagnostics) -->
-  <script src="js/errors.js?v=a7c75ed6"></script>
+  <script src="js/errors.js?v=bf20e338"></script>
 
   <!-- Theme Pre-Initialization (Prevents FOUC, defaults to Skylight Pastel Light) -->
   <script>
@@ -469,7 +468,7 @@
                 <div class="drawer-input-row drawer-search-bar">
                   <span class="drawer-input-icon search-icon" aria-hidden="true">🔍</span>
                   <input type="text" id="recipe-search-input" placeholder="Search recipes" class="drawer-input-title drawer-search-input" autocomplete="off" aria-label="Search recipes">
-                  <button type="button" class="btn-clear-search" id="btn-clear-recipe-search" style="display: none;">✕</button>
+                  <button type="button" class="btn-clear-search" id="btn-clear-recipe-search" aria-label="Clear the search" style="display: none;">✕</button>
                 </div>
 
                 <div class="drawer-filter-actions-row">
@@ -537,7 +536,7 @@
                     <span class="drawer-section-icon">📝</span>
                     <span class="drawer-section-label">Notes</span>
                   </div>
-                  <textarea id="custom-meal-notes" class="ev-native-input ev-notes" rows="3" placeholder="Ingredients to buy, cooking tips (optional)"></textarea>
+                  <textarea id="custom-meal-notes" aria-label="Notes" class="ev-native-input ev-notes" rows="3" placeholder="Ingredients to buy, cooking tips (optional)"></textarea>
                 </div>
 
                 <button type="submit" class="btn-skylight-drawer-submit">Save to plan</button>
@@ -827,7 +826,7 @@
           <!-- Title Input -->
           <div class="drawer-input-row">
             <span class="drawer-input-icon">≡</span>
-            <input type="text" id="drawer-task-title" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
+            <input type="text" id="drawer-task-title" aria-label="Task title" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
           </div>
 
           <!-- Emoji Picker Accordion -->
@@ -915,9 +914,9 @@
             </div>
 
             <!-- What the save reads (kept as they were, now set by the buttons above) -->
-            <input type="checkbox" id="drawer-toggle-time" hidden>
-            <input type="checkbox" id="drawer-toggle-repeat" hidden>
-            <select id="drawer-chore-repeat-select" hidden aria-hidden="true">
+            <input type="checkbox" id="drawer-toggle-time" aria-label="Set a time" hidden>
+            <input type="checkbox" id="drawer-toggle-repeat" aria-label="Repeat" hidden>
+            <select id="drawer-chore-repeat-select" aria-label="How often it repeats" hidden aria-hidden="true">
               <option value="none">Does not repeat</option>
               <option value="weekly">Weekly on this day</option>
             </select>
@@ -1009,9 +1008,9 @@
               <span class="drawer-reward-sub">Earned upon completion</span>
             </div>
             <div class="drawer-reward-controls">
-              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-minus">−</button>
+              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-minus" aria-label="Fewer points">−</button>
               <span class="drawer-reward-display" id="drawer-reward-display">10 pts</span>
-              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-plus">+</button>
+              <button type="button" class="drawer-reward-btn" id="btn-drawer-reward-plus" aria-label="More points">+</button>
             </div>
           </div>
 
@@ -1034,8 +1033,8 @@
           <div class="datepicker-month-nav">
             <span class="datepicker-month-name" id="datepicker-month-name">July 2025</span>
             <div class="datepicker-nav-arrows">
-              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-prev">‹</button>
-              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-next">›</button>
+              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-prev" aria-label="Previous month">‹</button>
+              <button type="button" class="datepicker-nav-arrow" id="btn-datepicker-next" aria-label="Next month">›</button>
             </div>
           </div>
           <div class="datepicker-weekdays">
@@ -1205,7 +1204,7 @@
                 </span>
                 <span class="priority-hint-text" id="priority-hint-text">Tap to pin to top</span>
               </button>
-              <input type="checkbox" id="task-form-priority" style="display: none;">
+              <input type="checkbox" id="task-form-priority" aria-label="High priority" style="display: none;">
             </div>
           </div>
 
@@ -1248,7 +1247,7 @@
                   </select>
                 </div>
                 <span class="room-rename-hint" id="room-rename-hint" style="display: none; font-size: 0.76rem; color: var(--accent-cyan); cursor: pointer; margin-top: 4px;">✏️ Want to add a name to this bedroom? Tap to customize</span>
-                <input type="text" id="task-form-room-custom" class="form-input" placeholder="Type custom room or area (e.g. Utility, Balcony)..." style="display: none; margin-top: 8px;">
+                <input type="text" id="task-form-room-custom" aria-label="Room or area" class="form-input" placeholder="Type custom room or area (e.g. Utility, Balcony)..." style="display: none; margin-top: 8px;">
               </div>
 
               <div class="form-group">
@@ -1320,7 +1319,7 @@
           <h3 class="share-subheading">📱 Current Board Link</h3>
           <p class="share-help-text">Share this link with anyone in your house to collaborate live in real-time:</p>
           <div class="copy-url-row">
-            <input type="text" id="current-board-share-url" readonly value="" class="share-url-input">
+            <input type="text" id="current-board-share-url" aria-label="Board link" readonly value="" class="share-url-input">
             <button type="button" class="btn-copy-link" id="btn-copy-current-link">
               <span id="copy-btn-text">Copy Link</span>
             </button>
@@ -2086,7 +2085,7 @@
               <button type="button" class="drawer-pill-segment meal-pill" data-category="lunch">Lunch</button>
               <button type="button" class="drawer-pill-segment meal-pill" data-category="dinner">Dinner</button>
             </div>
-            <select id="cooking-plan-slot-select" hidden aria-hidden="true" tabindex="-1">
+            <select id="cooking-plan-slot-select" aria-label="Which meal" hidden aria-hidden="true" tabindex="-1">
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
@@ -2119,7 +2118,7 @@
       </div>
 
       <div class="grocery-quick-add-bar">
-        <input type="text" id="grocery-quick-input" placeholder="Add grocery item (e.g. Milk, Bananas, Bread...)" class="grocery-input">
+        <input type="text" id="grocery-quick-input" aria-label="Add a grocery item" placeholder="Add grocery item (e.g. Milk, Bananas, Bread...)" class="grocery-input">
         <button type="button" class="btn-primary-action" id="btn-grocery-add-item">
           <span>Add</span>
         </button>
@@ -2173,7 +2172,7 @@
         <!-- Title -->
         <div class="drawer-input-row">
           <span class="drawer-input-icon">≡</span>
-          <input type="text" id="event-title-input" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
+          <input type="text" id="event-title-input" aria-label="Event title" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
         </div>
 
         <!-- Icon: grouped, like the Tasks panel -->
@@ -2261,10 +2260,10 @@
           </div>
 
           <!-- What the save reads (kept as they were, now set by the buttons above) -->
-          <input type="date" id="event-date-input" hidden aria-hidden="true" tabindex="-1">
+          <input type="date" id="event-date-input" aria-label="Date" hidden aria-hidden="true" tabindex="-1">
           <span id="event-selected-day-badge" hidden></span>
-          <input type="checkbox" id="event-allday-toggle" hidden aria-hidden="true" tabindex="-1">
-          <select id="event-repeat-select" hidden aria-hidden="true" tabindex="-1">
+          <input type="checkbox" id="event-allday-toggle" aria-label="All day" hidden aria-hidden="true" tabindex="-1">
+          <select id="event-repeat-select" aria-label="How often it repeats" hidden aria-hidden="true" tabindex="-1">
             <option value="none" selected>Does not repeat</option>
             <option value="daily">Every day</option>
             <option value="weekdays">Every weekday (Mon to Fri)</option>
@@ -2273,7 +2272,7 @@
             <option value="annually" id="repeat-opt-annually">Every year on this day</option>
           </select>
           <!-- Length, kept for saving: worked out from Starts and Ends -->
-          <select id="event-duration-select" hidden aria-hidden="true" tabindex="-1">
+          <select id="event-duration-select" aria-label="How long" hidden aria-hidden="true" tabindex="-1">
             <option value="15 mins">15 mins</option>
             <option value="30 mins">30 mins</option>
             <option value="45 mins">45 mins</option>
@@ -2329,14 +2328,14 @@
             <span class="drawer-section-icon">📍</span>
             <span class="drawer-section-label">Where</span>
           </div>
-          <input type="text" id="event-location-input" class="ev-native-input" placeholder="Add a place (optional)" autocomplete="off">
+          <input type="text" id="event-location-input" aria-label="Place" class="ev-native-input" placeholder="Add a place (optional)" autocomplete="off">
         </div>
         <div class="drawer-field-group">
           <div class="drawer-section-label-row">
             <span class="drawer-section-icon">📝</span>
             <span class="drawer-section-label">Notes</span>
           </div>
-          <textarea id="event-description-input" class="ev-native-input ev-notes" rows="3" placeholder="Anything to remember (optional)"></textarea>
+          <textarea id="event-description-input" aria-label="Notes" class="ev-native-input ev-notes" rows="3" placeholder="Anything to remember (optional)"></textarea>
         </div>
 
         <div class="modal-actions ev-actions">
@@ -2494,7 +2493,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=a6006939"></script>
+  <script src="js/build-info.js?v=f45d6067"></script>
   <script src="js/utils.js?v=919aa0d3"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
