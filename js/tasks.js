@@ -1638,6 +1638,8 @@ function renderDrawerProfilesRow() {
       const p = btn.getAttribute("data-profile");
       if (p === "Up for grabs") {
         drawerSelectedProfiles = ["Up for grabs"];
+        // Anyone can take it, so it's a chore (a routine stays with each person)
+        if (drawerCurrentType === "routine") { drawerCurrentType = "chore"; syncDrawerTypeUI(); }
       } else {
         drawerSelectedProfiles = drawerSelectedProfiles.filter(sp => sp !== "Up for grabs");
         const idx = drawerSelectedProfiles.findIndex(sp => sp.toLowerCase() === p.toLowerCase());
@@ -1680,6 +1682,8 @@ function updateDrawerWhoSummary() {
     const day = drawerSelectedDate ? DAYS[drawerSelectedDate.getDay()] : "its day";
     const quick = !big && !routine && (drawerSchedule === "daily" || (drawerSchedule === "weekly" && drawerWeeklyAnyDay));
     el.classList.toggle("is-quick", quick);
+    // Anyone plus Routine doesn't fit: say so, rather than quietly "Big jobs"
+    if (routine) { el.textContent = "A routine stays with each person, so nobody can grab it. Pick who does it, or choose Chore to make it a quick grab."; return; }
     if (drawerSchedule === "daily" && !big && !routine) el.textContent = "⚡ A quick grab: a pill above the board every day, for anyone to drag into their column.";
     else if (drawerSchedule === "weekly" && drawerWeeklyAnyDay && !big && !routine) el.textContent = "⚡ A quick grab: a pill above the board every day this week until someone does it.";
     else if (drawerSchedule === "daily") el.textContent = `🛠️ In ${BIG_JOBS_LABEL} every day, for anyone to take.`;

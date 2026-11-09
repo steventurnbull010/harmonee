@@ -542,6 +542,24 @@ const PAGES = [
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-job-editor-weekly.png`) });
     if (await shown("t1")) throw new Error("Bigger job switch showing for a personal routine");
+    // Steven's ironing: new job, Routine, then Anyone, Every week, Any day this week
+    const iron = await p.evaluate(async () => {
+      window.openSkylightTaskDrawer();
+      await new Promise(r => setTimeout(r, 300));
+      const click = (sel) => { const b = document.querySelector(sel); if (b) b.click(); return !!b; };
+      click("#btn-drawer-type-routine");
+      click('.drawer-profile-pill[data-profile="Up for grabs"]');
+      click('#drawer-schedule-pills [data-schedule="weekly"]');
+      click("[data-weekday-any]");
+      await new Promise(r => setTimeout(r, 100));
+      const afterAnyone = { chore: document.getElementById("btn-drawer-type-chore").classList.contains("active"), hint: document.getElementById("drawer-who-summary").textContent };
+      click("#btn-drawer-type-routine"); // and if they pick Routine again
+      await new Promise(r => setTimeout(r, 100));
+      return { afterAnyone, routineHint: document.getElementById("drawer-who-summary").textContent };
+    });
+    if (!iron.afterAnyone.chore) throw new Error("picking Anyone didn't switch a routine to a chore");
+    if (!/quick grab/i.test(iron.afterAnyone.hint)) throw new Error(`Anyone + Every week + Any day doesn't say quick grab: ${iron.afterAnyone.hint}`);
+    if (!/nobody can grab/i.test(iron.routineHint)) throw new Error(`Routine + Anyone doesn't explain itself: ${iron.routineHint}`);
     await p.keyboard.press("Escape");
   }],
   ["today", async (p) => {
