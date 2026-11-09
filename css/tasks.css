@@ -1895,12 +1895,70 @@ body.is-grab-dragging * {
   cursor: grabbing !important;
 }
 
+/* --------------------------------------------------------------------------
+   While a job is dragged: everything else fades back and blurs a little;
+   the places it can go stay bright with a dashed outline in that person's
+   colour, and the one under the finger fills in with "Give to Ava".
+   (The Grab it button has its own drag look, further down.)
+   -------------------------------------------------------------------------- */
+.skylight-sidebar,
+.skylight-tasks-header,
+.tasks-date-text,
+#tasks-slot-filters,
+.skylight-tasks-fab-container,
+.skylight-tasks-col,
+.tasks-col-body,
+.tasks-person-tab {
+  transition: filter 0.2s ease, opacity 0.2s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+body.is-grab-dragging .skylight-sidebar,
+body.is-grab-dragging .skylight-tasks-header,
+body.is-grab-dragging .tasks-date-text,
+body.is-grab-dragging #tasks-slot-filters,
+body.is-grab-dragging .skylight-tasks-fab-container,
+body.is-grab-dragging .skylight-tasks-col.is-drag-origin,
+body.is-grab-dragging .tasks-person-tab.is-drag-origin {
+  filter: blur(2px) saturate(0.5);
+  opacity: 0.35;
+}
+/* Somewhere it can go */
+body.is-grab-dragging .skylight-tasks-col:not(.is-drag-origin) {
+  position: relative;
+  outline: 2px dashed var(--card-color);
+  outline-offset: -2px;
+}
+body.is-grab-dragging .skylight-tasks-col:not(.is-drag-origin) .tasks-col-body { opacity: 0.6; }
+/* Where it'll go if you let go now */
 .skylight-tasks-col.is-drop-target {
-  outline: 3px dashed currentColor;
+  outline: 3px solid var(--card-color) !important;
   outline-offset: -3px;
-  transform: scale(1.01);
-  transition: transform 0.12s ease;
-  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+  background: color-mix(in srgb, var(--card-color) 14%, var(--card-bg)) !important;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--card-color) 22%, transparent);
+}
+.skylight-tasks-col.is-drop-target::after {
+  content: attr(data-drop-label);
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 16px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--card-color);
+  color: #fff;
+  font: 700 0.9rem var(--font-body);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+  pointer-events: none;
+}
+/* Phones: the person tabs take a drop too */
+body.is-grab-dragging .tasks-person-tab:not(.is-drag-origin) { outline: 2px dashed var(--tab-color); outline-offset: -2px; }
+.tasks-person-tab.is-drop-target {
+  outline: 3px solid var(--tab-color) !important;
+  background: color-mix(in srgb, var(--tab-color) 18%, transparent) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skylight-sidebar, .skylight-tasks-header, .tasks-date-text, #tasks-slot-filters,
+  .skylight-tasks-fab-container, .skylight-tasks-col, .tasks-col-body, .tasks-person-tab { transition: none; }
 }
 
 /* ==========================================================================

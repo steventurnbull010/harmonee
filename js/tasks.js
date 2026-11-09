@@ -802,6 +802,15 @@ function beginGrabDrag(state, x, y) {
   state.date = state.card.getAttribute("data-date");
   state.fromMember = state.card.getAttribute("data-member");
   state.card.classList.add("is-drag-source");
+  // Make it clear where it can go: the column (and phone tab) it came from
+  // fades with the rest of the page; every other person's column, their
+  // tab and the Grab it button stay bright, each saying what a drop does
+  const fromLower = String(state.fromMember || "").toLowerCase();
+  document.querySelectorAll("#tasks-columns-grid .skylight-tasks-col, #tasks-person-tabs [data-person-tab]").forEach(el => {
+    const m = el.getAttribute("data-col-member") || el.getAttribute("data-person-tab") || "";
+    el.classList.toggle("is-drag-origin", m.toLowerCase() === fromLower);
+    if (el.classList.contains("skylight-tasks-col")) el.setAttribute("data-drop-label", `Give to ${displayMemberName(m)}`);
+  });
   document.body.classList.add("is-grab-dragging");
   if (navigator.vibrate) navigator.vibrate(15);
   moveGrabDrag(x, y);
@@ -817,8 +826,9 @@ function moveGrabDrag(x, y) {
   // are off-screen can still be reached
   const board = state.container;
   const bRect = board.getBoundingClientRect();
-  if (x < bRect.left + GRAB_EDGE_SCROLL_PX) board.scrollLeft -= 14;
-  else if (x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
+  const overBoard = y >= bRect.top && y <= bRect.bottom; // not over the phone tabs above it
+  if (overBoard && x < bRect.left + GRAB_EDGE_SCROLL_PX) board.scrollLeft -= 14;
+  else if (overBoard && x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
 
   const under = document.elementFromPoint(x, y);
   // Over the Grab it button: put the job back up for grabs
@@ -829,6 +839,19 @@ function moveGrabDrag(x, y) {
       grabDrop.classList.add("is-drop-target");
       state.targetCol = grabDrop;
       state.targetMember = state.fromMember === "Up for grabs" ? null : "Up for grabs";
+    }
+    return;
+  }
+  // Phones: the person tabs along the top take a drop too
+  const tab = under ? under.closest("#tasks-person-tabs [data-person-tab]") : null;
+  if (tab) {
+    const m = tab.getAttribute("data-person-tab");
+    const target = m !== state.fromMember ? tab : null;
+    if (state.targetCol !== target) {
+      if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
+      if (target) target.classList.add("is-drop-target");
+      state.targetCol = target;
+      state.targetMember = target ? m : null;
     }
     return;
   }
@@ -858,6 +881,7 @@ function endGrabDrag() {
   if (!state) return;
   if (state.ghost) state.ghost.remove();
   state.card.classList.remove("is-drag-source");
+  document.querySelectorAll(".is-drag-origin").forEach(el => el.classList.remove("is-drag-origin"));
   if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
   document.body.classList.remove("is-grab-dragging");
 
