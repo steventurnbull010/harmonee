@@ -2,8 +2,9 @@
 // GUIDED SETUP FOR NEW FAMILIES (js/setup-wizard.js)
 // Opens at /?new=true (and from "Create a Brand New Board" in the share
 // window). Six short steps:
-//   1. Family name ("The Bakers")          -> shown at the top of every page
-//   2. Who's in the family                 -> names and colours
+//   1. Who's in the family                 -> names and colours
+//   2. What to call the board              -> shown at the top of every page
+//      ("The Bakers", or their names when they don't share a surname)
 //   3. Pick a buddy (optional, each person) -> js/buddies.js
 //   4. Points or pocket money (+ currency)
 //   5. Starter routines (tap who does each) and jobs up for grabs
@@ -86,6 +87,12 @@
     return clash ? name.slice(0, 2).replace(/^./, c => c.toUpperCase()) : first;
   }
   const everyone = () => state.people.map(p => p.name);
+  // Board name ideas from the people added: "Gokul, Laura & Nikhil"
+  function nameIdeas() {
+    const n = everyone();
+    const joined = n.length <= 1 ? (n[0] || "") : `${n.slice(0, -1).join(", ")} & ${n[n.length - 1]}`;
+    return [joined && joined.length <= 40 && n.length <= 5 ? joined : "", "Our family"].filter(Boolean);
+  }
 
   // ---- Steps ---------------------------------------------------------------------
   function stepHtml() {
@@ -109,13 +116,7 @@
         ${s.pasteError ? `<p class="setup-paste-error" role="alert">${esc(s.pasteError)}</p>` : ""}` : ""}
       </div>`;
     if (s.step === 1) return `
-      <h1 class="setup-title" id="setup-title">👋 What's your family called?</h1>
-      <input id="setup-family" class="setup-input setup-family-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" enterkeyhint="next" aria-label="Family name">
-      <p class="setup-label setup-label-row">🌤️ Your town, for the weather <span class="setup-optional">Optional</span></p>
-      <div id="setup-weather" class="setup-weather is-compact"></div>`;
-
-    if (s.step === 2) return `
-      <h1 class="setup-title" id="setup-title">🏡 Who's in the family?</h1>
+      <h1 class="setup-title" id="setup-title">👋 Who's in the family?</h1>
       ${s.people.length ? `<div class="setup-pills" role="list" aria-label="Added so far">${s.people.map((p, i) => `
         <span class="setup-pill${s.openColour === i ? " is-open" : ""}" role="listitem" style="--pill:${colourOf(p.colour)}">
           <button type="button" class="setup-pill-name" data-act="colour" data-i="${i}" aria-label="${esc(p.name)}: change colour" aria-expanded="${s.openColour === i}">${esc(p.name)}</button>
@@ -127,6 +128,18 @@
         <button type="button" class="setup-btn is-secondary" data-act="add-person" ${s.people.length >= MAX_PEOPLE ? "disabled" : ""}>Add</button>
       </div>
       <p class="setup-hint">${s.people.length ? "🎨 Tap a name to change its colour" : "Add everyone who'll use harmonee."}</p>`;
+
+    if (s.step === 2) {
+      // Not every family shares a surname: offer their names as a pill
+      const ideas = nameIdeas();
+      return `
+      <h1 class="setup-title" id="setup-title">🏡 What should we call your board?</h1>
+      <p class="setup-lead">It goes at the top of every page. A surname, your names or a nickname all work.</p>
+      <input id="setup-family" class="setup-input setup-family-input" type="text" maxlength="40" placeholder="e.g. The Bakers" value="${esc(s.familyName)}" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" enterkeyhint="next" aria-label="Board name">
+      ${ideas.length ? `<div class="setup-name-ideas" role="group" aria-label="Ideas">${ideas.map(n => `<button type="button" class="setup-name-idea${n === s.familyName.trim() ? " is-on" : ""}" data-act="name-idea" data-name="${esc(n)}" aria-pressed="${n === s.familyName.trim()}">${esc(n)}</button>`).join("")}</div>` : ""}
+      <p class="setup-label setup-label-row">🌤️ Your town, for the weather <span class="setup-optional">Optional</span></p>
+      <div id="setup-weather" class="setup-weather is-compact"></div>`;
+    }
 
     if (s.step === 3) {
       // Pick a buddy: optional, one strip of buddies per person
@@ -223,7 +236,7 @@
           <button type="button" class="setup-btn is-primary" data-act="next">${nextLabel}</button>
         </div>`}
       </div>`;
-    if (s.step === 1 && window.WeatherPlace) {
+    if (s.step === 2 && window.WeatherPlace) {
       window.WeatherPlace.renderWeatherPlacePicker(document.getElementById("setup-weather"), {
         current: s.weather,
         compact: true,
@@ -236,8 +249,8 @@
       try { Promise.race([document.fonts.load('400 48px "Parisienne"'), new Promise(r => setTimeout(r, 1500))]).then(go, go); }
       catch (e) { go(); }
     }
-    const focus = el.querySelector(s.step === 1 ? "#setup-family" : s.step === 2 ? "#setup-person" : s.step === 0 ? ".setup-start" : ".setup-btn.is-primary");
-    if (focus && !(s.step === 2 && s.people.length >= MAX_PEOPLE)) setTimeout(() => { try { focus.focus({ preventScroll: true }); } catch (e) {} }, 30);
+    const focus = el.querySelector(s.step === 2 ? "#setup-family" : s.step === 1 ? "#setup-person" : s.step === 0 ? ".setup-start" : ".setup-btn.is-primary");
+    if (focus && !(s.step === 1 && s.people.length >= MAX_PEOPLE)) setTimeout(() => { try { focus.focus({ preventScroll: true }); } catch (e) {} }, 30);
   }
 
   // ---- Actions ---------------------------------------------------------------------
@@ -258,14 +271,14 @@
     const s = state;
     s.error = "";
     if (s.step === 1) {
-      const v = (document.getElementById("setup-family").value || "").trim();
-      if (!v) { s.error = "Add your family's name first 🙂"; render(); return; }
-      s.familyName = v.slice(0, 40);
-    }
-    if (s.step === 2) {
       const typed = (document.getElementById("setup-person") || {}).value;
       if (typed && typed.trim()) addPerson(); // pressed Continue with a name still typed
       if (!s.people.length) { s.error = "Add at least one person."; render(); return; }
+    }
+    if (s.step === 2) {
+      const v = (document.getElementById("setup-family").value || "").trim();
+      if (!v) { s.error = "Type a name, or tap one of the ideas 🙂"; render(); return; }
+      s.familyName = v.slice(0, 40);
     }
     if (s.step === STEPS) { create(); return; }
     s.step++;
@@ -370,6 +383,7 @@
     }
     if (act === "back") { s.error = ""; s.step = Math.max(s.cameFromIntro ? 0 : 1, s.step - 1); return render(); }
     if (act === "add-person") return addPerson();
+    if (act === "name-idea") { s.familyName = b.getAttribute("data-name"); s.error = ""; return render(); }
     if (act === "remove") { s.people.splice(i, 1); s.openColour = null; return render(); }
     if (act === "who") {
       const set = routineWho()[b.getAttribute("data-key")];
@@ -440,6 +454,7 @@
       el.addEventListener("input", (e) => {
         if (e.target.id === "setup-family") {
           state.familyName = e.target.value;
+          el.querySelectorAll(".setup-name-idea").forEach(p => { const on = p.getAttribute("data-name") === e.target.value.trim(); p.classList.toggle("is-on", on); p.setAttribute("aria-pressed", on); });
           const prev = el.querySelector(".setup-preview-name");
           if (prev) prev.textContent = e.target.value.trim() || "The Bakers";
         }

@@ -163,10 +163,15 @@
   // the cards simply stack in this order. Saved for the whole board as
   // boardSettings.todayLayout; cards added to harmonee later join their usual side.
   const DEFAULT_LAYOUT = ["events", "tomorrow", "countdown", "music", "films", "|", "weather", "dinner", "groceries", "jobs"];
+  // A brand-new family (Getting started showing, no order of their own yet):
+  // the card with something in it (weather) first, then the day's jobs; the
+  // empty ones the checklist covers sit together as quiet lines on the right
+  const NEW_BOARD_LAYOUT = ["weather", "jobs", "countdown", "music", "|", "events", "tomorrow", "dinner", "groceries", "films"];
+  const gettingStarted = () => !!(window.GettingStarted && window.GettingStarted.isActive());
   function cardLayout() {
     const known = CARDS.map(c => c.key);
     const saved = (window.boardSettings || {}).todayLayout;
-    let out = (Array.isArray(saved) ? saved : DEFAULT_LAYOUT).filter((k, i, a) => (k === "|" || known.includes(k)) && a.indexOf(k) === i);
+    let out = (Array.isArray(saved) ? saved : (gettingStarted() ? NEW_BOARD_LAYOUT : DEFAULT_LAYOUT)).filter((k, i, a) => (k === "|" || known.includes(k)) && a.indexOf(k) === i);
     if (!out.includes("|")) out.push("|");
     known.forEach(k => {
       if (out.includes(k)) return;
@@ -350,16 +355,21 @@
     const buttonText = openedFrom === "wake" ? "Start the day" : openedFrom === "preview" ? "Close preview" : "Open the board";
 
     // Each card, in the family's order (Make it yours)
+    // Getting started already offers "add an event", "plan a meal" and "add to
+    // a list", so while it shows, those cards are one quiet line when empty
+    const quiet = gettingStarted();
+    const quietCard = (icon, title, text) => `<section class="today-card today-card-quiet"><span class="today-quiet-icon" aria-hidden="true">${icon}</span><span class="today-quiet-text"><strong>${title}</strong> · ${text}</span></section>`;
+    const groceriesEmpty = () => { const l = (typeof window.loadFamilyLists === "function" ? window.loadFamilyLists() : []).find(x => x.id === "groceries"); return !!l && !(l.items || []).some(i => !i.checked); };
     const cardHtml = {
-      events: () => cardOn("events") ? `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>` : "",
+      events: () => !cardOn("events") ? "" : (quiet && !eventsOn(today).length) ? quietCard("📅", "Today", "Nothing on the calendar") : `<section class="today-card today-card-events"><h3 class="today-card-title">📅 Today</h3>${eventsListHtml(eventsOn(today), nowMins, true)}<div class="today-card-foot">${addBtn('data-quick="event"', "Add event")}</div></section>`,
       // Evenings show "Tomorrow" in full (with the Today card); otherwise "Tomorrow's first thing"
       tomorrow: () => part.key === "evening" ? (cardOn("events") ? tomorrowHtml : "") : (cardOn("tomorrow") ? tomorrowFirstHtml(tomorrow) : ""),
       countdown: () => cardOn("countdown") ? countdownHtml : "",
       music: () => cardOn("music") && window.Music ? window.Music.todayCardHtml() : "",
       films: () => cardOn("films") && window.FilmNight ? window.FilmNight.cardHtml() : "",
       weather: () => cardOn("weather") && window.WeatherCard ? window.WeatherCard.html(now) : "",
-      dinner: () => cardOn("dinner") ? `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>` : "",
-      groceries: () => cardOn("groceries") ? groceriesHtml() : "",
+      dinner: () => !cardOn("dinner") ? "" : (quiet && !dinnerOn(today)) ? quietCard("🍽️", "Dinner tonight", "Not planned yet") : `<section class="today-card"><h3 class="today-card-title">🍽️ Dinner tonight</h3>${dinnerHtml(dinnerOn(today))}</section>`,
+      groceries: () => !cardOn("groceries") ? "" : (quiet && groceriesEmpty()) ? quietCard("🛒", "Groceries", "Nothing on the list") : groceriesHtml(),
       jobs: () => cardOn("jobs") ? `<section class="today-card"><h3 class="today-card-title">✅ Tasks today</h3>${jobsHtml}<div class="today-card-foot">${addBtn('data-quick="job"', "Add task")}</div></section>` : ""
     };
     const order = cardLayout();

@@ -83,16 +83,23 @@
     checkDevices();
     const d = done();
     const left = ITEMS.filter(i => !d[i.key]).length;
+    const doneCount = ITEMS.length - left;
+    const nextKey = (ITEMS.find(i => !d[i.key]) || {}).key;
     return `<section class="today-card today-getting-started" aria-labelledby="gs-title">
       <button type="button" class="gs-hide" data-gs-hide aria-label="Hide getting started" title="Hide">✕</button>
-      <h3 class="today-card-title" id="gs-title">🏡 Getting started</h3>
-      <p class="gs-lead">${left === ITEMS.length ? "Welcome home! A few things to try:" : `${left} to go. Nice work!`}</p>
+      <div class="gs-head">
+        <h3 class="gs-title" id="gs-title"><span class="gs-title-icon" aria-hidden="true">🏡</span>Getting started</h3>
+        <p class="gs-lead">${doneCount ? `${left} to go. Nice work!` : "Welcome home! Four quick things to try:"}</p>
+        <div class="gs-progress" role="progressbar" aria-label="Getting started" aria-valuemin="0" aria-valuemax="${ITEMS.length}" aria-valuenow="${doneCount}">
+          <span class="gs-progress-bar"><i style="width:${(doneCount / ITEMS.length) * 100}%"></i></span>
+          <span class="gs-progress-text">${doneCount} of ${ITEMS.length} done</span>
+        </div>
+      </div>
       <ul class="gs-list">${ITEMS.map(i => `<li>
-        <button type="button" class="gs-item${d[i.key] ? " is-done" : ""}" data-gs="${i.key}">
-          <span class="gs-check" aria-hidden="true">${d[i.key] ? "✓" : ""}</span>
+        <button type="button" class="gs-item${d[i.key] ? " is-done" : ""}${i.key === nextKey ? " is-next" : ""}" data-gs="${i.key}">
           <span class="gs-icon" aria-hidden="true">${i.icon}</span>
-          <span class="gs-text"><strong>${esc(i.title)}</strong>${d[i.key] ? "" : `<small>${esc(i.sub)}</small>`}</span>
-          ${d[i.key] ? "" : `<span class="gs-go" aria-hidden="true">›</span>`}
+          <span class="gs-text">${i.key === nextKey ? `<span class="gs-badge">Start here</span>` : ""}<strong>${esc(i.title)}</strong>${d[i.key] ? `<small>Done</small>` : `<small>${esc(i.sub)}</small>`}</span>
+          <span class="gs-check" aria-hidden="true">${d[i.key] ? "✓" : ""}</span>
         </button>
       </li>`).join("")}</ul>
     </section>`;

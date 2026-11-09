@@ -643,3 +643,14 @@ body.theme-dark .setup-later { background: rgba(250, 204, 21, 0.15); color: #fde
 body.theme-dark .setup-buddy-who { color: #f8fafc; }
 body.theme-dark .setup-buddy { background: #1e293b; border-color: #334155; color: #cbd5e1; }
 body.theme-dark .setup-buddy.is-on { background: color-mix(in srgb, var(--pill, #0284c7) 22%, #1e293b); color: #f8fafc; }
+
+/* Board name ideas: their names, or "Our family" (tap to use) */
+.setup-name-ideas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.setup-name-idea {
+  min-height: 40px; padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid #e2e8f0; background: #ffffff; color: #334155;
+  font: inherit; font-size: 0.92rem; font-weight: 700; cursor: pointer;
+}
+.setup-name-idea.is-on { border-color: #0284c7; background: #f0f9ff; color: #0369a1; }
+body.theme-dark .setup-name-idea { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.theme-dark .setup-name-idea.is-on { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #f8fafc; }

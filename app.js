@@ -5454,6 +5454,25 @@ function setupEventListeners() {
     }
   }
 
+  // Settings > Profiles > Board name: saves when you leave the box
+  function wireBoardNameField() {
+    const input = document.getElementById("settings-board-name");
+    if (!input) return;
+    input.value = isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || "");
+    input.disabled = !!isDefaultTurnbullBoard; // that board's name is fixed in the code
+    if (input._wired) return;
+    input._wired = true;
+    const save = async () => {
+      const v = input.value.trim().replace(/\s+/g, " ").slice(0, 40);
+      if (isDefaultTurnbullBoard || !v || v === (boardSettings.familyName || "")) { input.value = boardSettings.familyName || v; return; }
+      await saveBoardSettingsNow({ familyName: v });
+      renderApp();
+      if (typeof window.showCalendarToast === "function") window.showCalendarToast("🏡 Board name saved");
+    };
+    input.addEventListener("change", save);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
+  }
+
   async function openSettingsModal(section = null) {
     // A parent PIN, if one is set, guards Settings
     if (window.ParentPin && !(await window.ParentPin.require("Settings"))) return;
@@ -5468,6 +5487,7 @@ function setupEventListeners() {
     if (window.FilmNight) window.FilmNight.renderSettings();
     if (window.renderWeatherSettings) window.renderWeatherSettings();
     renderRosterModalList();
+    wireBoardNameField();
     wireSettingsSectionNav();
 
     if (settingsModal) {
@@ -5572,10 +5592,10 @@ function setupEventListeners() {
     const leaveBtn = document.getElementById("btn-leave-board");
     if (leaveBtn) leaveBtn.onclick = async () => {
       const unsaved = unsavedChangeCount();
-      const familyName = isDefaultTurnbullBoard ? "the Turnbull Family" : (boardSettings.familyName ? `the ${boardSettings.familyName}` : "this");
+      const familyName = isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || ""); // as typed, no "the" added
       const ask = {
         icon: "🚪", danger: true, yes: "Leave the board", no: "Stay",
-        title: `Leave ${familyName} board on this device?`,
+        title: familyName ? `Leave the board “${familyName}” on this device?` : "Leave this board on this device?",
         text: (unsaved ? `${unsaved} change${unsaved === 1 ? " made" : "s made"} here ${unsaved === 1 ? "hasn't" : "haven't"} reached the board yet and will be lost. ` : "")
           + "This phone or tablet will stop showing the board and forget its copy of it. To come back, you'll need the family code."
       };

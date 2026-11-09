@@ -10,7 +10,7 @@ function showJoinBoardScreen({ familyName = "", hadWrongLinkCode = false, tryCod
     const existing = document.getElementById("board-join-screen");
     if (existing) existing.remove();
 
-    const title = familyName ? `Join the ${familyName} board` : "Join your family board";
+    const title = familyName ? `Join ${familyName}` : "Join your family board"; // as typed: not every family is "the Somethings"
     const overlay = document.createElement("div");
     overlay.id = "board-join-screen";
     overlay.className = "board-join-screen";
