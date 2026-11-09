@@ -214,6 +214,25 @@ function displayMemberName(name) {
 }
 window.displayMemberName = displayMemberName;
 
+// What a job is worth: the points its card shows and its panel sets
+// (task.value, 1 to 10). Older jobs may only have rewardValue; failing both,
+// 1. On a pocket-money board 10 points are £1.00, as the cards show. Used
+// for the cards, scores, the podium, rewards and the tick pop-up, so they
+// all agree.
+function taskPoints(task) {
+  const v = Number(task && task.value);
+  if (v > 0) return v;
+  const r = Number(task && task.rewardValue);
+  if (r > 0) return r;
+  return 1;
+}
+function taskReward(task, isMoney = (window.boardSettings || {}).gameMode === "money") {
+  const p = taskPoints(task);
+  return isMoney ? Math.round(p * 10) / 100 : p;
+}
+window.taskPoints = taskPoints;
+window.taskReward = taskReward;
+
 // The one person picker, used wherever someone is chosen (an event's "Who's
 // it for", a chore's "Who's doing it", who's cooking, who did it, handing out
 // a job, a reward goal): an empty dashed circle with the person's initial

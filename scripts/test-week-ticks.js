@@ -23,6 +23,8 @@ global.window = global;
 eval(extract("app.js", "getIsoWeekKey") + "\nglobal.getIsoWeekKey = getIsoWeekKey;");
 eval(extract("app.js", "keepThisWeeksDays") + "\nglobal.keepThisWeeksDays = keepThisWeeksDays;");
 global.normalizeFamilyMemberName = (n) => n;
+eval(extract("js/utils.js", "taskPoints") + "\nglobal.taskPoints = taskPoints;");
+eval(extract("js/utils.js", "taskReward") + "\nglobal.taskReward = taskReward;");
 eval(extract("js/rewards.js", "computeMemberScores") + "\nglobal.computeMemberScores = computeMemberScores;");
 
 let pass = 0, fail = 0;
@@ -51,6 +53,14 @@ window.currentTasks = [{ title: "Make Your Bed", day: "Daily", taskType: "Daily 
 const score = (wk) => Object.fromEntries(Object.entries(computeMemberScores(wk)).map(([m, d]) => [m, d.score]));
 check("last week's points include the unstamped Saturday tick", score("2026-W45"), { Steven: 0, Sorcha: 1, Ava: 1, Dara: 1 });
 check("this week's points include the unstamped Monday tick", score("2026-W46"), { Steven: 1, Sorcha: 1, Ava: 1, Dara: 1 });
+
+// The points that count are the ones the job shows (task.value), then the
+// older rewardValue, then 1; pocket money is tenths of a pound
+check("points: what the job shows", [taskPoints({ value: 7, rewardValue: 2 }), taskPoints({ rewardValue: 2 }), taskPoints({})], [7, 2, 1]);
+check("pocket money: 7 points is 70p", taskReward({ value: 7 }, true), 0.7);
+window.currentTasks = [{ title: "Hoover", day: "Daily", taskType: "Daily Task", value: 7, rewardValue: 2,
+  completedDays: { Monday: { completedBy: "Ava", completedAt: new Date(2026, 10, 9, 8).toISOString(), completedWeek: "2026-W46" } } }];
+check("scores count what the job shows", score("2026-W46").Ava, 7);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -43,9 +43,7 @@ function computeMemberScores(weekKey) {
 
   (window.currentTasks || []).forEach(task => {
     const isDaily = task.day === "Daily" || task.taskType === "Daily Task";
-    const rewardVal = typeof task.rewardValue === "number" && task.rewardValue > 0 
-      ? task.rewardValue 
-      : (isMoney ? 1.00 : (task.points || 1));
+    const rewardVal = taskReward(task, isMoney); // js/utils.js: what the job shows
 
     if (isDaily && task.completedDays && Object.keys(task.completedDays).length > 0) {
       Object.entries(task.completedDays).forEach(([dayName, dayRecord]) => {

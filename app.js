@@ -286,9 +286,7 @@ async function checkWeeklySundayReset() {
 
     currentTasks.forEach(task => {
       if (task.done && task.completedBy) {
-        const rewardVal = typeof task.rewardValue === "number" && task.rewardValue > 0 
-          ? task.rewardValue 
-          : (isMoney ? 1.00 : 1);
+        const rewardVal = window.taskReward(task, isMoney);
 
         if (task.completedBy === "Team Effort") {
           familyMembers.forEach(m => totals[m] += rewardVal);
@@ -2192,9 +2190,7 @@ function calculateMemberScores() {
   }
 
   currentTasks.forEach(task => {
-    const rewardVal = typeof task.rewardValue === "number" && task.rewardValue > 0 
-      ? task.rewardValue 
-      : (isMoney ? 1.00 : (typeof task.points === "number" && task.points > 0 ? task.points : 1));
+    const rewardVal = window.taskReward(task, isMoney);
 
     const isDaily = task.day === "Daily" || task.taskType === "Daily Task";
     if (isDaily && task.completedDays && Object.keys(task.completedDays).length > 0) {
@@ -2775,9 +2771,7 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
   // Reward Badge (Gamified Points / Money Pill positioned next to Avatar)
   const isMoney = boardSettings.gameMode === "money";
   const currency = boardSettings.currency || "£";
-  const rewardVal = (typeof task.rewardValue === "number" && task.rewardValue > 0)
-    ? task.rewardValue
-    : (isMoney ? 1.00 : 1);
+  const rewardVal = window.taskReward(task, isMoney);
 
   const tierClass = getRewardTierClass(rewardVal);
   let rewardLabel = "";
@@ -3347,9 +3341,7 @@ function openEditTaskModal(taskId, targetDay = null, targetDate = null) {
     : getAssigneeNames(task.assignedTo).join(", ");
   document.getElementById("task-form-assignee").value = effectiveAssignee;
 
-  const curReward = (typeof task.rewardValue === "number" && task.rewardValue >= 0)
-    ? task.rewardValue
-    : (typeof task.points === "number" && task.points >= 0 ? task.points : (isMoney ? 1.00 : 1));
+  const curReward = window.taskReward(task, isMoney);
   const rewardInput = document.getElementById("task-form-reward");
   if (rewardInput) rewardInput.value = isMoney ? curReward.toFixed(2) : String(curReward);
   updateRewardPresetChipsUI(curReward);
@@ -3573,6 +3565,8 @@ async function handleSaveTaskForm(e) {
   const rewardInput = document.getElementById("task-form-reward");
   const rawReward = rewardInput ? parseFloat(rewardInput.value) : NaN;
   const rewardValue = (!isNaN(rawReward) && rawReward >= 0) ? rawReward : (boardSettings.gameMode === "money" ? 1.00 : 1);
+  // The points that count (js/utils.js taskPoints): pounds on a pocket-money board are tenths of 10
+  const value = Math.max(1, Math.min(10, Math.round(boardSettings.gameMode === "money" ? rewardValue * 10 : rewardValue)));
 
   if (!title) return;
 
@@ -3628,6 +3622,7 @@ async function handleSaveTaskForm(e) {
       assignedTo: finalAssignedTo,
       assignedDays: assignedDays,
       rewardValue,
+      value,
       actionNote,
       isPriority
     };
@@ -3648,6 +3643,7 @@ async function handleSaveTaskForm(e) {
           estimatedTime,
           assignedTo: finalAssignedTo,
           rewardValue,
+          value,
           actionNote,
           isPriority
         };
@@ -3682,6 +3678,7 @@ async function handleSaveTaskForm(e) {
       assignedTo: finalAssignedTo,
       assignedDays: assignedDays,
       rewardValue,
+      value,
       actionNote,
       isPriority,
       done: false,
@@ -3921,9 +3918,7 @@ function renderClaimModalMembers() {
 
   const isMoney = boardSettings.gameMode === "money";
   const currency = boardSettings.currency || "£";
-  const rewardVal = (taskToClaim && typeof taskToClaim.rewardValue === "number" && taskToClaim.rewardValue > 0)
-    ? taskToClaim.rewardValue
-    : (isMoney ? 1.00 : 1);
+  const rewardVal = taskToClaim ? window.taskReward(taskToClaim, isMoney) : (isMoney ? 0.1 : 1);
   const rewardLabel = isMoney
     ? `+${currency}${rewardVal.toFixed(2)}`
     : `+${rewardVal} ${rewardVal === 1 ? 'Point' : 'Points'}`;
@@ -4032,9 +4027,7 @@ function updateConfirmButton() {
   const count = selectedClaimMembers.size;
   const isMoney = boardSettings.gameMode === "money";
   const currency = boardSettings.currency || "£";
-  const rewardVal = (taskToClaim && typeof taskToClaim.rewardValue === "number" && taskToClaim.rewardValue > 0)
-    ? taskToClaim.rewardValue
-    : (isMoney ? 1.00 : 1);
+  const rewardVal = taskToClaim ? window.taskReward(taskToClaim, isMoney) : (isMoney ? 0.1 : 1);
 
   const rewardLabel = isMoney ? `${currency}${rewardVal.toFixed(2)}` : `${rewardVal} pt${rewardVal === 1 ? '' : 's'}`;
 
@@ -4211,9 +4204,7 @@ async function handleConfirmClaim() {
 
   const isMoney = boardSettings.gameMode === "money";
   const currency = boardSettings.currency || "£";
-  const rewardVal = (typeof task.rewardValue === "number" && task.rewardValue > 0)
-    ? task.rewardValue
-    : (isMoney ? 1.00 : 1);
+  const rewardVal = window.taskReward(task, isMoney);
 
   // Gamified celebration announcement toast
   showGamifiedCelebration({

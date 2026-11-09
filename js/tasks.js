@@ -457,7 +457,7 @@ function renderSkylightTasksPage() {
       const tIcon = t.icon || detectEmojiForChore(t.title) || "🪆";
       const isMoney = (window.boardSettings || {}).gameMode === "money";
       const curr = (window.boardSettings || {}).currency || "£";
-      const valText = isMoney ? `${curr}${((t.value || 10) / 10).toFixed(2)}` : `${t.value || 10} pts`;
+      const valText = isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
       const timeSubtitle = t.time || (isDaily ? "Daily" : "Today");
       const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
       const important = !!t.isPriority && !isDone;
@@ -1236,7 +1236,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   // Points
   const isMoney = (window.boardSettings || {}).gameMode === "money";
   const curr = (window.boardSettings || {}).currency || "£";
-  const pts = task.value || 10;
+  const pts = taskPoints(task);
   document.getElementById("quick-card-reward").textContent = isMoney ? `${curr}${(pts / 10).toFixed(2)}` : `${pts} point${pts === 1 ? "" : "s"}`;
 
   // Done by
@@ -1451,7 +1451,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     const timeInput = document.getElementById("drawer-chore-time-input");
     if (timeToggle) timeToggle.checked = !isDaily && !!task.time && /^\d{1,2}:\d{2}/.test(task.time);
     if (timeInput && timeToggle && timeToggle.checked) timeInput.value = task.time.slice(0, 5);
-    drawerRewardValue = task.value || 10;
+    drawerRewardValue = Math.min(10, taskPoints(task));
     { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = !!task.isPriority; }
     // Same rule as the board: no time of day set (or in the title) = Anytime
     if (task.routineSlot) {

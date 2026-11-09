@@ -1873,9 +1873,7 @@ function renderWeekCalendar() {
       inlineStyleAttr = `style="background: var(--bg-surface, #f8fafc); border-color: var(--card-border, #e2e8f0); color: var(--text-secondary, #64748b);"`;
     }
 
-    const rewardVal = typeof task.rewardValue === "number" && task.rewardValue > 0 
-      ? task.rewardValue 
-      : (isMoney ? 1.00 : (task.points || 1));
+    const rewardVal = taskReward(task, isMoney);
     const rewardText = isMoney ? `${currency}${rewardVal.toFixed(2)}` : `+${rewardVal} pt${rewardVal > 1 ? "s" : ""}`;
 
     const isFutureLocked = (isDaily || isWeekly) && isColFutureDate;

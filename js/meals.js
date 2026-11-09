@@ -159,9 +159,7 @@ function getTonightDinnerChoreInfo() {
   let isDone = false;
   let completer = "";
   const isMoney = (window.boardSettings && window.boardSettings.gameMode) === "money";
-  let rewardVal = (task && typeof task.rewardValue === "number" && task.rewardValue > 0)
-    ? task.rewardValue
-    : (isMoney ? 1.00 : (task && typeof task.points === "number" && task.points > 0 ? task.points : 3));
+  let rewardVal = task ? taskReward(task, isMoney) : (isMoney ? 0.3 : 3);
 
   if (task) {
     const isDaily = task.day === "Daily" || task.taskType === "Daily Task";

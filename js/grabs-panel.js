@@ -111,7 +111,7 @@
       const given = justGiven.get(t.id);
       const icon = t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
       const overdue = typeof isOverdueOn === "function" && isOverdueOn(t, panelDate);
-      const value = isMoney ? `${curr}${((t.value || 10) / 10).toFixed(2)}` : `${t.value || 10} pts`;
+      const value = isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
       const meta = [
         t.isPriority ? `<span class="grabs-tag is-important">Important</span>` : "",
         overdue ? `<span class="grabs-tag is-overdue">Overdue</span><span>${esc(wasFor(t))}</span>` : "",
