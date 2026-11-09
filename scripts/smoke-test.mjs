@@ -350,6 +350,73 @@ const PAGES = [
     if (!/Max grabbed Fix the shed door/.test(toast)) throw new Error(`no grabbed message (${toast})`);
     await p.evaluate(() => document.getElementById("grabs-modal").close());
   }],
+  // Magic Import, with a pretend AI (window.__SMOKE_AI): one event fills in Add
+  // Event; several give a tick list; none says so; odd answers are cleaned up
+  ["magic-import", async (p) => {
+    await goTo("calendar")(p);
+    const ahead = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+    const read = async (answer) => p.evaluate(async (a) => {
+      window.__SMOKE_AI = async () => a;
+      const c = document.createElement("canvas"); c.width = 40; c.height = 30;
+      c.getContext("2d").fillRect(0, 0, 40, 30);
+      const blob = await new Promise(r => c.toBlob(r, "image/png"));
+      await window.MagicImport.readPhoto(new File([blob], "flyer.png", { type: "image/png" }));
+      await new Promise(r => setTimeout(r, 300));
+    }, answer);
+    // Switched off (as it ships): no button
+    const offHidden = await p.evaluate(async () => { delete window.__SMOKE_AI; window.openEventModal(); await new Promise(r => setTimeout(r, 100)); return document.getElementById("btn-event-from-photo").hidden; });
+    if (!offHidden) throw new Error("the 📷 button shows while Magic Import is switched off");
+    await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { window.__SMOKE_AI = async () => ({ events: [] }); window.openEventModal(); });
+    await p.waitForTimeout(400);
+    if (!(await p.locator("#btn-event-from-photo").isVisible())) throw new Error("no 📷 Fill in from a photo button in Add Event");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-button.png`) });
+
+    // One event (with a name not on the board and HTML in the title)
+    await read({ events: [{ title: "Jo's swimming gala <img src=x onerror=alert(1)>", date: ahead(12), startTime: "14:00", endTime: "16:30", allDay: false,
+      location: "Leisure centre", notes: "Bring a towel", people: ["Jo", "Bob"], emoji: "🏊" }] });
+    const one = await p.evaluate(() => ({
+      open: document.getElementById("event-modal").open,
+      title: document.getElementById("event-title-input").value,
+      place: document.getElementById("event-location-input").value,
+      notes: document.getElementById("event-description-input").value,
+      who: document.getElementById("event-member-input").value,
+      note: !document.getElementById("event-magic-note").hidden,
+      img: !!document.querySelector("#event-modal img[src='x']")
+    }));
+    if (!one.open || !one.note) throw new Error("one event didn't fill in Add Event");
+    if (one.title.includes("<") || one.img) throw new Error(`the title wasn't cleaned: ${one.title}`);
+    if (one.place !== "Leisure centre" || one.notes !== "Bring a towel") throw new Error(`place/notes not filled: ${JSON.stringify(one)}`);
+    if (one.who !== "Jo") throw new Error(`who should be just Jo (not Bob): ${one.who}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-one.png`) });
+
+    // Several (one with an impossible date, which is dropped): untick one, add the rest
+    await read({ events: [
+      { title: "Christmas fair", date: ahead(20), allDay: true, location: "School hall", people: [] },
+      { title: "Nativity play", date: ahead(25), startTime: "18:00", allDay: false, people: ["Max"] },
+      { title: "Sports day", date: ahead(30), startTime: "09:30", allDay: false },
+      { title: "Bad date", date: "2026-13-45", allDay: true }
+    ] });
+    const rows = await p.locator("#magic-import [data-mi-pick]").count();
+    if (rows !== 3) throw new Error(`expected 3 events in the tick list, got ${rows}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-many.png`) });
+    await p.locator("#magic-import [data-mi-pick]").nth(2).uncheck();
+    const label = await p.$eval("#magic-import [data-mi-add]", b => b.textContent);
+    if (!/Add 2/.test(label)) throw new Error(`button says "${label}"`);
+    await p.click("#magic-import [data-mi-add]");
+    await p.waitForTimeout(400);
+    const saved = await p.evaluate(() => (window.familyEvents || []).filter(e => ["Christmas fair", "Nativity play", "Sports day"].includes(e.title)).map(e => ({ t: e.title, d: e.duration, m: e.member, time: e.time })));
+    if (saved.length !== 2 || saved.some(e => e.t === "Sports day")) throw new Error(`wrong events saved: ${JSON.stringify(saved)}`);
+    if (!saved.find(e => e.t === "Christmas fair" && e.d === "All Day")) throw new Error("the all-day event wasn't all day");
+    if (!saved.find(e => e.t === "Nativity play" && e.m === "Max" && e.time === "18:00")) throw new Error("the nativity play lost its time or person");
+
+    // Nothing found
+    await read({ events: [] });
+    const none = await p.$eval("#magic-import", d => d.open && /No dates found/.test(d.textContent));
+    if (!none) throw new Error("no 'No dates found' message");
+    await p.evaluate(() => document.getElementById("magic-import").close());
+  }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine
   ["job-editor", async (p) => {
     await goTo("chores")(p);

@@ -75,6 +75,7 @@
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
   <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
   <link rel="stylesheet" href="css/sheet.css?v=9776fb49">
+  <link rel="stylesheet" href="css/magic-import.css?v=b473ad17">
   <link rel="stylesheet" href="css/meal-genie.css?v=27f8eaef">
   
   <!-- The error log and the "Reload app" banner: first, so it catches everything (Settings → Diagnostics) -->
@@ -2174,6 +2175,12 @@
         <div class="modal-trophy" id="event-modal-trophy" hidden>📅</div>
         <h2 id="event-modal-title" class="modal-title">Add Event</h2>
       </div>
+      <!-- Magic Import (js/magic-import.js): a flyer, invite or letter photo fills this in -->
+      <button type="button" class="event-from-photo-btn" id="btn-event-from-photo" hidden>
+        <span aria-hidden="true">📷</span> Fill in from a photo
+        <small>a flyer, invite, letter or screenshot</small>
+      </button>
+      <p class="event-magic-note" id="event-magic-note" role="status" hidden>📷 Filled in from your photo. Check it, then tap Add.</p>
 
       <form id="form-event" class="event-form">
         <input type="hidden" id="event-id-input" value="">
@@ -2508,7 +2515,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=4b33d58a"></script>
+  <script src="js/build-info.js?v=8e2de870"></script>
   <script src="js/utils.js?v=42d52379"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2529,7 +2536,7 @@
   <script src="js/reward-goals.js?v=b2601339"></script>
   <script src="js/page-intro.js?v=43b29fd5"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar.js?v=98a3dcd4"></script>
+  <script src="js/calendar.js?v=b06a28b7"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
   <script src="js/tasks.js?v=71a274fa"></script>
   <script src="js/quick-grabs.js?v=7602afaa"></script>
@@ -2546,6 +2553,7 @@
   <script src="js/parent-pin.js?v=b6e3c20f"></script>
   <script src="js/music.js?v=d89c674f"></script>
   <script src="js/setup-wizard.js?v=0cd14412"></script>
+  <script src="js/magic-import.js?v=e6e49c42"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
   <script src="js/meal-groceries.js?v=ddc270ab"></script>

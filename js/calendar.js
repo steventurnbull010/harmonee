@@ -476,7 +476,8 @@ function setEventDurationValue(select, value) {
 
 // slot (optional): { start: "09:00", duration: "8 hours" } from tapping or
 // dragging on the calendar grid
-// prefill (new events only, e.g. from voice or Film night): { title, members: [names], repeat, countdown }
+// prefill (new events only, e.g. from voice, Film night or a photo): { title, members: [names],
+// repeat, countdown, location, description, icon, fromPhoto }
 function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot = null, prefill = null) {
   const modal = document.getElementById("event-modal");
   const form = document.getElementById("form-event");
@@ -901,7 +902,14 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       if (detected) setEmoji(detected);
     }
     if (prefill && prefill.repeat && repeatSelect && [...repeatSelect.options].some(o => o.value === prefill.repeat)) repeatSelect.value = prefill.repeat;
+    // From a photo (js/magic-import.js): the place, notes and an emoji too
+    if (prefill && prefill.location && locationInput) locationInput.value = prefill.location;
+    if (prefill && prefill.description && descInput) descInput.value = prefill.description;
+    if (prefill && prefill.icon) { setEmoji(prefill.icon); isManualEmoji = true; }
   }
+  // "Filled in from your photo: check it before saving", and the button to do it
+  { const note = document.getElementById("event-magic-note"); if (note) note.hidden = !(prefill && prefill.fromPhoto); }
+  { const btn = document.getElementById("btn-event-from-photo"); if (btn) btn.hidden = !!evt || !!(prefill && prefill.fromPhoto) || !(window.MagicImport && window.MagicImport.available()); }
 
   // When: Starts and Ends (the device's own time pickers) and All day. Saving
   // still uses the start time plus a length, so Ends sets the length.
