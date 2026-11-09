@@ -24,6 +24,8 @@ export const getApps = () => [];
 const user = { uid: "smoke-test-device", isAnonymous: true };
 export const getAuth = () => ({ currentUser: user });
 export const signInAnonymously = async () => ({ user });
+export const initializeAppCheck = () => ({});
+export function ReCaptchaV3Provider(key) { this.key = key; }
 export const onAuthStateChanged = (auth, cb) => { setTimeout(() => cb(user), 0); return () => {}; };
 
 // ---- references -----------------------------------------------------------------

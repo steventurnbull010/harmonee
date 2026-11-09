@@ -150,6 +150,7 @@ const firebaseMock = {
   initializeApp: () => ({}),
   getFirestore: () => ({ __mockDb: true }),
   initializeFirestore: () => ({ __mockDb: true }),
+  initializeAppCheck: () => ({}), ReCaptchaV3Provider: function ReCaptchaV3Provider() {},
   persistentLocalCache: (o) => ({ ...o }), persistentMultipleTabManager: () => ({}),
   getDocFromServer: () => Promise.resolve({ exists: () => true, data: () => ({}) }),
   getDocsFromServer: () => Promise.resolve({ docs: [], empty: true, forEach() {} }),

@@ -24,7 +24,7 @@
 (function () {
   const AI_SWITCHED_ON = false;            // flip once AI Logic and billing are on
   const AI_SDK = "https://www.gstatic.com/firebasejs/12.19.0";
-  const MODEL = "gemini-2.5-flash";        // check it's still current when switching on
+  const MODEL = "gemini-3.8-flash";        // current Flash model on Firebase AI Logic (Nov 2026; gemini-2.5-flash is redirected from 1 Dec)
   const TIMEOUT_MS = 45000;
   const MAX_PX = 1280;
   const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -97,12 +97,25 @@
       const cfg = window.DEFAULT_FIREBASE_CONFIG;
       if (!cfg) throw new Error("harmonee isn't connected yet.");
       // Its own app copy (this library is newer than the one the board uses)
-      const app = appMod.getApps().find(a => a.name === "harmonee-ai") || appMod.initializeApp(cfg, "harmonee-ai");
+      let app = appMod.getApps().find(a => a.name === "harmonee-ai");
+      if (!app) {
+        app = appMod.initializeApp(cfg, "harmonee-ai");
+        // App Check on this copy too (once it's enforced, AI Logic refuses requests without it)
+        if (typeof window.appCheckWanted === "function" && window.appCheckWanted() && window.APP_CHECK_SITE_KEY) {
+          const ac = await import(`${AI_SDK}/firebase-app-check.js`);
+          ac.initializeAppCheck(app, { provider: new ac.ReCaptchaV3Provider(window.APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+        }
+      }
       const backend = ai.getAI(app, { backend: new ai.GoogleAIBackend() });
       return ai.getGenerativeModel(backend, {
         model: MODEL,
         systemInstruction: instructions(),
-        generationConfig: { responseMimeType: "application/json", responseSchema: await schemaFor(ai), temperature: 0.1 }
+        // Reading a flyer needs little "thinking", and a short answer: keeps
+        // each photo to about a penny (paid Gemini prices, Nov 2026)
+        generationConfig: {
+          responseMimeType: "application/json", responseSchema: await schemaFor(ai), temperature: 0.1, maxOutputTokens: 2048,
+          ...(ai.ThinkingLevel && ai.ThinkingLevel.LOW ? { thinkingConfig: { thinkingLevel: ai.ThinkingLevel.LOW } } : {})
+        }
       });
     })().catch(e => { modelPromise = null; throw e; });
     return modelPromise;

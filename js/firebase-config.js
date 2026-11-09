@@ -12,3 +12,13 @@ export const DEFAULT_FIREBASE_CONFIG = {
   authDomain: "harmonee-app.firebaseapp.com",
   messagingSenderId: "344148325793"
 };
+
+// App Check (reCAPTCHA v3): proves requests come from harmonee itself, so
+// nobody can use the board's Firebase or AI allowance from elsewhere. The site
+// key is public by design (the secret one lives only in the Firebase console).
+// Only on harmonee's own web addresses: anywhere else (this Mac, the build
+// check, the smoke test) there's no valid token to get.
+export const APP_CHECK_SITE_KEY = "6LcMWxguAAAAAGq8dNNjqLCW6TMfXxoE8B4oivhN";
+export function appCheckWanted() {
+  return typeof location !== "undefined" && /^harmonee-app\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
+}

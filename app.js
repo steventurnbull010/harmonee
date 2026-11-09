@@ -31,7 +31,8 @@ import {
   terminate,
   clearIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_FIREBASE_CONFIG } from "./js/firebase-config.js?v=54b12240";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
+import { DEFAULT_FIREBASE_CONFIG, APP_CHECK_SITE_KEY, appCheckWanted } from "./js/firebase-config.js?v=412f01bb";
 import {
   getAuth,
   signInAnonymously
@@ -717,6 +718,8 @@ Object.assign(window, {
   arrayUnion,
   arrayRemove,
   DEFAULT_FIREBASE_CONFIG,
+  APP_CHECK_SITE_KEY,
+  appCheckWanted,
   // app.js functions the js/ modules call (hoisted, so safe to share here)
   loadWeeklyMeals,
   getTaskDocRef,
@@ -1369,6 +1372,11 @@ async function initializeDataSource() {
     try {
       if (statusText) statusText.textContent = "Connecting...";
       const app = firebaseApp || initializeApp(cfg);
+      if (!firebaseApp && appCheckWanted()) {
+        // App Check first, so every request carries its token
+        try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); }
+        catch (e) { console.warn("App Check didn't start:", e); }
+      }
       firebaseApp = app;
       // Saved on the device too (IndexedDB): changes made without a signal
       // survive closing the app and sync when it's back, and the board
