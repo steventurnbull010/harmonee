@@ -168,8 +168,10 @@
         ${expanded ? `<p class="quick-grabs-hint">Swipe to see them all. Hold one and drop it on a name, or tap it</p>${row}` : ""}`;
     } else {
       tray.innerHTML = `
-        <p class="quick-grabs-head"><span class="quick-grabs-title"><span aria-hidden="true">⚡</span> ${label}</span><span class="quick-grabs-hint">drag one to your column</span></p>
-        ${row}`;
+        <div class="quick-grabs-line">
+          <p class="quick-grabs-title" title="Drag one to your column, or tap it"><span aria-hidden="true">⚡</span> ${label}</p>
+          ${row}
+        </div>`;
     }
     const pills = tray.querySelector(".quick-grabs-pills");
     if (pills) {

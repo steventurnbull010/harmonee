@@ -180,6 +180,16 @@ const PAGES = [
     // One row that scrolls sideways; a mouse gets an arrow that scrolls it
     const tops = await p.$$eval(".quick-grab-pill", els => [...new Set(els.map(e => Math.round(e.getBoundingClientRect().top)))]);
     if (tops.length > 1) throw new Error(`the quick grabs wrap onto ${tops.length} rows`);
+    // Tablet and laptop: the "8 quick grabs" label sits on the same line as the pills,
+    // with room between the tray and the Morning / Evening buttons above it
+    const layout = await p.evaluate(() => {
+      const t = document.querySelector(".quick-grabs-title"), pill = document.querySelector(".quick-grab-pill");
+      const tray = document.getElementById("tasks-quick-grabs"), bar = document.getElementById("tasks-slot-filters");
+      const mid = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+      return { sameLine: !t || Math.abs(mid(t) - mid(pill)) < 8, gap: tray.getBoundingClientRect().top - bar.getBoundingClientRect().bottom };
+    });
+    if (!phone && !layout.sameLine) throw new Error("the quick grabs label isn't on the same line as the pills");
+    if (layout.gap < 8) throw new Error(`the tray is only ${Math.round(layout.gap)}px below the Morning / Evening buttons`);
     const overflow = await p.$eval(".quick-grabs-pills", el => el.scrollWidth > el.clientWidth + 2);
     const mouse = await p.evaluate(() => !window.matchMedia("(hover: none)").matches);
     if (!phone && overflow && mouse) {

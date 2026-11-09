@@ -3034,14 +3034,17 @@ body.theme-dark .grabs-given { color: #4ade80; }
    8px spacing steps.
    ========================================================================== */
 .quick-grabs {
-  margin: 0 0 16px;
-  padding: 8px 16px 16px;
+  margin: 16px 0;
+  padding: 8px 16px;
   border-radius: 20px;
   background: #fef3c7;
   border: 1.5px solid #fcd34d;
 }
 .quick-grabs[hidden] { display: none; }
-.quick-grabs-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+/* Tablet and laptop: "⚡ 8 quick grabs" and the pills on one line */
+.quick-grabs-line { display: flex; align-items: center; gap: 16px; }
+.quick-grabs-line .quick-grabs-title { flex: none; margin: 0; white-space: nowrap; }
+.quick-grabs-line .quick-grabs-row { flex: 1; min-width: 0; }
 .quick-grabs-title { font: 800 0.95rem var(--font-body); color: #92400e; }
 .quick-grabs-hint { font-size: 0.85rem; color: #a16207; }
 /* One row that swipes sideways (a swipe scrolls; press and hold picks one up),
