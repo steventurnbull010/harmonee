@@ -10,7 +10,7 @@ const vm = require("vm");
 const ctx = {
   console,
   window: {},
-  isPersonalRoutine: (t) => /teeth|bed/i.test(t.title),
+  isPersonalRoutine: (t) => /\bteeth\b|\bmake (your |the )?bed\b/i.test(t.title),
   isUnassignedValue: (v) => !v || (Array.isArray(v) ? !v.length : ["up for grabs", "anyone", "family"].includes(String(v).toLowerCase())),
   getIsoWeekKey: () => "2026-W46"
 };
@@ -39,6 +39,14 @@ check("…but not on another day", isGrabbedOn(grabbed, new Date(2026, 10, 10)),
 check("given back (override to nobody) isn't Grabbed", isGrabbedOn(daily("Litter trays", { assignedOverrides: { "2026-W46|Monday": null } }), monday), false);
 check("someone's regular job swapped to someone else isn't Grabbed", isGrabbedOn(daily("Dishwasher", { assignedTo: "Dara", assignedOverrides: { "2026-W46|Monday": "Ava" } }), monday), false);
 check("on a rota day with nobody, a grab counts", isGrabbedOn(daily("Dishwasher", { assignedTo: "Dara", assignedDays: { Monday: null }, assignedOverrides: { "2026-W46|Monday": "Ava" } }), monday), true);
+
+// Every week, any day: a quick grab, and a grab lasts the whole week
+const sheets = { title: "Change the bedsheets", repeat: "weekly", day: "Anyday", anyDay: true };
+check("a weekly any-day job is a quick grab", isQuickGrab(sheets), true);
+check("…unless it's a bigger job", isQuickGrab({ ...sheets, grabSize: "big" }), false);
+const sheetsGrabbed = { ...sheets, assignedOverrides: { "2026-W46|any": "Dara" } };
+check("grabbed for the week counts on Monday", isGrabbedOn(sheetsGrabbed, monday), true);
+check("…and on Thursday", isGrabbedOn(sheetsGrabbed, new Date(2026, 10, 12)), true);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

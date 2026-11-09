@@ -79,6 +79,7 @@ function sampleStore() {
     [`${b}/tasks/t7`]: t("t7", "Feed the cats", "Anyone", { icon: "🐾", value: 1 }),
     [`${b}/tasks/t8`]: t("t8", "Water the plants", null, { icon: "🪴", value: 1 }),
     [`${b}/tasks/t9`]: t("t9", "Clear the garden", null, { icon: "🌳", value: 5, grabSize: "big" }),
+    [`${b}/tasks/t14`]: t("t14", "Change the bedsheets", null, { taskType: "Standard", day: "Anyday", repeat: "weekly", anyDay: true, icon: "🛏️", value: 3 }),
     [`${b}/tasks/t11`]: t("t11", "Take the bins out", null, { icon: "🗑️", value: 2 }),
     [`${b}/tasks/t12`]: t("t12", "Wipe the kitchen sides", null, { icon: "🧼", value: 1 }),
     [`${b}/tasks/t13`]: t("t13", "Sort the recycling", null, { icon: "♻️", value: 1 }),
@@ -224,6 +225,35 @@ const PAGES = [
     await p.waitForTimeout(400);
     if (await col.locator(".skylight-task-card", { hasText: title }).count()) throw new Error(`${title} is still in ${who}'s column after giving it back`);
   }],
+  // Every week, any day: in the tray, a grab lasts the week, and once ticked
+  // it's gone for the rest of the week
+  ["weekly-any-day", async (p) => {
+    await goTo("chores")(p);
+    await p.evaluate(() => { document.querySelectorAll("[data-quick-grabs-more][aria-expanded=false]").forEach(b => b.click()); });
+    await p.waitForTimeout(300);
+    const pill = p.locator(".quick-grab-pill", { hasText: "Change the bedsheets" });
+    if (!(await pill.count())) throw new Error("Change the bedsheets isn't in Quick grabs");
+    await pill.evaluate(el => el.click());
+    await p.click('[data-quick-pick="Sam"]');
+    await p.waitForTimeout(400);
+    const saved = await p.evaluate(() => JSON.stringify(window.currentTasks.find(t => t.id === "t14").assignedOverrides || {}));
+    if (!/\|any":"Sam"/.test(saved)) throw new Error(`the grab wasn't saved for the week (${saved})`);
+    const later = await p.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); return window.getTasksForColumn("Sam", d).some(t => t.id === "t14"); });
+    if (!later && new Date().getDay() !== 0) throw new Error("grabbed for the week, but not on Sam's list tomorrow");
+    const card = p.locator('.skylight-tasks-col[data-col-member="Sam"] .skylight-task-card', { hasText: "Change the bedsheets" });
+    if (!(await card.count())) throw new Error("Change the bedsheets isn't in Sam's column");
+    if (!(await card.textContent()).includes("This week")) throw new Error("the card doesn't say This week");
+    await card.locator(".skylight-task-check-circle").evaluate(el => el.click());
+    await p.waitForTimeout(800);
+    await p.evaluate(() => window.TickCheer && window.TickCheer.close(true));
+    const after = await p.evaluate(() => {
+      const t = window.currentTasks.find(x => x.id === "t14");
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      return { done: window.isTaskDoneOnDate(t, new Date()), tomorrow: window.getTasksForColumn("Sam", d).some(x => x.id === "t14") || window.getTasksForColumn("Up for grabs", d).some(x => x.id === "t14") };
+    });
+    if (!after.done) throw new Error("ticking it didn't mark it done");
+    if (after.tomorrow) throw new Error("done this week, but still showing tomorrow");
+  }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine
   ["job-editor", async (p) => {
     await goTo("chores")(p);
@@ -231,6 +261,14 @@ const PAGES = [
     if (!(await shown("t5"))) throw new Error("Bigger job switch missing for a daily household job");
     await p.waitForTimeout(400);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-job-editor-quick.png`) });
+    const hint = await p.$eval("#drawer-who-summary", el => el.textContent);
+    if (!/quick grab/i.test(hint)) throw new Error(`the editor doesn't say it's a quick grab (${hint})`);
+    // Every week + Any day: the switch shows and the hint says every day this week
+    const weekly = await p.evaluate(() => { window.openSkylightTaskDrawer("t14"); const any = document.querySelector("[data-weekday-any]"); return { on: any.classList.contains("active"), row: !document.getElementById("drawer-big-job-row").hidden, hint: document.getElementById("drawer-who-summary").textContent }; });
+    if (!weekly.on || !weekly.row || !/this week/.test(weekly.hint)) throw new Error(`weekly any-day editor looks wrong: ${JSON.stringify(weekly)}`);
+    await p.evaluate(() => document.querySelector("[data-weekday-any]").scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-job-editor-weekly.png`) });
     if (await shown("t1")) throw new Error("Bigger job switch showing for a personal routine");
     await p.keyboard.press("Escape");
   }],

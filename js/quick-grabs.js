@@ -5,9 +5,11 @@
 // (or onto your name tab on a phone) and it's yours for that day only:
 // tomorrow it's back in the tray. Tap a pill instead to pick who's grabbing it.
 //
-// A quick grab is a daily job that isn't a personal routine and isn't marked
-// "Bigger job" in the editor (task.grabSize = "big"); those, and weekly or
-// one-off jobs, stay in the Grab it panel (js/grabs-panel.js).
+// A quick grab is a daily job, or a weekly "any day" one (it stays in the
+// tray every day until someone does it, and a grab lasts that week), that
+// isn't a personal routine and isn't marked "Bigger job" in the editor
+// (task.grabSize = "big"). Those, and weekly-on-a-day or one-off jobs, stay in
+// the Grab it panel (js/grabs-panel.js).
 //
 // Phone: the tray folds into one "⚡ 4 quick grabs" chip that opens the pills.
 // Uses js/tasks.js: getTasksForColumn, isTaskDoneOnDate, wireGrabDraggable,
@@ -28,8 +30,10 @@
   const esc = (s) => (typeof escapeHtml === "function" ? escapeHtml(String(s ?? "")) : String(s ?? ""));
 
   // A small everyday job anyone can grab (not a personal routine, not a bigger job)
+  // (a daily job, or a weekly one for any day of the week)
+  const anyDayWeekly = (t) => t.repeat === "weekly" && t.anyDay === true;
   function isQuickGrab(task) {
-    return !!task && isDaily(task) && task.grabSize !== "big" && !(typeof isPersonalRoutine === "function" && isPersonalRoutine(task));
+    return !!task && (isDaily(task) || anyDayWeekly(task)) && task.grabSize !== "big" && !(typeof isPersonalRoutine === "function" && isPersonalRoutine(task));
   }
 
   // Nobody's on it by default that weekday (before any one-day grab)
@@ -43,7 +47,8 @@
     if (!isQuickGrab(task)) return false;
     const dayName = DAYS[date.getDay()];
     if (!normallyUnassigned(task, dayName)) return false;
-    const key = `${getIsoWeekKey(date)}|${dayName}`;
+    // A weekly any-day grab lasts the week; a daily one, that day
+    const key = `${getIsoWeekKey(date)}|${anyDayWeekly(task) ? "any" : dayName}`;
     const o = task.assignedOverrides || {};
     return Object.prototype.hasOwnProperty.call(o, key) && !(typeof isUnassignedValue === "function" ? isUnassignedValue(o[key]) : !o[key]);
   }

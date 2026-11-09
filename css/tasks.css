@@ -3155,3 +3155,8 @@ body.theme-dark .quick-pick-title { color: #f8fafc; }
   .quick-grab-pill, .quick-grab-pill:hover { transition: none; transform: none; }
   .quick-grabs.is-all-grabbed, .skylight-task-card.is-just-grabbed { animation: none; }
 }
+/* Every week: "Any day this week" on its own line under the seven days */
+.drawer-weekday-pills .drawer-weekday-any { grid-column: 1 / -1; margin-top: 4px; }
+/* The editor's line when a job will be a Quick grabs pill: the tray's amber */
+.drawer-who-summary.is-grab.is-quick { background: #fef3c7; color: #92400e; }
+body.theme-dark .drawer-who-summary.is-grab.is-quick { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
