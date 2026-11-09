@@ -2842,3 +2842,31 @@ body.theme-dark .today-quiet-text strong { color: #f8fafc; }
 .settings-board-name { display: grid; gap: 8px; margin: 0 0 16px; }
 .settings-board-name-hint { font-size: 0.85rem; color: var(--text-muted, #64748b); }
 .gs-title-icon { margin-right: 8px; }
+
+/* ==========================================================================
+   Settings → Diagnostics, and the "Reload app" banner (js/errors.js)
+   ========================================================================== */
+.diag-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.diag-facts li { display: flex; justify-content: space-between; gap: 16px; font-size: 0.9rem; }
+.diag-facts span { color: var(--text-secondary, #64748b); }
+.diag-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; max-height: 320px; overflow-y: auto; }
+.diag-item { display: grid; gap: 4px; padding: 8px 16px; border-radius: 12px; background: #f8fafc; border-left: 4px solid #94a3b8; }
+.diag-item.is-crash, .diag-item.is-save, .diag-item.is-load { border-left-color: #dc2626; }
+.diag-item.is-error, .diag-item.is-promise { border-left-color: #f59e0b; }
+.diag-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; font-weight: 800; color: var(--text-secondary, #64748b); }
+.diag-msg { font-size: 0.88rem; overflow-wrap: anywhere; }
+.diag-where { font: 0.75rem/1.3 ui-monospace, Menlo, monospace; color: var(--text-muted, #94a3b8); }
+.diag-empty { margin: 16px 0 0; font-size: 0.92rem; }
+.diag-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+body.theme-dark .diag-item { background: #0f172a; }
+
+.error-banner {
+  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  z-index: 200100; max-width: min(560px, calc(100vw - 32px)); box-sizing: border-box;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 16px; border-radius: 16px; background: #1e293b; color: #f8fafc;
+  font: 0.9rem/1.4 var(--font-body, sans-serif); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+}
+.error-banner span { flex: 1 1 200px; }
+.error-banner button { min-height: 40px; padding: 8px 16px; border: none; border-radius: 12px; background: #0284c7; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.error-banner .error-banner-close { background: transparent; color: #cbd5e1; padding: 8px; }

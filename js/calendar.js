@@ -1918,8 +1918,8 @@ function renderWeekCalendar() {
     }
 
     return `
-      <div class="skylight-card ${pastelClass} ${isCompleted ? 'is-done' : ''} ${isPriority ? 'is-priority-chore' : ''}" 
-           ${splitStyleAttr}
+      <div class="skylight-card ${isCompleted ? 'is-done' : ''} ${isPriority ? 'is-priority-chore' : ''}" 
+           ${inlineStyleAttr}
            data-task-id="${task.id}" data-day="${dayName}" data-date="${colDateStr}">
         <div class="skylight-card-main">
           <div class="skylight-card-title-row">

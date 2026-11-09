@@ -65,7 +65,7 @@
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
   <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
-  <link rel="stylesheet" href="css/modals.css?v=72402851">
+  <link rel="stylesheet" href="css/modals.css?v=655a44c5">
   <link rel="stylesheet" href="css/celebrations.css?v=eacfe3e5">
   <link rel="stylesheet" href="css/side-panel.css?v=7e6487e3">
   <link rel="stylesheet" href="css/page-intro.css?v=ec6de2d1">
@@ -78,35 +78,9 @@
   <link rel="stylesheet" href="css/sheet.css?v=9776fb49">
   <link rel="stylesheet" href="css/meal-genie.css?v=27f8eaef">
   
-  <!-- Global Crash-Proof Safety Error Boundary -->
-  <script>
-    window.hardReloadApp = function() {
-      try {
-        if ('caches' in window) {
-          caches.keys().then(function(keys) {
-            keys.forEach(function(k) { caches.delete(k); });
-          });
-        }
-      } catch (e) {}
-      try { localStorage.removeItem("chore_calendar_view"); } catch (e) {}
-      var sep = window.location.href.indexOf('?') !== -1 ? '&' : '?';
-      window.location.href = window.location.href + sep + 't=' + Date.now();
-    };
+  <!-- The error log and the "Reload app" banner: first, so it catches everything (Settings → Diagnostics) -->
+  <script src="js/errors.js?v=a7c75ed6"></script>
 
-    window.addEventListener('error', function(e) {
-      console.warn('Safety Catch: Unhandled error intercepted:', e.error || e.message);
-      if (!document.getElementById('emergency-recovery-banner')) {
-        var errDetail = (e && e.message) ? e.message : 'Temporary script glitch';
-        var b = document.createElement('div');
-        b.id = 'emergency-recovery-banner';
-        b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;padding:12px 20px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.3);z-index:99999;font-family:sans-serif;font-size:13px;display:flex;align-items:center;gap:12px;border:1px solid #475569;max-width:90vw;flex-wrap:wrap;';
-        b.innerHTML = '<span>⚠️ ' + errDetail + '. All household data in Firestore is safe.</span>' +
-          '<button type="button" onclick="window.hardReloadApp()" style="background:#4f46e5;color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;">Reload App</button>';
-        if (document.body) document.body.appendChild(b);
-      }
-    });
-  </script>
-  
   <!-- Theme Pre-Initialization (Prevents FOUC, defaults to Skylight Pastel Light) -->
   <script>
     (function() {
@@ -1404,6 +1378,7 @@
           <button type="button" class="settings-nav-chip" data-section="sleep">🌙 Sleep</button>
           <button type="button" class="settings-nav-chip" data-section="music">🎵 Music</button>
           <button type="button" class="settings-nav-chip" data-section="films" hidden>🍿 Watch together</button>
+          <button type="button" class="settings-nav-chip" data-section="diagnostics">🩺 Diagnostics</button>
           <button type="button" class="settings-nav-chip" data-section="reset">⚠️ Reset</button>
         </nav>
 
@@ -1635,6 +1610,18 @@
               <p class="settings-section-desc">Family films and series on the streaming services you have, on Today at a glance, to plan a night in together. Saves straight away.</p>
             </div>
             <div class="settings-section-box film-settings" id="film-settings"></div>
+          </section>
+
+          <!-- DIAGNOSTICS: what's gone wrong on this device (js/errors.js) -->
+          <section class="settings-section" id="settings-sec-diagnostics" aria-labelledby="settings-head-diagnostics">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-diagnostics">
+                <span class="drawer-section-icon" aria-hidden="true">🩺</span>
+                <span class="drawer-section-label">Diagnostics</span>
+              </h3>
+              <p class="settings-section-desc">Anything that's gone wrong on this device, newest first. It stays on this device: copy the details to send them on.</p>
+            </div>
+            <div class="settings-section-box diagnostics-box" id="diagnostics-box"></div>
           </section>
 
           <!-- RESET: last, and needs the word RESET typed -->
@@ -2507,8 +2494,8 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=163f4b9d"></script>
-  <script src="js/utils.js?v=8d35d1af"></script>
+  <script src="js/build-info.js?v=a6006939"></script>
+  <script src="js/utils.js?v=919aa0d3"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
   <script src="js/audio.js?v=c545908c"></script>
@@ -2528,9 +2515,9 @@
   <script src="js/reward-goals.js?v=b2601339"></script>
   <script src="js/page-intro.js?v=4e31bacf"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar.js?v=7349980b"></script>
+  <script src="js/calendar.js?v=9d62ebe1"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
-  <script src="js/tasks.js?v=0b543d72"></script>
+  <script src="js/tasks.js?v=530157e6"></script>
   <script src="js/grabs-panel.js?v=77a644fd"></script>
   <script src="js/item-drag.js?v=9ca6e1dd"></script>
   <script src="js/calendar-drag.js?v=4950cc8c"></script>
@@ -2554,7 +2541,7 @@
   <script src="js/today-screen.js?v=51f60d42"></script>
   <script src="js/side-panel.js?v=804be778"></script>
   <script type="module" src="js/meals.js?v=8b653ff2"></script>
-  <script type="module" src="app.js?v=5008a01b"></script>
+  <script type="module" src="app.js?v=6470ab26"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

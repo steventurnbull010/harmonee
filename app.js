@@ -5486,6 +5486,7 @@ function setupEventListeners() {
     if (window.Music) window.Music.renderSettings();
     if (window.FilmNight) window.FilmNight.renderSettings();
     if (window.renderWeatherSettings) window.renderWeatherSettings();
+    if (window.HarmoneeErrors) window.HarmoneeErrors.renderSettings();
     renderRosterModalList();
     wireBoardNameField();
     wireSettingsSectionNav();

@@ -160,6 +160,7 @@ function getTaskRoutineInfo(task) {
   if (task.routineSlot === "morning") return { order: 1, label: "☀️ Morning" };
   if (task.routineSlot === "afternoon") return { order: 2, label: "⛅ Afternoon" };
   if (task.routineSlot === "evening") return { order: 4, label: "🌙 Evening" };
+  if (task.routineSlot === "anytime") return { order: 5, label: "🕑 Anytime" };
 
   const t = (task.title || "").toLowerCase();
   const cat = (task.category || task.taskType || "").toLowerCase();

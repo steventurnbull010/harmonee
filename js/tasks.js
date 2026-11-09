@@ -90,27 +90,7 @@ function isUnassignedValue(assignedTo) {
 }
 window.isUnassignedValue = isUnassignedValue;
 
-// Universal Helper: Categorize task into routine slot (Morning, Afternoon, Evening) or standard Chore
-function getTaskRoutineInfo(task) {
-  if (!task) return { order: 3, label: "" };
-  if (task.routineSlot === "morning") return { order: 1, label: "☀️ Morning" };
-  if (task.routineSlot === "afternoon") return { order: 2, label: "⛅ Afternoon" };
-  if (task.routineSlot === "evening") return { order: 4, label: "🌙 Evening" };
-  if (task.routineSlot === "anytime") return { order: 5, label: "🕑 Anytime" };
-
-  const t = (task.title || "").toLowerCase();
-  const cat = (task.category || task.taskType || "").toLowerCase();
-  if (t.includes("(morning)") || t.includes("morning") || cat.includes("morning")) {
-    return { order: 1, label: "☀️ Morning" };
-  }
-  if (t.includes("(afternoon)") || t.includes("afternoon") || cat.includes("afternoon")) {
-    return { order: 2, label: "⛅ Afternoon" };
-  }
-  if (t.includes("(evening)") || t.includes("evening") || t.includes("dinner") || t.includes("bed") || t.includes("night") || cat.includes("evening")) {
-    return { order: 4, label: "🌙 Evening" };
-  }
-  return { order: 3, label: "" };
-}
+// getTaskRoutineInfo(task) is in js/utils.js
 window.getTaskRoutineInfo = getTaskRoutineInfo;
 
 // 15. SKYLIGHT TASKS PAGE (Multi-Column Profiles Board & Gestures)

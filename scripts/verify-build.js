@@ -109,8 +109,17 @@ const store = () => {
 };
 
 const boardSearch = '?board=verify-build';
+// Anything the app warns about or logs as an error while starting up fails
+// the check (it once fell back to "memory only" storage without anyone noticing)
+const bootComplaints = [];
+const bootConsole = {
+  ...console,
+  log: () => {}, info: () => {}, debug: () => {},
+  warn: (...a) => bootComplaints.push(['warning', a]),
+  error: (...a) => bootComplaints.push(['error', a])
+};
 const win = {
-  console,
+  console: bootConsole,
   location: { search: boardSearch, href: 'http://localhost/' + boardSearch, hostname: 'localhost', pathname: '/', origin: 'http://localhost', reload() {} },
   localStorage: store(),
   sessionStorage: store(),
@@ -140,6 +149,11 @@ vm.createContext(win);
 const firebaseMock = {
   initializeApp: () => ({}),
   getFirestore: () => ({ __mockDb: true }),
+  initializeFirestore: () => ({ __mockDb: true }),
+  persistentLocalCache: (o) => ({ ...o }), persistentMultipleTabManager: () => ({}),
+  getDocFromServer: () => Promise.resolve({ exists: () => true, data: () => ({}) }),
+  getDocsFromServer: () => Promise.resolve({ docs: [], empty: true, forEach() {} }),
+  runTransaction: (db, fn) => Promise.resolve(fn({ get: () => Promise.resolve({ exists: () => false, data: () => ({}) }), set() {}, update() {} })),
   collection: () => ({}), doc: () => ({}), query: () => ({}), where: () => ({}),
   onSnapshot: () => () => {},
   getDocs: () => Promise.resolve({ docs: [], empty: true, forEach() {} }),
@@ -199,6 +213,11 @@ for (const { src, isModule } of scriptTags) {
 
 setImmediate(() => setImmediate(() => {
   if (asyncErrors.length) crash('async startup', asyncErrors[0]);
+  if (bootComplaints.length) {
+    console.error('   ❌ The app complained while starting up:');
+    bootComplaints.forEach(([kind, args]) => console.error(`      ${kind}: ${args.map(a => (a && a.message) || String(a)).join(' ')}`));
+    process.exit(1);
+  }
   console.log(`   ✅ ${scriptTags.length} scripts booted in page order with 0 runtime errors.`);
 
   // 5. Cross-file Scope Check
@@ -312,6 +331,33 @@ setImmediate(() => setImmediate(() => {
   }
   console.log('   ✅ No js/ module depends on an app.js-private name.');
 
-  console.log('\n🎉 ALL CHECKS PASSED! Safe to deploy.\n');
-  process.exit(0);
+  runMoreChecks().then((ok) => {
+    if (!ok) process.exit(1);
+    console.log('\n🎉 ALL CHECKS PASSED! Safe to deploy.\n');
+    process.exit(0);
+  }, (e) => { console.error('   ❌ A check itself broke:', e); process.exit(1); });
 }));
+
+// 6-10: scripts/verify-more.js
+async function runMoreChecks() {
+  const more = require('./verify-more.js');
+  const steps = [
+    ['6. Checking every script parses...', () => more.checkSyntax(), (r) => `${r.count} scripts parse.`],
+    ['7. Checking every file the pages point at exists...', () => more.checkFilesExist(), () => 'Every referenced file exists.'],
+    ['8. Checking no two scripts declare the same top-level name...', () => more.checkDuplicates(), () => 'No duplicate top-level names.'],
+    ['9. Checking for names nothing defines (ESLint no-undef)...', () => more.checkUndefinedNames(), (r) => `${r.count} scripts, no undefined names.`],
+    ['10. Running the tests in scripts/test-*.js...', () => more.runTests(), (r) => `${r.count} test files passed.`]
+  ];
+  let ok = true;
+  for (const [title, run, pass] of steps) {
+    console.log('\n' + title);
+    const r = await run();
+    if (r.problems.length) {
+      ok = false;
+      r.problems.forEach((p) => console.error('   ❌ ' + p));
+    } else {
+      console.log('   ✅ ' + pass(r));
+    }
+  }
+  return ok;
+}
