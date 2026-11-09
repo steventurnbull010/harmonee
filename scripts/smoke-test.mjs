@@ -583,6 +583,39 @@ const PAGES = [
     if (left) throw new Error("deleting the recipe didn't reach the board");
     await p.evaluate(() => { const d = document.getElementById("plan-meal-drawer") || document.querySelector("dialog[open]"); if (d && d.open) d.close(); });
   }],
+  // REVIEW=1: screenshots of the phone flow for adding a recipe from a photo
+  ["recipe-review", async (p) => {
+    if (!process.env.REVIEW || p.__size !== "phone") return;
+    const shot = async (n) => { await p.waitForTimeout(450); await p.screenshot({ path: path.join(SHOTS, `review-${n}.png`) }); };
+    await p.evaluate(() => window.closePlanMealDrawer && window.closePlanMealDrawer());
+    await goTo("meals")(p);
+    await shot("1-meals-page");
+    // The way in: tap an empty dinner slot (as a person would)
+    await p.evaluate(() => window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"));
+    await shot("2-plan-drawer");
+    await p.evaluate(() => document.querySelector("[data-add-family-recipe]").scrollIntoView({ block: "center" }));
+    await shot("3-add-button");
+    await p.locator("[data-add-family-recipe]").click();
+    await shot("4-empty-form");
+    await p.evaluate(() => { window.__SMOKE_AI = async (photo, kind) => { await new Promise(r => setTimeout(r, 2500)); return kind === "recipe" ? { isRecipe: true, title: "Grandad's beef stew", servings: 4, prepMinutes: 20, cookMinutes: 120, mealType: "dinner", ingredients: ["500g stewing beef, cubed", "2 tbsp plain flour", "1 onion, chopped", "2 carrots, sliced", "500ml beef stock", "1 tbsp tomato purée", "Salt and pepper"], method: ["Toss the beef in the flour.", "Brown the beef in batches in a hot pan with a little oil.", "Add the onion and carrots and cook for 5 minutes.", "Pour in the stock and tomato purée, cover and simmer for 2 hours until tender.", "Season to taste and serve with mash."], emoji: "🍲" } : { events: [] }; }; });
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#family-recipe-modal [data-fr-photo]")]);
+    await chooser.setFiles({ name: "page.png", mimeType: "image/png", buffer: png });
+    await shot("5-reading");
+    await p.waitForTimeout(2600);
+    await shot("6-filled-top");
+    await p.evaluate(() => document.querySelector("#family-recipe-modal .family-recipe-actions").scrollIntoView({ block: "end" }));
+    await shot("7-filled-bottom");
+    await p.click('#family-recipe-modal button[type="submit"]');
+    await shot("8-after-save");
+    if (await p.evaluate(() => document.getElementById("plan-meal-drawer").style.display === "none")) throw new Error("adding a recipe from a photo closed the Plan Meal panel");
+    await p.evaluate(() => { const i = document.getElementById("recipe-search-input"); if (i) { i.value = "stew"; i.dispatchEvent(new Event("input", { bubbles: true })); } });
+    await shot("9-search-finds-it");
+    await p.evaluate(async () => { const m = await import("./recipes-data.js"); window.openCookingRecipeModal(m.getAllFamilyRecipes().find(x => x.title === "Grandad's beef stew")); });
+    await shot("10-recipe-card");
+    await p.evaluate(() => document.getElementById("cooking-credit").scrollIntoView({ block: "center" }));
+    await shot("11-card-credit");
+  }],
   // Add Event: the Starts / Ends times fit the panel, and no stray date box
   ["event-editor", async (p) => {
     await goTo("calendar")(p);

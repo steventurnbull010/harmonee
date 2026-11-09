@@ -156,7 +156,10 @@
     fill(r || { mealType: opts.mealType || "dinner" }, false);
     if (!dlg.open) dlg.showModal();
     if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
-    if (!r) setTimeout(() => { try { field("title").focus({ preventScroll: true }); } catch (e) {} }, 50);
+    // Straight into the name with a keyboard and mouse. Not on a phone or
+    // tablet: the keyboard would pop up over "From a photo".
+    const touch = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+    if (!r && !touch) setTimeout(() => { try { field("title").focus({ preventScroll: true }); } catch (e) {} }, 50);
   }
 
   function submit() {
@@ -204,9 +207,11 @@
     input.accept = "image/*";
     input.multiple = true;
     // In the page while it's open: some browsers (and iPhones) won't open a
-    // file box that isn't
+    // file box that isn't. Inside the form, so its click doesn't count as a
+    // tap outside the Plan Meal panel underneath (which would close it).
     input.hidden = true;
-    document.body.appendChild(input);
+    input.addEventListener("click", (e) => e.stopPropagation());
+    (document.getElementById("family-recipe-modal") || document.body).appendChild(input);
     const done = () => setTimeout(() => input.remove(), 0);
     input.addEventListener("cancel", done);
     input.addEventListener("change", async () => {
