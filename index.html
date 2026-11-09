@@ -55,7 +55,7 @@
   
   <link rel="stylesheet" href="style.css?v=db2626c8">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
-  <link rel="stylesheet" href="css/tasks.css?v=5249b2bf">
+  <link rel="stylesheet" href="css/tasks.css?v=4a85ec61">
   <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
@@ -984,6 +984,22 @@
               </label>
             </div>
             <div class="drawer-rota-days" id="drawer-rota-days" style="display: none;"></div>
+          </div>
+
+          <!-- Quick grab or bigger job: a daily job nobody owns is a Quick grabs pill
+               above the board unless this is on (then it's in the Grab it panel) -->
+          <div class="drawer-toggle-row drawer-big-job-row" id="drawer-big-job-row" hidden>
+            <div class="drawer-toggle-left">
+              <span class="drawer-toggle-icon">🧱</span>
+              <div class="drawer-toggle-texts">
+                <span class="drawer-toggle-title">Bigger job</span>
+                <span class="drawer-toggle-sub">When nobody's on it, it goes in Grab it instead of the Quick grabs pills</span>
+              </div>
+            </div>
+            <label class="skylight-switch">
+              <input type="checkbox" id="drawer-toggle-big-job" aria-label="Bigger job">
+              <span class="switch-slider"></span>
+            </label>
           </div>
 
           <!-- Important: shows first with a red tag (Tasks board) and a 🚨 on the calendar -->
@@ -2493,7 +2509,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=f45d6067"></script>
+  <script src="js/build-info.js?v=37867e47"></script>
   <script src="js/utils.js?v=919aa0d3"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2516,8 +2532,9 @@
   <script src="js/sticky-note.js?v=a23ec091"></script>
   <script src="js/calendar.js?v=9d62ebe1"></script>
   <script src="js/date-picker.js?v=884dd01a"></script>
-  <script src="js/tasks.js?v=530157e6"></script>
-  <script src="js/grabs-panel.js?v=77a644fd"></script>
+  <script src="js/tasks.js?v=d63000d2"></script>
+  <script src="js/quick-grabs.js?v=e46064db"></script>
+  <script src="js/grabs-panel.js?v=654a1603"></script>
   <script src="js/item-drag.js?v=9ca6e1dd"></script>
   <script src="js/calendar-drag.js?v=4950cc8c"></script>
   <script src="js/buddy-art.js?v=f8c669b6"></script>

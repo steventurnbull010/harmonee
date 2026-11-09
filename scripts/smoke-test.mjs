@@ -72,7 +72,14 @@ function sampleStore() {
     [`${b}/tasks/t1`]: t("t1", "Make your bed", "Jo", { kind: "routine", routineSlot: "morning", icon: "🛏️" }),
     [`${b}/tasks/t2`]: t("t2", "Brush teeth", "Max", { kind: "routine", routineSlot: "evening", icon: "🪥" }),
     [`${b}/tasks/t3`]: t("t3", "Empty the dishwasher", "Anyone", { icon: "🍽️", value: 3 }),
-    [`${b}/tasks/t4`]: t("t4", "Hoover the lounge", "Sam", { taskType: "Weekly Chore", day: "Saturday", repeat: "weekly", icon: "🧹", value: 5 })
+    [`${b}/tasks/t4`]: t("t4", "Hoover the lounge", "Sam", { taskType: "Weekly Chore", day: "Saturday", repeat: "weekly", icon: "🧹", value: 5 }),
+    // Quick grabs (daily, nobody's) and a bigger daily job that stays in Grab it
+    [`${b}/tasks/t5`]: t("t5", "Litter trays", null, { icon: "🐱", value: 1 }),
+    [`${b}/tasks/t6`]: t("t6", "Fill the dishwasher", "Up for grabs", { icon: "🧽", value: 1 }),
+    [`${b}/tasks/t7`]: t("t7", "Feed the cats", "Anyone", { icon: "🐾", value: 1 }),
+    [`${b}/tasks/t8`]: t("t8", "Water the plants", null, { icon: "🪴", value: 1 }),
+    [`${b}/tasks/t9`]: t("t9", "Clear the garden", null, { icon: "🌳", value: 5, grabSize: "big" }),
+    [`${b}/tasks/t10`]: t("t10", "Wash the car", "Up for grabs", { taskType: "Standard", day: "Saturday", repeat: "weekly", icon: "🚗", value: 5 })
   };
 }
 
@@ -159,6 +166,56 @@ const PAGES = [
   ["meals", goTo("meals")],
   ["lists", goTo("lists")],
   ["rewards", goTo("rewards")],
+  // Quick grabs: take one (drag it to Alex; on a phone, tap it and pick Jo),
+  // check it's in their column marked Grabbed and gone from the tray, then give it back
+  ["quick-grab", async (p) => {
+    await goTo("chores")(p);
+    await p.waitForTimeout(300);
+    const phone = await p.evaluate(() => window.matchMedia("(max-width: 600px)").matches);
+    if (phone) await p.click("[data-quick-grabs-more]");
+    const pill = p.locator(".quick-grab-pill").first();
+    const title = (await pill.locator(".quick-grab-title").textContent()).trim();
+    const before = await p.locator(".quick-grab-pill").count();
+    const who = phone ? "Jo" : "Alex";
+    if (phone) {
+      await pill.click();
+      await p.click(`[data-quick-pick="${who}"]`);
+    } else {
+      const from = await pill.boundingBox();
+      const to = await p.locator(`.skylight-tasks-col[data-col-member="${who}"]`).boundingBox();
+      await p.mouse.move(from.x + 20, from.y + from.height / 2);
+      await p.mouse.down();
+      await p.mouse.move(from.x + 40, from.y + 30, { steps: 4 });
+      await p.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+      await p.mouse.up();
+    }
+    await p.waitForTimeout(400);
+    const col = p.locator(`.skylight-tasks-col[data-col-member="${who}"]`);
+    if (phone && !(await p.evaluate((w) => { const g = document.getElementById("tasks-columns-grid"); const c = g.querySelector(`[data-col-member="${w}"]`); const r = c.getBoundingClientRect(), gr = g.getBoundingClientRect(); return Math.abs(r.left - gr.left) < 30; }, who))) throw new Error(`the phone didn't switch to ${who}'s column`);
+    const card = col.locator(".skylight-task-card", { hasText: title });
+    if (!(await card.count())) throw new Error(`${title} didn't land in ${who}'s column`);
+    if (!(await card.locator(".skylight-task-grabbed").count())) throw new Error(`${title} isn't marked Grabbed`);
+    const after = await p.locator(".quick-grab-pill").count();
+    if (!phone && after !== before - 1) throw new Error(`the tray still has ${after} pills (had ${before})`);
+    const savedTo = await p.evaluate((t) => { const task = window.currentTasks.find(x => x.title === t); return JSON.stringify(task.assignedOverrides || {}); }, title);
+    if (!savedTo.includes(who)) throw new Error(`the grab wasn't saved for today only (${savedTo})`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-quick-grab-taken.png`) });
+    // Give it back from its pop-up
+    await card.click();
+    await p.click("[data-quick-give-back]");
+    await p.waitForTimeout(400);
+    if (await col.locator(".skylight-task-card", { hasText: title }).count()) throw new Error(`${title} is still in ${who}'s column after giving it back`);
+  }],
+  // The job editor: "Bigger job" shows for a daily household job, not for a routine
+  ["job-editor", async (p) => {
+    await goTo("chores")(p);
+    const shown = async (id) => p.evaluate((tid) => { window.openSkylightTaskDrawer(tid); const r = document.getElementById("drawer-big-job-row"); return !!r && !r.hidden && r.offsetParent !== null; }, id);
+    if (!(await shown("t5"))) throw new Error("Bigger job switch missing for a daily household job");
+    await p.waitForTimeout(400);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-job-editor-quick.png`) });
+    if (await shown("t1")) throw new Error("Bigger job switch showing for a personal routine");
+    await p.keyboard.press("Escape");
+  }],
   ["today", async (p) => p.evaluate(() => window.showTodayScreen({ from: "preview" }))],
   ["settings", async (p) => { await goTo("calendar")(p); await p.evaluate(() => window.openSettingsModal()); }]
 ];
@@ -181,6 +238,7 @@ async function main() {
         try { ["calendar", "tasks", "meals", "lists", "rewards"].forEach(p => localStorage.setItem(`harmonee_${p}_intro_seen`, "true")); } catch (e) {}
       }, sampleStore());
       const page = await context.newPage();
+      page.__size = sizeName;
       const problems = [];
       page.on("console", (m) => {
         if (m.type() === "error") problems.push(`console error: ${m.text()}`);

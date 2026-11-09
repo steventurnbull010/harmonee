@@ -2217,6 +2217,8 @@ body.theme-dark .skylight-switch .switch-slider {
   gap: 16px;
   padding: 8px 8px 8px 24px;
   min-height: 48px;
+  /* left: 50% would otherwise squash it to half the screen on a phone */
+  width: max-content;
   max-width: calc(100vw - 32px);
   box-sizing: border-box;
   border-radius: 999px;
@@ -3025,3 +3027,112 @@ body.theme-dark .grabs-tag.is-overdue { background: rgba(251, 191, 36, 0.16); co
 .grabs-given { margin: 16px 0 0; font-weight: 700; color: #15803d; }
 body.theme-dark .grabs-given { color: #4ade80; }
 .grabs-empty { padding: 32px 16px; text-align: center; color: var(--text-secondary); }
+
+/* ==========================================================================
+   QUICK GRABS (js/quick-grabs.js): small everyday jobs nobody owns, as pills
+   above the board to drag into a column. Phone: one chip that opens them.
+   8px spacing steps.
+   ========================================================================== */
+.quick-grabs {
+  margin: 0 0 16px;
+  padding: 8px 16px 16px;
+  border-radius: 20px;
+  background: #fef3c7;
+  border: 1.5px solid #fcd34d;
+}
+.quick-grabs[hidden] { display: none; }
+.quick-grabs-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.quick-grabs-title { font: 800 0.95rem var(--font-body); color: #92400e; }
+.quick-grabs-hint { font-size: 0.85rem; color: #a16207; }
+.quick-grabs-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-grab-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  border: 2px dashed #f59e0b;
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+  font: 700 0.95rem var(--font-body);
+  cursor: grab;
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  box-shadow: 0 2px 6px rgba(146, 64, 14, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-style 0.15s ease;
+}
+.quick-grab-pill:hover { transform: translateY(-2px) rotate(-1deg); border-style: solid; box-shadow: 0 8px 16px rgba(146, 64, 14, 0.16); }
+.quick-grab-pill:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.quick-grab-icon { font-size: 1.15rem; line-height: 1; }
+.quick-grab-title { white-space: nowrap; }
+.quick-grab-pts {
+  padding: 4px 8px; border-radius: 999px;
+  background: #fde68a; color: #78350f;
+  font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.quick-grabs-more {
+  min-height: 48px; padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid #fcd34d; background: transparent; color: #92400e;
+  font: 700 0.9rem var(--font-body); cursor: pointer;
+}
+/* The pill being dragged stays as a faint outline; the ghost follows the finger */
+.quick-grab-pill.is-drag-source { opacity: 0.35; border-style: dashed; transform: none; }
+.quick-grab-pill.skylight-task-drag-ghost { width: auto !important; border-style: solid; }
+body.is-grab-dragging .quick-grabs:not(.is-drop-target) .quick-grab-pill:not(.is-drag-source) { opacity: 0.55; }
+.quick-grabs.is-drop-target { outline: 3px solid #f59e0b; outline-offset: 2px; background: #fde68a; }
+/* The last one's gone */
+.quick-grabs.is-all-grabbed { padding: 8px 16px; text-align: center; animation: quick-grabs-cheer 0.5s cubic-bezier(.2, 1.6, .4, 1); }
+.quick-grabs-done { margin: 0; font: 800 1rem var(--font-body); color: #92400e; }
+@keyframes quick-grabs-cheer { from { transform: scale(0.9); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Phone: one chip that opens the pills */
+.quick-grabs.is-phone { padding: 8px; margin: 8px 0; }
+.quick-grabs.is-phone.is-folded { background: transparent; border-color: transparent; padding: 0; }
+.quick-grabs-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid #fcd34d; background: #fef3c7; color: #92400e;
+  font: 800 0.95rem var(--font-body); cursor: pointer;
+}
+.quick-grabs-chev { font-size: 0.8rem; }
+.quick-grabs.is-phone .quick-grabs-hint { display: block; margin: 8px 0; }
+/* One row that scrolls sideways (a swipe scrolls; press and hold picks one up) */
+.quick-grabs.is-phone .quick-grabs-pills { flex-wrap: nowrap; overflow-x: auto; padding: 4px 4px 8px; margin: 0 -4px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.quick-grabs.is-phone .quick-grab-pill { flex: none; scroll-snap-align: start; }
+@media (max-width: 600px) { .task-move-toast { border-radius: 24px; } }
+
+/* In a column: taken from Quick grabs for today */
+.skylight-task-grabbed {
+  display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 999px;
+  background: #fef3c7; color: #92400e; font-size: 0.72rem; font-weight: 800;
+}
+.skylight-task-card.is-just-grabbed { animation: quick-grab-land 0.6s cubic-bezier(.2, 1.6, .4, 1); outline: 3px solid rgba(245, 158, 11, 0.6); outline-offset: -3px; }
+.drawer-big-job-row[hidden] { display: none !important; }
+@keyframes quick-grab-land { 0% { transform: scale(0.85); } 60% { transform: scale(1.04); } 100% { transform: none; } }
+
+/* The task pop-up: who's grabbing it, or give it back */
+.quick-pick-title { display: block; margin-bottom: 8px; font-weight: 800; color: var(--text-primary, #0f172a); }
+.quick-pick-people { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-pick-person {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 16px 4px 4px;
+  border-radius: 999px; border: 1.5px solid var(--who); background: color-mix(in srgb, var(--who) 10%, #fff);
+  color: var(--text-primary, #0f172a); font: 700 0.95rem var(--font-body); cursor: pointer;
+}
+.quick-pick-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--who); color: #fff; font-weight: 800; }
+.quick-give-back {
+  min-height: 44px; padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid #fcd34d; background: #fef3c7; color: #92400e;
+  font: 700 0.95rem var(--font-body); cursor: pointer;
+}
+
+body.theme-dark .quick-grabs { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); }
+body.theme-dark .quick-grabs.is-phone.is-folded { background: transparent; border-color: transparent; }
+body.theme-dark .quick-grabs-title, body.theme-dark .quick-grabs-done, body.theme-dark .quick-grabs-more { color: #fcd34d; }
+body.theme-dark .quick-grabs-hint { color: #fbbf24; }
+body.theme-dark .quick-grab-pill { background: #1e293b; color: #f8fafc; }
+body.theme-dark .quick-grab-pts { background: rgba(245, 158, 11, 0.25); color: #fde68a; }
+body.theme-dark .quick-grabs-chip, body.theme-dark .quick-give-back, body.theme-dark .skylight-task-grabbed { background: rgba(245, 158, 11, 0.18); color: #fde68a; border-color: rgba(245, 158, 11, 0.5); }
+body.theme-dark .quick-pick-person { background: color-mix(in srgb, var(--who) 18%, #1e293b); color: #f8fafc; }
+body.theme-dark .quick-pick-title { color: #f8fafc; }
+@media (prefers-reduced-motion: reduce) {
+  .quick-grab-pill, .quick-grab-pill:hover { transition: none; transform: none; }
+  .quick-grabs.is-all-grabbed, .skylight-task-card.is-just-grabbed { animation: none; }
+}

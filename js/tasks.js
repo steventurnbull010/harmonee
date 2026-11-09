@@ -350,6 +350,8 @@ function renderSkylightTasksPage() {
       </button>`;
   }
   renderTasksSlotBar(container);
+  // Quick grabs: small everyday jobs nobody owns, as pills to drag (js/quick-grabs.js)
+  if (window.QuickGrabs) window.QuickGrabs.render(container, tasksSelectedDate, tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate)));
 
   const selectedDateStr = getLocalDateKey(tasksSelectedDate);
   const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -442,6 +444,10 @@ function renderSkylightTasksPage() {
       const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
       const important = !!t.isPriority && !isDone;
       const importantTag = important ? `<span class="skylight-task-important">Important</span>` : "";
+      // Taken from Quick grabs for today (back in the tray tomorrow)
+      const grabbed = !isGrabPool && !isDone && window.QuickGrabs && window.QuickGrabs.isGrabbedOn(t, tasksSelectedDate);
+      const grabbedTag = grabbed ? `<span class="skylight-task-grabbed">⚡ Grabbed</span>` : "";
+      const justGrabbed = grabbed && tasksJustGrabbed && tasksJustGrabbed.id === t.id && tasksJustGrabbed.member === colMember && tasksJustGrabbed.until > Date.now();
       const subHtml = overdue
         ? `<span class="skylight-task-overdue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Overdue</span>`
         : escapeHtml(timeSubtitle);
@@ -465,14 +471,14 @@ function renderSkylightTasksPage() {
           </button>`;
 
       return `
-        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''} ${important ? 'is-important' : ''}"
+        <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''} ${important ? 'is-important' : ''} ${justGrabbed ? 'is-just-grabbed' : ''}"
              style="--card-color: ${pal.primary}; background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
              data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}">
           <div class="skylight-task-card-main">
             <span class="skylight-task-card-icon">${escapeHtml(tIcon)}</span>
             <div class="skylight-task-card-text">
               <span class="skylight-task-card-title">${escapeHtml(t.title)}</span>
-              <span class="skylight-task-card-sub">${importantTag}${subHtml} • ${valText}</span>
+              <span class="skylight-task-card-sub">${importantTag}${grabbedTag}${subHtml} • ${valText}</span>
             </div>
           </div>
           ${actionHtml}
@@ -696,72 +702,79 @@ const GRAB_MOVE_CANCEL_PX = 10;
 const GRAB_EDGE_SCROLL_PX = 70;
 let grabDrag = null;
 let grabDragJustEnded = false;
+let tasksJustGrabbed = null; // { id, member, until }: the card that just arrived pops
 
 function wireGrabDragAndDrop(container) {
-  container.querySelectorAll(".skylight-task-card.is-grabbable, .skylight-task-card.is-movable").forEach(card => {
-    // Touch: press-and-hold to pick up
-    card.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1) return;
-      if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
-      const t = e.touches[0];
-      const pending = { card, container, startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastY: t.clientY };
-      pending.holdTimer = setTimeout(() => beginGrabDrag(pending, pending.lastX, pending.lastY), GRAB_HOLD_MS);
-      grabDrag = pending;
-    }, { passive: true });
+  container.querySelectorAll(".skylight-task-card.is-grabbable, .skylight-task-card.is-movable").forEach(card => wireGrabDraggable(card, container));
+}
 
-    card.addEventListener("touchmove", (e) => {
-      if (!grabDrag || grabDrag.card !== card) return;
-      const t = e.touches[0];
-      grabDrag.lastX = t.clientX;
-      grabDrag.lastY = t.clientY;
-      if (!grabDrag.active) {
-        // Moved before the hold finished: the user is scrolling, not grabbing
-        if (Math.hypot(t.clientX - grabDrag.startX, t.clientY - grabDrag.startY) > GRAB_MOVE_CANCEL_PX) {
-          clearTimeout(grabDrag.holdTimer);
-          grabDrag = null;
-        }
-        return;
+// One thing that can be picked up and dropped on a person (a card on the
+// board, or a quick grab pill above it, js/quick-grabs.js). It needs
+// data-task-id, data-day, data-date and data-member (where it is now).
+function wireGrabDraggable(card, container) {
+  // Touch: press-and-hold to pick up
+  card.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
+    const t = e.touches[0];
+    const pending = { card, container, startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastY: t.clientY };
+    pending.holdTimer = setTimeout(() => beginGrabDrag(pending, pending.lastX, pending.lastY), GRAB_HOLD_MS);
+    grabDrag = pending;
+  }, { passive: true });
+
+  card.addEventListener("touchmove", (e) => {
+    if (!grabDrag || grabDrag.card !== card) return;
+    const t = e.touches[0];
+    grabDrag.lastX = t.clientX;
+    grabDrag.lastY = t.clientY;
+    if (!grabDrag.active) {
+      // Moved before the hold finished: the user is scrolling, not grabbing
+      if (Math.hypot(t.clientX - grabDrag.startX, t.clientY - grabDrag.startY) > GRAB_MOVE_CANCEL_PX) {
+        clearTimeout(grabDrag.holdTimer);
+        grabDrag = null;
       }
-      e.preventDefault(); // stop the page scrolling while dragging
-      moveGrabDrag(t.clientX, t.clientY);
-    }, { passive: false });
+      return;
+    }
+    e.preventDefault(); // stop the page scrolling while dragging
+    moveGrabDrag(t.clientX, t.clientY);
+  }, { passive: false });
 
-    const finishTouch = () => {
-      if (!grabDrag || grabDrag.card !== card) return;
-      clearTimeout(grabDrag.holdTimer);
-      if (grabDrag.active) endGrabDrag();
-      else grabDrag = null;
+  const finishTouch = () => {
+    if (!grabDrag || grabDrag.card !== card) return;
+    clearTimeout(grabDrag.holdTimer);
+    if (grabDrag.active) endGrabDrag();
+    else grabDrag = null;
+  };
+  card.addEventListener("touchend", finishTouch);
+  card.addEventListener("touchcancel", finishTouch);
+
+  // Mouse: drag once the pointer moves a few pixels
+  card.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
+    e.preventDefault(); // no text selection while dragging
+    const pending = { card, container, startX: e.clientX, startY: e.clientY };
+    grabDrag = pending;
+    const onMove = (ev) => {
+      if (grabDrag !== pending) return;
+      if (!pending.active) {
+        if (Math.hypot(ev.clientX - pending.startX, ev.clientY - pending.startY) < 6) return;
+        beginGrabDrag(pending, ev.clientX, ev.clientY);
+      }
+      moveGrabDrag(ev.clientX, ev.clientY);
     };
-    card.addEventListener("touchend", finishTouch);
-    card.addEventListener("touchcancel", finishTouch);
-
-    // Mouse: drag once the pointer moves a few pixels
-    card.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      if (e.target.closest(".skylight-task-check-circle")) return; // that's a tick, not a drag
-      e.preventDefault(); // no text selection while dragging
-      const pending = { card, container, startX: e.clientX, startY: e.clientY };
-      grabDrag = pending;
-      const onMove = (ev) => {
-        if (grabDrag !== pending) return;
-        if (!pending.active) {
-          if (Math.hypot(ev.clientX - pending.startX, ev.clientY - pending.startY) < 6) return;
-          beginGrabDrag(pending, ev.clientX, ev.clientY);
-        }
-        moveGrabDrag(ev.clientX, ev.clientY);
-      };
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-        if (grabDrag !== pending) return;
-        if (pending.active) endGrabDrag();
-        else grabDrag = null; // plain click: card.onclick opens the quick view
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      if (grabDrag !== pending) return;
+      if (pending.active) endGrabDrag();
+      else grabDrag = null; // plain click: card.onclick opens the quick view
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   });
 }
+window.wireGrabDraggable = wireGrabDraggable;
 
 function beginGrabDrag(state, x, y) {
   if (grabDrag !== state) return;
@@ -913,10 +926,19 @@ function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
     task.assignedTo = newValue;
     payload = { assignedTo: newValue };
   }
+  // Grabbed from the pool: the card pops in its new column for a moment
+  if (fromMember === "Up for grabs" && toMember !== "Up for grabs") {
+    tasksJustGrabbed = { id: task.id, member: toMember, until: Date.now() + 1500 };
+    if (window.QuickGrabs) window.QuickGrabs.afterGrab(toMember);
+  }
   saveTaskAssignment(task, payload);
 
   const where = displayMemberName(toMember);
-  showTaskMoveToast(`${task.title} moved to ${where}`, () => {
+  const quick = isDaily && window.QuickGrabs && window.QuickGrabs.isQuickGrab(task);
+  const text = fromMember === "Up for grabs" && toMember !== "Up for grabs"
+    ? `⚡ ${where} grabbed ${task.title}${quick ? " for today" : ""}`
+    : (toMember === "Up for grabs" && quick ? `${task.title} is back in Quick grabs` : `${task.title} moved to ${where}`);
+  showTaskMoveToast(text, () => {
     Object.assign(task, before);
     saveTaskAssignment(task, before);
   });
@@ -1244,6 +1266,23 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   compBtn.style.display = hintText ? "none" : "";
   hint.textContent = hintText;
   hint.style.display = hintText ? "" : "none";
+  const QG = window.QuickGrabs;
+  const pastDay = cardDate.getTime() < todayStart.getTime();
+  // A quick grab nobody has yet: who's grabbing it? (the same as dragging it to them)
+  if (isGrabPool && !isDone && !pastDay && QG && QG.isQuickGrab(task)) {
+    hint.innerHTML = `<span class="quick-pick-title">Who's grabbing it?</span><span class="quick-pick-people">${(window.familyMembers || []).map(n =>
+      `<button type="button" class="quick-pick-person" data-quick-pick="${escapeHtml(n)}" style="--who:${getMemberPalette(n).primary}"><span class="quick-pick-avatar" aria-hidden="true">${escapeHtml(n.charAt(0).toUpperCase())}</span>${escapeHtml(displayMemberName(n))}</button>`).join("")}</span>`;
+    hint.style.display = "";
+    hint.querySelectorAll("[data-quick-pick]").forEach(b => {
+      b.onclick = () => { close(); moveTaskBetween(taskId, getLocalDateKey(cardDate), "Up for grabs", b.getAttribute("data-quick-pick")); };
+    });
+  }
+  // Grabbed for today: hand it back to the tray
+  if (!isGrabPool && !isDone && colMember && QG && QG.isGrabbedOn(task, cardDate)) {
+    hint.innerHTML = `<button type="button" class="quick-give-back" data-quick-give-back>↩ Give it back to Quick grabs</button>`;
+    hint.style.display = "";
+    hint.querySelector("[data-quick-give-back]").onclick = () => { close(); moveTaskBetween(taskId, getLocalDateKey(cardDate), colMember, "Up for grabs"); };
+  }
   compBtn.textContent = isDone ? "Mark as not done" : "Mark as complete";
   compBtn.classList.toggle("is-undo", isDone);
 
@@ -1435,6 +1474,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     if (timeInput && timeToggle && timeToggle.checked) timeInput.value = task.time.slice(0, 5);
     drawerRewardValue = Math.min(10, taskPoints(task));
     { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = !!task.isPriority; }
+    { const big = document.getElementById("drawer-toggle-big-job"); if (big) big.checked = task.grabSize === "big"; }
     // Same rule as the board: no time of day set (or in the title) = Anytime
     if (task.routineSlot) {
       drawerRoutineSlot = task.routineSlot;
@@ -1460,6 +1500,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     drawerRewardValue = 1;
     drawerRoutineSlot = "morning";
     { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = false; }
+    { const big = document.getElementById("drawer-toggle-big-job"); if (big) big.checked = false; }
     if (prefill) {
       if (prefill.title) {
         titleInput.value = prefill.title;
@@ -1616,6 +1657,9 @@ function syncDrawerTypeUI() {
   const isDailySchedule = drawerSchedule === "daily";
   const isWeeklySchedule = drawerSchedule === "weekly";
   if (choreFields) choreFields.style.display = isDailySchedule ? "none" : "block";
+  // Quick grab or bigger job: only a daily household job asks
+  const bigRow = document.getElementById("drawer-big-job-row");
+  if (bigRow) bigRow.hidden = !(isDailySchedule && drawerCurrentType === "chore");
   if (routineFields) routineFields.style.display = isDailySchedule ? "block" : "none";
 
   // What the save reads: weekly or not
@@ -1834,6 +1878,8 @@ function initSkylightTaskDrawerEvents() {
         routineSlot: isRoutine ? drawerRoutineSlot : null,
         value: drawerRewardValue,
         isPriority: !!(document.getElementById("drawer-toggle-important") || {}).checked,
+        // A daily job nobody owns: a quick grab pill, or a bigger job in the Grab it panel
+        grabSize: isRoutine && (document.getElementById("drawer-toggle-big-job") || {}).checked ? "big" : null,
         order: isRoutine ? ({ morning: 1, afternoon: 2, evening: 4, anytime: 5 }[drawerRoutineSlot] || 4) : 3
       };
       if (!isRoutine) taskData.time = choreTime; // one-off chores can have a time

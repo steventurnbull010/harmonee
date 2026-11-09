@@ -1,6 +1,8 @@
 // ============================================================================
 // UP FOR GRABS PANEL (js/grabs-panel.js)
-// Every job nobody has taken yet, for the day the Tasks page is showing, in
+// Every bigger job nobody has taken yet (weekly, one-off, or a daily job marked
+// "Bigger job"; small daily ones are Quick grabs, js/quick-grabs.js), for the
+// day the Tasks page is showing, in
 // the shared side panel. Each one has the family's names under it: tap a name
 // to give it to them (the same claim as dragging it into their column, with
 // the same "moved to … · Undo" toast).
@@ -29,7 +31,9 @@
   // carried over from earlier days, then the rest in the board's order
   function grabJobs(date) {
     if (typeof getTasksForColumn !== "function") return [];
-    const list = getTasksForColumn(POOL, date).filter(t => !(typeof isTaskDoneOnDate === "function" && isTaskDoneOnDate(t, date)));
+    // Bigger jobs only: small everyday ones are Quick grabs pills (js/quick-grabs.js)
+    const list = getTasksForColumn(POOL, date).filter(t => !(typeof isTaskDoneOnDate === "function" && isTaskDoneOnDate(t, date)))
+      .filter(t => !(window.QuickGrabs && window.QuickGrabs.isQuickGrab(t)));
     const rank = (t) => (t.isPriority ? 0 : 2) + (typeof isOverdueOn === "function" && isOverdueOn(t, date) ? 0 : 1);
     return list.map((t, i) => ({ t, i })).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).map(x => x.t);
   }
