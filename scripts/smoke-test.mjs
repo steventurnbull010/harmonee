@@ -417,6 +417,35 @@ const PAGES = [
     if (!none) throw new Error("no 'No dates found' message");
     await p.evaluate(() => document.getElementById("magic-import").close());
   }],
+  // The family's own recipe (house recipe): photo, times, 12 servings, credit
+  ["house-recipe", async (p) => {
+    await goTo("meals")(p);
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const m = await import("./recipes-data.js");
+      const recipe = m.getAllFamilyRecipes().find(x => x.id === "house-banana-protein-muffins");
+      if (!recipe) return { missing: true };
+      window.openCookingRecipeModal(recipe);
+      await new Promise(res => setTimeout(res, 600));
+      const modal = document.getElementById("cooking-recipe-modal");
+      // The photo is the hero's background: check it's ours and really loads
+      const hero = [...modal.querySelectorAll("*")].find(el => /banana-protein-muffins/.test(el.style.backgroundImage || ""));
+      const url = hero ? hero.style.backgroundImage.replace(/^url\(["']?|["']?\)$/g, "") : "";
+      const loaded = url ? await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = url; }) : false;
+      return {
+        open: !!(modal && (modal.open || getComputedStyle(modal).display !== "none")),
+        text: modal.textContent.replace(/\s+/g, " "),
+        imgOk: loaded,
+        credit: (document.getElementById("cooking-credit") || {}).textContent || ""
+      };
+    });
+    if (r.missing) throw new Error("the muffin recipe isn't in the recipe list");
+    if (!r.open) throw new Error("the recipe card didn't open");
+    if (!r.imgOk) throw new Error("the muffin photo didn't load");
+    for (const want of ["Greek yogurt", "12 Servings", "Family favourite", "Preheat your oven"]) if (!r.text.includes(want)) throw new Error(`the card doesn't show "${want}"`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-house-recipe-card.png`) });
+    await p.keyboard.press("Escape");
+  }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine
   ["job-editor", async (p) => {
     await goTo("chores")(p);

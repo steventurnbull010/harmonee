@@ -6,11 +6,46 @@
 
 import { MEALDB_RECIPES } from "./recipes-themealdb.js?v=cd54086a";
 
-// The starter recipes that used to live here were written by an AI, not
-// taken from real sources, so they've been removed. Every built-in recipe now
-// comes from TheMealDB (recipes-themealdb.js), credited on the recipe card.
-// Kept as an empty list so anything that imports it still works.
-export const PRELOADED_RECIPES = [];
+// House recipes the family has given us, for every board (the AI-written
+// starters that used to be here were removed). Everything else comes from
+// TheMealDB (recipes-themealdb.js). Photos live in images/recipes/.
+export const PRELOADED_RECIPES = [
+  {
+    id: "house-banana-protein-muffins",
+    title: "High-Protein Banana & Greek Yogurt Muffins",
+    subtitle: "Moist and fluffy · about 7–14g protein each",
+    emoji: "🧁",
+    // Photo: "Homemade Muffins" (Unsplash), CC0, via Wikimedia Commons; cropped
+    image: "images/recipes/banana-protein-muffins.jpg",
+    category: "breakfast",
+    mealType: "breakfast",
+    tags: ["breakfast", "snack", "baking", "high protein", "vegetarian"],
+    source: "house",
+    sourceName: "Family favourite",
+    prepTime: "10",
+    cookTime: "20",
+    servings: 12,
+    ingredients: [
+      "1 ripe banana, mashed",
+      "50ml maple syrup",
+      "250g 0% fat Greek yogurt",
+      "3 large eggs",
+      "1 tsp vanilla extract",
+      "150g self-raising flour",
+      "85g ground almonds",
+      "1 tsp baking powder",
+      "1 tsp ground cinnamon",
+      "Flaked nuts or a scoop of protein powder (optional)"
+    ],
+    instructions: [
+      "Preheat your oven to 180°C / 160°C fan / gas mark 4, and line a muffin tin with silicone cases.",
+      "Mix the wet ingredients: in a large bowl, mash the banana. Stir in the maple syrup, Greek yogurt, eggs and vanilla until smooth.",
+      "Mix the dry ingredients: in a separate bowl, mix the self-raising flour, ground almonds, baking powder and cinnamon.",
+      "Fold together: gently fold the dry mixture into the wet until just combined. Don't overmix.",
+      "Bake: spoon the batter evenly into the cases and top with flaked nuts. Bake for 15 to 20 minutes, until golden and a toothpick in the middle comes out clean."
+    ]
+  }
+];
 
 // Helper: get all recipes (custom user-added + preloaded)
 export function getAllFamilyRecipes() {

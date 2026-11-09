@@ -17,7 +17,8 @@ window.escapeHtml = escapeHtml;
 // An image address that's safe to put in src="": our own data: images or https links only
 function safeImageUrl(url) {
   const u = String(url || "").trim();
-  return /^(https:\/\/|data:image\/(png|jpe?g|webp|gif);base64,)/i.test(u) ? u : "";
+  // https, a photo stored in the page itself, or one of harmonee's own (images/…)
+  return /^(https:\/\/|data:image\/(png|jpe?g|webp|gif);base64,|images\/[\w\-\/]+\.(jpe?g|png|webp)$)/i.test(u) ? u : "";
 }
 window.safeImageUrl = safeImageUrl;
 

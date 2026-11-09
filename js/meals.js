@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=edeedaa8";
+} from "../recipes-data.js?v=83de7ef4";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -1448,6 +1448,9 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       const original = recipe.sourceUrl && recipe.sourceUrl !== recipe.mealdbUrl
         ? ` · <a href="${escapeHtml(recipe.sourceUrl)}" target="_blank" rel="noopener noreferrer">Original recipe on ${escapeHtml(recipe.sourceName)}</a>` : "";
       creditEl.innerHTML = `Recipe from <a href="${escapeHtml(recipe.mealdbUrl)}" target="_blank" rel="noopener noreferrer">TheMealDB</a>${original}`;
+      creditEl.hidden = false;
+    } else if (recipe.source === "house" && recipe.sourceName) {
+      creditEl.textContent = `Recipe: ${recipe.sourceName}`;
       creditEl.hidden = false;
     } else {
       creditEl.hidden = true;
