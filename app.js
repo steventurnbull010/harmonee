@@ -1687,13 +1687,86 @@ function listenToFirestoreTasks() {
     await checkWeeklySundayReset();
     renderApp();
     renderSkylightTasksPage();
+    noteLiveSyncWorking();
   }, (err) => {
     console.error("Firestore listener error:", err);
-    const syncStatusEl = document.getElementById("sync-status-text");
-    if (syncStatusEl) syncStatusEl.textContent = "Sync Error (Using Cache)";
-    loadLocalTasks();
+    liveSyncFailed(err);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Getting live sync back. Firestore copes with a dropped signal by itself, but
+// an error (sign-in expired, this device removed from the board, the server
+// refusing) stops a listener for good: on an always-on tablet that meant
+// "Sync Error" until someone reloaded. Now both listeners are closed, and
+// after a pause the device signs in again, checks it's still on the board
+// (showing the family code screen if it was removed) and listens again.
+// The pauses grow (5s, 15s, 1 min, 2 min, then every 5 min), and it tries
+// straight away when the screen wakes or the signal comes back.
+// ---------------------------------------------------------------------------
+const LIVE_SYNC_RETRY_DELAYS = [5000, 15000, 60000, 120000, 300000];
+let liveSyncBroken = false;
+let liveSyncAttempt = 0;
+let liveSyncTimer = null;
+let liveSyncRestarting = false;
+
+function setSyncStatus(text, connected) {
+  const statusText = document.getElementById("sync-status-text");
+  const statusPill = document.getElementById("sync-status-pill");
+  const statusDot = statusPill ? statusPill.querySelector(".status-dot") : null;
+  if (statusText) statusText.textContent = text;
+  if (statusDot) statusDot.classList.toggle("connected", !!connected);
+}
+
+function liveSyncFailed(err) {
+  if (firestoreUnsubscribe) { try { firestoreUnsubscribe(); } catch (e) {} firestoreUnsubscribe = null; }
+  if (firestoreBoardUnsubscribe) { try { firestoreBoardUnsubscribe(); } catch (e) {} firestoreBoardUnsubscribe = null; }
+  if (!liveSyncBroken) {
+    liveSyncBroken = true;
+    loadLocalTasks(); // carry on from this device's copy meanwhile
+  }
+  setSyncStatus("Reconnecting…", false);
+  scheduleLiveSyncRestart();
+}
+
+function scheduleLiveSyncRestart(now = false) {
+  clearTimeout(liveSyncTimer);
+  const wait = now ? 0 : LIVE_SYNC_RETRY_DELAYS[Math.min(liveSyncAttempt, LIVE_SYNC_RETRY_DELAYS.length - 1)];
+  liveSyncTimer = setTimeout(restartLiveSync, wait);
+}
+
+async function restartLiveSync() {
+  if (!liveSyncBroken || liveSyncRestarting || !db || !firebaseApp) return;
+  if (window.isOffline && window.isOffline()) return; // the "online" event brings us back
+  liveSyncRestarting = true;
+  liveSyncAttempt++;
+  try {
+    await ensureBoardAccess(firebaseApp);
+    liveSyncBroken = false; // set before listening: a fresh error starts the cycle again
+    listenToFirestoreTasks();
+    setSyncStatus("Live Sync", true);
+  } catch (err) {
+    console.warn("Live sync: couldn't reconnect yet:", err);
+    liveSyncBroken = true;
+    setSyncStatus("Reconnecting…", false);
+    scheduleLiveSyncRestart();
+  } finally {
+    liveSyncRestarting = false;
+  }
+}
+
+// A snapshot arrived: the connection is good, so the next problem starts
+// again from the shortest pause
+function noteLiveSyncWorking() {
+  liveSyncAttempt = 0;
+}
+
+function retryLiveSyncSoon() {
+  if (liveSyncBroken) scheduleLiveSyncRestart(true);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryLiveSyncSoon(); });
+window.addEventListener("online", retryLiveSyncSoon);
+window.addEventListener("pageshow", retryLiveSyncSoon);
 
 function listenToFirestoreBoard() {
   if (!db) return;
@@ -1786,8 +1859,10 @@ function listenToFirestoreBoard() {
         createBoardDoc();
       }
     }
+    noteLiveSyncWorking();
   }, (err) => {
     console.warn("Board doc listener error:", err);
+    liveSyncFailed(err);
   });
 }
 
