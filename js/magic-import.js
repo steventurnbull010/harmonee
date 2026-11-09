@@ -103,7 +103,7 @@
         // App Check on this copy too (once it's enforced, AI Logic refuses requests without it)
         if (typeof window.appCheckWanted === "function" && window.appCheckWanted() && window.APP_CHECK_SITE_KEY) {
           const ac = await import(`${AI_SDK}/firebase-app-check.js`);
-          ac.initializeAppCheck(app, { provider: new ac.ReCaptchaV3Provider(window.APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+          ac.initializeAppCheck(app, { provider: new ac.ReCaptchaEnterpriseProvider(window.APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
         }
       }
       const backend = ai.getAI(app, { backend: new ai.GoogleAIBackend() });

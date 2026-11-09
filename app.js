@@ -31,8 +31,8 @@ import {
   terminate,
   clearIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
-import { DEFAULT_FIREBASE_CONFIG, APP_CHECK_SITE_KEY, appCheckWanted } from "./js/firebase-config.js?v=412f01bb";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
+import { DEFAULT_FIREBASE_CONFIG, APP_CHECK_SITE_KEY, appCheckWanted } from "./js/firebase-config.js?v=baea2c0a";
 import {
   getAuth,
   signInAnonymously
@@ -1374,7 +1374,7 @@ async function initializeDataSource() {
       const app = firebaseApp || initializeApp(cfg);
       if (!firebaseApp && appCheckWanted()) {
         // App Check first, so every request carries its token
-        try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); }
+        try { initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); }
         catch (e) { console.warn("App Check didn't start:", e); }
       }
       firebaseApp = app;

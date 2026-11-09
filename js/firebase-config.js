@@ -13,12 +13,13 @@ export const DEFAULT_FIREBASE_CONFIG = {
   messagingSenderId: "344148325793"
 };
 
-// App Check (reCAPTCHA v3): proves requests come from harmonee itself, so
-// nobody can use the board's Firebase or AI allowance from elsewhere. The site
-// key is public by design (the secret one lives only in the Firebase console).
-// Only on harmonee's own web addresses: anywhere else (this Mac, the build
-// check, the smoke test) there's no valid token to get.
-export const APP_CHECK_SITE_KEY = "6LcMWxguAAAAAGq8dNNjqLCW6TMfXxoE8B4oivhN";
+// App Check: proves requests come from harmonee itself. Parked (9 Nov):
+// Firebase now wants a Fraud Defense (reCAPTCHA Enterprise) key, made in the
+// Google Cloud console for harmonee-app. With no key here, nothing runs.
+// To switch on: put the key's ID here, register it in Firebase App Check
+// (TTL 6 hours, risk Medium), deploy, check tokens are accepted, then
+// enforce. app.js and js/magic-import.js use ReCaptchaEnterpriseProvider.
+export const APP_CHECK_SITE_KEY = "";
 export function appCheckWanted() {
-  return typeof location !== "undefined" && /^harmonee-app\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
+  return !!APP_CHECK_SITE_KEY && typeof location !== "undefined" && /^harmonee-app\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
 }
