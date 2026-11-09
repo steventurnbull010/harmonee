@@ -58,6 +58,8 @@
     sheet.addEventListener("click", (e) => {
       if (e.target === sheet || e.target.closest("[data-voice-close]")) { stop(); return; }
       if (e.target.closest("[data-voice-again]") || e.target.closest("[data-voice-talk]")) { start(mode); return; }
+      const kind = e.target.closest("[data-voice-kind]");
+      if (kind) { start({ ...(mode || {}), want: kind.getAttribute("data-voice-kind") }); return; }
       if (e.target.closest("[data-voice-type]")) { typeIt("Type it instead", "", ""); return; }
       if (e.target.closest("[data-voice-done]")) { if (rec) { try { rec.stop(); } catch (err) {} } return; }
       const as = e.target.closest("[data-voice-as]");
@@ -80,7 +82,8 @@
     const hint = mode && mode.want === "list" ? "Say what you need, like “milk and bread”"
       : mode && mode.want === "event" ? "Like “Dentist on Tuesday at 4”"
       : mode && mode.want === "task" ? "Like “Ava to tidy her room on Saturday”"
-      : "Like “Add milk to the shopping list”, “Swimming every Saturday at 10” or “We're having tacos tonight”";
+      : mode && mode.want === "meal" ? "Like “We're having tacos on Friday”"
+      : "Like “Add milk to the shopping list”";
     draw(`${closeBtn}
       <span class="voice-mic is-live" aria-hidden="true">${MIC_SVG}</span>
       <h2 class="voice-title" id="voice-title">${words ? "Listening…" : "I'm listening"}</h2>
@@ -94,22 +97,19 @@
     clearTimeout(closeTimer);
     if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
     mode = opts || {};
-    const names = (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
-    const who = names.length ? names[names.length - 1] : "Ava";
-    const examples = [
-      ["Add milk and eggs to the shopping list", "Shopping list"],
-      ["Swimming every Saturday at 10", "Calendar"],
-      [`${who} needs to tidy their room on Saturday`, "Tasks"],
-      ["We're having tacos on Friday", "Meals"],
-      ["Cancel the dentist on Tuesday", "Removes it (asks first)"]
-    ];
+    // Short and calm: one line with two examples, and what it can add as
+    // pills (tap one to say just that kind of thing)
     draw(`${closeBtn}
       <h2 class="voice-title is-intro" id="voice-title">Add by voice</h2>
-      <p class="voice-words is-hint">Tap the button, then say something like:</p>
-      <ul class="voice-examples">${examples.map(([say, where]) => `<li><span class="voice-ex-say">“${esc(say)}”</span><span class="voice-ex-where">${esc(where)}</span></li>`).join("")}</ul>
+      <p class="voice-words is-hint">Tap and say it, like “Milk and eggs” or “Swimming on Saturday at 10”.</p>
+      <div class="voice-kinds" role="group" aria-label="What you can add">
+        <button type="button" class="voice-kind" data-voice-kind="list"><span aria-hidden="true">🛒</span> Shopping</button>
+        <button type="button" class="voice-kind" data-voice-kind="event"><span aria-hidden="true">📅</span> Event</button>
+        <button type="button" class="voice-kind" data-voice-kind="task"><span aria-hidden="true">✅</span> Task</button>
+        <button type="button" class="voice-kind" data-voice-kind="meal"><span aria-hidden="true">🍽️</span> Meal</button>
+      </div>
       <button type="button" class="voice-talk" data-voice-talk><span class="voice-talk-icon" aria-hidden="true">${MIC_SVG}</span>Tap to talk</button>
-      <button type="button" class="voice-type-link" data-voice-type>⌨️ Type instead</button>
-      <p class="voice-small voice-intro-foot">Events, tasks and meals open for you to check before they're saved.</p>`);
+      <button type="button" class="voice-type-link" data-voice-type>⌨️ Type instead</button>`);
     setTimeout(() => { try { sheet.querySelector("[data-voice-talk]").focus({ preventScroll: true }); } catch (e) {} }, 50);
   }
 
@@ -283,12 +283,45 @@
       closeTimer = setTimeout(stop, 2500);
     } : null;
     refreshAfterList();
-    drawMessage(canUndo ? "Done ✓" : "Already there", lines.join("<br>"), `
+    const buttons = `
       ${canUndo ? `<button type="button" class="voice-btn" data-voice-undo>Undo</button>` : ""}
       <button type="button" class="voice-btn" data-voice-again>🎤 Add more</button>
-      <button type="button" class="voice-btn is-primary" data-voice-close>Done</button>`);
+      <button type="button" class="voice-btn is-primary" data-voice-close>Done</button>`;
+    if (canUndo) {
+      // A clear "it's on the list": a tick, the list, what went on it, confetti
+      const added = [...res.added, ...res.back];
+      const extra = [res.back.length ? `${names(res.back)} back on the list` : "", res.already.length ? `${names(res.already)} already there` : ""].filter(Boolean).join(" · ");
+      draw(`${closeBtn}
+        <span class="voice-done-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <h2 class="voice-title" id="voice-title">Added to ${esc(list.title)} ${esc(list.emoji || "")}</h2>
+        <ul class="voice-added" aria-label="Added">${added.map(i => `<li>${esc(i.text)}</li>`).join("")}</ul>
+        ${extra ? `<p class="voice-small">${extra}</p>` : ""}
+        <div class="voice-actions">${buttons}</div>`);
+      confettiInSheet();
+      if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
+    } else {
+      drawMessage("Already there", lines.join("<br>"), buttons);
+    }
     clearTimeout(closeTimer);
     closeTimer = setTimeout(stop, 6000);
+  }
+  // Confetti over the sheet: it's a dialog, which sits above the page's own
+  // confetti layer, so it gets its own canvas inside
+  function confettiInSheet() {
+    const d = getSheet();
+    if (!window.confetti || typeof window.confetti.create !== "function") return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let canvas = d.querySelector(".voice-confetti");
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.className = "voice-confetti";
+      d.appendChild(canvas);
+      d._confetti = window.confetti.create(canvas, { resize: true });
+    }
+    const colors = ["#22c55e", "#0284c7", "#f59e0b", "#a78bfa", "#fb7185"];
+    d._confetti({ particleCount: 70, spread: 75, startVelocity: 38, origin: { x: 0.5, y: 0.45 }, colors });
+    setTimeout(() => d._confetti && d._confetti({ particleCount: 40, angle: 60, spread: 60, origin: { x: 0.1, y: 0.7 }, colors }), 150);
+    setTimeout(() => d._confetti && d._confetti({ particleCount: 40, angle: 120, spread: 60, origin: { x: 0.9, y: 0.7 }, colors }), 250);
   }
   function refreshAfterList() {
     if (typeof window.renderListsView === "function") { try { window.renderListsView(); } catch (e) {} }
