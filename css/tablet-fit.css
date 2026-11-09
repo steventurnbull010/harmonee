@@ -23,10 +23,7 @@
     flex-wrap: wrap;
     align-content: flex-start;
     align-items: flex-start;
-    overflow-x: hidden;
-    overflow-y: auto;
     min-height: 0;
-    padding-bottom: 96px !important;
   }
   #view-chores .skylight-tasks-col {
     flex: 0 0 calc((100% - 16px) / 3);
@@ -174,23 +171,6 @@
   }
 }
 
-/* --- Tasks: the columns scroll together, and always reach the bottom -------
-   Each column used to scroll on its own inside a block at least 540px tall.
-   On the tablet (Chrome's bars plus our header) there's less room than that,
-   so the bottom of the columns was below the screen and couldn't be reached.
-   Now the columns are as tall as their cards and the column area scrolls as
-   one, with room under the last card for the + button. */
-@media (min-width: 861px) and (orientation: landscape), (min-width: 1025px) {
-  #view-chores .skylight-tasks-columns-grid {
-    min-height: 0;
-    overflow-y: auto;
-    align-items: flex-start;
-    padding-bottom: 96px !important;
-  }
-  #view-chores .skylight-tasks-col { align-self: flex-start; }
-  #view-chores .tasks-col-body { flex: none; overflow: visible; }
-}
-
 /* --- People pickers with bigger families -----------------------------------
    "Who's doing it", "Who's it for" and "Who's cooking" sat in one row, so in
    a family of 6+ the later people were off the edge of the panel. They now
@@ -223,3 +203,107 @@
 #skylight-celebration-overlay { z-index: 100500 !important; }
 .celebration-toast-anchor { z-index: 100550 !important; }
 #calendar-drag-toast, .calendar-drag-toast { z-index: 100600 !important; }
+
+/* ==========================================================================
+   TASKS: THE JOBS GET THE ROOM
+   Above the board there are now two short rows: the top bar (family, clock,
+   weather, ‹ Today · Mon 9 ›, Filter, Grab it) and one toolbar (Morning /
+   Afternoon / Evening / Chores, then Quick grabs). The whole page scrolls,
+   not each column, and as it does each person's name bar stays pinned at
+   the top of their column. On phones the name tabs stay pinned instead.
+   Replaces the old "columns scroll together" and portrait scrolling boxes.
+   ========================================================================== */
+#view-chores .skylight-tasks-page-container {
+  padding-top: 0 !important; /* so the pinned names sit flush at the top */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+#view-chores .calendar-header { padding: 16px 8px 8px !important; flex-wrap: wrap; row-gap: 8px; }
+#view-chores .calendar-header-controls { flex-wrap: wrap; justify-content: flex-end; }
+#view-chores .calendar-btn-today { white-space: nowrap; }
+.tasks-header-grab { display: flex; align-items: center; }
+.tasks-header-grab:empty { display: none; }
+
+/* One toolbar: times of day, then Quick grabs filling the rest of the row */
+.tasks-toolbar { display: flex; align-items: center; gap: 16px; padding: 8px 8px 0; }
+.tasks-toolbar .tasks-slot-filters { flex: none; padding: 0; }
+.tasks-toolbar .tasks-slot-pill { min-height: 44px; padding: 4px 16px; }
+.tasks-toolbar .quick-grabs { flex: 1; min-width: 0; margin: 0; padding: 4px 8px 4px 16px; }
+.tasks-toolbar .quick-grabs.is-all-grabbed { padding: 8px 16px; }
+/* Narrower screens: the time-of-day buttons are icons (their names are read out) */
+@media (max-width: 1200px) and (min-width: 601px) {
+  .tasks-toolbar .tasks-slot-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tasks-toolbar .tasks-slot-pill { padding: 4px 12px; font-size: 1.1rem; }
+}
+
+/* The board is as tall as its jobs; the page scrolls */
+@media (min-width: 601px) {
+  #view-chores .skylight-tasks-columns-grid {
+    flex: none;
+    min-height: 0 !important;
+    overflow: visible !important;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding-top: 16px !important;
+    padding-bottom: 96px !important;
+  }
+  #view-chores .skylight-tasks-col { align-self: flex-start; overflow: visible; }
+  #view-chores .tasks-col-body { flex: none; overflow: visible; }
+
+  /* Each person's name bar, pinned at the top as the page scrolls */
+  #view-chores .tasks-col-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    margin: -8px -8px 8px !important;
+    padding: 8px;
+    border-radius: 16px 16px 0 0;
+    background: var(--head-bg, var(--card-bg, #ffffff));
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+  }
+  #view-chores .tasks-col-avatar { width: 32px; height: 32px; font-size: 0.95rem; }
+  #view-chores .tasks-col-name { font-size: 1.1rem; }
+  body.theme-dark #view-chores .tasks-col-header { background: #1e293b; box-shadow: 0 1px 0 #334155; }
+}
+
+/* The board grows with its jobs at every size (never a fixed-height box) */
+#view-chores .skylight-tasks-columns-grid { flex: none; }
+
+/* Phones: Grab it sits beside the family name, Filter and the day underneath;
+   the toolbar wraps (times of day, then the Quick grabs chip); and the name
+   tabs stay pinned at the top while the page scrolls */
+@media (max-width: 600px) {
+  #view-chores .calendar-header.skylight-single-header {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: "brand grab" "filter nav" !important;
+    row-gap: 8px !important;
+  }
+  #view-chores .skylight-single-header .calendar-header-controls { display: contents !important; }
+  #view-chores .skylight-single-header .calendar-header-left { grid-area: brand !important; }
+  #view-chores .tasks-header-grab { grid-area: grab; justify-self: end; }
+  #view-chores #tasks-filter-dropdown-wrap { grid-area: filter; justify-self: start; }
+  #view-chores .skylight-single-header .calendar-nav-buttons { grid-area: nav; justify-self: end; }
+  .tasks-toolbar { flex-wrap: wrap; gap: 8px; padding: 8px 0 0; }
+  .tasks-toolbar .tasks-slot-filters { flex: 1 1 100%; min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* Time of day: one short line each (icon and name side by side) */
+  .tasks-toolbar .tasks-slot-pill { min-width: 0; min-height: 40px; padding: 4px 2px; flex-direction: row; gap: 2px; font-size: 0.68rem; letter-spacing: -0.01em; }
+  /* Name tabs: avatar beside the name and "0/8" (half the height) */
+  #view-chores .tasks-person-tab { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av name" "av tally"; column-gap: 4px; align-items: center; justify-items: start; padding: 4px 4px; }
+  #view-chores .tasks-person-tab-avatar { grid-area: av; width: 28px; height: 28px; font-size: 0.8rem; }
+  #view-chores .tasks-person-tab-name { grid-area: name; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+  #view-chores .tasks-person-tab-tally { grid-area: tally; line-height: 1.1; }
+  /* The tabs say whose column it is, so the column has no heading row */
+  #view-chores .skylight-tasks-col .tasks-col-header { display: none; }
+  #view-chores .skylight-tasks-col { padding-top: 8px !important; }
+  .tasks-toolbar .quick-grabs { flex: 1 1 100%; margin: 0; }
+  .tasks-toolbar .quick-grabs.is-folded { padding: 0; }
+  #view-chores .tasks-person-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--bg-primary, #edf2f7);
+    padding-bottom: 8px;
+  }
+}

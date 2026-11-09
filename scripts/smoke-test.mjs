@@ -29,6 +29,8 @@ const BOARD = "sidepanel-test-x7q2"; // the test board's name; its data here is 
 const SIZES = {
   phone: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   tablet: { viewport: { width: 1280, height: 800 }, hasTouch: true },
+  // The kitchen tablet in Chrome: its address bar and tabs leave about 690px
+  kitchen: { viewport: { width: 1280, height: 690 }, hasTouch: true },
   laptop: { viewport: { width: 1440, height: 900 } }
 };
 const only = process.argv[2];
@@ -43,12 +45,24 @@ function loadPlaywright() {
 // ---- A made-up family on the fake board ---------------------------------------
 const pad = (n) => String(n).padStart(2, "0");
 const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Eight jobs each, so the columns are longer than the screen (as on a real board)
+function busyJobs(t, b) {
+  const out = {};
+  const jobs = [["Brush teeth", "🪥", "evening"], ["Pack your bag", "🎒", "evening"], ["Reading time", "📖", "evening"], ["Tidy your room", "🧸", "anytime"],
+    ["Practise piano", "🎹", "afternoon"], ["Homework", "📚", "afternoon"], ["Lay the table", "🍴", "evening"], ["Bath or shower", "🛁", "evening"]];
+  ["Sam", "Alex", "Jo", "Max"].forEach((who, w) => jobs.forEach(([title, icon, slot], i) => {
+    const id = `busy-${w}-${i}`;
+    out[`${b}/tasks/${id}`] = t(id, title, who, { kind: "routine", routineSlot: slot, icon });
+  }));
+  return out;
+}
 function sampleStore() {
   const today = new Date();
   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   const b = `boards/${BOARD}`;
   const t = (id, title, who, extra = {}) => ({ id, title, assignedTo: who, taskType: "Daily Task", day: "Daily", repeat: "daily", value: 2, done: false, completedBy: null, completedAt: null, ...extra });
   return {
+    ...busyJobs(t, b),
     [b]: {
       boardId: BOARD,
       members: ["Sam", "Alex", "Jo", "Max"],
@@ -170,6 +184,41 @@ const PAGES = [
   ["meals", goTo("meals")],
   ["lists", goTo("lists")],
   ["rewards", goTo("rewards")],
+  // The jobs are the main thing: how far down the first one starts, and (after
+  // scrolling) that the names stay pinned at the top of each column
+  ["layout", async (p) => {
+    await goTo("chores")(p);
+    await p.waitForTimeout(300);
+    const m = await p.evaluate(() => {
+      const card = document.querySelector("#tasks-columns-grid .skylight-tasks-col .skylight-task-card");
+      const r = card.getBoundingClientRect();
+      return { firstJob: Math.round(r.top), screen: window.innerHeight, share: Math.round((r.top / window.innerHeight) * 100), wide: document.documentElement.scrollWidth > window.innerWidth + 1 };
+    });
+    console.log(`   ${p.__size}: first job starts ${m.firstJob}px down a ${m.screen}px screen (${m.share}%)`);
+    if (m.wide) throw new Error("the page is wider than the screen (something runs off the edge)");
+    const phone = await p.evaluate(() => window.matchMedia("(max-width: 600px)").matches);
+    if (m.share > (phone ? 45 : 40)) throw new Error(`the first job starts ${m.share}% of the way down the screen`);
+    // Nothing in the top bar or toolbar runs off the right-hand edge
+    const offEdge = await p.evaluate(() => [...document.querySelectorAll("#view-chores .skylight-tasks-header *, #tasks-toolbar .tasks-slot-pill, #tasks-person-tabs *")]
+      .filter(el => el.offsetParent && el.getBoundingClientRect().right > window.innerWidth + 1).map(el => el.className || el.tagName).slice(0, 3));
+    if (offEdge.length) throw new Error(`these run off the right-hand edge: ${offEdge.join(", ")}`);
+    // Scroll down: the page moves, and each name stays pinned at the top
+    const pinned = await p.evaluate(async (ph) => {
+      const page = document.querySelector("#view-chores .skylight-tasks-page-container");
+      const el = ph ? document.getElementById("tasks-person-tabs") : document.querySelector("#tasks-columns-grid .tasks-col-header");
+      const natural = el.getBoundingClientRect().top - page.getBoundingClientRect().top;
+      const room = page.scrollHeight - page.clientHeight;
+      page.scrollTop = room;
+      await new Promise(r => setTimeout(r, 150));
+      return { room, natural: Math.round(natural), scrolled: page.scrollTop, offset: Math.round(el.getBoundingClientRect().top - page.getBoundingClientRect().top) };
+    }, phone);
+    // Only when there's enough to scroll past the names (a tall laptop may fit it all)
+    if (pinned.room > pinned.natural + 40) {
+      if (Math.abs(pinned.offset) > 2) throw new Error(`the ${phone ? "name tabs" : "names"} didn't stay at the top when scrolling (${pinned.offset}px)`);
+    }
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-tasks-scrolled.png`) });
+    await p.evaluate(() => { document.querySelector("#view-chores .skylight-tasks-page-container").scrollTop = 0; });
+  }],
   // Quick grabs: take one (drag it to Alex; on a phone, tap it and pick Jo),
   // check it's in their column marked Grabbed and gone from the tray, then give it back
   ["quick-grab", async (p) => {
@@ -189,7 +238,6 @@ const PAGES = [
       return { sameLine: !t || Math.abs(mid(t) - mid(pill)) < 8, gap: tray.getBoundingClientRect().top - bar.getBoundingClientRect().bottom };
     });
     if (!phone && !layout.sameLine) throw new Error("the quick grabs label isn't on the same line as the pills");
-    if (layout.gap < 8) throw new Error(`the tray is only ${Math.round(layout.gap)}px below the Morning / Evening buttons`);
     const overflow = await p.$eval(".quick-grabs-pills", el => el.scrollWidth > el.clientWidth + 2);
     const mouse = await p.evaluate(() => !window.matchMedia("(hover: none)").matches);
     if (!phone && overflow && mouse) {
@@ -215,7 +263,9 @@ const PAGES = [
       await p.mouse.move(from.x + 20, from.y + from.height / 2);
       await p.mouse.down();
       await p.mouse.move(from.x + 40, from.y + 30, { steps: 4 });
-      await p.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+      // A tall column runs past the screen: drop on the part that's showing
+      const dropY = Math.min(to.y + to.height / 2, to.y + 120);
+      await p.mouse.move(to.x + to.width / 2, dropY, { steps: 12 });
       await p.mouse.up();
     }
     await p.waitForTimeout(400);

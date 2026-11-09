@@ -97,8 +97,9 @@
     tray.className = "quick-grabs";
     tray.setAttribute("aria-label", "Quick grabs");
     tray.setAttribute("data-grab-drop", ""); // a grabbed job dropped here goes back up for grabs
+    // In the toolbar row, after the Morning / Evening buttons
     const slotBar = document.getElementById("tasks-slot-filters");
-    if (slotBar && slotBar.parentNode === grid.parentNode) grid.parentNode.insertBefore(tray, slotBar.nextSibling);
+    if (slotBar && slotBar.parentNode) slotBar.parentNode.insertBefore(tray, slotBar.nextSibling);
     else grid.parentNode.insertBefore(tray, grid);
     tray.addEventListener("click", (e) => {
       if (e.target.closest("[data-quick-grabs-more]")) { expanded = !expanded; window.renderSkylightTasksPage(); return; }

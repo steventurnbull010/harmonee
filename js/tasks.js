@@ -361,8 +361,15 @@ function renderSkylightTasksPage() {
     const jobs = typeof window.grabJobs === "function" ? window.grabJobs(tasksSelectedDate) : [];
     const urgent = jobs.some(t => t.isPriority || isOverdueOn(t, tasksSelectedDate));
     const grabLabel = displayMemberName("Up for grabs");
-    dateSubBar.innerHTML = `<span class="tasks-date-text">${escapeHtml(dateText)}</span>
-      <button type="button" class="tasks-grab-btn${jobs.length ? "" : " is-empty"}${urgent ? " is-urgent" : ""}" data-open-grabs data-grab-drop
+    // The day shown is on the Today button ("Today · Mon 9", or "Tue 10 Nov"),
+    // so there's no separate date line taking up the board's room
+    const todayBtn = document.getElementById("btn-tasks-today");
+    if (todayBtn) {
+      todayBtn.textContent = isToday ? `Today · ${dow.slice(0, 3)} ${dt}` : `${dow.slice(0, 3)} ${dt} ${mon}`;
+      todayBtn.setAttribute("aria-label", isToday ? `Today, ${dateText.replace(/^Today • /, "")}` : `Showing ${dow} ${dt} ${mon}. Go back to today`);
+      todayBtn.classList.toggle("is-other-day", !isToday);
+    }
+    dateSubBar.innerHTML = `<button type="button" class="tasks-grab-btn${jobs.length ? "" : " is-empty"}${urgent ? " is-urgent" : ""}" data-open-grabs data-grab-drop
         aria-label="${escapeHtml(jobs.length ? `${grabLabel}: ${jobs.length} job${jobs.length === 1 ? "" : "s"} nobody has taken. Hand them out` : `${grabLabel}: nothing waiting`)}">
         <span class="tasks-grab-btn-icon" aria-hidden="true">⚡</span>
         <span class="tasks-grab-btn-label">${escapeHtml(grabLabel)}</span>
@@ -588,7 +595,7 @@ function renderSkylightTasksPage() {
     const initialLetter = isGrabPool ? "⚡" : colMember.charAt(0).toUpperCase();
     columnsHtml += `
       <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="--card-color: ${pal.primary}; background: ${pal.lightBg}22; border-color: ${pal.border};">
-        <div class="tasks-col-header">
+        <div class="tasks-col-header" style="--head-bg: ${pal.lightBg};">
           <div class="tasks-col-top-row">
             <div class="tasks-col-profile-info">
               <div class="tasks-col-avatar" style="background: ${pal.primary};">${escapeHtml(initialLetter)}</div>
@@ -843,6 +850,14 @@ function moveGrabDrag(x, y) {
   const overBoard = y >= bRect.top && y <= bRect.bottom; // not over the phone tabs above it
   if (overBoard && x < bRect.left + GRAB_EDGE_SCROLL_PX) board.scrollLeft -= 14;
   else if (overBoard && x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
+
+  // The page scrolls now (not each column): near the top or bottom, scroll it
+  const page = document.querySelector("#view-chores .skylight-tasks-page-container");
+  if (page) {
+    const pr = page.getBoundingClientRect();
+    if (y < pr.top + GRAB_EDGE_SCROLL_PX) page.scrollTop -= 14;
+    else if (y > pr.bottom - GRAB_EDGE_SCROLL_PX) page.scrollTop += 14;
+  }
 
   const under = document.elementFromPoint(x, y);
   // Over the Grab it button: put the job back up for grabs
@@ -2170,12 +2185,21 @@ function renderTasksSlotBar(grid) {
   if (!grid) return;
   let bar = document.getElementById("tasks-slot-filters");
   if (!bar) {
+    // One toolbar row above the board: the times of day, then Quick grabs
+    // (js/quick-grabs.js puts its tray in here, after these buttons)
+    let toolbar = document.getElementById("tasks-toolbar");
+    if (!toolbar) {
+      toolbar = document.createElement("div");
+      toolbar.id = "tasks-toolbar";
+      toolbar.className = "tasks-toolbar";
+      grid.parentNode.insertBefore(toolbar, grid);
+    }
     bar = document.createElement("div");
     bar.id = "tasks-slot-filters";
     bar.className = "tasks-slot-filters";
     bar.setAttribute("role", "group");
     bar.setAttribute("aria-label", "Show");
-    grid.parentNode.insertBefore(bar, grid);
+    toolbar.appendChild(bar);
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("[data-slot-filter]");
       if (!b) return;
@@ -2185,7 +2209,7 @@ function renderTasksSlotBar(grid) {
     });
   }
   const on = tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
-  bar.innerHTML = TASK_SLOTS.map(x => `<button type="button" class="tasks-slot-pill${on.has(x.key) ? " is-on" : ""}" data-slot-filter="${x.key}" aria-pressed="${on.has(x.key)}"><span aria-hidden="true">${x.icon}</span> ${x.label}</button>`).join("");
+  bar.innerHTML = TASK_SLOTS.map(x => `<button type="button" class="tasks-slot-pill${on.has(x.key) ? " is-on" : ""}" data-slot-filter="${x.key}" aria-pressed="${on.has(x.key)}" title="${x.label}"><span aria-hidden="true">${x.icon}</span> <b class="tasks-slot-label">${x.label}</b></button>`).join("");
 }
 
 function renderTasksFilterMenu() {
