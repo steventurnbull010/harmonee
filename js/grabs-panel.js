@@ -5,8 +5,9 @@
 // to give it to them (the same claim as dragging it into their column, with
 // the same "moved to … · Undo" toast).
 //
-// The Up for grabs column shows its first few jobs and a "See all" card that
-// opens this, so a long list never needs scrolling and dragging.
+// Opened from the "Grab it" button by the date on the Tasks page (Up for
+// grabs isn't a column). Each job can also be edited or deleted here, and
+// "Add a job for anyone" starts a new one already set to Grab it.
 // Uses js/tasks.js (getTasksForColumn, moveTaskBetween, isTaskDoneOnDate,
 // isOverdueOn) and js/utils.js (displayMemberName, getLocalDateKey).
 // ============================================================================
@@ -17,6 +18,8 @@
   let panelDate = null;
   const justGiven = new Map(); // taskId -> who, shown for a moment before the row goes
   let lastOrder = [];          // the rows as last shown, so they don't jump about
+  const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  const ICON_DELETE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>`;
 
   const esc = (s) => (typeof escapeHtml === "function" ? escapeHtml(String(s ?? "")) : String(s ?? ""));
   const nameOf = (n) => (typeof displayMemberName === "function" ? displayMemberName(n) : n);
@@ -63,6 +66,7 @@
         <button type="button" class="btn-modal-close" id="btn-close-grabs" aria-label="Close">✕</button>
         <div class="modal-header"><h2 id="grabs-title" class="modal-title">Up for grabs</h2></div>
         <p class="grabs-intro" id="grabs-intro"></p>
+        <button type="button" class="grabs-add" data-grabs-add><span aria-hidden="true">＋</span> Add a job for anyone</button>
         <ul class="grabs-list" id="grabs-list"></ul>
       </div>`;
     document.body.appendChild(dlg);
@@ -125,6 +129,10 @@
               <span class="grabs-job-title">${esc(t.title)}</span>
               <span class="grabs-job-meta">${meta}</span>
             </div>
+            ${given ? "" : `<div class="grabs-job-actions">
+              <button type="button" class="grabs-icon-btn" data-grabs-edit="${esc(t.id)}" aria-label="Edit ${esc(t.title)}" title="Edit">${ICON_EDIT}</button>
+              <button type="button" class="grabs-icon-btn is-delete" data-grabs-delete="${esc(t.id)}" aria-label="Delete ${esc(t.title)}" title="Delete">${ICON_DELETE}</button>
+            </div>`}
           </div>
           ${whoRow}
         </li>`;
@@ -132,6 +140,22 @@
   }
 
   function onClick(e) {
+    const dlg = document.getElementById("grabs-modal");
+    // Add a job for anyone: the usual new-job panel, already set to Grab it
+    if (e.target.closest("[data-grabs-add]")) {
+      const day = panelDate;
+      dlg.close();
+      if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(null, { people: [POOL], date: day });
+      return;
+    }
+    const edit = e.target.closest("[data-grabs-edit]");
+    if (edit) {
+      dlg.close();
+      if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(edit.getAttribute("data-grabs-edit"));
+      return;
+    }
+    const del = e.target.closest("[data-grabs-delete]");
+    if (del) { deleteJob(del.getAttribute("data-grabs-delete")); return; }
     const btn = e.target.closest("[data-give]");
     if (!btn || !panelDate || typeof moveTaskBetween !== "function") return;
     const id = btn.getAttribute("data-give");
@@ -151,6 +175,21 @@
           { duration: 260, easing: "ease-in" }).onfinish = render;
       } else render();
     }, 1200);
+  }
+
+  // Delete, after asking, with Undo (the same delete and restore voice uses)
+  async function deleteJob(id) {
+    const task = (window.currentTasks || []).find(t => t.id === id);
+    if (!task || typeof window.deleteTaskById !== "function") return;
+    const ask = { icon: "🗑️", danger: true, yes: "Delete it", no: "Keep it",
+      title: `Delete "${task.title}"?`, text: "It comes off the board for everyone." };
+    const sure = window.Sheet ? await window.Sheet.confirm(ask) : window.confirm(ask.title);
+    if (!sure) return;
+    const copy = await window.deleteTaskById(id);
+    render();
+    if (copy && typeof showTaskMoveToast === "function" && typeof window.restoreTask === "function") {
+      showTaskMoveToast(`${task.title} deleted`, () => { window.restoreTask(copy); setTimeout(render, 300); });
+    }
   }
 
   function openGrabsPanel(date) {

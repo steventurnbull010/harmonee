@@ -116,7 +116,6 @@ window.getTaskRoutineInfo = getTaskRoutineInfo;
 // 15. SKYLIGHT TASKS PAGE (Multi-Column Profiles Board & Gestures)
 // ============================================================================
 let tasksSelectedDate = new Date();
-const GRAB_COLUMN_SHOWN = 5; // Up for grabs jobs shown in the column; the rest are in the panel
 tasksSelectedDate.setHours(0, 0, 0, 0);
 
 // Column category filter state (no longer used per person; kept for old callers)
@@ -353,7 +352,22 @@ function renderSkylightTasksPage() {
     const dt = tasksSelectedDate.getDate();
     const yr = tasksSelectedDate.getFullYear();
     const isToday = (new Date()).toDateString() === tasksSelectedDate.toDateString();
-    dateSubBar.textContent = isToday ? `Today • ${dow}, ${dt} ${mon}` : `${dow}, ${dt} ${mon} ${yr}`;
+    const dateText = isToday ? `Today • ${dow}, ${dt} ${mon}` : `${dow}, ${dt} ${mon} ${yr}`;
+    // Up for grabs isn't a column any more: a button by the date, with how
+    // many jobs are waiting, opens the Hand out panel (js/grabs-panel.js).
+    // Red when one is important or overdue. While a job is being dragged,
+    // dropping it here puts it back up for grabs.
+    const jobs = typeof window.grabJobs === "function" ? window.grabJobs(tasksSelectedDate) : [];
+    const urgent = jobs.some(t => t.isPriority || isOverdueOn(t, tasksSelectedDate));
+    const grabLabel = displayMemberName("Up for grabs");
+    dateSubBar.innerHTML = `<span class="tasks-date-text">${escapeHtml(dateText)}</span>
+      <button type="button" class="tasks-grab-btn${jobs.length ? "" : " is-empty"}${urgent ? " is-urgent" : ""}" data-open-grabs data-grab-drop
+        aria-label="${escapeHtml(jobs.length ? `${grabLabel}: ${jobs.length} job${jobs.length === 1 ? "" : "s"} nobody has taken. Hand them out` : `${grabLabel}: nothing waiting`)}">
+        <span class="tasks-grab-btn-icon" aria-hidden="true">⚡</span>
+        <span class="tasks-grab-btn-label">${escapeHtml(grabLabel)}</span>
+        <span class="tasks-grab-btn-count">${jobs.length}</span>
+        <span class="tasks-grab-btn-drop">Drop to put it up for grabs</span>
+      </button>`;
   }
   renderTasksSlotBar(container);
 
@@ -365,8 +379,9 @@ function renderSkylightTasksPage() {
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
   const isFutureDay = tasksSelectedDate.getTime() > startOfToday.getTime();
 
-  // Active columns: Family Members + "Up for grabs"
-  let columns = [...((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) || ["Steven", "Sorcha", "Ava", "Dara"]), "Up for grabs"];
+  // One column per person. Up for grabs is the button by the date (above),
+  // which opens the Hand out panel, so it doesn't take a column
+  let columns = [...((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) || ["Steven", "Sorcha", "Ava", "Dara"])];
 
   if (tasksActiveMemberFilter && Array.isArray(tasksActiveMemberFilter)) {
     columns = columns.filter(c => tasksActiveMemberFilter.includes(c));
@@ -394,24 +409,6 @@ function renderSkylightTasksPage() {
     memberTasks.forEach(task => {
       if (isTaskDoneOnDate(task, tasksSelectedDate, mLower)) completedCount++;
     });
-
-    // Up for grabs shows its first few jobs (important and overdue first);
-    // the rest are in the Up for grabs panel (js/grabs-panel.js), so a long
-    // list never needs scrolling and dragging
-    let grabOpenCount = 0;
-    let grabHidden = 0;
-    if (isGrabPool && typeof window.grabJobs === "function") {
-      const open = window.grabJobs(tasksSelectedDate);
-      grabOpenCount = open.length;
-      if (open.length > GRAB_COLUMN_SHOWN) {
-        const keep = new Set(open.slice(0, GRAB_COLUMN_SHOWN).map(t => t.id));
-        grabHidden = open.length - keep.size;
-        memberTasks = memberTasks.filter(t => keep.has(t.id));
-      }
-    }
-
-    totalTasksAllBoard += totalCount;
-    completedTasksAllBoard += completedCount;
 
     // Which sections show: the board's filter bar (Anytime goes with Chores)
     const slotsOn = tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
@@ -582,19 +579,6 @@ function renderSkylightTasksPage() {
 
     const isAllDone = totalCount > 0 && completedCount === totalCount;
     const initialLetter = isGrabPool ? "⚡" : colMember.charAt(0).toUpperCase();
-    // Always there when anything's up for grabs: phones can't drag between
-    // columns, and their column headers (with "Hand out") are hidden
-    if (isGrabPool && grabOpenCount > 0) {
-      bodySectionsHtml += `
-        <button type="button" class="tasks-grab-more" data-open-grabs>
-          <span class="tasks-grab-more-count">${grabHidden > 0 ? `+${grabHidden} more` : "Hand them out"}</span>
-          <span class="tasks-grab-more-hint">${grabHidden > 0 ? "Tap to hand them out" : "Tap a name to give each one to someone"}</span>
-        </button>`;
-    }
-    const grabHeaderBtn = isGrabPool && grabOpenCount > 0
-      ? `<button type="button" class="tasks-grab-handout" data-open-grabs aria-label="Hand out the ${grabOpenCount} job${grabOpenCount === 1 ? "" : "s"} up for grabs">Hand out</button>`
-      : "";
-
     columnsHtml += `
       <div class="skylight-tasks-col" data-col-member="${escapeHtml(colMember)}" style="--card-color: ${pal.primary}; background: ${pal.lightBg}22; border-color: ${pal.border};">
         <div class="tasks-col-header">
@@ -603,9 +587,9 @@ function renderSkylightTasksPage() {
               <div class="tasks-col-avatar" style="background: ${pal.primary};">${escapeHtml(initialLetter)}</div>
               <span class="tasks-col-name">${escapeHtml(displayMemberName(colMember))}</span>
             </div>
-            ${isGrabPool ? grabHeaderBtn : `<span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
+            <span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
               ${isAllDone ? '✓' : ''} ${completedCount}/${totalCount}
-            </span>`}
+            </span>
           </div>
           ${filterPillsHtml}
         </div>
@@ -657,8 +641,8 @@ function renderSkylightTasksPage() {
     }, Math.max(0, nextHoldMs) + 20);
   }
 
-  // Up for grabs: "Hand out" and "+N more" open the panel
-  container.querySelectorAll("[data-open-grabs]").forEach(btn => {
+  // Up for grabs: the button by the date opens the Hand out panel
+  document.querySelectorAll("#tasks-date-sub-bar [data-open-grabs]").forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       if (typeof window.openGrabsPanel === "function") window.openGrabsPanel(tasksSelectedDate);
@@ -837,6 +821,17 @@ function moveGrabDrag(x, y) {
   else if (x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
 
   const under = document.elementFromPoint(x, y);
+  // Over the Grab it button: put the job back up for grabs
+  const grabDrop = under ? under.closest("[data-grab-drop]") : null;
+  if (grabDrop) {
+    if (state.targetCol !== grabDrop) {
+      if (state.targetCol) state.targetCol.classList.remove("is-drop-target");
+      grabDrop.classList.add("is-drop-target");
+      state.targetCol = grabDrop;
+      state.targetMember = state.fromMember === "Up for grabs" ? null : "Up for grabs";
+    }
+    return;
+  }
   let col = under ? under.closest(".skylight-tasks-col") : null;
   // Below a short column (or past the bottom of a long one): whoever's lane
   // the finger is in, so a job can be dropped anywhere under someone's name
@@ -958,6 +953,10 @@ function showTaskMoveToast(text, onUndo) {
     toast.setAttribute("role", "status");
     document.body.appendChild(toast);
   }
+  // Inside an open panel (e.g. Hand out), so Undo isn't under its dimmed backdrop
+  const openPanels = [...document.querySelectorAll("dialog[open]")];
+  const host = openPanels.length ? openPanels[openPanels.length - 1] : document.body;
+  if (toast.parentNode !== host) host.appendChild(toast);
   toast.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="task-move-undo">Undo</button>`;
   toast.classList.add("is-visible");
   toast.querySelector(".task-move-undo").onclick = () => {
@@ -1230,7 +1229,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   const hint = document.getElementById("quick-card-hint");
   const isGrabPool = colMember === "Up for grabs" || (!colMember && !shown.length);
   let hintText = "";
-  if (isGrabPool && !isDone) hintText = "Tap Hand out to give it to someone, or drag it into their column.";
+  if (isGrabPool && !isDone) hintText = "Tap Grab it, next to the date, to give it to someone.";
   else if (isFuture) hintText = "You can tick this off on the day.";
   compBtn.style.display = hintText ? "none" : "";
   hint.textContent = hintText;
@@ -2082,7 +2081,8 @@ function renderTasksFilterMenu() {
   const menu = document.getElementById("tasks-filter-dropdown-menu");
   if (!menu) return;
 
-  const profiles = [...((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) || ["Steven", "Sorcha", "Ava", "Dara"]), "Up for grabs"];
+  // People only: Up for grabs has its own button by the date
+  const profiles = [...((window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]) || ["Steven", "Sorcha", "Ava", "Dara"])];
   const isAllActive = (tasksActiveMemberFilter === null || tasksActiveMemberFilter.length === profiles.length);
 
   let html = `

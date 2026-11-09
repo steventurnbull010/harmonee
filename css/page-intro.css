@@ -280,6 +280,13 @@ body.theme-dark .intro-cal-day {
 }
 
 /* Tasks preview */
+.intro-grab-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.intro-grab-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 8px 4px 16px; border-radius: 999px;
+  background: #ef4444; color: #fff; font-weight: 700; font-size: 0.8rem;
+}
+.intro-grab-pill b { min-width: 22px; height: 22px; border-radius: 999px; background: #fff; color: #b91c1c; display: inline-grid; place-items: center; }
 .intro-task-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -2475,6 +2475,12 @@ body.theme-dark .task-pop-hint {
 .drawer-profile-name { font-size: 0.8rem; font-weight: 500; color: #94a3b8; }
 .drawer-profile-pill.active .drawer-profile-name { color: var(--text-primary); font-weight: 700; }
 
+/* Phones: five across (four people and Everyone / Grab it) in every panel */
+@media (max-width: 600px) {
+  .drawer-profiles-pills-row { gap: 8px 4px; justify-content: space-between; }
+  .drawer-profile-pill { min-width: 56px; }
+}
+
 /* Rota on: the rota decides, so the row fades back */
 .drawer-profiles-pills-row.is-overridden { opacity: 0.4; pointer-events: none; }
 
@@ -2860,47 +2866,76 @@ body.theme-dark .skylight-task-important { background: rgba(239, 68, 68, 0.2); c
 .skylight-task-drawer .drawer-important-row { margin-top: 0; }
 
 /* ==========================================================================
-   UP FOR GRABS: "Hand out", "+N more" and the panel (js/grabs-panel.js)
-   The column shows its first few jobs; the panel lists them all, each with
-   the family's names to tap. 8px spacing steps.
+   UP FOR GRABS: the "Grab it" button by the date and the Hand out panel
+   (js/grabs-panel.js). Not a column any more. 8px spacing steps.
    ========================================================================== */
-.tasks-grab-handout {
-  flex-shrink: 0;
-  min-height: 32px;
-  padding: 4px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  font: 700 0.85rem var(--font-body);
-  cursor: pointer;
-}
-.tasks-grab-handout:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
-
-.tasks-grab-more {
+#tasks-date-sub-bar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0;
-  width: 100%;
-  margin-top: 8px;
-  padding: 16px 8px;
-  border: 1.5px dashed #fca5a5;
-  border-radius: 16px;
-  background: rgba(254, 242, 242, 0.7);
-  color: #991b1b;
-  font: inherit;
-  cursor: pointer;
+  justify-content: space-between;
+  gap: 16px;
 }
-.tasks-grab-more-count { font: 800 1rem var(--font-heading); }
-/* Room below "+N more" so it can scroll clear of the round + button */
-.skylight-tasks-col[data-col-member="Up for grabs"] .tasks-col-body { padding-bottom: 80px; }
-.tasks-grab-more-hint { font-size: 0.8rem; color: #b91c1c; }
-body.theme-dark .tasks-grab-more { background: rgba(239, 68, 68, 0.12); border-color: rgba(248, 113, 113, 0.5); color: #fecaca; }
-body.theme-dark .tasks-grab-more-hint { color: #fca5a5; }
+.tasks-date-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tasks-grab-btn {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 4px 8px 4px 16px;
+  border: 1.5px solid #fca5a5;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #991b1b;
+  font: 700 0.9rem var(--font-body);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.tasks-grab-btn:focus-visible { outline: 2px solid #ef4444; outline-offset: 2px; }
+.tasks-grab-btn-count {
+  min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  background: #fff; color: #991b1b; font-weight: 800;
+}
+.tasks-grab-btn.is-urgent { background: #ef4444; border-color: #ef4444; color: #fff; }
+.tasks-grab-btn.is-urgent .tasks-grab-btn-count { color: #b91c1c; }
+.tasks-grab-btn.is-empty { background: transparent; border-color: var(--card-border); color: var(--text-muted); }
+.tasks-grab-btn.is-empty .tasks-grab-btn-count { background: var(--bg-secondary); color: var(--text-muted); }
+body.theme-dark .tasks-grab-btn { background: rgba(239, 68, 68, 0.14); border-color: rgba(248, 113, 113, 0.5); color: #fecaca; }
+body.theme-dark .tasks-grab-btn-count { background: #0f172a; color: #fecaca; }
+body.theme-dark .tasks-grab-btn.is-urgent { background: #dc2626; border-color: #dc2626; color: #fff; }
+body.theme-dark .tasks-grab-btn.is-empty { background: transparent; border-color: #334155; color: #94a3b8; }
 
+/* While a job is being dragged, the button says it can take it */
+.tasks-grab-btn-drop { display: none; }
+body.is-grab-dragging .tasks-grab-btn { border-style: dashed; background: #fef2f2; color: #991b1b; }
+body.is-grab-dragging .tasks-grab-btn .tasks-grab-btn-label,
+body.is-grab-dragging .tasks-grab-btn .tasks-grab-btn-count { display: none; }
+body.is-grab-dragging .tasks-grab-btn .tasks-grab-btn-drop { display: inline; padding-right: 8px; }
+.tasks-grab-btn.is-drop-target { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); border-style: solid; background: #fee2e2; }
+body.theme-dark.is-grab-dragging .tasks-grab-btn { background: rgba(239, 68, 68, 0.18); color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .tasks-grab-btn.is-drop-target { transform: none; } }
+
+@media (max-width: 600px) {
+  #tasks-date-sub-bar { gap: 8px; }
+  .tasks-grab-btn { padding-left: 8px; }
+}
 /* The panel */
 .grabs-intro { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.95rem; }
+.grabs-add {
+  width: 100%; min-height: 48px; margin-bottom: 16px;
+  border: 1.5px dashed var(--card-border); border-radius: 16px;
+  background: transparent; color: var(--text-secondary);
+  font: 600 0.95rem var(--font-body); cursor: pointer;
+}
+.grabs-add:hover { border-color: #ef4444; color: #b91c1c; }
+.grabs-job-actions { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.grabs-icon-btn {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  border: 1px solid var(--card-border); background: var(--card-bg);
+  color: var(--text-secondary); cursor: pointer;
+}
+.grabs-icon-btn:hover { color: var(--text-primary); }
+.grabs-icon-btn.is-delete:hover { color: #b91c1c; border-color: #fca5a5; }
+.grabs-icon-btn:focus-visible { outline: 2px solid #ef4444; outline-offset: 2px; }
 .grabs-list { list-style: none; margin: 0; padding: 0 0 24px; display: grid; gap: 8px; }
 .grabs-job {
   padding: 16px;

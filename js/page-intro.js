@@ -58,7 +58,7 @@ const INTRO_PREVIEWS = {
   },
 
   chores(stepIndex) {
-    const people = introPeople(2); // two people plus Up for grabs, so it stays in view
+    const people = introPeople(3); // three people; Grab it is the button above the board
     const chores = [["🛏️", "Make bed"], ["🐱", "Feed the cats"], ["🍽️", "Empty dishwasher"], ["📚", "Homework"], ["🍴", "Set the table"], ["🧹", "Hoover the stairs"]];
     const col = (p, items, opts = {}) => `
       <div class="intro-task-col" style="border-color:${p.pal.border};background:${p.pal.lightBg}33">
@@ -73,11 +73,9 @@ const INTRO_PREVIEWS = {
       { icon: chores[i * 2][0], title: chores[i * 2][1], done: i === 0 || (stepIndex === 0 && i === 1) },
       { icon: chores[i * 2 + 1][0], title: chores[i * 2 + 1][1] }
     ])).join("");
-    const grabs = col({ name: GRAB_LABEL, pal: { primary: "#ef4444", lightBg: "#fef2f2", border: "#fca5a5" } },
-      [{ icon: "🚗", title: "Clean the car", hl: stepIndex === 1 }, { icon: "🪴", title: "Water the plants" }],
-      { grab: true, icon: "⚡" });
+    const grabs = `<div class="intro-grab-row"><span class="intro-grab-pill${stepIndex === 1 ? " page-intro-highlight" : ""}">⚡ ${escapeHtml(GRAB_LABEL)} <b>2</b></span></div>`;
     const fab = stepIndex === 2 ? `<span class="intro-fab page-intro-highlight">+</span>` : "";
-    return `<div class="intro-task-board">${cols}${grabs}</div>${fab}`;
+    return `${grabs}<div class="intro-task-board">${cols}</div>${fab}`;
   },
 
   meals(stepIndex) {
@@ -171,9 +169,9 @@ const PAGE_INTROS = {
       { title: "Tasks", lead: "Chores and daily routines for everyone, with a column for each person.",
         rows: [["☀️", "Routines are grouped into Morning, Afternoon, Evening and Anytime."],
                ["✅", "Tap the circle to tick a chore off and earn points."],
-               ["⚡", "Chores nobody has claimed wait in the Grab it column."]] },
-      { title: "Grab it", lead: "Drag a chore from the Grab it column into your own to claim it, then tick it off when it's done.",
-        rows: [["👆", "On a tablet, press and hold the chore, then drag."],
+               ["⚡", "Chores nobody has taken yet wait under Grab it, next to the date."]] },
+      { title: "Grab it", lead: "Tap Grab it to see the chores nobody has taken, then tap a name to give each one to someone.",
+        rows: [["👆", "Changed your mind? Press and hold a chore, then drag it to someone else."],
                ["🔄", "Set a rota so a chore goes to different people on different days."]] },
       { title: "Add a chore", lead: "Tap + to add a chore or routine, choose who it's for and how many points it's worth.",
         rows: [["🏆", "Points count towards reward goals on the Rewards page."]] }
