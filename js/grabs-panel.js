@@ -19,7 +19,6 @@
   let lastOrder = [];          // the rows as last shown, so they don't jump about
 
   const esc = (s) => (typeof escapeHtml === "function" ? escapeHtml(String(s ?? "")) : String(s ?? ""));
-  const palette = (name) => (typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#0284c7", lightBg: "#e0f2fe" });
   const nameOf = (n) => (typeof displayMemberName === "function" ? displayMemberName(n) : n);
   const members = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
 
@@ -111,16 +110,14 @@
         overdue ? `<span class="grabs-tag is-overdue">Overdue</span><span>${esc(wasFor(t))}</span>` : "",
         `<span>${esc(value)}</span>`
       ].filter(Boolean).join("");
-      const whoRow = given
-        ? `<p class="grabs-given" role="status">✓ ${esc(nameOf(given))} is doing it</p>`
-        : `<div class="grabs-people" role="group" aria-label="Give ${esc(t.title)} to">
-            ${people.map(p => {
-              const pal = palette(p);
-              return `<button type="button" class="grabs-person" data-give="${esc(t.id)}" data-person="${esc(p)}" style="--person: ${pal.primary}; --person-light: ${pal.lightBg};">
-                <span class="grabs-person-avatar" aria-hidden="true">${esc(p.charAt(0).toUpperCase())}</span><span class="grabs-person-name">${esc(nameOf(p))}</span>
-              </button>`;
-            }).join("")}
-          </div>`;
+      // The same person picker as everywhere else: tap a name to give it to them
+      const pills = people.map(p => memberPillHtml(p, {
+        active: given === p,
+        attrs: `data-give="${esc(t.id)}" data-person="${esc(p)}"${given ? " disabled" : ""}`,
+        ariaLabel: `Give ${t.title} to ${nameOf(p)}`
+      })).join("");
+      const whoRow = `<div class="drawer-profiles-pills-row grabs-people" role="group" aria-label="Who's doing ${esc(t.title)}">${pills}</div>`
+        + (given ? `<p class="grabs-given" role="status">✓ ${esc(nameOf(given))} is doing it</p>` : "");
       return `<li class="grabs-job${given ? " is-given" : ""}${t.isPriority ? " is-important" : ""}" data-job="${esc(t.id)}">
           <div class="grabs-job-top">
             <span class="grabs-job-icon" aria-hidden="true">${esc(icon)}</span>

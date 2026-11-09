@@ -2780,3 +2780,14 @@ body.theme-dark .gs-item.is-done strong { color: #86efac; }
 /* Settings: the build, quietly at the bottom (js/utils.js showBuildInSettings) */
 .settings-build { margin: 24px 0 8px; text-align: center; font-size: 0.78rem; color: var(--text-secondary, #94a3b8); letter-spacing: 0.02em; }
 .settings-build:empty { display: none; }
+
+/* "Who smashed it?" and "Assign chore": the shared person picker
+   (js/utils.js personPillHtml), centred in the pop-up */
+.member-selector-grid.claim-people {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 16px;
+}
+.member-selector-grid.claim-people .drawer-profile-pill { min-width: 52px; }

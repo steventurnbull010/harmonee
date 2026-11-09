@@ -389,13 +389,10 @@ window.openRewardGoalPanel = openRewardGoalPanel;
 
 function renderRewardGoalPanelPickers() {
   const membersRow = document.getElementById("reward-goal-members");
-  membersRow.innerHTML = (window.familyMembers || []).map(m => {
-    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(m) : { primary: "#0284c7" };
-    const on = m === rewardGoalPanelMember;
-    return `<button type="button" class="reward-goal-member-pill ${on ? "is-selected" : ""}" data-member="${escapeHtml(m)}" aria-pressed="${on}">
-      <span class="reward-goal-member-dot" style="background: ${pal.primary};">${escapeHtml(m.charAt(0).toUpperCase())}</span>${escapeHtml(m)}
-    </button>`;
-  }).join("");
+  // The same person picker as events and chores (js/utils.js memberPillHtml)
+  membersRow.classList.add("drawer-profiles-pills-row");
+  membersRow.innerHTML = (window.familyMembers || []).map(m =>
+    memberPillHtml(m, { active: m === rewardGoalPanelMember, attrs: `data-member="${escapeHtml(m)}"` })).join("");
 
   const emojiRow = document.getElementById("reward-goal-emojis");
   emojiRow.innerHTML = REWARD_GOAL_EMOJIS.map(em =>

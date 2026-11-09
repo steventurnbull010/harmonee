@@ -2926,28 +2926,9 @@ body.theme-dark .grabs-job-icon { background: rgba(239, 68, 68, 0.14); }
 .grabs-tag.is-overdue { background: #fef3c7; color: #92400e; }
 body.theme-dark .grabs-tag.is-overdue { background: rgba(251, 191, 36, 0.16); color: #fbbf24; }
 
-.grabs-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 16px; }
-.grabs-person {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0;
-  min-height: 64px; padding: 8px 4px;
-  border: 1.5px solid var(--person);
-  border-radius: 16px;
-  background: var(--person-light);
-  color: var(--text-primary);
-  font: 600 0.85rem var(--font-body);
-  cursor: pointer;
-}
-.grabs-person:hover { filter: brightness(0.97); }
-.grabs-person:active { transform: scale(0.97); }
-.grabs-person:focus-visible { outline: 2px solid var(--person); outline-offset: 2px; }
-.grabs-person-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.grabs-person-avatar {
-  flex: none; width: 32px; height: 32px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--person); color: #fff; font-weight: 800; font-size: 0.85rem;
-}
-body.theme-dark .grabs-person { background: rgba(255, 255, 255, 0.04); color: #f8fafc; }
+.grabs-people { margin-top: 16px; padding: 0 0 4px; }
+.grabs-people .drawer-profile-pill:disabled { cursor: default; }
+.grabs-people .drawer-profile-pill:disabled:not(.active) { opacity: 0.4; }
 .grabs-given { margin: 16px 0 0; font-weight: 700; color: #15803d; }
 body.theme-dark .grabs-given { color: #4ade80; }
 .grabs-empty { padding: 32px 16px; text-align: center; color: var(--text-secondary); }
-@media (prefers-reduced-motion: reduce) { .grabs-person:active { transform: none; } }

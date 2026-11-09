@@ -212,6 +212,29 @@ function displayMemberName(name) {
 }
 window.displayMemberName = displayMemberName;
 
+// The one person picker, used wherever someone is chosen (an event's "Who's
+// it for", a chore's "Who's doing it", who's cooking, who did it, handing out
+// a job, a reward goal): an empty dashed circle with the person's initial
+// that fills with their colour and a tick when picked, name underneath.
+// Styles: css/tasks.css ("Who's doing it" picker). Put pills in a
+// .drawer-profiles-pills-row. `value`, `label` and `initial` are escaped here;
+// `attrs` is raw (build it with escapeHtml).
+const PERSON_PILL_TICK = `<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
+function personPillHtml({ label, initial, color, active = false, attrs = "", extraClass = "", ariaLabel = "" }) {
+  return `<button type="button" class="drawer-profile-pill${extraClass ? ` ${extraClass}` : ""}${active ? " active" : ""}" ${attrs} aria-pressed="${active ? "true" : "false"}"${ariaLabel ? ` aria-label="${escapeHtml(ariaLabel)}"` : ""} style="--profile-color: ${escapeHtml(color || "#64748b")};">
+    <span class="drawer-profile-avatar">${escapeHtml(initial || "")}${PERSON_PILL_TICK}</span>
+    <span class="drawer-profile-name">${escapeHtml(label || "")}</span>
+  </button>`;
+}
+window.personPillHtml = personPillHtml;
+
+// A family member's pill: their initial and colour
+function memberPillHtml(name, opts = {}) {
+  const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" };
+  return personPillHtml({ label: displayMemberName(name), initial: String(name || "?").charAt(0).toUpperCase(), color: pal.primary, ...opts });
+}
+window.memberPillHtml = memberPillHtml;
+
 function getAssigneeNames(assignedTo) {
   if (!assignedTo) return [];
   const raw = Array.isArray(assignedTo) ? assignedTo : (typeof assignedTo === "string" ? assignedTo.split(",") : []);

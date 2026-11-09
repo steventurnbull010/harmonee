@@ -3094,24 +3094,16 @@ function openRosterMemberPopover(day, anchorEl) {
   if (dayTitle) dayTitle.textContent = day;
 
   const currentAssigned = currentRosterAssignments[day] || "";
-  let buttonsHtml = `
-    <button type="button" class="popover-member-btn ${!currentAssigned ? 'is-selected' : ''}" data-member="">
-      <span class="popover-avatar-circle" style="border: 2px dashed #f59e0b; background: rgba(245, 158, 11, 0.12); color: #d97706;">⚡</span>
-      <span class="popover-member-label">Anyone</span>
-    </button>
-  `;
-
-  familyMembers.forEach((m, idx) => {
-    const isSel = currentAssigned.toLowerCase() === m.toLowerCase();
-    const col = getMemberColor(idx);
-    buttonsHtml += `
-      <button type="button" class="popover-member-btn ${isSel ? 'is-selected' : ''}" data-member="${escapeHtml(m)}">
-        <span class="popover-avatar-circle" style="border: 2px solid ${col.border}; background: ${col.bg}; color: var(--text-primary);">${escapeHtml(m.charAt(0).toUpperCase())}</span>
-        <span class="popover-member-label">${escapeHtml(m)}</span>
-      </button>
-    `;
+  // The same person picker as events and chores (js/utils.js), with Grab it
+  let buttonsHtml = familyMembers.map(m => window.memberPillHtml(m, {
+    active: currentAssigned.toLowerCase() === m.toLowerCase(),
+    extraClass: "popover-member-btn",
+    attrs: `data-member="${escapeHtml(m)}"`
+  })).join("") + window.personPillHtml({
+    label: window.GRAB_LABEL || "Grab it", initial: "⚡", color: "#ef4444", active: !currentAssigned,
+    extraClass: "popover-member-btn", attrs: `data-member=""`
   });
-
+  membersRow.classList.add("drawer-profiles-pills-row");
   membersRow.innerHTML = buttonsHtml;
 
   membersRow.querySelectorAll(".popover-member-btn").forEach(btn => {
@@ -3864,32 +3856,17 @@ function openAssignModal(taskId) {
   const titleEl = document.getElementById("assign-modal-task-title");
   if (titleEl) titleEl.textContent = task.title;
 
+  // The same person picker as events and chores (js/utils.js memberPillHtml)
   const grid = document.getElementById("assign-modal-member-grid");
   if (grid) {
-    grid.innerHTML = "";
-    familyMembers.forEach((member, idx) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "member-claim-btn";
-      const isCurrent = task.assignedTo === member;
-      if (isCurrent) btn.classList.add("selected");
-
-      const color = getMemberColor(idx);
-      const initial = member.charAt(0).toUpperCase();
-
-      btn.innerHTML = `
-        <div class="claim-avatar" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
-        <div class="claim-info">
-          <span class="claim-name">${escapeHtml(member)}</span>
-          <span class="claim-reward">${isCurrent ? 'Currently Assigned' : 'Assign to ' + escapeHtml(member)}</span>
-        </div>
-      `;
-
-      btn.addEventListener("click", () => {
-        handleSetAssignee(member);
-      });
-
-      grid.appendChild(btn);
+    grid.classList.add("drawer-profiles-pills-row", "claim-people");
+    grid.innerHTML = familyMembers.map(member => window.memberPillHtml(member, {
+      active: task.assignedTo === member,
+      attrs: `data-assign-member="${escapeHtml(member)}"`,
+      ariaLabel: `Assign to ${member}`
+    })).join("");
+    grid.querySelectorAll("[data-assign-member]").forEach(btn => {
+      btn.addEventListener("click", () => handleSetAssignee(btn.getAttribute("data-assign-member")));
     });
   }
 
@@ -3956,57 +3933,20 @@ function renderClaimModalMembers() {
     hintEl.textContent = `Select one, multiple people, or Team Effort (${eachSuffix})`;
   }
 
-  familyMembers.forEach((member, idx) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "member-claim-btn toggle-member-btn";
-    btn.setAttribute("data-claim-member", member);
-    btn.id = `claim-${member.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
-
-    const color = getMemberColor(idx);
-    const initial = member.charAt(0).toUpperCase();
-
-    btn.innerHTML = `
-      <div class="claim-avatar" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
-      <div class="claim-info">
-        <span class="claim-name">${escapeHtml(member)}</span>
-        <span class="claim-reward">${rewardLabel}</span>
-      </div>
-      <span class="claim-checkbox" aria-hidden="true"></span>
-    `;
-
-    btn.addEventListener("click", () => {
-      toggleClaimMember(btn);
-    });
-
-    grid.appendChild(btn);
+  // The same person picker as events and chores (js/utils.js memberPillHtml),
+  // plus Team effort for everyone
+  grid.classList.add("drawer-profiles-pills-row", "claim-people");
+  grid.innerHTML = familyMembers.map(member => window.memberPillHtml(member, {
+    attrs: `data-claim-member="${escapeHtml(member)}"`,
+    ariaLabel: `${member} did it (${rewardLabel})`
+  })).join("") + window.personPillHtml({
+    label: "Team effort", initial: "🤝", color: "#f59e0b",
+    attrs: `data-claim-member="Team Effort"`,
+    ariaLabel: `Everyone did it together (${rewardLabel} each)`
   });
-
-  // Team Effort button
-  const teamBtn = document.createElement("button");
-  teamBtn.type = "button";
-  teamBtn.className = "member-claim-btn team-claim-btn";
-  teamBtn.setAttribute("data-claim-member", "Team Effort");
-  teamBtn.id = "claim-team";
-
-  const teamRewardLabel = isMoney
-    ? `All Members (+${currency}${rewardVal.toFixed(2)} Each)`
-    : `All Members (+${rewardVal} ${rewardVal === 1 ? 'Pt' : 'Pts'} Each)`;
-
-  teamBtn.innerHTML = `
-    <div class="claim-avatar" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); border: 2px solid #fbbf24;">🤝</div>
-    <div class="claim-info">
-      <span class="claim-name">Team Effort</span>
-      <span class="claim-reward">${teamRewardLabel}</span>
-    </div>
-    <span class="claim-checkbox" aria-hidden="true"></span>
-  `;
-
-  teamBtn.addEventListener("click", () => {
-    toggleClaimMember(teamBtn);
+  grid.querySelectorAll("[data-claim-member]").forEach(btn => {
+    btn.addEventListener("click", () => toggleClaimMember(btn));
   });
-
-  grid.appendChild(teamBtn);
 }
 
 let claimTargetDay = null;
@@ -4064,34 +4004,21 @@ function openClaimModal(taskId, targetDay = null, targetDate = null) {
 
 function toggleClaimMember(btn) {
   const member = btn.getAttribute("data-claim-member");
-  const memberButtons = document.querySelectorAll(".member-claim-btn");
-
   if (member === "Team Effort") {
-    if (selectedClaimMembers.has("Team Effort")) {
-      selectedClaimMembers.clear();
-      btn.classList.remove("selected");
-    } else {
-      selectedClaimMembers.clear();
-      memberButtons.forEach(b => b.classList.remove("selected"));
-      selectedClaimMembers.add("Team Effort");
-      btn.classList.add("selected");
-    }
+    const wasOn = selectedClaimMembers.has("Team Effort");
+    selectedClaimMembers.clear();
+    if (!wasOn) selectedClaimMembers.add("Team Effort");
   } else {
-    if (selectedClaimMembers.has("Team Effort")) {
-      selectedClaimMembers.delete("Team Effort");
-      const teamBtn = document.getElementById("claim-team");
-      if (teamBtn) teamBtn.classList.remove("selected");
-    }
-
-    if (selectedClaimMembers.has(member)) {
-      selectedClaimMembers.delete(member);
-      btn.classList.remove("selected");
-    } else {
-      selectedClaimMembers.add(member);
-      btn.classList.add("selected");
-    }
+    selectedClaimMembers.delete("Team Effort");
+    if (selectedClaimMembers.has(member)) selectedClaimMembers.delete(member);
+    else selectedClaimMembers.add(member);
   }
-
+  // Picked people filled in their colour with a tick, like everywhere else
+  document.querySelectorAll("#modal-member-grid [data-claim-member]").forEach(b => {
+    const on = selectedClaimMembers.has(b.getAttribute("data-claim-member"));
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
   updateConfirmButton();
 }
 
