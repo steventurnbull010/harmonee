@@ -78,9 +78,8 @@
         <button type="button" class="btn-modal-close" data-fr-close aria-label="Close">✕</button>
         <div class="modal-header"><h2 id="family-recipe-title" class="modal-title">Add a recipe</h2></div>
         <form class="family-recipe-form" id="family-recipe-form" novalidate>
-          <button type="button" class="family-recipe-photo" data-fr-photo hidden>
-            <span aria-hidden="true">📷</span> Fill in from a photo
-            <small>a page of a recipe book, or a handwritten recipe (up to 3 photos)</small>
+          <button type="button" class="family-recipe-photo" data-fr-photo aria-label="Fill in from a photo of a recipe book page or a handwritten recipe" hidden>
+            <span aria-hidden="true">📷</span> From a photo
           </button>
           <p class="family-recipe-note" data-fr-note role="status" hidden>📷 Filled in from your photo. Check it, then Save.</p>
           <label class="ev-field"><span class="ev-field-label">Name</span>
