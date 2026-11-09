@@ -611,3 +611,35 @@ body.theme-dark .setup-who.is-on { background: var(--who); border-color: var(--w
 body.theme-dark .setup-family-badge { background: rgba(2, 132, 199, 0.18); color: #bae6fd; }
 .setup-later { display: inline-block; margin: 8px 0 0; padding: 4px 12px; border-radius: 999px; background: #fef9c3; color: #854d0e; font-size: 0.85rem; font-weight: 700; }
 body.theme-dark .setup-later { background: rgba(250, 204, 21, 0.15); color: #fde68a; }
+
+/* Step 3: Pick a buddy (js/buddies.js). One swipeable strip per person;
+   tap a buddy to choose it (it fills with that person's colour), tap again
+   to go without. 8px spacing steps. */
+.setup-buddy-row { margin: 16px 0 0; }
+.setup-buddy-who { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-weight: 800; color: #0f172a; }
+.setup-buddy-who .setup-mini-avatar { margin-right: 0; }
+.setup-buddy-chosen { margin-left: auto; font-size: 0.85rem; font-weight: 600; color: #64748b; }
+.setup-buddy-strip {
+  display: flex; gap: 8px;
+  overflow-x: auto; scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+  padding: 4px 2px 8px; margin: 0 -2px;
+  -webkit-overflow-scrolling: touch;
+}
+.setup-buddy {
+  flex: none; width: 88px; scroll-snap-align: start;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px; border-radius: 16px;
+  border: 2px solid #e2e8f0; background: #ffffff; color: #334155;
+  font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
+.setup-buddy .buddy-svg { width: 64px; height: 64px; filter: none; }
+.setup-buddy.is-on {
+  border-color: var(--pill, #0284c7);
+  background: color-mix(in srgb, var(--pill, #0284c7) 12%, #ffffff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pill, #0284c7) 22%, transparent);
+  color: #0f172a;
+}
+.setup-buddy:focus-visible { outline: 2px solid var(--pill, #0284c7); outline-offset: 2px; }
+body.theme-dark .setup-buddy-who { color: #f8fafc; }
+body.theme-dark .setup-buddy { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+body.theme-dark .setup-buddy.is-on { background: color-mix(in srgb, var(--pill, #0284c7) 22%, #1e293b); color: #f8fafc; }

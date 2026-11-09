@@ -1,12 +1,13 @@
 // ============================================================================
 // GUIDED SETUP FOR NEW FAMILIES (js/setup-wizard.js)
 // Opens at /?new=true (and from "Create a Brand New Board" in the share
-// window). Five short steps:
+// window). Six short steps:
 //   1. Family name ("The Bakers")          -> shown at the top of every page
-//   2. Who's in the family                 -> names, colours, grown-up / child
-//   3. Points or pocket money (+ currency)
-//   4. Starter routines (tap who does each) and jobs up for grabs
-//   5. All set                             -> creates the board
+//   2. Who's in the family                 -> names and colours
+//   3. Pick a buddy (optional, each person) -> js/buddies.js
+//   4. Points or pocket money (+ currency)
+//   5. Starter routines (tap who does each) and jobs up for grabs
+//   6. All set                             -> creates the board
 // It saves everything where a new board reads it, then goes to the board,
 // which is created (with its family code) on arrival by ensureBoardAccess in
 // app.js. The first visit then shows a welcome card with the family code
@@ -43,7 +44,7 @@
   const SLOT_LABEL = { morning: "☀️ Morning", afternoon: "⛅ Afternoon", evening: "🌙 Evening" };
 
   let state = null;
-  const STEPS = 5;
+  const STEPS = 6;
 
   function freshState() {
     const params = new URLSearchParams(window.location.search);
@@ -52,7 +53,7 @@
       // A "?new=true" link goes straight to step 1.
       step: params.get("new") === "true" ? 1 : 0,
       familyName: (params.get("family") || "").slice(0, 40),
-      people: [],          // { name, colour, child }
+      people: [],          // { name, colour, buddy }
       openColour: null,    // index of the person whose colour row is open
       mode: "points",
       currency: "£",
@@ -64,7 +65,7 @@
 
   const nextColour = () => COLOUR_ORDER.find(id => !state.people.some(p => p.colour === id)) || COLOUR_ORDER[state.people.length % COLOUR_ORDER.length];
   // Who does each starter routine: { routineKey: Set of names }. Made the
-  // first time step 4 opens: the routines that start on go to anyone after
+  // first time step 5 opens: the routines that start on go to anyone after
   // the first two people (or everyone, in a family of one or two).
   function routineWho() {
     const s = state;
@@ -127,7 +128,26 @@
       </div>
       <p class="setup-hint">${s.people.length ? "🎨 Tap a name to change its colour" : "Add everyone who'll use harmonee."}</p>`;
 
-    if (s.step === 3) return `
+    if (s.step === 3) {
+      // Pick a buddy: optional, one strip of buddies per person
+      const list = window.Buddies ? window.Buddies.available() : [];
+      return `
+      <h1 class="setup-title" id="setup-title">🐾 Pick a buddy</h1>
+      <p class="setup-lead">When someone ticks off their last job of the day, their buddy pops up to say well done.</p>
+      <p class="setup-later">✨ Optional: skip anyone, or change it later in Settings → Profiles</p>
+      ${s.people.map((p, i) => {
+        const chosen = p.buddy && window.Buddies ? window.Buddies.byId(p.buddy) : null;
+        return `<div class="setup-buddy-row">
+          <p class="setup-buddy-who"><span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>
+            <span class="setup-buddy-name">${esc(p.name)}</span><span class="setup-buddy-chosen">${chosen ? esc(chosen.name) : "No buddy yet"}</span></p>
+          <div class="setup-buddy-strip" role="group" aria-label="${esc(p.name)}'s buddy">${list.map(b => `
+            <button type="button" class="setup-buddy${p.buddy === b.id ? " is-on" : ""}" style="--pill:${colourOf(p.colour)}" data-act="buddy" data-i="${i}" data-buddy="${b.id}" aria-pressed="${p.buddy === b.id}" aria-label="${esc(b.name)} for ${esc(p.name)}">
+              ${window.Buddies.svgFor(b.id)}<span>${esc(b.name)}</span></button>`).join("")}</div>
+        </div>`;
+      }).join("")}`;
+    }
+
+    if (s.step === 4) return `
       <h1 class="setup-title" id="setup-title">⭐ Points or pocket money?</h1>
       <p class="setup-lead">What do jobs earn?</p>
       <div class="setup-choice-grid">
@@ -140,7 +160,7 @@
       </div>
       ${s.mode === "money" ? `<div class="setup-currency" role="group" aria-label="Currency">${["£", "€", "$"].map(c => `<button type="button" class="${s.currency === c ? "is-on" : ""}" data-act="currency" data-currency="${c}" aria-pressed="${s.currency === c}">${c}</button>`).join("")}</div>` : ""}`;
 
-    if (s.step === 4) {
+    if (s.step === 5) {
       const who = routineWho();
       const group = (slot) => ROUTINES.filter(r => r.slot === slot);
       const row = (r) => {
@@ -163,7 +183,7 @@
         <div class="setup-job-chips">${JOBS.map(j => `<button type="button" class="setup-job-chip${s.picked.has(j.key) ? " is-on" : ""}" data-act="pick" data-key="${j.key}" aria-pressed="${s.picked.has(j.key)}"><span aria-hidden="true">${j.icon}</span> ${esc(j.title)}${j.day ? ` <small>${esc(j.day)}s</small>` : ""}</button>`).join("")}</div>`;
     }
 
-    // 5: summary
+    // 6: summary
     const nRoutines = ROUTINES.filter(r => routineWho()[r.key].size).length;
     const nJobs = JOBS.filter(j => s.picked.has(j.key)).length;
     return `
@@ -173,6 +193,10 @@
 
       <ul class="setup-summary">
         <li><span aria-hidden="true">👥</span><span>${s.people.map(p => `<span class="setup-mini-avatar" style="background:${colourOf(p.colour)}">${esc(p.name.charAt(0).toUpperCase())}</span>`).join("")} ${esc(s.people.map(p => p.name).join(", "))}</span></li>
+        <li><span aria-hidden="true">🐾</span><span>${(() => {
+          const withBuddy = s.people.filter(p => p.buddy && window.Buddies && window.Buddies.byId(p.buddy));
+          return withBuddy.length ? esc(withBuddy.map(p => `${p.name}: ${window.Buddies.byId(p.buddy).name}`).join(", ")) : "No buddies yet (add them in Settings → Profiles)";
+        })()}</span></li>
         <li><span aria-hidden="true">${s.mode === "money" ? "💰" : "🏆"}</span><span>${s.mode === "money" ? `Pocket money in ${esc(s.currency)}` : "Points &amp; a weekly podium"}</span></li>
         <li><span aria-hidden="true">✅</span><span>${nRoutines} routine${nRoutines === 1 ? "" : "s"} &amp; ${nJobs} job${nJobs === 1 ? "" : "s"} up for grabs</span></li>
         <li><span aria-hidden="true">🌤️</span><span>${s.weather ? `Weather for ${esc(s.weather.label || s.weather.name)}` : "No weather yet (add it in Settings)"}</span></li>
@@ -289,7 +313,11 @@
     }));
 
     const memberColors = {};
-    s.people.forEach(p => { memberColors[p.name.toLowerCase()] = p.colour; });
+    const memberBuddies = {};
+    s.people.forEach(p => {
+      memberColors[p.name.toLowerCase()] = p.colour;
+      if (p.buddy) memberBuddies[p.name.toLowerCase()] = p.buddy;
+    });
     try {
       localStorage.setItem("harmonee_active_board_id", boardId);
       localStorage.setItem("chore_active_board_id", boardId);
@@ -297,6 +325,7 @@
       localStorage.setItem(`harmonee_roster_${boardId}`, JSON.stringify(names));
       localStorage.setItem(`harmonee_settings_${boardId}`, JSON.stringify({
         familyName: s.familyName, gameMode: s.mode, currency: s.currency, memberColors,
+        ...(Object.keys(memberBuddies).length ? { memberBuddies } : {}),
         ...(s.weather ? { weatherLocation: { lat: s.weather.lat, lon: s.weather.lon, name: s.weather.name, label: s.weather.label || s.weather.name } } : {})
       }));
       localStorage.setItem(`harmonee_setup_tasks_${boardId}`, JSON.stringify(tasks));
@@ -350,6 +379,17 @@
     }
     if (act === "colour") { s.openColour = s.openColour === i ? null : i; return render(); }
     if (act === "pick-colour") { s.people[i].colour = b.getAttribute("data-colour"); s.openColour = null; return render(); }
+    if (act === "buddy") {
+      // Tap to choose, tap again to go without; keep the strip where it was
+      const id = b.getAttribute("data-buddy");
+      const strip = b.closest(".setup-buddy-strip");
+      const left = strip ? strip.scrollLeft : 0;
+      s.people[i].buddy = s.people[i].buddy === id ? null : id;
+      render();
+      const again = document.querySelectorAll(".setup-buddy-strip")[i];
+      if (again) again.scrollLeft = left;
+      return;
+    }
     if (act === "mode") { s.mode = b.getAttribute("data-mode"); return render(); }
     if (act === "currency") { s.currency = b.getAttribute("data-currency"); return render(); }
     if (act === "pick") { const k = b.getAttribute("data-key"); if (s.picked.has(k)) s.picked.delete(k); else s.picked.add(k); return render(); }
