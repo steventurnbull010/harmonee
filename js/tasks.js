@@ -837,7 +837,15 @@ function moveGrabDrag(x, y) {
   else if (x > bRect.right - GRAB_EDGE_SCROLL_PX) board.scrollLeft += 14;
 
   const under = document.elementFromPoint(x, y);
-  const col = under ? under.closest(".skylight-tasks-col") : null;
+  let col = under ? under.closest(".skylight-tasks-col") : null;
+  // Below a short column (or past the bottom of a long one): whoever's lane
+  // the finger is in, so a job can be dropped anywhere under someone's name
+  if (!col && under && board.contains(under)) {
+    col = Array.from(board.querySelectorAll(".skylight-tasks-col")).find(c => {
+      const r = c.getBoundingClientRect();
+      return r.width > 0 && x >= r.left && x <= r.right;
+    }) || null;
+  }
   const member = col ? col.getAttribute("data-col-member") : null;
   // Any other column, including back to Up for grabs
   const target = (member && member !== state.fromMember) ? col : null;
