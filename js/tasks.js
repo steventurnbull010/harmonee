@@ -1090,6 +1090,9 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
 
   renderSkylightTasksPage();
 
+  // Has this person just finished their day? Their buddy says well done
+  if (window.Buddies) window.Buddies.checkFinished(completer, tickDate);
+
   // Check if ALL tasks for today are now completed!
   checkAllTasksCompletedCelebration();
 }
@@ -1121,8 +1124,9 @@ function checkAllTasksCompletedCelebration() {
   });
 
   if (total > 0 && done === total) {
-    // Trigger celebration overlay!
-    showSkylightCelebration();
+    // Trigger celebration overlay! (after a buddy's turn, if one is showing)
+    if (window.Buddies) window.Buddies.whenClosed(showSkylightCelebration);
+    else showSkylightCelebration();
   }
 }
 

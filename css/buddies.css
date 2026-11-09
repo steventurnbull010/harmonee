@@ -1,0 +1,196 @@
+/* ==========================================================================
+   BUDDIES (js/buddies.js): the celebration when someone finishes their day,
+   and each buddy's own move. A calm version (no hop, no flapping) for
+   devices set to reduce motion. 8px spacing steps.
+   ========================================================================== */
+.buddy-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  cursor: pointer;
+  z-index: 100000; /* above the bottom bar and the round + button */
+}
+/* Phones: clear of the bottom bar */
+@media (max-width: 600px) {
+  .buddy-stage { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+}
+.buddy-backdrop {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.15) 70%);
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.buddy-stage.is-in .buddy-backdrop { opacity: 1; }
+.buddy-stage.is-out .buddy-backdrop { opacity: 0; }
+
+.buddy-figure {
+  position: relative;
+  width: min(280px, 60vw);
+  aspect-ratio: 1;
+  transform: translateY(120%);
+}
+.buddy-stage.is-in .buddy-figure { animation: buddy-hop-in 0.7s cubic-bezier(.2, 1.4, .4, 1) forwards, buddy-bob 2.4s ease-in-out 0.8s infinite; }
+.buddy-stage.is-out .buddy-figure { animation: buddy-drop-out 0.35s ease-in forwards; }
+.buddy-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 12px 16px rgba(15, 23, 42, 0.25)); }
+
+.buddy-bubble {
+  position: relative;
+  max-width: min(420px, 100%);
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  border-radius: 24px;
+  background: #fff;
+  color: #0f172a;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.25);
+  opacity: 0; transform: translateY(16px) scale(0.9);
+}
+.buddy-bubble::after {
+  content: ""; position: absolute; left: 50%; bottom: -10px;
+  width: 20px; height: 20px; background: #fff;
+  transform: translateX(-50%) rotate(45deg); border-radius: 4px;
+}
+.buddy-bubble strong { display: block; font: 800 1.4rem var(--font-heading, sans-serif); }
+.buddy-bubble span { display: block; margin-top: 4px; font: 600 1.05rem var(--font-body, sans-serif); color: #334155; }
+.buddy-stage.is-in .buddy-bubble { animation: buddy-bubble-in 0.4s ease-out 0.55s forwards; }
+.buddy-stage.is-out .buddy-bubble { opacity: 0; transition: opacity 0.2s; }
+
+.buddy-close-hint {
+  position: relative; margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.85); font: 600 0.8rem var(--font-body, sans-serif);
+  opacity: 0;
+}
+.buddy-stage.is-in .buddy-close-hint { animation: buddy-fade-in 0.4s ease 1.2s forwards; }
+
+/* Sparkles around the buddy */
+.buddy-sparkles { position: absolute; left: 50%; bottom: 120px; width: 0; height: 0; }
+.buddy-sparkles i {
+  position: absolute; width: 10px; height: 10px; border-radius: 2px;
+  background: #facc15; opacity: 0; transform: rotate(45deg);
+}
+.buddy-stage.is-in .buddy-sparkles i { animation: buddy-sparkle 1.6s ease-out infinite; }
+.buddy-sparkles i:nth-child(1) { left: -150px; top: -60px; animation-delay: 0.6s !important; }
+.buddy-sparkles i:nth-child(2) { left: 140px; top: -90px; animation-delay: 0.8s !important; background: #34d399; }
+.buddy-sparkles i:nth-child(3) { left: -110px; top: -170px; animation-delay: 1.0s !important; background: #a78bfa; }
+.buddy-sparkles i:nth-child(4) { left: 110px; top: -190px; animation-delay: 1.2s !important; }
+.buddy-sparkles i:nth-child(5) { left: -170px; top: -120px; animation-delay: 1.4s !important; background: #fb923c; }
+.buddy-sparkles i:nth-child(6) { left: 170px; top: -40px; animation-delay: 1.6s !important; background: #a78bfa; }
+.buddy-sparkles i:nth-child(7) { left: -60px; top: -230px; animation-delay: 1.1s !important; background: #34d399; }
+.buddy-sparkles i:nth-child(8) { left: 60px; top: -240px; animation-delay: 1.5s !important; background: #fb923c; }
+.buddy-sparkles i:nth-child(9) { left: -190px; top: -20px; animation-delay: 1.3s !important; }
+.buddy-sparkles i:nth-child(10) { left: 190px; top: -150px; animation-delay: 0.9s !important; background: #34d399; }
+
+/* Everyone blinks */
+.buddy-svg .bd-blink { transform-box: fill-box; transform-origin: center; animation: buddy-blink 3.2s ease-in-out infinite; }
+
+/* Dragon: flaps its wings and puffs a smoke ring */
+.buddy-dragon .bd-wing { transform-box: fill-box; }
+.buddy-dragon .bd-wing-l { transform-origin: right bottom; }
+.buddy-dragon .bd-wing-r { transform-origin: left bottom; }
+.buddy-move-dragon.is-in .bd-wing-l { animation: buddy-flap-l 0.5s ease-in-out 0.7s 6; }
+.buddy-move-dragon.is-in .bd-wing-r { animation: buddy-flap-r 0.5s ease-in-out 0.7s 6; }
+.buddy-dragon .bd-puff { opacity: 0; transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-dragon.is-in .bd-puff { animation: buddy-puff 2s ease-out 1s 3; }
+.buddy-dragon .bd-tail { transform-box: fill-box; transform-origin: right center; }
+.buddy-move-dragon.is-in .bd-tail { animation: buddy-wag 0.8s ease-in-out 0.7s infinite alternate; }
+
+/* Robot: antenna lights up, thumbs up */
+.buddy-robot .bd-antenna-light { transform-box: fill-box; transform-origin: center; }
+.buddy-move-robot.is-in .bd-antenna-light { animation: buddy-glow 0.6s ease-in-out 0.7s infinite alternate; }
+.buddy-robot .bd-arm-r { transform-box: fill-box; transform-origin: left center; }
+.buddy-move-robot.is-in .bd-arm-r { animation: buddy-thumbs-up 0.6s cubic-bezier(.2, 1.4, .4, 1) 0.9s forwards; }
+
+/* Fox: flicks its tail and winks */
+.buddy-fox .bd-tail { transform-box: fill-box; transform-origin: left bottom; }
+.buddy-move-fox.is-in .bd-tail { animation: buddy-flick 0.9s ease-in-out 0.7s infinite alternate; }
+.buddy-fox .bd-eye-shut { opacity: 0; }
+.buddy-move-fox.is-in .bd-eye-open { animation: buddy-wink-open 2.4s ease-in-out 1.2s infinite; }
+.buddy-move-fox.is-in .bd-eye-shut { animation: buddy-wink-shut 2.4s ease-in-out 1.2s infinite; }
+
+@keyframes buddy-hop-in { 0% { transform: translateY(120%); } 70% { transform: translateY(-6%); } 100% { transform: translateY(0); } }
+@keyframes buddy-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+@keyframes buddy-drop-out { to { transform: translateY(120%); } }
+@keyframes buddy-bubble-in { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes buddy-fade-in { to { opacity: 1; } }
+@keyframes buddy-sparkle { 0% { opacity: 0; transform: rotate(45deg) scale(0.2); } 30% { opacity: 1; transform: rotate(45deg) scale(1.2); } 100% { opacity: 0; transform: rotate(45deg) scale(0.4) translateY(-20px); } }
+@keyframes buddy-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes buddy-flap-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-18deg); } }
+@keyframes buddy-flap-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(18deg); } }
+@keyframes buddy-puff { 0% { opacity: 0; transform: scale(0.4) translate(0, 0); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4) translate(10px, -20px); } }
+@keyframes buddy-wag { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+@keyframes buddy-glow { from { transform: scale(1); filter: drop-shadow(0 0 0 #a3e635); } to { transform: scale(1.25); filter: drop-shadow(0 0 8px #a3e635); } }
+@keyframes buddy-thumbs-up { to { transform: rotate(-40deg) translateY(-6px); } }
+@keyframes buddy-flick { from { transform: rotate(-4deg); } to { transform: rotate(10deg); } }
+@keyframes buddy-wink-open { 0%, 40%, 60%, 100% { opacity: 1; } 45%, 55% { opacity: 0; } }
+@keyframes buddy-wink-shut { 0%, 40%, 60%, 100% { opacity: 0; } 45%, 55% { opacity: 1; } }
+
+/* A calm version: no hop or flapping, just there with a gentle fade */
+@media (prefers-reduced-motion: reduce) {
+  .buddy-figure, .buddy-stage.is-in .buddy-figure { transform: none; animation: buddy-fade-in 0.4s ease forwards !important; opacity: 0; }
+  .buddy-stage.is-out .buddy-figure { animation: none !important; opacity: 0; transition: opacity 0.3s; }
+  .buddy-stage * { animation-iteration-count: 1 !important; }
+  .buddy-svg .bd-blink, .buddy-sparkles i,
+  .buddy-stage .bd-wing, .buddy-stage .bd-tail, .buddy-stage .bd-puff, .buddy-stage .bd-antenna-light,
+  .buddy-stage .bd-eye-open, .buddy-stage .bd-eye-shut { animation: none !important; }
+  .buddy-move-robot.is-in .bd-arm-r { animation: none !important; transform: rotate(-40deg) translateY(-6px); }
+}
+
+/* ---- Profile panel (js/profile-panel.js) ----------------------------------- */
+.profile-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.profile-hero-avatar {
+  flex: none; width: 64px; height: 64px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--profile-color, #64748b); color: #fff;
+  font: 800 1.6rem var(--font-heading, sans-serif);
+}
+.profile-hero-name { margin: 0; font: 700 1.5rem var(--font-heading, sans-serif); color: var(--text-primary); }
+.profile-hero-sub { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+.profile-section { margin-bottom: 24px; }
+.profile-section-title { margin: 0 0 8px; font: 700 1rem var(--font-body, sans-serif); color: var(--text-primary); }
+.profile-section-desc { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.9rem; }
+
+.profile-buddy-preview {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px; margin-bottom: 16px;
+  border: 1px solid var(--card-border); border-radius: 24px;
+  background: var(--card-bg);
+}
+.profile-buddy-preview .buddy-svg { width: 96px; height: 96px; flex: none; filter: none; }
+.profile-buddy-preview-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.profile-buddy-preview-text strong { font: 700 1.1rem var(--font-heading, sans-serif); color: var(--text-primary); }
+.profile-play-btn {
+  align-self: flex-start;
+  min-height: 40px; padding: 8px 16px; border-radius: 999px;
+  border: 0; background: var(--profile-color, #0284c7); color: #fff;
+  font: 700 0.9rem var(--font-body, sans-serif); cursor: pointer;
+}
+.profile-buddy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.profile-buddy-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px; border-radius: 16px;
+  border: 2px solid var(--card-border); background: var(--card-bg);
+  color: var(--text-primary); font: 600 0.85rem var(--font-body, sans-serif);
+  cursor: pointer;
+}
+.profile-buddy-tile .buddy-svg { width: 64px; height: 64px; filter: none; }
+.profile-buddy-tile .profile-no-buddy { width: 64px; height: 64px; display: grid; place-items: center; font-size: 1.8rem; color: var(--text-muted); }
+.profile-buddy-tile[aria-pressed="true"] {
+  border-color: var(--profile-color, #0284c7);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--profile-color, #0284c7) 20%, transparent);
+}
+.profile-buddy-tile:focus-visible { outline: 2px solid var(--profile-color, #0284c7); outline-offset: 2px; }
+.profile-colour-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.profile-colour-swatch {
+  width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.profile-colour-swatch[aria-pressed="true"] { border-color: var(--text-primary); }
+.roster-profile-btn { white-space: nowrap; }

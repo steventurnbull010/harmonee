@@ -4224,6 +4224,14 @@ async function handleConfirmClaim() {
     taskTitle: task.title
   });
 
+  // Once the tick below is saved on this device: has anyone just finished
+  // their day? (Team effort counts for everyone.) Their buddy says well done.
+  setTimeout(() => {
+    if (!window.Buddies) return;
+    const who = claimValue === "Team Effort" ? familyMembers : claimValue.split(",").map(s => s.trim());
+    window.Buddies.checkFinished(who, claimTargetDate ? new Date(claimTargetDate) : new Date());
+  }, 0);
+
   const timestamp = new Date().toISOString();
   const currentWeekKey = getIsoWeekKey();
 
@@ -5157,6 +5165,21 @@ function setupEventListeners() {
   const addMemberForm = document.getElementById("add-member-form");
   const newMemberNameInput = document.getElementById("new-member-name");
 
+  window.renderRosterModalList = renderRosterModalList; // the profile panel refreshes the rows
+  // A person's colour (their profile panel, js/profile-panel.js)
+  window.setMemberColour = (member, colorId) => {
+    const mKey = String(member).toLowerCase();
+    memberColorOverrides[mKey] = colorId;
+    if (!boardSettings.memberColors) boardSettings.memberColors = {};
+    boardSettings.memberColors[mKey] = colorId;
+    try { localStorage.setItem("chore_member_colors", JSON.stringify(memberColorOverrides)); } catch (err) {}
+    saveLocalBoardSettings(boardSettings);
+    saveRosterAndSync();
+    renderRosterModalList();
+    renderApp();
+    renderSkylightTasksPage();
+  };
+
   function renderRosterModalList() {
     const listEl = document.getElementById("roster-members-list");
     if (!listEl) return;
@@ -5168,70 +5191,36 @@ function setupEventListeners() {
 
       const pal = getMemberPalette(member);
       const initial = member.charAt(0).toUpperCase();
+      const buddyId = window.Buddies ? window.Buddies.getMemberBuddy(member) : null;
+      const buddyName = buddyId ? (window.Buddies.byId(buddyId) || {}).name : "";
 
       row.innerHTML = `
         <div class="roster-member-info">
-          <button type="button" class="roster-color-trigger-btn" data-member="${escapeHtml(member)}" title="Change ${escapeHtml(member)}'s colour" aria-label="Change ${escapeHtml(member)}'s colour" style="--profile-color: ${pal.primary};">
+          <button type="button" class="roster-color-trigger-btn" data-member="${escapeHtml(member)}" title="Open ${escapeHtml(member)}'s profile" aria-label="Open ${escapeHtml(member)}'s profile" style="--profile-color: ${pal.primary};">
             ${escapeHtml(initial)}
           </button>
           <div class="roster-member-names-wrap">
             <span class="roster-member-name">${escapeHtml(member)}</span>
-            <span class="roster-member-color-name">${escapeHtml(pal.name || "Custom")}</span>
+            <span class="roster-member-color-name">${escapeHtml([pal.name || "Custom", buddyName ? `${buddyName} buddy` : ""].filter(Boolean).join(" · "))}</span>
           </div>
         </div>
         <div class="roster-member-actions">
-          <button type="button" class="btn-change-member-color" data-member="${escapeHtml(member)}" title="Change colour">
-            🎨 Colour
+          <button type="button" class="btn-change-member-color roster-profile-btn" data-member="${escapeHtml(member)}" title="${escapeHtml(member)}'s profile: colour and buddy">
+            Profile
           </button>
           <button type="button" class="btn-remove-member" data-member-index="${idx}" title="Remove ${escapeHtml(member)}" aria-label="Remove ${escapeHtml(member)}">
             ✕
           </button>
         </div>
-        <!-- Collapsible inline color picker for this member -->
-        <div class="roster-inline-color-picker" id="inline-picker-${idx}" style="display: none;">
-          <div class="skylight-color-picker-grid">
-            ${SKYLIGHT_PROFILE_COLORS.map(c => `
-              <button type="button" class="skylight-color-swatch ${c.id === pal.id ? 'is-selected' : ''}" 
-                      data-color-id="${c.id}" data-member="${escapeHtml(member)}"
-                      style="background: ${c.solid};" title="${escapeHtml(c.name)}"></button>
-            `).join("")}
-          </div>
-        </div>
       `;
 
-      // Wire inline palette toggle
-      const btnToggleColor = row.querySelector(".btn-change-member-color");
-      const btnAvatarTrigger = row.querySelector(".roster-color-trigger-btn");
-      const pickerWrap = row.querySelector(`#inline-picker-${idx}`);
-
-      const togglePicker = () => {
-        const isHidden = pickerWrap.style.display === "none";
-        listEl.querySelectorAll(".roster-inline-color-picker").forEach(p => p.style.display = "none");
-        pickerWrap.style.display = isHidden ? "block" : "none";
-      };
-
-      if (btnToggleColor) btnToggleColor.onclick = togglePicker;
-      if (btnAvatarTrigger) btnAvatarTrigger.onclick = togglePicker;
-
-      // Wire swatch selection
-      pickerWrap.querySelectorAll(".skylight-color-swatch").forEach(swatch => {
-        swatch.onclick = (e) => {
-          e.stopPropagation();
-          const colorId = swatch.getAttribute("data-color-id");
-          const mKey = member.toLowerCase();
-          memberColorOverrides[mKey] = colorId;
-          if (!boardSettings.memberColors) boardSettings.memberColors = {};
-          boardSettings.memberColors[mKey] = colorId;
-          try {
-            localStorage.setItem("chore_member_colors", JSON.stringify(memberColorOverrides));
-          } catch (err) {}
-          saveLocalBoardSettings(boardSettings);
-          saveRosterAndSync();
-          renderRosterModalList();
-          renderApp();
-    renderSkylightTasksPage();
-        };
-      });
+      // The avatar, the name and "Profile" open their profile (colour and buddy)
+      const openProfile = () => { if (typeof window.openProfilePanel === "function") window.openProfilePanel(member); };
+      row.querySelector(".btn-change-member-color").onclick = openProfile;
+      row.querySelector(".roster-color-trigger-btn").onclick = openProfile;
+      const nameEl = row.querySelector(".roster-member-names-wrap");
+      nameEl.style.cursor = "pointer";
+      nameEl.onclick = openProfile;
 
       const removeBtn = row.querySelector(".btn-remove-member");
       removeBtn.addEventListener("click", () => {
