@@ -73,7 +73,10 @@
     dlg.querySelector("#btn-close-grabs").addEventListener("click", () => dlg.close());
     if (typeof window.upgradeToSidePanel === "function") window.upgradeToSidePanel(dlg);
     dlg.addEventListener("click", onClick);
-    dlg.addEventListener("close", () => { justGiven.clear(); lastOrder = []; });
+    dlg.addEventListener("close", () => {
+      justGiven.clear(); lastOrder = [];
+      if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
+    });
     return dlg;
   }
 
@@ -197,6 +200,7 @@
     const dlg = ensureDialog();
     render();
     if (!dlg.open) dlg.showModal();
+    if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
   }
   window.openGrabsPanel = openGrabsPanel;
 

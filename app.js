@@ -4584,23 +4584,21 @@ function setupEventListeners() {
     });
   }
 
-  // Prevent wheel and touch gestures on modal backdrop from scrolling background app
+  // Prevent wheel and touch gestures on modal backdrop from scrolling background app.
+  // More than one panel can be open (a person's profile over Settings): a
+  // scroll inside any of them is fine; only the dimmed backdrop and the page
+  // behind are held still.
   if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
-    document.addEventListener("wheel", (e) => {
-      const openDialog = document.querySelector("dialog[open], dialog[open='true']");
-      if (!openDialog) return;
-      if (e.target === openDialog || (e.target.classList && e.target.classList.contains("modal-backdrop-blur")) || !openDialog.contains(e.target)) {
+    const holdBackgroundStill = (e) => {
+      const open = [...document.querySelectorAll("dialog[open]")];
+      if (!open.length) return;
+      const inside = open.find(d => d.contains(e.target));
+      if (!inside || e.target === inside || (e.target.classList && e.target.classList.contains("modal-backdrop-blur"))) {
         e.preventDefault();
       }
-    }, { passive: false });
-
-    document.addEventListener("touchmove", (e) => {
-      const openDialog = document.querySelector("dialog[open], dialog[open='true']");
-      if (!openDialog) return;
-      if (e.target === openDialog || (e.target.classList && e.target.classList.contains("modal-backdrop-blur")) || !openDialog.contains(e.target)) {
-        e.preventDefault();
-      }
-    }, { passive: false });
+    };
+    document.addEventListener("wheel", holdBackgroundStill, { passive: false });
+    document.addEventListener("touchmove", holdBackgroundStill, { passive: false });
   }
 
   // Category / Day / Type tabs filter

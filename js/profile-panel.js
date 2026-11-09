@@ -27,6 +27,8 @@
     dlg.querySelector("#btn-close-profile").addEventListener("click", () => dlg.close());
     if (typeof window.upgradeToSidePanel === "function") window.upgradeToSidePanel(dlg);
     dlg.addEventListener("click", onClick);
+    // Keep the page behind still while it's open (app.js syncModalScrollLock)
+    dlg.addEventListener("close", () => { if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock(); });
     return dlg;
   }
 
@@ -97,6 +99,7 @@
     const dlg = ensureDialog();
     render();
     if (!dlg.open) dlg.showModal();
+    if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
   }
   window.openProfilePanel = openProfilePanel;
 
