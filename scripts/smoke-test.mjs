@@ -468,6 +468,25 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-house-recipe-card.png`) });
     await p.keyboard.press("Escape");
   }],
+  // Add Event: the Starts / Ends times fit the panel, and no stray date box
+  ["event-editor", async (p) => {
+    await goTo("calendar")(p);
+    await p.evaluate(() => { delete window.__SMOKE_AI; window.openEventModal(); });
+    await p.waitForTimeout(500);
+    const r = await p.evaluate(() => {
+      const panel = document.querySelector("#event-modal .modal-content") || document.getElementById("event-modal");
+      const edge = Math.min(window.innerWidth, panel.getBoundingClientRect().right);
+      const ends = document.getElementById("event-end-time").getBoundingClientRect();
+      const stray = [...document.querySelectorAll("#event-modal .date-field-button")].filter(b => b.offsetParent !== null).length;
+      document.getElementById("event-end-time").scrollIntoView({ block: "center" });
+      return { overflow: Math.round(ends.right - edge), stray };
+    });
+    if (r.overflow > 0) throw new Error(`the Ends time runs ${r.overflow}px past the panel's edge`);
+    if (r.stray) throw new Error("a stray date box shows in Add Event");
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-times.png`) });
+    await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
+  }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine
   ["job-editor", async (p) => {
     await goTo("chores")(p);

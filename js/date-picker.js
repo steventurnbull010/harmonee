@@ -80,6 +80,9 @@
 
   function upgradeDateInput(input) {
     if (!input || input.dataset.pickerUpgraded) return;
+    // A date kept out of sight for saving (hidden) gets no button: showing
+    // one put a stray "Thursday, 26 November 2026" under the event times
+    if (input.hidden || input.getAttribute("aria-hidden") === "true") return;
     input.dataset.pickerUpgraded = "true";
     input.required = false; // hidden fields can't show "please fill in"; the code always sets a date
 

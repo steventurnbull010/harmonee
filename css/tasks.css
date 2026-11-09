@@ -2901,6 +2901,11 @@ body.theme-dark .tasks-slot-pill.is-on { background: rgba(2, 132, 199, 0.18); bo
   font-variant-numeric: tabular-nums;
 }
 .drawer-time-input-nice:focus { outline: none; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18); }
+/* iPhone Safari gives time boxes a width of their own (so "Ends" ran off the
+   edge) and its own look: make them fit the space and look like the rest */
+.drawer-time-input-nice { min-width: 0; max-width: 100%; display: block; -webkit-appearance: none; appearance: none; text-align: center; }
+.drawer-time-input-nice::-webkit-date-and-time-value { text-align: center; margin: 0; }
+.drawer-time-input-nice::-webkit-datetime-edit { padding: 0; }
 body.theme-dark .drawer-date-button,
 body.theme-dark .drawer-time-input-nice { background: #0f172a; border-color: #334155; color: #f8fafc; }
 body.theme-dark .drawer-time-input-nice { border-color: #38bdf8; color-scheme: dark; }

@@ -5812,5 +5812,6 @@ body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background:
 #event-modal .ev-repeat-note { margin: 8px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #64748b); }
 #event-modal .ev-time-row-nice { margin-top: 8px; display: flex; align-items: flex-end; gap: 8px; }
 #event-modal .ev-time-row-nice .ev-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-#event-modal .ev-time-row-nice .ev-time-arrow { padding-bottom: 12px; color: var(--text-secondary, #94a3b8); }
+#event-modal .ev-time-row-nice .ev-time-arrow { flex: none; padding-bottom: 12px; color: var(--text-secondary, #94a3b8); }
+#event-modal .ev-time-row-nice .ev-field > input { width: 100%; min-width: 0; }
 #event-modal [hidden] { display: none !important; } /* the kept-for-saving fields stay out of sight */
