@@ -1,12 +1,13 @@
 // ============================================================================
 // COUNTDOWNS (js/countdowns.js)
-// Beside the weather at the top of every page: the soonest countdown as a
+// Beside the weather at the top of the Calendar: the soonest countdown as a
 // tile ("3 sleeps" + "🏆 Tom's Lifetime Achievement Award"), and "+2" when
 // more are coming up, which opens a "Coming up" list of them all.
 // Counts down to events switched to "Count down to it" (up to a year ahead)
 // and to birthdays (in the month before). A repeating event only ever counts
 // down to its next date, so it takes one place, not one per repeat.
-// Tapping a countdown opens the event. On a birthday the board does one burst
+// (Today at a glance has its own countdown card.) Tapping a countdown opens
+// the event. On a birthday the board does one burst
 // of confetti the first time it's opened that day.
 // ============================================================================
 (function () {
@@ -78,7 +79,10 @@
       : "";
     if (html !== lastHtml) {
       lastHtml = html;
+      // Only at the top of the Calendar (and as its own card on Today at a
+      // glance): the other pages keep their room for what they're for
       document.querySelectorAll(".calendar-header-left").forEach(left => {
+        if (!left.closest("#view-calendar")) { const old = left.querySelector(".header-countdowns"); if (old) old.remove(); return; }
         let wrap = left.querySelector(".header-countdowns");
         if (!wrap) {
           wrap = document.createElement("span");

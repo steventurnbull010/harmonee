@@ -74,7 +74,8 @@ function sampleStore() {
       events: [
         { id: "e1", title: "Swimming", date: keyOf(today), time: "16:30", duration: "1 hour", repeat: "none", member: "Jo", icon: "🏊" },
         { id: "e2", title: "Dentist", date: keyOf(tomorrow), time: "09:00", duration: "30 mins", repeat: "none", member: "Max", icon: "🦷" },
-        { id: "e3", title: "Football", day: "Saturday", time: "10:00", duration: "1 hour", repeat: "weekly", member: "Max", icon: "⚽" }
+        { id: "e3", title: "Football", day: "Saturday", time: "10:00", duration: "1 hour", repeat: "weekly", member: "Max", icon: "⚽" },
+        { id: "e4", title: "School trip to the zoo", date: keyOf(new Date(today.getTime() + 3 * 86400000)), time: "09:00", duration: "1 day", repeat: "none", member: "Jo", icon: "🦁", countdown: true }
       ],
       meals: { [keyOf(today)]: { dinner: { title: "Spaghetti bolognese", emoji: "🍝", cook: "Alex" } } },
       familyLists: [
@@ -183,7 +184,16 @@ const goTo = (view) => async (p) => p.evaluate((v) => {
   window.switchSkylightView(v);
 }, view);
 const PAGES = [
-  ["calendar", goTo("calendar")],
+  // The "3 sleeps" countdown is at the top of the Calendar, and only there
+  ["calendar", async (p) => {
+    await goTo("calendar")(p);
+    await p.evaluate(() => window.refreshCountdowns && window.refreshCountdowns());
+    await p.waitForTimeout(200);
+    const where = await p.evaluate(() => [...document.querySelectorAll(".header-countdown-chip")].map(c => c.closest(".skylight-page-view")?.id));
+    if (!where.includes("view-calendar")) throw new Error("no countdown at the top of the Calendar");
+    const elsewhere = where.filter(v => v !== "view-calendar");
+    if (elsewhere.length) throw new Error(`the countdown is also on ${elsewhere.join(", ")}`);
+  }],
   ["tasks", goTo("chores")],
   ["meals", goTo("meals")],
   ["lists", goTo("lists")],
@@ -358,7 +368,11 @@ const PAGES = [
     if (await shown("t1")) throw new Error("Bigger job switch showing for a personal routine");
     await p.keyboard.press("Escape");
   }],
-  ["today", async (p) => p.evaluate(() => window.showTodayScreen({ from: "preview" }))],
+  ["today", async (p) => {
+    await p.evaluate(() => window.showTodayScreen({ from: "preview" }));
+    await p.waitForTimeout(300);
+    if (!(await p.locator("#today-screen .today-countdown").count())) throw new Error("no countdown card on Today at a glance");
+  }],
   ["settings", async (p) => { await goTo("calendar")(p); await p.evaluate(() => window.openSettingsModal()); }]
 ];
 
