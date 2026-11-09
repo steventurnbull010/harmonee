@@ -23,7 +23,11 @@ import {
   getDocsFromServer,
   writeBatch,
   runTransaction,
-  serverTimestamp
+  serverTimestamp,
+  deleteField,
+  FieldPath,
+  arrayUnion,
+  arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getAuth,
@@ -345,7 +349,11 @@ async function checkWeeklySundayReset() {
           if (isRecurringDaily) {
             const kept = keepThisWeeksDays(t.completedDays, currentWeek);
             const rootIsOld = t.completedWeek !== currentWeek;
-            const changes = { completedDays: kept };
+            // Remove only last week's days: a tick made on another tablet a
+            // moment ago (not in this device's copy yet) is left alone
+            const changes = {};
+            Object.keys(t.completedDays || {}).forEach(day => { if (!kept[day]) changes[`completedDays.${day}`] = deleteField(); });
+            if (!rootIsOld && !Object.keys(changes).length) return;
             if (rootIsOld) Object.assign(changes, { done: false, completedBy: null, completedAt: null, completedWeek: null });
             batch.update(docRef, changes);
           } else if (isWeekly) {
@@ -710,6 +718,10 @@ Object.assign(window, {
   runTransaction,
   getDoc,
   serverTimestamp,
+  deleteField,
+  FieldPath,
+  arrayUnion,
+  arrayRemove,
   DEFAULT_FIREBASE_CONFIG,
   // app.js functions the js/ modules call (hoisted, so safe to share here)
   loadWeeklyMeals,
@@ -946,6 +958,8 @@ function loadDateMeals() {
       const parsed = JSON.parse(cached);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         dateMealsStore = parsed;
+        // Until the board arrives, changes are worked out from this saved copy
+        if (window.BoardSync && window.BoardSync.getBaseline("meals") === undefined) window.BoardSync.setBaseline("meals", parsed);
         return dateMealsStore;
       }
     }
@@ -978,17 +992,10 @@ function saveDateMeals(meals) {
   } catch (e) {
     console.warn("Error saving meals cache", e);
   }
-  if (db) {
-    try {
-      const boardDocRef = doc(db, "boards", currentBoardId);
-      updateDoc(boardDocRef, {
-        meals: meals,
-        updatedAt: serverTimestamp()
-      }).catch((err) => {
-        // Fallback if doc doesn't exist yet
-        setDoc(boardDocRef, { meals: meals, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
-      });
-    } catch (e) {}
+  // Only the meals that changed (meals.2026-11-09.title), so two devices
+  // planning at once both keep their changes (js/board-sync.js)
+  if (db && window.BoardSync) {
+    try { window.BoardSync.saveMapChanges("meals", meals, 2); } catch (e) { console.warn("Couldn't save meals:", e); }
   }
 }
 
@@ -1138,7 +1145,10 @@ function loadFamilyEvents() {
     const cached = localStorage.getItem(boardCacheKey("turnbull_family_events_v3"));
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        if (window.BoardSync && window.BoardSync.getBaseline("events") === undefined) window.BoardSync.setBaseline("events", parsed);
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn("Error reading family events cache", e);
@@ -1157,13 +1167,10 @@ function saveFamilyEvents(events) {
   } catch (e) {
     console.warn("Error saving family events cache", e);
   }
-  if (db && typeof setDoc === "function") {
-    try {
-      setDoc(doc(db, "boards", currentBoardId), {
-        events: events,
-        updatedAt: serverTimestamp()
-      }, { merge: true }).catch(() => {});
-    } catch (e) {}
+  // Only the events that changed, applied to the board's latest list
+  // (js/board-sync.js), so two devices adding events at once both keep theirs
+  if (db && window.BoardSync) {
+    try { window.BoardSync.saveListChanges("events", events); } catch (e) { console.warn("Couldn't save events:", e); }
   }
 }
 
@@ -1578,9 +1585,22 @@ window.checkFamilyCode = checkFamilyCode;
 async function saveBoardSettingsNow(fields) {
   saveLocalBoardSettings({ ...boardSettings, ...fields });
   if (!db) return;
+  await saveChangedSettings();
+}
+
+// Write only the settings that changed since the board last sent them
+// (settings.gameMode, settings.currency...), so a tablet saving one setting
+// can't bring back stale values of the others (js/board-sync.js)
+async function saveChangedSettings(extra) {
+  if (!db || !window.BoardSync) return;
   try {
-    const boardDocRef = getBoardDocRef();
-    if (boardDocRef) await setDoc(boardDocRef, { settings: fields, updatedAt: serverTimestamp() }, { merge: true });
+    const before = window.BoardSync.getBaseline("settings");
+    const changes = before === undefined
+      ? Object.keys(boardSettings).map(k => [["settings", k], boardSettings[k] === undefined ? null : boardSettings[k]])
+      : window.BoardSync.diffMap(["settings"], before, boardSettings, 1).filter(([, v]) => v !== window.BoardSync.DELETE);
+    window.BoardSync.setBaseline("settings", { ...(before || {}), ...boardSettings });
+    if (!changes.length && !extra) return;
+    await window.BoardSync.writeFields(changes, extra);
   } catch (err) {
     console.warn("Failed to sync settings to Firestore:", err);
   }
@@ -1789,18 +1809,23 @@ function listenToFirestoreBoard() {
       }
       if (data.settings) {
         const placeBefore = JSON.stringify(boardSettings.weatherLocation || null);
+        if (window.BoardSync) window.BoardSync.setBaseline("settings", data.settings);
         boardSettings = { ...boardSettings, ...data.settings }; window.boardSettings = boardSettings;
         saveLocalBoardSettings(boardSettings);
         shouldRender = true;
         if (JSON.stringify(boardSettings.weatherLocation || null) !== placeBefore && typeof window.initLocalWeather === "function") window.initLocalWeather();
       }
       if (Array.isArray(data.events)) {
-        familyEvents = data.events;
-        window.familyEvents = data.events;
-        try { localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(data.events)); } catch (e) {}
+        // This device's unsaved event changes stay on top until they're saved
+        const events = window.BoardSync ? window.BoardSync.withPending("events", data.events) : data.events;
+        if (window.BoardSync) window.BoardSync.setBaseline("events", events);
+        familyEvents = events;
+        window.familyEvents = events;
+        try { localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(events)); } catch (e) {}
         shouldRender = true;
       }
       if (data.meals && typeof data.meals === "object") {
+        if (window.BoardSync) window.BoardSync.setBaseline("meals", data.meals);
         dateMealsStore = data.meals;
         try {
           localStorage.setItem(boardCacheKey("turnbull_meals_v4"), JSON.stringify(data.meals));
@@ -1832,6 +1857,8 @@ function listenToFirestoreBoard() {
       if (typeof window.applyBoardFamilyLists === "function") {
         window.applyBoardFamilyLists(data.familyLists, data.familyListsDeleted);
       }
+      // Anything saved while offline or before the board arrived goes now
+      if (window.BoardSync) window.BoardSync.flush();
       notifyBoardChanged();
       if (shouldRender) {
         renderApp();
@@ -4244,8 +4271,9 @@ async function handleConfirmClaim() {
       task.lastStreakDate = todayKey;
     }
 
+    // Only this day's tick, so a tick on another tablet isn't overwritten
     const updatePayload = {
-      completedDays: currentCompletedDays
+      [`completedDays.${targetDay}`]: currentCompletedDays[targetDay]
     };
     if (isToday) {
       updatePayload.done = true;
@@ -4399,9 +4427,14 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
     }
     const isToday = dayToRemove === getTodayDayName();
 
+    // Only this day's tick (or this person's part of it)
     const updatePayload = {
-      completedDays: currentCompletedDays
+      [`completedDays.${dayToRemove}`]: currentCompletedDays[dayToRemove] ? currentCompletedDays[dayToRemove] : deleteField()
     };
+    if (memberToUndo && isMultiAssign && currentCompletedDays[dayToRemove] && Array.isArray((task.completedDays || {})[dayToRemove]?.completedBy)) {
+      delete updatePayload[`completedDays.${dayToRemove}`];
+      updatePayload[`completedDays.${dayToRemove}.completedBy`] = arrayRemove(task.completedDays[dayToRemove].completedBy.find(m => m.toLowerCase() === memberToUndo.toLowerCase()) || memberToUndo);
+    }
     if (isToday) {
       const undoStreak = Math.max(0, (Number(task.streak) || 1) - 1);
       updatePayload.done = false;
@@ -5278,21 +5311,7 @@ function setupEventListeners() {
     Object.assign(boardSettings.memberColors, memberColorOverrides);
     saveLocalBoardSettings(boardSettings);
 
-    if (db) {
-      try {
-        const boardDocRef = getBoardDocRef();
-        if (boardDocRef) {
-          await setDoc(boardDocRef, {
-            boardId: currentBoardId,
-            members: familyMembers,
-            settings: boardSettings,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        }
-      } catch (err) {
-        console.warn("Failed to sync roster to Firestore:", err);
-      }
-    }
+    if (db) await saveChangedSettings({ members: familyMembers });
   }
 
   // ==========================================================================
@@ -5878,19 +5897,7 @@ function setupEventListeners() {
       saveLocalBoardSettings(boardSettings);
       closeSettingsModal();
 
-      if (db) {
-        try {
-          const boardDocRef = getBoardDocRef();
-          if (boardDocRef) {
-            await setDoc(boardDocRef, {
-              settings: boardSettings,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-          }
-        } catch (err) {
-          console.warn("Failed to sync settings to Firestore:", err);
-        }
-      }
+      if (db) await saveChangedSettings();
 
       checkScheduledSleepWindow();
       renderApp();

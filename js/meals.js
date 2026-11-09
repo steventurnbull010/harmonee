@@ -236,7 +236,7 @@ function completeDinnerChoreForSteve() {
   if (db) {
     const docRef = (window.getTaskDocRef || getTaskDocRef)(dinnerTask.id);
     const updatePayload = isDaily 
-      ? { completedDays: dinnerTask.completedDays, ...(todayDayName === (window.getTodayDayName || getTodayDayName)() ? { done: true, completedBy: cookName, completedWeek: activeWeekKey } : {}) }
+      ? { [`completedDays.${todayDayName}`]: dinnerTask.completedDays[todayDayName], ...(todayDayName === (window.getTodayDayName || getTodayDayName)() ? { done: true, completedBy: cookName, completedWeek: activeWeekKey } : {}) }
       : { done: true, completedBy: cookName, completedDay: todayDayName, completedWeek: activeWeekKey, completedAt: serverTimestamp() };
     updateDoc(docRef, updatePayload).catch(console.error);
   }

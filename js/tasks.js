@@ -945,6 +945,8 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
   const completer = memberCompleter || (assignedList.length > 0 ? assignedList[0] : (task.assignedTo || "Family"));
   const completerLower = completer.toLowerCase();
 
+  // That day's tick as it was before this one (to save only what's new)
+  const priorDayRec = isDaily && task.completedDays ? task.completedDays[targetDay] || null : null;
   if (isDaily) {
     if (!task.completedDays) task.completedDays = {};
     const existing = task.completedDays[targetDay];
@@ -989,14 +991,29 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
   saveLocalCache(window.currentTasks || []);
   if (db) {
     try {
-      const docRef = getTaskDocRef(taskId);
-      updateDoc(docRef, {
-        done: task.done,
-        completedBy: task.completedBy,
-        completedAt: task.completedAt,
-        completedWeek: isDaily ? (task.completedWeek || null) : tickWeek,
-        completedDays: task.completedDays || {}
-      });
+      // Only this tick, so two tablets ticking at once both keep theirs:
+      // a daily chore writes just that day; a shared chore adds this person
+      // to the list of who did it rather than replacing the list
+      const FP = window.FieldPath;
+      const args = [];
+      const field = (...path) => (FP ? new FP(...path) : path.join("."));
+      if (isDaily) {
+        const rec = task.completedDays[targetDay];
+        if (isMultiAssign && window.arrayUnion && (!priorDayRec || Array.isArray(priorDayRec.completedBy))) {
+          args.push(field("completedDays", targetDay, "completedBy"), window.arrayUnion(completer),
+            field("completedDays", targetDay, "completedAt"), rec.completedAt,
+            field("completedDays", targetDay, "completedWeek"), rec.completedWeek);
+        } else {
+          args.push(field("completedDays", targetDay), rec);
+        }
+      } else {
+        const multiList = isMultiAssign && Array.isArray(task.completedBy) && window.arrayUnion;
+        args.push(field("done"), task.done,
+          field("completedBy"), multiList ? window.arrayUnion(completer) : task.completedBy,
+          field("completedAt"), task.completedAt,
+          field("completedWeek"), tickWeek);
+      }
+      updateDoc(getTaskDocRef(taskId), ...args).catch(err => console.warn("Couldn't save the tick:", err));
     } catch (err) {}
   }
 

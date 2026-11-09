@@ -29,6 +29,11 @@ function rewardDataCacheKey() {
     window.rewardGoals = (cached && Array.isArray(cached.goals)) ? cached.goals : [];
     window.rewardRedemptions = (cached && Array.isArray(cached.redemptions)) ? cached.redemptions : [];
     window.rewardWeeks = (cached && cached.weeks && typeof cached.weeks === "object") ? cached.weeks : {};
+    // Until the board arrives, changes are worked out from this saved copy
+    if (cached && window.BoardSync) {
+      window.BoardSync.setBaseline("rewardGoals", window.rewardGoals);
+      window.BoardSync.setBaseline("rewardRedemptions", window.rewardRedemptions);
+    }
   } catch (e) {
     window.rewardGoals = [];
     window.rewardRedemptions = [];
@@ -50,8 +55,18 @@ function cacheRewardData() {
 function applyBoardRewardData(data) {
   if (!data) return;
   let changed = false;
-  if (Array.isArray(data.rewardGoals)) { window.rewardGoals = data.rewardGoals; changed = true; }
-  if (Array.isArray(data.rewardRedemptions)) { window.rewardRedemptions = data.rewardRedemptions; changed = true; }
+  // This device's unsaved changes stay on top until they're saved (js/board-sync.js)
+  const sync = window.BoardSync;
+  if (Array.isArray(data.rewardGoals)) {
+    window.rewardGoals = sync ? sync.withPending("rewardGoals", data.rewardGoals) : data.rewardGoals;
+    if (sync) sync.setBaseline("rewardGoals", window.rewardGoals);
+    changed = true;
+  }
+  if (Array.isArray(data.rewardRedemptions)) {
+    window.rewardRedemptions = sync ? sync.withPending("rewardRedemptions", data.rewardRedemptions) : data.rewardRedemptions;
+    if (sync) sync.setBaseline("rewardRedemptions", window.rewardRedemptions);
+    changed = true;
+  }
   if (data.rewardWeeks && typeof data.rewardWeeks === "object") { window.rewardWeeks = data.rewardWeeks; changed = true; }
   if (changed) {
     cacheRewardData();
@@ -62,6 +77,22 @@ window.applyBoardRewardData = applyBoardRewardData;
 
 function saveRewardDataToBoard(fields) {
   cacheRewardData();
+  // Goals and redemptions: only the items that changed, applied to the
+  // board's latest list, so two devices redeeming at once both count
+  const sync = window.BoardSync;
+  if (sync) {
+    const rest = { ...fields };
+    ["rewardGoals", "rewardRedemptions"].forEach(f => {
+      if (Array.isArray(rest[f])) { sync.saveListChanges(f, rest[f]); delete rest[f]; }
+    });
+    if (rest.rewardWeeks) {
+      // Each week by its own key
+      sync.writeFields(Object.entries(rest.rewardWeeks).map(([week, totals]) => [["rewardWeeks", week], totals]));
+      delete rest.rewardWeeks;
+    }
+    if (!Object.keys(rest).length) return;
+    fields = rest;
+  }
   const boardId = getSaveBoardId();
   if (boardId && window.db && typeof window.setDoc === "function" && typeof window.doc === "function") {
     try {

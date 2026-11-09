@@ -149,7 +149,8 @@ const firebaseMock = {
   setDoc: () => Promise.resolve(), updateDoc: () => Promise.resolve(),
   deleteDoc: () => Promise.resolve(), addDoc: () => Promise.resolve({ id: 'mock' }),
   writeBatch: () => ({ set() {}, update() {}, delete() {}, commit: () => Promise.resolve() }),
-  serverTimestamp: () => new Date(), arrayUnion: (...a) => a, increment: (n) => n
+  serverTimestamp: () => new Date(), arrayUnion: (...a) => a, arrayRemove: (...a) => a, increment: (n) => n,
+  deleteField: () => ({ __delete: true }), FieldPath: function FieldPath(...p) { this.segments = p; }
 };
 
 const moduleCache = new Map();
