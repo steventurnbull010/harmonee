@@ -98,6 +98,37 @@ s = await call(owner, "DELETE", `boards/${testBoard}/devices/${joiner.uid}`);
 check("Member: can remove another device", s === 200, s);
 s = await call(joiner, "GET", `boards/${testBoard}/tasks`);           check("Removed device: loses access", denied(s), s);
 
+// --- List-only links (sharedLists) -----------------------------------------
+const shareKey = `rulestest${Date.now().toString(36)}abcdefgh`.slice(0, 24);
+const listCopy = (board) => ({ fields: { boardId: str(board), listId: str("l1"), title: str("Test list"), emoji: str("📋"), color: str("sky"), items: { arrayValue: { values: [] } } } });
+s = await call(stranger, "PATCH", `sharedLists/${shareKey}`, listCopy(testBoard));
+check("Stranger: can't make a list link for a board it isn't on", denied(s), s);
+s = await call(stranger, "PATCH", `sharedLists/${shareKey}`, listCopy("turnbull"));
+check("Stranger: can't make a list link for the Turnbull board", denied(s), s);
+s = await call(owner, "PATCH", `sharedLists/${shareKey}`, listCopy(testBoard));
+check("Member: can make a list link", s === 200, s);
+s = await call(owner, "PATCH", `sharedLists/${shareKey}`, { fields: { ...listCopy(testBoard).fields, secret: str("x") } });
+check("Member: a list link holds only the list", denied(s), s);
+s = await call(stranger, "GET", `sharedLists/${shareKey}`);          check("Link holder: can read that one list", s === 200, s);
+s = await call(stranger, "GET", "sharedLists");                      check("Link holder: can't list other links", denied(s), s);
+s = await call(stranger, "PATCH", `sharedLists/${shareKey}`, listCopy(testBoard));
+check("Link holder: can't change the list copy itself", denied(s), s);
+const addOp = { fields: { type: str("add"), texts: { arrayValue: { values: [str("Milk")] } } } };
+const withTime = (op) => ({ writes: [{ update: { name: NAME(`sharedLists/${shareKey}/ops/op${Date.now()}`), fields: op.fields }, updateTransforms: [{ fieldPath: "at", setToServerValue: "REQUEST_TIME" }] }] });
+s = await call(stranger, "POST", ":commit", withTime(addOp));
+check("Link holder: can leave an 'add' note", s === 200, s);
+s = await call(stranger, "POST", ":commit", withTime({ fields: { type: str("deleteList") } }));
+check("Link holder: other kinds of note are refused", denied(s), s);
+s = await call(stranger, "POST", ":commit", withTime({ fields: { ...addOp.fields, extra: str("x") } }));
+check("Link holder: notes with extra fields are refused", denied(s), s);
+s = await call(stranger, "GET", `sharedLists/${shareKey}/ops`);      check("Link holder: can't read other people's notes", denied(s), s);
+s = await call(stranger, "GET", `boards/${testBoard}`);              check("Link holder: still can't read the board", denied(s), s);
+s = await call(owner, "GET", `sharedLists/${shareKey}/ops`);         check("Member: can read the notes", s === 200, s);
+s = await call(stranger, "DELETE", `sharedLists/${shareKey}`);       check("Link holder: can't switch the link off", denied(s), s);
+s = await call(owner, "DELETE", `sharedLists/${shareKey}`);          check("Member: can switch the link off", s === 200, s);
+s = await call(stranger, "POST", ":commit", withTime(addOp));
+check("Switched off: no more notes", denied(s), s);
+
 // --- Clean up what the rules allow; the board doc itself can't be deleted by design
 await call(owner, "DELETE", `boards/${testBoard}/tasks/t1`);
 await call(owner, "DELETE", `boards/${testBoard}/devices/${owner.uid}`);

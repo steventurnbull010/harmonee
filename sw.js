@@ -51,9 +51,11 @@ self.addEventListener("fetch", (event) => {
       const cache = await caches.open(CACHE);
       try {
         const fresh = await fetch(req);
-        if (fresh.ok) cache.put("/", fresh.clone());
+        // Only the app's own page is kept for offline (not list.html)
+        if (fresh.ok && (url.pathname === "/" || url.pathname === "/index.html")) cache.put("/", fresh.clone());
         return fresh;
       } catch (err) {
+        if (url.pathname !== "/" && url.pathname !== "/index.html") return Response.error();
         return (await cache.match("/")) || Response.error();
       }
     })());

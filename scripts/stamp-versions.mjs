@@ -83,8 +83,9 @@ files.set(BUILD_INFO, `// Written by scripts/stamp-versions.mjs: don't edit by h
 window.HARMONEE_BUILD = { id: "${buildId}", builtAt: "${builtAt}" };
 `);
 
-// 3. index.html last, now every file it points at is final
+// 3. The pages last, now every file they point at is final
 restamp("index.html");
+if (existsSync(join(ROOT, "list.html"))) restamp("list.html"); // list-only links (js/list-guest.js)
 
 // Write (or, with --check, report)
 const stale = [...files.entries()].filter(([rel, text]) => !existsSync(join(ROOT, rel)) || read(rel) !== text).map(([rel]) => rel);

@@ -210,7 +210,7 @@ function applyListOp(lists, tomb, op, now) {
       if (!meta.id || tomb["list:" + meta.id]) return null;
       const target = lists.find(l => l.id === meta.id);
       const fields = {};
-      ["title", "emoji", "color", "isDefault"].forEach(k => { if (meta[k] !== undefined) fields[k] = meta[k]; });
+      ["title", "emoji", "color", "isDefault", "shareKey"].forEach(k => { if (meta[k] !== undefined) fields[k] = meta[k]; });
       if (target) Object.assign(target, fields);
       else lists.push({ id: meta.id, ...fields, items: [] });
       return null;
@@ -503,6 +503,7 @@ function applyBoardFamilyLists(lists, deleted) {
     const view = document.getElementById("view-lists");
     if (view && view.style.display !== "none") renderListsView();
     if (typeof window.refreshShopMode === "function") window.refreshShopMode(); // js/shop-mode.js
+    syncSharedLists(base);
   }
   if (loadPendingOps().length) scheduleListsFlush(0);
 }
@@ -1284,6 +1285,8 @@ window.openCreateListModal = openCreateListModal;
 
 function handleDeleteList(listId) {
   if (listId === GROCERIES_LIST_ID) return;
+  const doomed = loadFamilyLists().find(l => l.id === listId);
+  if (doomed && doomed.shareKey) stopSharingList(listId); // its link stops working too
   mutateFamilyLists({ type: "deleteList", listId });
   renderListsView();
 }
@@ -1308,6 +1311,139 @@ function listShareUrl(listId) {
   u.searchParams.set("list", listId);
   return u.toString();
 }
+
+// ---------------------------------------------------------------------------
+// List-only links. A list's link carries its own long random key (list.html
+// ?k=…). A device that hasn't joined the board sees just that list: it can
+// add things and tick them off, and nothing else. A family device opening it
+// goes to the full board.
+//
+// The list itself stays on the board. Family devices keep a copy of it in
+// sharedLists/{key} (title, emoji and items only) for guests to read. A guest's
+// changes are left as notes in sharedLists/{key}/ops; a family device applies
+// them to the board (the same op twice does nothing) and removes them.
+// Stopping the link deletes the copy, so old links stop working.
+// See firestore.rules (sharedLists).
+// ---------------------------------------------------------------------------
+const SHARED_ITEM_LIMIT = 300;
+const sharedMirrored = {};   // key -> JSON last written, so unchanged lists aren't rewritten
+const sharedInboxes = {};    // key -> stop listening
+
+function newShareKey() {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+}
+
+function sharedListUrl(key) {
+  return `${window.location.origin}/list.html?k=${encodeURIComponent(key)}`;
+}
+
+// What a guest sees of a list: no usuals, no aisle choices, nothing else
+function sharedListCopy(list) {
+  const items = (list.items || []).slice(0, SHARED_ITEM_LIMIT).map(i => ({
+    id: String(i.id),
+    text: String(window.Grocery ? window.Grocery.displayText(i) : (i.text || "")).slice(0, 120),
+    checked: !!i.checked
+  }));
+  return { boardId: window.currentBoardId, listId: list.id, title: String(list.title || "List").slice(0, 60), emoji: String(list.emoji || "📋").slice(0, 8), color: LIST_COLORS[list.color] ? list.color : "sky", items };
+}
+
+function sharedDocRef(key) {
+  return window.doc(window.db, "sharedLists", key);
+}
+
+// Keep each shared list's copy up to date, and listen for guests' notes
+function syncSharedLists(lists) {
+  if (!window.db || typeof window.setDoc !== "function" || !getSaveBoardId()) return;
+  const live = new Set();
+  (lists || []).forEach(list => {
+    const key = list && list.shareKey;
+    if (!key) return;
+    live.add(key);
+    const copy = sharedListCopy(list);
+    const json = JSON.stringify(copy);
+    if (sharedMirrored[key] !== json) {
+      sharedMirrored[key] = json;
+      window.setDoc(sharedDocRef(key), { ...copy, updatedAt: window.serverTimestamp() })
+        .catch(err => { delete sharedMirrored[key]; console.warn("Couldn't update the shared list:", err && err.code); });
+    }
+    if (!sharedInboxes[key]) listenToSharedInbox(key, list.id);
+  });
+  Object.keys(sharedInboxes).forEach(key => { if (!live.has(key)) { try { sharedInboxes[key](); } catch (e) {} delete sharedInboxes[key]; } });
+}
+
+function listenToSharedInbox(key, listId) {
+  if (typeof window.onSnapshot !== "function" || typeof window.collection !== "function") return;
+  sharedInboxes[key] = window.onSnapshot(window.collection(window.db, "sharedLists", key, "ops"), (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type !== "added") return;
+      applyGuestOp(listId, change.doc.id, change.doc.data());
+      if (typeof window.deleteDoc === "function") window.deleteDoc(change.doc.ref).catch(() => {});
+    });
+  }, (err) => {
+    console.warn("Shared list notes:", err && err.code);
+    delete sharedInboxes[key]; // tried again on the next board update
+  });
+}
+
+// A guest's note, checked again here (the rules check its shape too).
+// Item ids come from the note, so applying it twice adds nothing twice.
+function guestOpToListOps(listId, opId, op, list) {
+  if (!op || typeof op !== "object" || !list) return [];
+  const safeId = String(opId || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
+  if (op.type === "add") {
+    const texts = (Array.isArray(op.texts) ? op.texts : []).filter(t => typeof t === "string")
+      .map(t => t.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 80)).filter(Boolean).slice(0, 10);
+    const open = new Set((list.items || []).filter(i => !i.checked).map(i => listItemKey(window.Grocery ? window.Grocery.displayText(i) : i.text)));
+    const items = [];
+    texts.forEach((text, n) => {
+      const k = listItemKey(text);
+      if (k && open.has(k)) return; // already on the list
+      if (k) open.add(k);
+      items.push({ id: `guest-${safeId}-${n}`, text, checked: false, addedAt: new Date().toISOString(), addedBy: "link" });
+    });
+    return items.length ? [{ type: "addItems", listId, items }] : [];
+  }
+  if (op.type === "tick" && typeof op.itemId === "string" && (list.items || []).some(i => i.id === op.itemId)) {
+    return [{ type: "toggleItem", listId, itemId: op.itemId, checked: !!op.checked }];
+  }
+  return [];
+}
+
+function applyGuestOp(listId, opId, op) {
+  const list = loadFamilyLists().find(l => l.id === listId);
+  guestOpToListOps(listId, opId, op, list).forEach(o => mutateFamilyLists(o));
+}
+
+// Turn a list's link on (once) and return its address, or null if it couldn't
+async function ensureListShareKey(list) {
+  if (list.shareKey) return list.shareKey;
+  if (!window.db || !getSaveBoardId()) return null;
+  const key = newShareKey();
+  try {
+    await window.setDoc(sharedDocRef(key), { ...sharedListCopy(list), updatedAt: window.serverTimestamp() });
+  } catch (err) {
+    console.warn("Couldn't make a list link:", err && err.code);
+    return null;
+  }
+  sharedMirrored[key] = JSON.stringify(sharedListCopy(list));
+  mutateFamilyLists({ type: "upsertList", list: { id: list.id, shareKey: key } });
+  return key;
+}
+
+async function stopSharingList(listId) {
+  const list = loadFamilyLists().find(l => l.id === listId);
+  if (!list || !list.shareKey) return;
+  const key = list.shareKey;
+  mutateFamilyLists({ type: "upsertList", list: { id: listId, shareKey: null } });
+  if (sharedInboxes[key]) { try { sharedInboxes[key](); } catch (e) {} delete sharedInboxes[key]; }
+  delete sharedMirrored[key];
+  if (window.db && typeof window.deleteDoc === "function") {
+    try { await window.deleteDoc(sharedDocRef(key)); } catch (err) { console.warn("Couldn't switch off the list link:", err && err.code); }
+  }
+}
+window.stopSharingList = stopSharingList;
 
 function listAsText(list) {
   const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
@@ -1350,16 +1486,21 @@ async function sendList(listId) {
   const list = loadFamilyLists().find(l => l.id === listId);
   if (!list || !window.Sheet) return;
   const n = (list.items || []).filter(i => !i.checked).length;
-  const how = await window.Sheet.choose({
-    icon: list.emoji || "📋",
-    title: `Send ${list.title}`,
-    options: [
-      { key: "link", icon: "🔗", label: "Send a link", sub: "So the family can open it and add to it" },
-      { key: "text", icon: "📝", label: "Send as text", sub: n === 0 ? "Nothing on it right now" : `The ${n} thing${n === 1 ? "" : "s"} still to ${window.Aisles && window.Aisles.isGroceryList(list) ? "get" : "do"}, for anyone` }
-    ]
-  });
+  const options = [
+    { key: "link", icon: "🔗", label: "Send a link", sub: "Opens just this list, to add to and tick off. Family devices open the whole board." },
+    { key: "text", icon: "📝", label: "Send as text", sub: n === 0 ? "Nothing on it right now" : `The ${n} thing${n === 1 ? "" : "s"} still to ${window.Aisles && window.Aisles.isGroceryList(list) ? "get" : "do"}, for anyone` }
+  ];
+  if (list.shareKey) options.push({ key: "stop", icon: "🚫", label: "Stop the link working", sub: "Links already sent won't open this list any more" });
+  const how = await window.Sheet.choose({ icon: list.emoji || "📋", title: `Send ${list.title}`, options });
   if (how === "link") {
-    await shareOrCopy({ title: `${list.title} · harmonee`, text: listInviteText(list), url: listShareUrl(list.id) }, "🔗 Message and link copied. Paste it into WhatsApp or a message.");
+    const key = await ensureListShareKey(list);
+    // No list-only link (offline, or the board can't make one yet): the
+    // family link, which asks for the family code on a device that hasn't joined
+    const url = key ? sharedListUrl(key) : listShareUrl(list.id);
+    await shareOrCopy({ title: `${list.title} · harmonee`, text: listInviteText(list), url }, "🔗 Message and link copied. Paste it into WhatsApp or a message.");
+  } else if (how === "stop") {
+    await stopSharingList(list.id);
+    if (typeof window.showCalendarToast === "function") window.showCalendarToast("🚫 The link to this list doesn't work any more.");
   } else if (how === "text") {
     await shareOrCopy({ title: list.title, text: listAsText(list) }, "📝 List copied. Paste it into WhatsApp or a message.");
   }

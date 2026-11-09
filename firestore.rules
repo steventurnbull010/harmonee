@@ -91,6 +91,41 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // List-only links (js/lists.js, list.html): a copy of one list, kept under
+    // a long random key by the family's devices. Knowing the key lets a device
+    // read that copy and leave "add" or "tick" notes for the family's devices
+    // to apply. Keys can't be listed, so they can't be found by looking.
+    // Only family devices make, update or delete the copy (deleting it is
+    // "Stop the link working").
+    match /sharedLists/{key} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if key.size() >= 18 && key.size() <= 40
+        && isMember(request.resource.data.boardId)
+        && request.resource.data.keys().hasOnly(['boardId', 'listId', 'title', 'emoji', 'color', 'items', 'updatedAt'])
+        && request.resource.data.items is list && request.resource.data.items.size() <= 300
+        && (resource == null || request.resource.data.boardId == resource.data.boardId);
+      allow delete: if isMember(resource.data.boardId);
+
+      match /ops/{opId} {
+        allow create: if signedIn()
+          && exists(/databases/$(database)/documents/sharedLists/$(key))
+          && request.resource.data.at == request.time
+          && (
+            (request.resource.data.keys().hasOnly(['type', 'texts', 'at'])
+              && request.resource.data.type == 'add'
+              && request.resource.data.texts is list
+              && request.resource.data.texts.size() >= 1 && request.resource.data.texts.size() <= 10)
+            || (request.resource.data.keys().hasOnly(['type', 'itemId', 'checked', 'at'])
+              && request.resource.data.type == 'tick'
+              && request.resource.data.itemId is string && request.resource.data.itemId.size() <= 80
+              && request.resource.data.checked is bool)
+          );
+        allow read, delete: if isMember(get(/databases/$(database)/documents/sharedLists/$(key)).data.boardId);
+        allow update: if false;
+      }
+    }
+
     // Everything else, including the legacy turnbull_reset_tasks collection, is closed.
     match /{document=**} {
       allow read, write: if false;

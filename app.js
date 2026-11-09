@@ -29,6 +29,7 @@ import {
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { DEFAULT_FIREBASE_CONFIG } from "./js/firebase-config.js?v=54b12240";
 import {
   getAuth,
   signInAnonymously
@@ -691,15 +692,8 @@ window.getMemberColor = getMemberColor;
 // ============================================================================
 // 2. FIREBASE CONFIGURATION & INITIALIZATION
 // ============================================================================
-// Default live Firebase configuration
-export const DEFAULT_FIREBASE_CONFIG = {
-  projectId: "harmonee-app",
-  appId: "1:344148325793:web:4e6f27fa8e15d5082087e0",
-  storageBucket: "harmonee-app.firebasestorage.app",
-  apiKey: "AIzaSyCOkZ_BlVEgW8K9paG_L-JLrgtTzfgRzNQ",
-  authDomain: "harmonee-app.firebaseapp.com",
-  messagingSenderId: "344148325793"
-};
+// Default live Firebase configuration: imported above from js/firebase-config.js
+// (shared with list.html)
 
 let db = null;
 
