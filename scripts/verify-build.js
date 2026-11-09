@@ -150,7 +150,7 @@ const firebaseMock = {
   deleteDoc: () => Promise.resolve(), addDoc: () => Promise.resolve({ id: 'mock' }),
   writeBatch: () => ({ set() {}, update() {}, delete() {}, commit: () => Promise.resolve() }),
   serverTimestamp: () => new Date(), arrayUnion: (...a) => a, arrayRemove: (...a) => a, increment: (n) => n,
-  deleteField: () => ({ __delete: true }), FieldPath: function FieldPath(...p) { this.segments = p; }
+  deleteField: () => ({ __delete: true }), terminate: () => Promise.resolve(), clearIndexedDbPersistence: () => Promise.resolve(), FieldPath: function FieldPath(...p) { this.segments = p; }
 };
 
 const moduleCache = new Map();

@@ -1294,6 +1294,7 @@ window.handleDeleteList = handleDeleteList;
 
 window.loadFamilyLists = loadFamilyLists;
 window.saveFamilyLists = saveFamilyLists;
+window.listsPendingCount = () => loadPendingOps().length; // "Leave this board" warns about unsaved changes
 window.handleAddItemToList = handleAddItemToList;
 window.handleToggleListItem = handleToggleListItem;
 window.handleDeleteListItem = handleDeleteListItem;

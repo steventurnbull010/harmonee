@@ -1750,6 +1750,9 @@ body.theme-dark #settings-modal .settings-choice.selected .mode-option-title { c
 #settings-modal .family-access-content > .settings-box-desc { margin: 0 !important; }
 #settings-modal .family-access-row { gap: 16px; }
 #settings-modal .family-access-devices { margin: 0; }
+#settings-modal .family-access-leave { margin-top: 16px; }
+#settings-modal .family-access-leave .btn-danger-outline { min-height: 40px; color: #b91c1c; border-color: #dc2626; }
+body.theme-dark #settings-modal .family-access-leave .btn-danger-outline { color: #fca5a5; border-color: #ef4444; }
 #settings-modal .family-access-small-btn {
   min-height: 40px;
   padding: 8px 16px;

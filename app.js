@@ -27,7 +27,9 @@ import {
   deleteField,
   FieldPath,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  terminate,
+  clearIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { DEFAULT_FIREBASE_CONFIG } from "./js/firebase-config.js?v=54b12240";
 import {
@@ -1634,6 +1636,64 @@ window.changeFamilyCode = changeFamilyCode;
 
 window.loadFamilyAccessInfo = loadFamilyAccessInfo;
 window.removeBoardDevice = removeBoardDevice;
+
+// ---------------------------------------------------------------------------
+// Leave this board (Settings → Family access): this device stops syncing,
+// comes off the board (so it needs the family code to come back) and forgets
+// its copy of the board. The board itself, and the family's other devices,
+// are unchanged. The device keeps its own sign-in, so it stays on any other
+// board it has joined.
+// ---------------------------------------------------------------------------
+
+// What this board keeps on the device. Turnbull uses the original names,
+// other boards add their id (see the STORAGE_KEY_* names and js/utils.js
+// boardCacheKey).
+function thisBoardsSavedKeys(boardId = currentBoardId, isTurnbull = isDefaultTurnbullBoard) {
+  const perBoard = ["harmonee_tasks", "harmonee_settings", "harmonee_roster", "harmonee_weekly_ledger", "chore_tasks", "chore_settings", "chore_roster"];
+  const cacheBases = ["harmonee_board_ops", "harmonee_lists_pending", "harmonee_reward_goals", "turnbull_custom_recipes", "turnbull_family_events_v3", "turnbull_family_lists", "turnbull_meals_v3", "turnbull_meals_v4", "turnbull_sticky_note"];
+  const keys = new Set([`last_active_week_${boardId}`, `harmonee_welcome_${boardId}`, `harmonee_setup_tasks_${boardId}`]);
+  perBoard.forEach(k => keys.add(isTurnbull ? k : `${k}_${boardId}`));
+  cacheBases.forEach(k => keys.add(isTurnbull ? k : `${k}__${boardId}`));
+  // Copies on the device that came from this board: colours, the family's weather place, list choices
+  ["chore_member_colors", "turnbull_weather_cache", "turnbull_weather_forecast", "harmonee_lists_selected", "harmonee_lists_fold"].forEach(k => keys.add(k));
+  return [...keys];
+}
+
+// Changes made on this device that haven't reached the board yet
+function unsavedChangeCount() {
+  let n = 0;
+  try { if (window.BoardSync) n += window.BoardSync.pendingCount(); } catch (e) {}
+  try { if (typeof window.listsPendingCount === "function") n += window.listsPendingCount(); } catch (e) {}
+  return n;
+}
+
+async function leaveThisBoard() {
+  if (!db || !boardDeviceUid) throw new Error("not connected");
+  // Off the board first: if that fails (no signal), nothing else changes
+  await deleteDoc(doc(db, "boards", currentBoardId, "devices", boardDeviceUid));
+
+  // Stop listening and stop trying to reconnect
+  liveSyncBroken = false;
+  clearTimeout(liveSyncTimer);
+  if (firestoreUnsubscribe) { try { firestoreUnsubscribe(); } catch (e) {} firestoreUnsubscribe = null; }
+  if (firestoreBoardUnsubscribe) { try { firestoreBoardUnsubscribe(); } catch (e) {} firestoreBoardUnsubscribe = null; }
+
+  // Forget this board's copy: saved keys, then Firestore's offline copy
+  thisBoardsSavedKeys().forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  try {
+    const active = localStorage.getItem("harmonee_active_board_id") || localStorage.getItem("chore_active_board_id");
+    if (!active || active === currentBoardId) {
+      ["harmonee_active_board_id", "chore_active_board_id", "harmonee_pending_new_board"].forEach(k => localStorage.removeItem(k));
+    }
+  } catch (e) {}
+  try {
+    await terminate(db);
+    await clearIndexedDbPersistence(db);
+  } catch (e) {
+    console.warn("Couldn't clear the offline copy:", e); // another tab may have it open; it's cleared next time
+  }
+}
+window.leaveThisBoard = leaveThisBoard;
 
 // ============================================================================
 // 6. FIRESTORE SYNC & SEEDING (MULTI-TENANCY)
@@ -5571,6 +5631,10 @@ function setupEventListeners() {
       </div>
       <p class="settings-box-desc" style="margin-top: 12px;">Joined devices (${info.devices.length})</p>
       <ul class="family-access-devices">${devicesHtml}</ul>
+      <div class="settings-danger-zone family-access-leave">
+        <span class="danger-zone-desc">Leaving takes this device off the board and clears its copy of it here. The family's board isn't changed.</span>
+        <button type="button" class="btn-danger-outline" id="btn-leave-board">Leave this board</button>
+      </div>
     `;
 
     const copyBtn = document.getElementById("btn-copy-join-link");
@@ -5611,6 +5675,34 @@ function setupEventListeners() {
     };
     const changeBtn = document.getElementById("btn-change-family-code");
     if (changeBtn) changeBtn.onclick = () => askToChangeCode();
+
+    const leaveBtn = document.getElementById("btn-leave-board");
+    if (leaveBtn) leaveBtn.onclick = async () => {
+      const unsaved = unsavedChangeCount();
+      const familyName = isDefaultTurnbullBoard ? "the Turnbull Family" : (boardSettings.familyName ? `the ${boardSettings.familyName}` : "this");
+      const ask = {
+        icon: "🚪", danger: true, yes: "Leave the board", no: "Stay",
+        title: `Leave ${familyName} board on this device?`,
+        text: (unsaved ? `${unsaved} change${unsaved === 1 ? " made" : "s made"} here ${unsaved === 1 ? "hasn't" : "haven't"} reached the board yet and will be lost. ` : "")
+          + "This phone or tablet will stop showing the board and forget its copy of it. To come back, you'll need the family code."
+      };
+      const sure = window.Sheet ? await window.Sheet.confirm(ask) : window.confirm(`${ask.title}\n\n${ask.text}`);
+      if (!sure) return;
+      if (typeof window.needsInternet === "function" && window.needsInternet("Leaving the board")) return;
+      leaveBtn.disabled = true;
+      leaveBtn.textContent = "Leaving…";
+      try {
+        await leaveThisBoard();
+      } catch (err) {
+        console.warn("Could not leave the board:", err);
+        leaveBtn.disabled = false;
+        leaveBtn.textContent = "Leave this board";
+        if (typeof window.showCalendarToast === "function") window.showCalendarToast("Couldn't leave the board. Check the connection and try again.");
+        return;
+      }
+      // Back to the start, as a device with no board
+      window.location.replace(window.location.pathname);
+    };
 
     box.querySelectorAll("[data-remove-device]").forEach(btn => {
       btn.onclick = async () => {
