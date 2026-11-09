@@ -51,7 +51,9 @@ function computeMemberScores(weekKey) {
       Object.entries(task.completedDays).forEach(([dayName, dayRecord]) => {
         if (!dayRecord) return;
         const completer = typeof dayRecord === "object" ? dayRecord.completedBy : dayRecord;
-        const compWeek = typeof dayRecord === "object" ? dayRecord.completedWeek : null;
+        const compWeek = typeof dayRecord === "object"
+          ? (dayRecord.completedWeek || (dayRecord.completedAt ? getIsoWeekKey(new Date(dayRecord.completedAt)) : null))
+          : null;
         if (completer && (!compWeek || compWeek === activeWeekKey)) {
           awardMemberTask(completer, rewardVal, `${task.title} (${dayName})`);
         }

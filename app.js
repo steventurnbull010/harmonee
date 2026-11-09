@@ -407,7 +407,10 @@ async function checkWeeklySundayReset() {
 function keepThisWeeksDays(completedDays, currentWeek) {
   const kept = {};
   Object.entries(completedDays || {}).forEach(([day, rec]) => {
-    if (rec && typeof rec === "object" && rec.completedWeek === currentWeek) kept[day] = rec;
+    if (!rec || typeof rec !== "object") return;
+    // Older builds saved ticks without a week: go by when it was ticked
+    const week = rec.completedWeek || (rec.completedAt ? getIsoWeekKey(new Date(rec.completedAt)) : null);
+    if (week === currentWeek) kept[day] = rec;
   });
   return kept;
 }

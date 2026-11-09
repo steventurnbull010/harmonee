@@ -35,7 +35,10 @@ function isTaskDoneOnDate(task, date, memberLower = null) {
   if (isDaily) {
     const comp = task.completedDays && task.completedDays[dayName];
     if (!comp) return false;
-    if (!inWeek(typeof comp === "object" ? comp.completedWeek : null)) return false;
+    const compWeek = typeof comp === "object"
+      ? (comp.completedWeek || (comp.completedAt ? getIsoWeekKey(new Date(comp.completedAt)) : null))
+      : null;
+    if (!inWeek(compWeek)) return false;
     if (isMultiAssign && memberLower) return completers(typeof comp === "object" ? comp.completedBy : comp).includes(memberLower);
     return true;
   }
@@ -673,7 +676,7 @@ function renderSkylightTasksPage() {
       if (isComp) {
         handleUndoTask(tid, dName, null, mem);
       } else {
-        handleCompleteTaskWithCelebration(tid, dName, mem);
+        handleCompleteTaskWithCelebration(tid, dName, mem, btn.closest(".skylight-task-card")?.getAttribute("data-date"));
       }
     };
   });
@@ -923,9 +926,18 @@ function showTaskMoveToast(text, onUndo) {
 }
 
 // --- Task Completion with Sound & Full Celebration Trigger ---
-function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = null) {
+function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = null, dateStr = null) {
   const task = (window.currentTasks || []).find(t => t.id === taskId);
   if (!task) return;
+
+  // The week this tick belongs to (the card's date, else this week). The
+  // weekly reset keeps only this week's ticks, so every tick must say its week.
+  let tickDate = new Date();
+  if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    tickDate = new Date(y, m - 1, d);
+  }
+  const tickWeek = getIsoWeekKey(tickDate);
 
   const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
   const assignedList = getAssignedMembersList(task.assignedTo);
@@ -946,12 +958,14 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
       }
       task.completedDays[targetDay] = {
         completedBy: currentList,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        completedWeek: tickWeek
       };
     } else {
       task.completedDays[targetDay] = {
         completedBy: completer,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        completedWeek: tickWeek
       };
     }
   } else {
@@ -963,10 +977,12 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
       task.completedBy = currentList;
       task.done = assignedList.every(m => currentList.some(c => c.toLowerCase() === m));
       task.completedAt = new Date().toISOString();
+      task.completedWeek = tickWeek;
     } else {
       task.done = true;
       task.completedBy = completer;
       task.completedAt = new Date().toISOString();
+      task.completedWeek = tickWeek;
     }
   }
 
@@ -978,6 +994,7 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
         done: task.done,
         completedBy: task.completedBy,
         completedAt: task.completedAt,
+        completedWeek: isDaily ? (task.completedWeek || null) : tickWeek,
         completedDays: task.completedDays || {}
       });
     } catch (err) {}
@@ -1171,7 +1188,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
     close();
     if (colMember) markTasksToggle(taskId, colMember, findTasksCard(taskId, colMember));
     if (isDone) handleUndoTask(taskId, targetDay, null, colMember);
-    else handleCompleteTaskWithCelebration(taskId, targetDay, colMember);
+    else handleCompleteTaskWithCelebration(taskId, targetDay, colMember, getLocalDateKey(cardDate));
   };
   document.getElementById("btn-quick-card-close").onclick = close;
   overlay.onclick = (e) => { if (e.target === overlay) close(); };
