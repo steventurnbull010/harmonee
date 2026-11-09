@@ -1175,6 +1175,8 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
   if (!e) return false;
   const repeat = (e.repeat || "none").toLowerCase();
   const eDateStr = e.date ? getLocalDateKey(e.date) : null;
+  // One date of a repeating event moved somewhere else (js/calendar-drag.js)
+  if (Array.isArray(e.skipDates) && targetDateStr && e.skipDates.includes(targetDateStr)) return false;
 
   // 1. One-off (Does not repeat) - strictly matches the specific date
   if (repeat === "none" || repeat === "one-off") {

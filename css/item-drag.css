@@ -1,0 +1,76 @@
+/* ==========================================================================
+   PRESS, HOLD AND DRAG (js/item-drag.js), used by calendar events
+   (js/calendar-drag.js). Same look as moving a job on the Tasks board:
+   the rest of the page fades back, every place it can go has a dashed
+   outline, the one under the finger fills in, and a label by the finger
+   says what letting go will do. 8px spacing steps.
+   ========================================================================== */
+.item-drag-ghost {
+  position: fixed !important;
+  z-index: 9999;
+  margin: 0 !important;
+  pointer-events: none;
+  transform: scale(1.04) rotate(-1.5deg);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24) !important;
+  opacity: 0.95;
+  inset: auto;
+}
+.is-drag-source { opacity: 0.35; }
+
+body.is-item-dragging,
+body.is-item-dragging * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
+
+/* The rest of the page fades back */
+.skylight-sidebar,
+.calendar-header,
+.calendar-fab-container,
+.is-drag-origin {
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+body.is-item-dragging .skylight-sidebar,
+body.is-item-dragging .calendar-header,
+body.is-item-dragging .calendar-fab-container,
+body.is-item-dragging .is-drag-origin:not(.is-drop-target) {
+  filter: blur(2px) saturate(0.5);
+  opacity: 0.4;
+}
+
+/* Somewhere it can go */
+.is-drop-zone {
+  outline: 2px dashed #0284c7;
+  outline-offset: -2px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+/* Where it'll go if you let go now */
+.is-drop-zone.is-drop-target {
+  outline: 3px solid #0284c7;
+  outline-offset: -3px;
+  background-color: rgba(2, 132, 199, 0.12) !important;
+  box-shadow: inset 0 0 0 6px rgba(2, 132, 199, 0.08);
+}
+body.theme-dark .is-drop-zone { outline-color: #38bdf8; }
+body.theme-dark .is-drop-zone.is-drop-target { background-color: rgba(56, 189, 248, 0.16) !important; }
+
+/* The label by the finger: "Thu 12 Nov · 4:30pm" */
+.item-drag-hint {
+  position: fixed;
+  z-index: 10000;
+  transform: translate(-50%, -100%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font: 700 0.9rem var(--font-body, sans-serif);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.item-drag-hint.is-on { opacity: 1; }
+body.theme-dark .item-drag-hint { background: #f8fafc; color: #0f172a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .item-drag-ghost { transform: none; }
+  .skylight-sidebar, .calendar-header, .calendar-fab-container, .is-drag-origin, .is-drop-zone, .item-drag-hint { transition: none; }
+}

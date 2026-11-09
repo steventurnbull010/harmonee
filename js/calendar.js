@@ -1418,6 +1418,8 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
       const pal = getMemberPalette(mList[0] || "family");
       cellItems.push({
         type: "event",
+        id: evt.id,
+        birthday: !!evt.birthday,
         icon: evt.icon || "📅",
         title: evt.title,
         sub: evt.time || "All Day",
@@ -1431,7 +1433,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
 
     const itemChipsHtml = visibleItems.map(item => {
       return `
-        <div class="month-mini-event" 
+        <div class="month-mini-event"${item.type === "event" && item.id ? ` data-event-id="${escapeHtml(String(item.id))}"` : ""}
              style="background: ${item.pal.lightBg}; color: ${item.pal.text}; border-left-color: ${item.pal.primary};" 
              title="${escapeHtml(item.title)} (${escapeHtml(item.sub)})">
           <span class="mini-icon">${escapeHtml(item.icon)}</span>
@@ -2660,6 +2662,8 @@ function renderWeekCalendar() {
   }
 
   wireTimeGridCreate(gridContainer, { startHour, endHour, hourHeight, topPadding });
+  // For dragging an event to a new time (js/calendar-drag.js)
+  gridContainer.dataset.timeline = JSON.stringify({ startHour, endHour, hourHeight, topPadding });
 
   // Wire day column navigation arrows (shifts by 1 day for smooth browsing)
   gridContainer.querySelectorAll(".col-nav-prev").forEach(btn => {
