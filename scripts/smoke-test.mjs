@@ -189,6 +189,9 @@ const goTo = (view) => async (p) => p.evaluate((v) => {
 const PAGES = [
   // The "3 sleeps" countdown is at the top of the Calendar, and only there
   ["calendar", async (p) => {
+    // harmonee opens on the board, not Today at a glance (unless a family asks)
+    const todayOpen = await p.evaluate(() => { const t = document.getElementById("today-screen"); return !!(t && !t.hidden && t.offsetParent !== null); });
+    if (todayOpen) throw new Error("Today at a glance opened by itself");
     await goTo("calendar")(p);
     await p.evaluate(() => window.refreshCountdowns && window.refreshCountdowns());
     await p.waitForTimeout(200);

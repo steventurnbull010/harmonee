@@ -6,10 +6,12 @@
 //   morning    "Good morning", warm colours, "Start the day"
 //   afternoon  "Good afternoon": finished events fade, the next is marked
 //   evening    "Good evening", dusk colours, plus a Tomorrow card
-// It opens by itself when the night clock wakes up, and any time from the
-// "h" logo or the family name at the top of a page, and (if a family turns
-// it on in Settings > Display) after the board has been left alone. It keeps
-// itself up to date every minute while open.
+// It opens from the "h" logo or the family name at the top of a page. It
+// only opens by itself if a family asks it to: when the night clock wakes up
+// (Settings > Sleep > Morning summary) or after the board has been left alone
+// (Settings > Display), and once for a brand-new family's Getting started.
+// Otherwise the board stays on whatever page it was left on. It keeps itself
+// up to date every minute while open.
 //
 //   showTodayScreen({ from: "wake" | "logo" | "idle" | "preview" })
 // ============================================================================
@@ -633,9 +635,10 @@
   }
   window.showTodayScreen = showTodayScreen;
 
-  // On unless a family switches it off (Settings > Sleep > Morning summary).
-  // That switch only affects the automatic morning one; the "h" always works.
-  const isEnabled = () => (window.boardSettings || {}).todayScreenEnabled !== false;
+  // Off unless a family switches it on (Settings > Sleep > Morning summary):
+  // many leave the tablet on the Tasks page. That switch only affects the
+  // automatic morning one; the "h" always works.
+  const isEnabled = () => (window.boardSettings || {}).todayScreenEnabled === true;
   window.isTodayScreenEnabled = isEnabled;
 
   // ---- When the board is left alone (Settings > Display, this device only) ----
@@ -698,23 +701,8 @@
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", markOpeners); else markOpeners();
 
-  // ---- Phones open on Today at a glance -----------------------------------------
-  // On a phone you mostly want "what's on" and to add or tick something, so
-  // the app opens here; ✕ goes to the full board. (Tablets open on the board.)
-  const openOnPhone = () => {
-    if (!window.matchMedia("(max-width: 600px)").matches) return;
-    if (window.__openingSharedList) return; // a shared list link: go to the list
-    if (shown("board-join-screen") || shown("ambient-sleep-overlay")) return;
-    const setup = document.getElementById("setup-wizard");
-    if (setup && !setup.hidden) return; // a new family is still setting up
-    const today = document.getElementById("today-screen");
-    if (today && !today.hidden) return;
-    showTodayScreen({ from: "logo" });
-    // Events, meals and jobs arrive from the board a moment after opening
-    [1500, 4000].forEach(ms => setTimeout(() => { const el = document.getElementById("today-screen"); if (el && !el.hidden) paint(el); }, ms));
-  };
-  if (document.readyState === "complete") setTimeout(openOnPhone, 600);
-  else window.addEventListener("load", () => setTimeout(openOnPhone, 600));
+  // (Phones used to open on Today at a glance; now every device opens on the
+  // page it was left on, and Today is a tap on the family name away.)
 
   // Confetti draws on its own layer (100 by default), which would be hidden
   // behind this screen and Shop mode: lift every burst above them
