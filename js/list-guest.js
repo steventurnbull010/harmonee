@@ -10,7 +10,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { DEFAULT_FIREBASE_CONFIG } from "./firebase-config.js?v=baea2c0a";
+import { DEFAULT_FIREBASE_CONFIG } from "./firebase-config.js?v=9fc32c10";
 
 const COLORS = {
   sky: ["#0284c7", "#e0f2fe"], rose: ["#e11d48", "#ffe4e6"], amber: ["#d97706", "#fef3c7"], emerald: ["#059669", "#d1fae5"],

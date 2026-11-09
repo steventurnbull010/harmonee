@@ -59,7 +59,7 @@
   <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
-  <link rel="stylesheet" href="css/meals.css?v=8844d3cd">
+  <link rel="stylesheet" href="css/meals.css?v=d35dcf4c">
   <link rel="stylesheet" href="css/calendar.css?v=94300d0c">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
@@ -497,6 +497,12 @@
                   </div>
                 </div>
               </div>
+
+              <!-- The family's own recipes (js/family-recipes.js) -->
+              <button type="button" class="family-recipe-add" data-add-family-recipe>
+                <span aria-hidden="true">＋</span> Add your own recipe
+                <small>type it in, or from a photo of the page</small>
+              </button>
 
               <!-- Recipe List -->
               <div class="drawer-recipes-list" id="drawer-recipes-list">
@@ -2538,7 +2544,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=772ecb7f"></script>
+  <script src="js/build-info.js?v=3d1adb99"></script>
   <script src="js/utils.js?v=53ae68b2"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2550,7 +2556,7 @@
   <script src="js/join-qr.js?v=65c515ef"></script>
   <script src="js/getting-started.js?v=bf829c26"></script>
   <script src="js/weather.js?v=be0a8650"></script>
-  <script src="js/sleep.js?v=ec254c32"></script>
+  <script src="js/sleep.js?v=a0a6c663"></script>
   <script src="js/grocery.js?v=f93c76e7"></script>
   <script src="js/lists.js?v=b9d2a959"></script>
   <script src="js/aisles.js?v=171f4f8e"></script>
@@ -2579,7 +2585,8 @@
   <script src="js/parent-pin.js?v=b6e3c20f"></script>
   <script src="js/music.js?v=d89c674f"></script>
   <script src="js/setup-wizard.js?v=0cd14412"></script>
-  <script src="js/magic-import.js?v=07cd3ef4"></script>
+  <script src="js/family-recipes.js?v=b2271df5"></script>
+  <script src="js/magic-import.js?v=b7981b4f"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
   <script src="js/meal-groceries.js?v=ddc270ab"></script>
@@ -2589,8 +2596,8 @@
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
-  <script type="module" src="js/meals.js?v=e5d7ffaa"></script>
-  <script type="module" src="app.js?v=9eca8ef8"></script>
+  <script type="module" src="js/meals.js?v=dba21553"></script>
+  <script type="module" src="app.js?v=712ed2f8"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

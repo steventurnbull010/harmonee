@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=83de7ef4";
+} from "../recipes-data.js?v=d0049424";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -1452,6 +1452,10 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
     } else if (recipe.source === "house" && recipe.sourceName) {
       creditEl.textContent = `Recipe: ${recipe.sourceName}`;
       creditEl.hidden = false;
+    } else if (recipe.source === "family") {
+      // The family's own (js/family-recipes.js): change it from here
+      creditEl.innerHTML = `Recipe: Family recipe · <button type="button" class="cooking-credit-edit" data-edit-family-recipe="${escapeHtml(recipe.id)}">✏️ Edit</button>`;
+      creditEl.hidden = false;
     } else {
       creditEl.hidden = true;
       creditEl.textContent = "";
@@ -1483,6 +1487,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
   else modal.setAttribute("open", "true");
 }
 window.openCookingRecipeModal = openCookingRecipeModal;
+window.renderDrawerRecipeList = () => renderDrawerRecipeList();
 
 // Plan a recipe straight onto a day (Meal Genie): the same meal the recipe
 // card's "Add to plan" saves, then the ingredients question slides up

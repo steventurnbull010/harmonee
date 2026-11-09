@@ -51,7 +51,9 @@ export const PRELOADED_RECIPES = [
 export function getAllFamilyRecipes() {
   let custom = [];
   try {
-    if (typeof localStorage !== "undefined") {
+    // The family's own recipes, shared on the board (js/family-recipes.js)
+    if (typeof window !== "undefined" && window.FamilyRecipes) custom = window.FamilyRecipes.list();
+    else if (typeof localStorage !== "undefined") {
       const raw = localStorage.getItem("turnbull_custom_recipes");
       if (raw) {
         const parsed = JSON.parse(raw);

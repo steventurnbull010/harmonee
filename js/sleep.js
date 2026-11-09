@@ -144,3 +144,8 @@ function initScheduledSleepWindow() {
 }
 window.initScheduledSleepWindow = initScheduledSleepWindow;
 
+
+// The board's settings just arrived or changed (here or on another device):
+// check straight away, so a board with the night clock switched off doesn't
+// show it at night until the next minute's check
+document.addEventListener("harmonee:data", () => { try { checkScheduledSleepWindow(); } catch (e) {} });

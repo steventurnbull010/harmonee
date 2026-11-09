@@ -32,7 +32,7 @@ import {
   clearIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
-import { DEFAULT_FIREBASE_CONFIG, APP_CHECK_SITE_KEY, appCheckWanted } from "./js/firebase-config.js?v=baea2c0a";
+import { DEFAULT_FIREBASE_CONFIG, APP_CHECK_SITE_KEY, appCheckWanted } from "./js/firebase-config.js?v=9fc32c10";
 import {
   getAuth,
   signInAnonymously
@@ -1896,10 +1896,11 @@ function listenToFirestoreBoard() {
         shouldRender = true;
       }
       if (Array.isArray(data.customRecipes)) {
-        try {
-          const safeRecipes = data.customRecipes.filter(r => r && typeof r === "object" && r.id);
-          localStorage.setItem(boardCacheKey("turnbull_custom_recipes"), JSON.stringify(safeRecipes));
-        } catch (e) {}
+        // The family's own recipes (js/family-recipes.js keeps unsaved changes on top)
+        const safeRecipes = data.customRecipes.filter(r => r && typeof r === "object" && r.id);
+        if (window.FamilyRecipes) window.FamilyRecipes.fromBoard(safeRecipes);
+        else { try { localStorage.setItem(boardCacheKey("turnbull_custom_recipes"), JSON.stringify(safeRecipes)); } catch (e) {} }
+        shouldRender = true;
       }
       if (data.stickyNote !== undefined) {
         if (data.stickyNote && data.stickyNote.text && !data.stickyNote.deleted) {

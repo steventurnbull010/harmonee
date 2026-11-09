@@ -22,7 +22,10 @@
 // instead of Gemini, so all of this is tested without the real service.
 // ============================================================================
 (function () {
-  const AI_SWITCHED_ON = false;            // flip once AI Logic and billing are on
+  // AI Logic, App Check (Fraud Defense key) and billing are on (9 Nov). Each
+  // use has its own switch: recipes from a photo are on; flyers to events are
+  // parked (the family didn't think they'd use it)
+  const AI_SWITCHED_ON = { recipe: true, events: false };
   const AI_SDK = "https://www.gstatic.com/firebasejs/12.19.0";
   const MODEL = "gemini-3.8-flash";        // current Flash model on Firebase AI Logic (Nov 2026; gemini-2.5-flash is redirected from 1 Dec)
   const TIMEOUT_MS = 45000;
@@ -34,7 +37,7 @@
   const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const people = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
 
-  const available = () => AI_SWITCHED_ON || typeof window.__SMOKE_AI === "function";
+  const available = (kind = "events") => !!AI_SWITCHED_ON[kind] || typeof window.__SMOKE_AI === "function";
 
   // ---- The photo: shrunk, as JPEG ---------------------------------------------
   function shrink(file) {
@@ -71,6 +74,32 @@
       "If the photo has no events, return an empty list."
     ].join("\n");
   }
+  // A recipe: a cookbook page, a handwritten card, or a screenshot (js/family-recipes.js)
+  function recipeInstructions() {
+    return [
+      "You read photos of recipes for a family's own recipe collection: a page of a printed cookbook, a handwritten card or note, or a screenshot.",
+      "Several photos are pages of the same recipe, in order.",
+      "title: the recipe's name as written, at most 80 characters.",
+      "servings: how many it serves or makes, if given, else 0. prepMinutes and cookMinutes: whole minutes if given (1 hr = 60), else 0.",
+      "mealType: one of breakfast, lunch, dinner, snack (your best guess; puddings, cakes and bakes are snack).",
+      "ingredients: one item per ingredient with its amount as written (\"200g plain flour\", \"2 eggs\").",
+      "method: one item per step, in order, in the recipe's own words (only fix obvious spelling).",
+      "Leave out page numbers, headings, adverts, nutrition panels and anything that isn't part of this recipe.",
+      "If handwriting is hard to read, give your best reading.",
+      "emoji: one emoji that suits the dish. isRecipe: false if the photos don't show a recipe."
+    ].join("\n");
+  }
+  async function recipeSchema(ai) {
+    const S = ai.Schema;
+    return S.object({
+      properties: {
+        isRecipe: S.boolean(), title: S.string(), servings: S.integer(), prepMinutes: S.integer(), cookMinutes: S.integer(),
+        mealType: S.string(), ingredients: S.array({ items: S.string() }), method: S.array({ items: S.string() }), emoji: S.string()
+      },
+      optionalProperties: ["servings", "prepMinutes", "cookMinutes", "mealType", "emoji"]
+    });
+  }
+
   async function schemaFor(ai) {
     const S = ai.Schema;
     return S.object({
@@ -90,9 +119,9 @@
   }
 
   // ---- Asking Gemini (through Firebase AI Logic) ----------------------------------
-  let modelPromise = null;
-  async function model() {
-    if (!modelPromise) modelPromise = (async () => {
+  const modelPromises = {};
+  async function model(kind = "events") {
+    if (!modelPromises[kind]) modelPromises[kind] = (async () => {
       const [appMod, ai] = await Promise.all([import(`${AI_SDK}/firebase-app.js`), import(`${AI_SDK}/firebase-ai.js`)]);
       const cfg = window.DEFAULT_FIREBASE_CONFIG;
       if (!cfg) throw new Error("harmonee isn't connected yet.");
@@ -109,26 +138,72 @@
       const backend = ai.getAI(app, { backend: new ai.GoogleAIBackend() });
       return ai.getGenerativeModel(backend, {
         model: MODEL,
-        systemInstruction: instructions(),
+        systemInstruction: kind === "recipe" ? recipeInstructions() : instructions(),
         // Reading a flyer needs little "thinking", and a short answer: keeps
         // each photo to about a penny (paid Gemini prices, Nov 2026)
         generationConfig: {
-          responseMimeType: "application/json", responseSchema: await schemaFor(ai), temperature: 0.1, maxOutputTokens: 2048,
+          responseMimeType: "application/json", responseSchema: kind === "recipe" ? await recipeSchema(ai) : await schemaFor(ai),
+          temperature: 0.1, maxOutputTokens: kind === "recipe" ? 4096 : 2048,
           ...(ai.ThinkingLevel && ai.ThinkingLevel.LOW ? { thinkingConfig: { thinkingLevel: ai.ThinkingLevel.LOW } } : {})
         }
       });
-    })().catch(e => { modelPromise = null; throw e; });
-    return modelPromise;
+    })().catch(e => { delete modelPromises[kind]; throw e; });
+    return modelPromises[kind];
   }
 
-  async function askAI(photo) {
-    if (typeof window.__SMOKE_AI === "function") return window.__SMOKE_AI(photo);
-    const m = await model();
+  // photo: one { base64 } or a list of them; kind: "events" or "recipe"
+  async function askAI(photo, kind = "events") {
+    const photos = Array.isArray(photo) ? photo : [photo];
+    if (typeof window.__SMOKE_AI === "function") return window.__SMOKE_AI(photos[0], kind, photos);
+    const m = await model(kind);
     const res = await m.generateContent([
-      { inlineData: { mimeType: "image/jpeg", data: photo.base64 } },
-      { text: "Find the events in this photo." }
+      ...photos.map(p => ({ inlineData: { mimeType: "image/jpeg", data: p.base64 } })),
+      { text: kind === "recipe" ? "Read the recipe in these photos." : "Find the events in this photo." }
     ]);
     return JSON.parse(res.response.text());
+  }
+
+  // ---- Checking a recipe that came back -------------------------------------------
+  function tidyRecipe(a) {
+    if (!a || a.isRecipe === false) return null;
+    const list = (x, max, each) => (Array.isArray(x) ? x : []).map(v => clean(v, each)).filter(Boolean).slice(0, max);
+    const ingredients = list(a.ingredients, 60, 160);
+    const instructions = list(a.method, 40, 600);
+    const title = clean(a.title, 80);
+    if (!title || (!ingredients.length && !instructions.length)) return null;
+    const n = (v, max) => { const x = Math.round(Number(v)); return x > 0 && x <= max ? x : null; };
+    const meal = String(a.mealType || "").toLowerCase().trim();
+    const emoji = String(a.emoji || "").trim();
+    return {
+      title, ingredients, instructions,
+      servings: n(a.servings, 50),
+      prepTime: n(a.prepMinutes, 600) ? String(n(a.prepMinutes, 600)) : "",
+      cookTime: n(a.cookMinutes, 1440) ? String(n(a.cookMinutes, 1440)) : "",
+      mealType: ["breakfast", "lunch", "dinner", "snack"].includes(meal) ? meal : "",
+      emoji: emoji && /\p{Extended_Pictographic}/u.test(emoji) && [...emoji].length <= 4 ? emoji : ""
+    };
+  }
+
+  // Photos of a recipe (up to 3 pages) -> the recipe to check, or null (it says why)
+  async function readRecipe(files) {
+    const ticket = ++busy;
+    let photos;
+    try { photos = await Promise.all([...files].slice(0, 3).map(shrink)); }
+    catch (err) { problem({ title: "That isn't a photo", lead: err.message }, false); return null; }
+    reading(photos[0], "recipe");
+    if (window.isOffline && window.isOffline()) { problem({ title: "No internet", lead: "Reading a recipe needs the internet. Try again when you're back online." }, false); return null; }
+    try {
+      const recipe = tidyRecipe(await withTimeout(askAI(photos, "recipe")));
+      if (ticket !== busy) return null; // cancelled while reading
+      if (!recipe) { problem({ title: "No recipe found", lead: "Try a closer photo, straight on and in good light, with the ingredients and method in it." }, false); return null; }
+      close();
+      return recipe;
+    } catch (err) {
+      if (ticket !== busy) return null;
+      console.warn("Magic Import couldn't read the recipe:", err);
+      problem({ title: "Couldn't read that one", lead: err && /too long|internet|connected/.test(err.message) ? err.message : "Something went wrong reading the photo. Try again in a moment." }, false);
+      return null;
+    }
   }
 
   function withTimeout(promise) {
@@ -136,7 +211,7 @@
   }
 
   // ---- Checking what came back --------------------------------------------------
-  const clean = (s, max) => String(s ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+  const clean = (s, max) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
   function tidy(answer) {
     const list = Array.isArray(answer && answer.events) ? answer.events : [];
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -205,24 +280,25 @@
     return dlg;
   }
 
-  function reading(photo) {
+  function reading(photo, kind = "events") {
     show(`
       <div class="magic-import-photo"><img src="${photo.dataUrl}" alt=""><span class="magic-import-scan" aria-hidden="true"></span></div>
-      <h2 class="magic-import-title" id="magic-import-title">Reading your photo…</h2>
-      <p class="magic-import-lead" role="status">Looking for dates, times and places. This takes a few seconds.</p>
+      <h2 class="magic-import-title" id="magic-import-title">${kind === "recipe" ? "Reading your recipe…" : "Reading your photo…"}</h2>
+      <p class="magic-import-lead" role="status">${kind === "recipe" ? "Looking for the ingredients and method. This takes a few seconds." : "Looking for dates, times and places. This takes a few seconds."}</p>
       <div class="magic-import-actions"><button type="button" class="magic-import-btn" data-mi-close>Cancel</button></div>`);
   }
 
-  function problem(text) {
+  function problem(text, again = true) {
     const dlg = show(`
       <div class="magic-import-mark" aria-hidden="true">🤔</div>
       <h2 class="magic-import-title" id="magic-import-title">${esc(text.title)}</h2>
       <p class="magic-import-lead">${esc(text.lead)}</p>
       <div class="magic-import-actions">
         <button type="button" class="magic-import-btn" data-mi-close>Close</button>
-        <button type="button" class="magic-import-btn is-primary" data-mi-again>Try another photo</button>
+        ${again ? `<button type="button" class="magic-import-btn is-primary" data-mi-again>Try another photo</button>` : ""}
       </div>`);
-    dlg.querySelector("[data-mi-again]").onclick = () => { close(); pickPhoto(); };
+    const againBtn = dlg.querySelector("[data-mi-again]");
+    if (againBtn) againBtn.onclick = () => { close(); pickPhoto(); };
   }
 
   // One event: fill in the Add Event panel to check
@@ -286,7 +362,10 @@
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.addEventListener("change", () => { if (input.files && input.files[0]) readPhoto(input.files[0]); });
+    input.hidden = true;
+    document.body.appendChild(input); // some browsers won't open a file box that isn't in the page
+    input.addEventListener("cancel", () => input.remove());
+    input.addEventListener("change", () => { input.remove(); if (input.files && input.files[0]) readPhoto(input.files[0]); });
     input.click();
   }
 
@@ -315,5 +394,5 @@
     if (e.target.closest("#btn-event-from-photo")) { e.preventDefault(); pickPhoto(); }
   });
 
-  window.MagicImport = { available, readPhoto, pickPhoto, _tidy: tidy };
+  window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, _tidy: tidy, _tidyRecipe: tidyRecipe };
 })();

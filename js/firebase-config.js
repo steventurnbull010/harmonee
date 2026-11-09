@@ -13,13 +13,12 @@ export const DEFAULT_FIREBASE_CONFIG = {
   messagingSenderId: "344148325793"
 };
 
-// App Check: proves requests come from harmonee itself. Parked (9 Nov):
-// Firebase now wants a Fraud Defense (reCAPTCHA Enterprise) key, made in the
-// Google Cloud console for harmonee-app. With no key here, nothing runs.
-// To switch on: put the key's ID here, register it in Firebase App Check
-// (TTL 6 hours, risk Medium), deploy, check tokens are accepted, then
-// enforce. app.js and js/magic-import.js use ReCaptchaEnterpriseProvider.
-export const APP_CHECK_SITE_KEY = "";
+// App Check: proves requests come from harmonee itself, so nobody can use the
+// board's Firebase or AI allowance from elsewhere. A Fraud Defense
+// (reCAPTCHA Enterprise) key made in the Google Cloud console for harmonee-app
+// and registered in Firebase App Check (token 6 hours, risk Medium). The key
+// is public by design. app.js and js/magic-import.js use ReCaptchaEnterpriseProvider.
+export const APP_CHECK_SITE_KEY = "6LcqpBguAAAAAE_FO9qsgSFoHcIdksbyQtPzjQyF"; // Fraud Defense key "harmonee web" (9 Nov), public by design
 export function appCheckWanted() {
   return !!APP_CHECK_SITE_KEY && typeof location !== "undefined" && /^harmonee-app\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
 }

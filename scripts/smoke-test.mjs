@@ -68,6 +68,7 @@ function sampleStore() {
       members: ["Sam", "Alex", "Jo", "Max"],
       settings: {
         familyName: "Sample Family", gameMode: "points", currency: "£",
+        sleepScheduleEnabled: false, // so the night clock doesn't cover the board when the test runs late
         memberColors: { Sam: "warm-ochre", Alex: "periwinkle", Jo: "coral-pink", Max: "spring-green" },
         weatherLocation: { lat: 51.5, lon: -0.1, name: "London" }
       },
@@ -331,7 +332,10 @@ const PAGES = [
     const col = p.locator(`.skylight-tasks-col[data-col-member="${who}"]`);
     if (phone && !(await p.evaluate((w) => { const g = document.getElementById("tasks-columns-grid"); const c = g.querySelector(`[data-col-member="${w}"]`); const r = c.getBoundingClientRect(), gr = g.getBoundingClientRect(); return Math.abs(r.left - gr.left) < 30; }, who))) throw new Error(`the phone didn't switch to ${who}'s column`);
     const card = col.locator(".skylight-task-card", { hasText: title });
-    if (!(await card.count())) throw new Error(`${title} didn't land in ${who}'s column`);
+    if (!(await card.count())) {
+      const dbg = await p.evaluate((t) => { const task = window.currentTasks.find(x => x.title === t); const sl = document.getElementById("ambient-sleep-overlay"); const pl = document.querySelector(".quick-grab-pill"); const pr = pl && pl.getBoundingClientRect(); const at = (x, y) => { const u = document.elementFromPoint(x, y); return u ? (u.id || u.className || u.tagName) : null; }; const col = document.querySelector('.skylight-tasks-col[data-col-member="Alex"]').getBoundingClientRect(); return JSON.stringify({ pillAt: pr && at(pr.left + 20, pr.top + pr.height / 2), dropAt: at(col.left + col.width / 2, Math.min(col.top + col.height / 2, col.top + 120)), sleep: !!(sl && sl.offsetParent !== null && getComputedStyle(sl).display !== "none"), sleepSetting: (window.boardSettings || {}).sleepScheduleEnabled, ov: task && task.assignedOverrides, slots: [...document.querySelectorAll("#tasks-slot-filters .is-on")].map(b => b.textContent.trim()), alex: [...document.querySelectorAll('.skylight-tasks-col[data-col-member="Alex"] .skylight-task-card-title')].map(e => e.textContent) }); }, title);
+      throw new Error(`${title} didn't land in ${who}'s column ${dbg}`);
+    }
     if (!(await card.locator(".skylight-task-grabbed").count())) throw new Error(`${title} isn't marked Grabbed`);
     const after = await p.locator(".quick-grab-pill").count();
     if (!phone && after !== before - 1) throw new Error(`the tray still has ${after} pills (had ${before})`);
@@ -506,6 +510,78 @@ const PAGES = [
     for (const want of ["Greek yogurt", "12 Servings", "Family favourite", "Preheat your oven"]) if (!r.text.includes(want)) throw new Error(`the card doesn't show "${want}"`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-house-recipe-card.png`) });
     await p.keyboard.press("Escape");
+  }],
+  // Family recipes: type one in and save it (it reaches the board and the
+  // list, with Edit on its card); then fill one from a photo (pretend AI)
+  ["family-recipe", async (p) => {
+    await goTo("meals")(p);
+    await p.evaluate(() => { window.__SMOKE_AI = async (photo, kind) => kind === "recipe"
+      ? { isRecipe: true, title: "Grandad's beef stew <b>", servings: 4, prepMinutes: 20, cookMinutes: 120, mealType: "dinner",
+          ingredients: ["500g stewing beef", "2 carrots", "1 onion", "a pinch of salt"], method: ["Brown the beef.", "Add everything else and simmer for 2 hours."], emoji: "🍲" }
+      : { events: [] }; });
+    await p.evaluate(() => window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"));
+    await p.waitForTimeout(500);
+    await p.locator("[data-add-family-recipe]").click();
+    await p.waitForTimeout(400);
+    if (!(await p.locator("#family-recipe-modal [data-fr-photo]").isVisible())) throw new Error("no 📷 Fill in from a photo button in the recipe form");
+    // Typed in
+    await p.fill('#family-recipe-modal [data-fr="title"]', "Nana's flapjacks");
+    await p.click('#family-recipe-modal [data-fr-meal="snack"]');
+    await p.fill('#family-recipe-modal [data-fr="servings"]', "12");
+    await p.fill('#family-recipe-modal [data-fr="ingredients"]', "250g oats\n125g butter\n4 tbsp golden syrup");
+    await p.fill('#family-recipe-modal [data-fr="method"]', "1. Melt the butter and syrup.\n2. Stir in the oats and bake for 20 minutes.");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-family-recipe-form.png`) });
+    await p.click('#family-recipe-modal button[type="submit"]');
+    await p.waitForTimeout(800);
+    const saved = await p.evaluate(() => {
+      const r = window.FamilyRecipes.list().find(x => x.title === "Nana's flapjacks");
+      const board = (window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).customRecipes || [];
+      return { r, onBoard: board.some(x => x.title === "Nana's flapjacks"), events: ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).events || []).length };
+    });
+    if (!saved.r) throw new Error("the typed recipe wasn't saved");
+    if (saved.r.mealType !== "snack" || saved.r.servings !== 12 || saved.r.instructions[0] !== "Melt the butter and syrup.") throw new Error(`saved wrongly: ${JSON.stringify(saved.r)}`);
+    if (!saved.onBoard) throw new Error("the recipe didn't reach the board");
+    if (saved.events < 4) throw new Error("saving a recipe lost the board's events");
+    // Its card says Family recipe, with Edit
+    const card = await p.evaluate(async () => {
+      const m = await import("./recipes-data.js");
+      const r = m.getAllFamilyRecipes().find(x => x.title === "Nana's flapjacks");
+      if (!r) return "not in the recipe list";
+      window.openCookingRecipeModal(r);
+      await new Promise(res => setTimeout(res, 500));
+      return (document.getElementById("cooking-credit") || {}).textContent || "";
+    });
+    if (!/Family recipe/.test(card) || !/Edit/.test(card)) throw new Error(`the card's credit says "${card}"`);
+    await p.click("[data-edit-family-recipe]");
+    await p.waitForTimeout(400);
+    const editing = await p.$eval('#family-recipe-modal [data-fr="title"]', el => el.value);
+    if (editing !== "Nana's flapjacks") throw new Error("Edit didn't open the recipe");
+    await p.evaluate(() => document.getElementById("family-recipe-modal").close());
+    await p.waitForTimeout(700); // let it slide out before opening it again
+    // From a photo: the real file picker, a pretend AI answer
+    await p.evaluate(() => window.FamilyRecipes.openEditor());
+    await p.waitForTimeout(500);
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#family-recipe-modal [data-fr-photo]")]);
+    await chooser.setFiles({ name: "recipe-page.png", mimeType: "image/png", buffer: png });
+    await p.waitForTimeout(1200);
+    const fromPhoto = await p.evaluate(() => ({
+      title: document.querySelector('#family-recipe-modal [data-fr="title"]').value,
+      ingredients: document.querySelector('#family-recipe-modal [data-fr="ingredients"]').value,
+      cook: document.querySelector('#family-recipe-modal [data-fr="cook"]').value,
+      note: !document.querySelector("#family-recipe-modal [data-fr-note]").hidden
+    }));
+    if (!fromPhoto.note) throw new Error("the form doesn't say it was filled from the photo");
+    if (fromPhoto.title !== "Grandad's beef stew") throw new Error(`the title wasn't cleaned: ${fromPhoto.title}`);
+    if (!/stewing beef/.test(fromPhoto.ingredients) || fromPhoto.cook !== "120") throw new Error(`photo didn't fill the form: ${JSON.stringify(fromPhoto)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-family-recipe-photo.png`) });
+    await p.evaluate(() => document.getElementById("family-recipe-modal").close());
+    // Tidy up: delete the typed one
+    await p.evaluate(() => { const r = window.FamilyRecipes.list().find(x => x.title === "Nana's flapjacks"); if (r) window.FamilyRecipes.remove(r.id); });
+    await p.waitForTimeout(500);
+    const left = await p.evaluate(() => ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).customRecipes || []).filter(x => x.title === "Nana's flapjacks").length);
+    if (left) throw new Error("deleting the recipe didn't reach the board");
+    await p.evaluate(() => { const d = document.getElementById("plan-meal-drawer") || document.querySelector("dialog[open]"); if (d && d.open) d.close(); });
   }],
   // Add Event: the Starts / Ends times fit the panel, and no stray date box
   ["event-editor", async (p) => {
