@@ -902,9 +902,10 @@ function renderDrawerRecipeList() {
   if (query) {
     const qLower = query.toLowerCase();
     recipes = recipes.filter(r => {
-      const titleMatch = r.title.toLowerCase().includes(qLower);
-      const subMatch = (r.subtitle || "").toLowerCase().includes(qLower);
-      const ingMatch = r.ingredients && r.ingredients.some(i => i.toLowerCase().includes(qLower));
+      // A recipe saved without a title or with odd ingredients mustn't break search
+      const titleMatch = String(r.title || "").toLowerCase().includes(qLower);
+      const subMatch = String(r.subtitle || "").toLowerCase().includes(qLower);
+      const ingMatch = Array.isArray(r.ingredients) && r.ingredients.some(i => String(i || "").toLowerCase().includes(qLower));
       return titleMatch || subMatch || ingMatch;
     });
   }
@@ -1676,6 +1677,7 @@ function wireMealsHeaderAndDrawerListeners() {
     btnPrevWeek.setAttribute("data-wired", "true");
     btnPrevWeek.onclick = () => {
       mealsWeekOffset--;
+      window.mealsWeekOffset = mealsWeekOffset; // read by "Add this week's meals"
       renderMealsView();
     };
   }
@@ -1684,6 +1686,7 @@ function wireMealsHeaderAndDrawerListeners() {
     btnNextWeek.setAttribute("data-wired", "true");
     btnNextWeek.onclick = () => {
       mealsWeekOffset++;
+      window.mealsWeekOffset = mealsWeekOffset; // read by "Add this week's meals"
       renderMealsView();
     };
   }
@@ -1692,6 +1695,7 @@ function wireMealsHeaderAndDrawerListeners() {
     btnToday.setAttribute("data-wired", "true");
     btnToday.onclick = () => {
       mealsWeekOffset = 0;
+      window.mealsWeekOffset = mealsWeekOffset; // read by "Add this week's meals"
       renderMealsView();
     };
   }

@@ -2829,6 +2829,11 @@ function renderWeekCalendar() {
     let mouseStartX = 0;
     let isMouseDown = false;
     let mouseDeltaX = 0;
+    // The calendar redraws often on an always-on tablet: drop the last
+    // drawing's window listeners before adding new ones, so they don't pile up
+    if (window.__calendarMouseAbort) window.__calendarMouseAbort.abort();
+    const mouseAbort = new AbortController();
+    window.__calendarMouseAbort = mouseAbort;
 
     wrap.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
@@ -2846,7 +2851,7 @@ function renderWeekCalendar() {
         wrap.style.transform = `translateX(${mouseDeltaX}px)`;
         wrap.style.transition = "none";
       }
-    });
+    }, { signal: mouseAbort.signal });
 
     window.addEventListener("mouseup", () => {
       if (!isMouseDown) return;
@@ -2868,7 +2873,7 @@ function renderWeekCalendar() {
           if (wrap) wrap.style.transform = "";
         }, 230);
       }
-    });
+    }, { signal: mouseAbort.signal });
   };
 
   attachSkylightCalendarGestures();

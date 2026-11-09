@@ -385,9 +385,11 @@ async function flushListOps() {
   if (listsAccessLost) return; // waiting for the family code (see showListsAccessLost)
   if (!window.db || typeof window.runTransaction !== "function" || !listsBoardSeen) return;
   if (listsFlushing) { listsFlushAgain = true; return; }
+  const boardId = getSaveBoardId();
+  if (!boardId) return; // no board yet: keep the changes queued on this device
   listsFlushing = true;
   const batch = queue.slice();
-  const ref = window.doc(window.db, "boards", (window.currentBoardId || "turnbull"));
+  const ref = window.doc(window.db, "boards", boardId);
   try {
     await window.runTransaction(window.db, async (tx) => {
       const snap = await tx.get(ref);

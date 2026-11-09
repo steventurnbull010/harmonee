@@ -126,7 +126,10 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
     if (eDateStr) {
       if (targetDateStr < eDateStr) return false;
       const parts = eDateStr.split("-").map(Number);
-      return targetDate ? targetDate.getDate() === parts[2] : true;
+      if (!targetDate) return true;
+      // The 29th–31st fall on the last day of shorter months
+      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+      return targetDate.getDate() === Math.min(parts[2], monthLen);
     }
     return e.day === dayName;
   }
@@ -136,7 +139,11 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
     if (eDateStr) {
       if (targetDateStr < eDateStr) return false;
       const parts = eDateStr.split("-").map(Number);
-      return targetDate ? (targetDate.getMonth() === (parts[1] - 1) && targetDate.getDate() === parts[2]) : true;
+      if (!targetDate) return true;
+      if (targetDate.getMonth() !== parts[1] - 1) return false;
+      // 29 February shows on the 28th in years without one
+      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+      return targetDate.getDate() === Math.min(parts[2], monthLen);
     }
     return e.day === dayName;
   }
@@ -235,6 +242,16 @@ function getStorageBoardId() {
     return "turnbull";
   }
 }
+// The board a save should go to, or null when there's no real board yet (a
+// new visitor before setup gets "turnbull" only as a stand-in): saving must
+// then be skipped, never sent to the Turnbull board.
+function getSaveBoardId() {
+  if (window.__harmoneeNoBoard) return null;
+  const id = window.currentBoardId;
+  return (typeof id === "string" && id) ? id : null;
+}
+window.getSaveBoardId = getSaveBoardId;
+
 function boardCacheKey(base) {
   const id = getStorageBoardId();
   return id === "turnbull" ? base : `${base}__${id}`;

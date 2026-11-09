@@ -130,7 +130,7 @@ const win = {
   Audio: anything(), AudioContext: anything(), webkitAudioContext: anything(),
   Image: anything(), FileReader: anything(), Notification: anything(),
   IntersectionObserver: anything(), ResizeObserver: anything(), MutationObserver: anything(),
-  CustomEvent: anything(), Event: anything(), URLSearchParams, URL, TextEncoder, TextDecoder,
+  CustomEvent: anything(), Event: anything(), URLSearchParams, URL, TextEncoder, TextDecoder, AbortController,
   confetti: () => {}
 };
 win.window = win; win.self = win; win.globalThis = win; win.top = win;

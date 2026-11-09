@@ -1205,7 +1205,10 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
     if (eDateStr) {
       if (targetDateStr < eDateStr) return false;
       const parts = eDateStr.split("-").map(Number);
-      return targetDate ? targetDate.getDate() === parts[2] : true;
+      if (!targetDate) return true;
+      // The 29th–31st fall on the last day of shorter months
+      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+      return targetDate.getDate() === Math.min(parts[2], monthLen);
     }
     return e.day === dayName;
   }
@@ -1215,7 +1218,11 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
     if (eDateStr) {
       if (targetDateStr < eDateStr) return false;
       const parts = eDateStr.split("-").map(Number);
-      return targetDate ? (targetDate.getMonth() === (parts[1] - 1) && targetDate.getDate() === parts[2]) : true;
+      if (!targetDate) return true;
+      if (targetDate.getMonth() !== parts[1] - 1) return false;
+      // 29 February shows on the 28th in years without one
+      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+      return targetDate.getDate() === Math.min(parts[2], monthLen);
     }
     return e.day === dayName;
   }
@@ -1922,18 +1929,8 @@ function loadLocalTasks() {
         ? parsed.filter(t => !t.archived).map(normalizeTask)
         : [];
 
-      if (isDefaultTurnbullBoard) {
-        if (currentTasks.length === 0) {
-          currentTasks = JSON.parse(JSON.stringify(INITIAL_SEED_TASKS)).map(normalizeTask);
-        } else {
-          // Check if daily tasks are missing from cache; if so, prepend them
-          const hasDaily = currentTasks.some(t => t.id && t.id.startsWith("daily-"));
-          if (!hasDaily) {
-            const dailySeed = INITIAL_SEED_TASKS.filter(t => t.id && t.id.startsWith("daily-"));
-            currentTasks = [...dailySeed, ...currentTasks];
-          }
-        }
-      }
+      // A saved list is the family's own, even when it's empty: never put
+      // starter chores back into it (that's how deleted daily chores returned)
       saveLocalCache(currentTasks);
     } else {
       if (isDefaultTurnbullBoard) {
@@ -1950,9 +1947,7 @@ function loadLocalTasks() {
       saveLocalCache(currentTasks);
     }
   } catch (e) {
-    currentTasks = isDefaultTurnbullBoard 
-      ? JSON.parse(JSON.stringify(INITIAL_SEED_TASKS)).map(normalizeTask) 
-      : [];
+    currentTasks = [];
     window.currentTasks = currentTasks;
   }
   renderApp();

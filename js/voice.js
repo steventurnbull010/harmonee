@@ -225,7 +225,14 @@
       }
       handle(text);
     };
-    try { r.start(); } catch (e) { rec = null; }
+    try {
+      r.start();
+    } catch (e) {
+      // The mic didn't start: don't leave the sheet on "Listening…"
+      rec = null;
+      clearTimeout(listenTimer);
+      drawMessage("The microphone didn't start", "", `<button type="button" class="voice-btn" data-voice-close>Cancel</button><button type="button" class="voice-btn" data-voice-type>⌨️ Type it</button><button type="button" class="voice-btn is-primary" data-voice-again>Try again</button>`);
+    }
   }
 
   function ctx(extra = {}) {

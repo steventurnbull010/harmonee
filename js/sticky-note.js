@@ -41,9 +41,10 @@ function saveFamilyStickyNote(note) {
       localStorage.setItem(boardCacheKey("turnbull_sticky_note"), "none");
     } catch(e) {}
   }
-  if (db && typeof setDoc === "function") {
+  const boardId = getSaveBoardId();
+  if (boardId && db && typeof setDoc === "function") {
     try {
-      const boardDocRef = doc(db, "boards", (window.currentBoardId || "turnbull"));
+      const boardDocRef = doc(db, "boards", boardId);
       setDoc(boardDocRef, {
         stickyNote: familyStickyNote || null,
         updatedAt: serverTimestamp()

@@ -62,11 +62,12 @@ window.applyBoardRewardData = applyBoardRewardData;
 
 function saveRewardDataToBoard(fields) {
   cacheRewardData();
-  if (window.db && typeof window.setDoc === "function" && typeof window.doc === "function") {
+  const boardId = getSaveBoardId();
+  if (boardId && window.db && typeof window.setDoc === "function" && typeof window.doc === "function") {
     try {
       const payload = { ...fields };
       if (typeof window.serverTimestamp === "function") payload.updatedAt = window.serverTimestamp();
-      window.setDoc(window.doc(window.db, "boards", window.currentBoardId || "turnbull"), payload, { merge: true })
+      window.setDoc(window.doc(window.db, "boards", boardId), payload, { merge: true })
         .catch(err => console.warn("Couldn't save rewards:", err));
     } catch (e) {
       console.warn("Couldn't save rewards:", e);

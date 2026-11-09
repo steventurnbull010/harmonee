@@ -50,6 +50,14 @@ const roundCoord = (x) => Math.round(Number(x) * 10) / 10;
 const validPlace = (p) => !!p && isFinite(p.lat) && isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180;
 const placeKey = (p) => (p ? `${roundCoord(p.lat)},${roundCoord(p.lon)}` : "");
 
+// A stalled request must give up so the backup provider (or the saved
+// forecast) gets its turn: 8 seconds is plenty for a weather answer
+function weatherFetch(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
 function fromDevice(timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject(new Error("This device can't share its location.")); return; }
@@ -63,7 +71,7 @@ function fromDevice(timeoutMs = 10000) {
 
 // Open-Meteo's free place search: "Bangor" -> Bangor, Northern Ireland, ...
 async function searchTowns(q) {
-  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+  const res = await weatherFetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
   if (!res.ok) throw new Error("search failed");
   const data = await res.json();
   return (data.results || []).map(r => ({
@@ -238,7 +246,7 @@ async function initLocalWeather() {
 
     // Strategy A: Open-Meteo
     try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&hourly=temperature_2m,precipitation_probability,weathercode,is_day,wind_speed_10m&forecast_days=7&wind_speed_unit=mph&timezone=auto");
+      const res = await weatherFetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&hourly=temperature_2m,precipitation_probability,weathercode,is_day,wind_speed_10m&forecast_days=7&wind_speed_unit=mph&timezone=auto");
       if (res.ok) {
         const data = await res.json();
         if (data && data.current_weather) {
@@ -272,7 +280,7 @@ async function initLocalWeather() {
     if (!success) {
       try {
         const query = city ? encodeURIComponent(city) : (lat + "," + lon);
-        const res = await fetch("https://wttr.in/" + query + "?format=j1");
+        const res = await weatherFetch("https://wttr.in/" + query + "?format=j1");
         if (res.ok) {
           const data = await res.json();
           if (data && data.current_condition && data.current_condition[0]) {
