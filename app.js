@@ -6261,6 +6261,18 @@ function initSkylightNavigation() {
     };
   }
 
+  // 📷 Snap a flyer: straight to the camera (js/magic-import.js)
+  const fabBtnSnapFlyer = document.getElementById("fab-action-snap-flyer");
+  if (fabBtnSnapFlyer) {
+    fabBtnSnapFlyer.hidden = !(window.MagicImport && window.MagicImport.available("events"));
+    fabBtnSnapFlyer.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeFabSpeedDial();
+      if (window.MagicImport) window.MagicImport.pickPhoto();
+    };
+  }
+
   if (fabBtnAddEvent) {
     fabBtnAddEvent.onclick = (e) => {
       e.preventDefault();

@@ -416,9 +416,25 @@ const PAGES = [
       await window.MagicImport.readPhoto(new File([blob], "flyer.png", { type: "image/png" }));
       await new Promise(r => setTimeout(r, 300));
     }, answer);
-    // Switched off (as it ships): no button
-    const offHidden = await p.evaluate(async () => { delete window.__SMOKE_AI; window.openEventModal(); await new Promise(r => setTimeout(r, 100)); return document.getElementById("btn-event-from-photo").hidden; });
-    if (!offHidden) throw new Error("the 📷 button shows while Magic Import is switched off");
+    // Switched on (10 Nov): the button shows in Add Event, as "📷 From a photo"
+    const onShown = await p.evaluate(async () => { delete window.__SMOKE_AI; window.openEventModal(); await new Promise(r => setTimeout(r, 100)); const b = document.getElementById("btn-event-from-photo"); return !b.hidden && /From a photo/.test(b.textContent); });
+    if (!onShown) throw new Error("no 📷 From a photo button in Add Event");
+    await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
+    // 📷 Snap a flyer in the Calendar's ＋ menu: straight to the photo picker
+    await p.evaluate(() => window.switchSkylightView("calendar"));
+    await p.waitForTimeout(300);
+    await p.click("#btn-floating-add-calendar");
+    await p.waitForTimeout(300);
+    if (!(await p.locator("#fab-action-snap-flyer").isVisible())) throw new Error("no Snap a flyer in the ＋ menu");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-snap-menu.png`) });
+    await p.evaluate(() => { window.__SMOKE_AI = async () => ({ events: [{ title: "Book fair", date: (() => { const d = new Date(); d.setDate(d.getDate() + 9); return window.getLocalDateKey(d); })(), startTime: "15:30", allDay: false, people: [] }] }); });
+    const pngFlyer = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const [flyerChooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#fab-action-snap-flyer")]);
+    await flyerChooser.setFiles({ name: "flyer.png", mimeType: "image/png", buffer: pngFlyer });
+    await p.waitForTimeout(800);
+    const snapped = await p.evaluate(() => ({ open: document.getElementById("event-modal").open, title: document.getElementById("event-title-input").value, note: document.getElementById("event-magic-note").textContent }));
+    if (!snapped.open || snapped.title !== "Book fair" || !/Filled in\. Check it, then tap Add\./.test(snapped.note)) throw new Error(`Snap a flyer didn't fill in Add Event: ${JSON.stringify(snapped)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-snapped.png`) });
     await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
     await p.waitForTimeout(300);
     await p.evaluate(() => { window.__SMOKE_AI = async () => ({ events: [] }); window.openEventModal(); });
@@ -463,6 +479,13 @@ const PAGES = [
     if (saved.length !== 2 || saved.some(e => e.t === "Sports day")) throw new Error(`wrong events saved: ${JSON.stringify(saved)}`);
     if (!saved.find(e => e.t === "Christmas fair" && e.d === "All Day")) throw new Error("the all-day event wasn't all day");
     if (!saved.find(e => e.t === "Nativity play" && e.m === "Max" && e.time === "18:00")) throw new Error("the nativity play lost its time or person");
+    // "Added 2 events" with Show me, which takes the calendar to the first one
+    const toast = await p.evaluate(() => { const t = document.getElementById("hm-action-toast"); return t && t.classList.contains("is-visible") ? t.textContent.replace(/\s+/g, " ").trim() : ""; });
+    if (!/Added 2 events/.test(toast) || !/Show me/.test(toast)) throw new Error(`no "Added 2 events" with Show me: "${toast}"`);
+    await p.click("#hm-action-toast .hm-action-toast-btn");
+    await p.waitForTimeout(400);
+    const shown = await p.evaluate((d) => ({ view: window.currentActiveView, anchor: window.getLocalDateKey(window.calendarAnchorDate || new Date()) }), ahead(20));
+    if (shown.view !== "calendar") throw new Error(`Show me didn't open the calendar: ${JSON.stringify(shown)}`);
 
     // Nothing found
     await read({ events: [] });

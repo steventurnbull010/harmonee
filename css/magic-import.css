@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MAGIC IMPORT (js/magic-import.js): "📷 Fill in from a photo" in Add Event,
+   MAGIC IMPORT (js/magic-import.js): "📷 From a photo" in Add Event,
    the "Reading your photo…" card, and the tick list when a photo has several
    events. 8px spacing steps.
    ========================================================================== */
@@ -74,3 +74,8 @@ body.theme-dark .magic-import-row:has(input:checked) { background: rgba(2, 132, 
 .magic-import-btn:disabled { opacity: 0.5; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) { .magic-import-scan { animation: none; top: 30%; } }
+
+/* Snap a flyer in the Calendar's ＋ menu */
+.calendar-fab-option[hidden] { display: none !important; }
+.fab-option-photo .fab-option-icon { background: #e0f2fe; border: 1.5px solid #bae6fd; }
+body.theme-dark .fab-option-photo .fab-option-icon { background: rgba(2, 132, 199, 0.2); border-color: #0369a1; }

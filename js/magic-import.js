@@ -1,7 +1,8 @@
 // ============================================================================
 // MAGIC IMPORT (js/magic-import.js)
-// "📷 Fill in from a photo" in the Add Event panel: take or choose a photo of
-// a flyer, invite, school letter or screenshot, and harmonee reads it.
+// "📷 Snap a flyer" in the Calendar's ＋ menu (straight to the camera, like
+// Snap a recipe), or "📷 From a photo" in the Add Event panel: a photo of a
+// flyer, invite, school letter or screenshot, and harmonee reads it.
 //   - One event: the Add Event panel is filled in (title, date, time, place,
 //     notes, who it's for, an emoji) to check, then Add as usual.
 //   - Several (a term's dates, a fixture list): a tick list, "Add 3 to the
@@ -22,10 +23,10 @@
 // instead of Gemini, so all of this is tested without the real service.
 // ============================================================================
 (function () {
-  // AI Logic, App Check (Fraud Defense key) and billing are on (9 Nov). Each
-  // use has its own switch: recipes from a photo are on; flyers to events are
-  // parked (the family didn't think they'd use it)
-  const AI_SWITCHED_ON = { recipe: true, events: false };
+  // AI Logic, App Check (Fraud Defense key, enforced) and billing are on.
+  // Each use has its own switch: recipes from a photo (since 10 Nov) and
+  // flyers to events (Snap a flyer, 10 Nov)
+  const AI_SWITCHED_ON = { recipe: true, events: true };
   const AI_SDK = "https://www.gstatic.com/firebasejs/12.19.0";
   const MODEL = "gemini-3.8-flash";        // current Flash model on Firebase AI Logic (Nov 2026; gemini-2.5-flash is redirected from 1 Dec)
   const TIMEOUT_MS = 45000;
@@ -353,7 +354,15 @@
     // Close the Add Event panel it was started from (its own close button)
     const ev = document.getElementById("event-modal");
     if (ev && ev.open) { const x = document.getElementById("btn-close-event-modal"); if (x) x.click(); }
-    if (typeof window.showCalendarToast === "function") window.showCalendarToast(`📷 Added ${list.length} event${list.length === 1 ? "" : "s"} from your photo`);
+    // "Added 3 events" with Show me, like "Recipe saved" with View recipe
+    const first = list.map(e => e.date).sort()[0];
+    const showMe = () => {
+      if (typeof window.switchSkylightView === "function" && window.currentActiveView !== "calendar") window.switchSkylightView("calendar");
+      if (typeof window.setCalendarView === "function") window.setCalendarView(window.currentCalendarView || "week", first);
+    };
+    if (typeof window.showActionToast === "function") {
+      window.showActionToast({ icon: "📷", title: `Added ${list.length} event${list.length === 1 ? "" : "s"}`, text: "From your photo", action: { label: "Show me", onClick: showMe }, ms: 10000 });
+    } else if (typeof window.showCalendarToast === "function") window.showCalendarToast(`📷 Added ${list.length} event${list.length === 1 ? "" : "s"} from your photo`);
     if (window.sfx && window.sfx.playCelebrationChime) window.sfx.playCelebrationChime();
   }
 
@@ -363,7 +372,12 @@
     input.type = "file";
     input.accept = "image/*";
     input.hidden = true;
-    document.body.appendChild(input); // some browsers won't open a file box that isn't in the page
+    // In the page (some browsers won't open a file box that isn't), inside the
+    // Add Event panel if it's open, and its click kept to itself (as the
+    // recipe photo does, js/family-recipes.js)
+    input.addEventListener("click", (e) => e.stopPropagation());
+    const panel = document.getElementById("event-modal");
+    (panel && panel.open ? panel : document.body).appendChild(input);
     input.addEventListener("cancel", () => input.remove());
     input.addEventListener("change", () => { input.remove(); if (input.files && input.files[0]) readPhoto(input.files[0]); });
     input.click();
