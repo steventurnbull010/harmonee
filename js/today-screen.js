@@ -7,13 +7,11 @@
 //   afternoon  "Good afternoon": finished events fade, the next is marked
 //   evening    "Good evening", dusk colours, plus a Tomorrow card
 // It opens from the "h" logo or the family name at the top of a page. It
-// only opens by itself if a family asks it to: when the night clock wakes up
-// (Settings > Sleep > Morning summary) or after the board has been left alone
-// (Settings > Display), and once for a brand-new family's Getting started.
-// Otherwise the board stays on whatever page it was left on. It keeps itself
-// up to date every minute while open.
+// never opens by itself (only once, for a brand-new family's Getting
+// started): the board stays on whatever page it was left on. Tap the "h" or
+// the family name to open it. It keeps itself up to date every minute.
 //
-//   showTodayScreen({ from: "wake" | "logo" | "idle" | "preview" })
+//   showTodayScreen({ from: "logo" | "welcome" | "preview" })
 // ============================================================================
 (function () {
   const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -21,7 +19,7 @@
   const AUTO_CLOSE_MS = 60 * 60 * 1000;
   let autoCloseTimer = null;
   let refreshTimer = null;
-  let openedFrom = "wake";
+  let openedFrom = "logo";
   const expandedJobs = new Set(); // people whose jobs are shown (kept across refreshes)
 
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
@@ -390,7 +388,7 @@
           <h2 class="today-greeting" id="today-screen-title">${part.text} ${part.icon}</h2>
           <p class="today-date">${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}${weatherLine}</p>
           ${window.Voice && window.Voice.supported() ? `<button type="button" class="today-say-it" data-voice data-voice-intro aria-label="Add by voice: shopping, events, tasks and meals">${window.Voice.MIC_SVG}<span>Add by voice</span></button>` : ""}
-          ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: this opens each morning when the night clock switches off, and any time you tap the "h"</p>` : ""}
+          ${openedFrom === "preview" ? `<p class="today-preview-note">Preview: open it any time by tapping the "h" or your family name</p>` : ""}
         </header>
         ${window.GettingStarted ? window.GettingStarted.cardHtml() : ""}
         <div class="today-grid">
@@ -639,49 +637,13 @@
   }
   window.showTodayScreen = showTodayScreen;
 
-  // Off unless a family switches it on (Settings > Sleep > Morning summary):
-  // many leave the tablet on the Tasks page. That switch only affects the
-  // automatic morning one; the "h" always works.
-  const isEnabled = () => (window.boardSettings || {}).todayScreenEnabled === true;
-  window.isTodayScreenEnabled = isEnabled;
-
-  // ---- When the board is left alone (Settings > Display, this device only) ----
-  // 0 = stay where it is (default). Otherwise show Today at a glance after that
-  // many minutes with nobody touching the screen. Per device, so the kitchen
-  // tablet can do it without phones ever doing it.
-  const IDLE_KEY = "harmonee_today_idle_minutes";
-  const idleMinutes = () => { try { return parseInt(localStorage.getItem(IDLE_KEY), 10) || 0; } catch (e) { return 0; } };
-  let lastActivity = Date.now();
-  ["pointerdown", "keydown", "wheel", "touchstart"].forEach(type =>
-    document.addEventListener(type, () => { lastActivity = Date.now(); }, { capture: true, passive: true }));
-  const shown = (id) => { const x = document.getElementById(id); return !!(x && x.offsetParent !== null && getComputedStyle(x).display !== "none" && !x.hidden); };
-  setInterval(() => {
-    const mins = idleMinutes();
-    if (!mins || document.hidden) return;
-    if (Date.now() - lastActivity < mins * 60000) return;
-    const today = document.getElementById("today-screen");
-    if (today && !today.hidden) return;
-    if (document.querySelector("dialog[open]")) return;             // a panel is open: someone's mid-task
-    if (shown("ambient-sleep-overlay") || shown("board-join-screen")) return;
-    showTodayScreen({ from: "idle" });
-  }, 20000);
-
-  // Settings: keep the controls in step when Settings opens, save on change
-  window.syncTodayScreenSetting = () => {
-    const box = document.getElementById("settings-today-enabled");
-    if (box) box.checked = isEnabled();
-    const sel = document.getElementById("settings-today-idle");
-    if (sel) sel.value = String(idleMinutes());
-  };
-  document.addEventListener("change", (e) => {
-    if (e.target && e.target.id === "settings-today-enabled" && typeof window.saveBoardSettingsNow === "function") {
-      window.saveBoardSettingsNow({ todayScreenEnabled: e.target.checked });
-    }
-    if (e.target && e.target.id === "settings-today-idle") {
-      try { localStorage.setItem(IDLE_KEY, e.target.value); } catch (err) {}
-      lastActivity = Date.now();
-    }
-  });
+  // Never opens by itself: harmonee stays on whatever page it was left on
+  // (the Turnbulls leave the kitchen tablet on Tasks). It opens from the "h"
+  // logo, the family name, or the preview in Settings. The old "Morning
+  // summary" switch and "When the board is left alone" setting are gone.
+  window.isTodayScreenEnabled = () => false;
+  try { localStorage.removeItem("harmonee_today_idle_minutes"); } catch (e) {}
+  window.syncTodayScreenSetting = () => {};
 
   // Ways in: the preview button in Settings, the "h" logo (sidebar), and the
   // family name at the top of each page (the only way in on portrait / phone,

@@ -134,12 +134,8 @@ function checkScheduledSleepWindow() {
     activateAmbientSleepScreen(false);
   } else if (!isBedtime && isSleepScreenActive) {
     deactivateAmbientSleepScreen();
-    // Morning: open on the day's summary (js/today-screen.js), unless switched off
-    if (typeof window.showTodayScreen === "function" && (!window.isTodayScreenEnabled || window.isTodayScreenEnabled())) {
-      window.showTodayScreen({ from: "wake" });
-    } else if (typeof showCalendarToast === "function") {
-      showCalendarToast("☀️ Good morning! Family board is awake.");
-    }
+    // Morning: back to the page it was on (Today at a glance doesn't open by itself)
+    if (typeof showCalendarToast === "function") showCalendarToast("☀️ Good morning! Family board is awake.");
   } else if (isSleepScreenActive) {
     // Keep clock updated live while active
     const clockEl = document.getElementById("sleep-screen-clock");

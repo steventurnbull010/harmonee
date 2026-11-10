@@ -1008,6 +1008,27 @@ const PAGES = [
     if (after.view !== "rewards") throw new Error(`a refresh on Rewards opened ${after.view}`);
     await nav("calendar");
   }],
+  // Today at a glance never opens by itself: after the night clock wakes the
+  // board, and after it's been left alone, it stays on the page it was on
+  ["stays-put", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closeTodayScreen && window.closeTodayScreen({ quiet: true }); });
+    await p.click('.skylight-nav-item[data-view="chores"]');
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      window.activateAmbientSleepScreen(false);
+      window.deactivateAmbientSleepScreen();
+      // the morning wake-up path
+      Object.assign(window.boardSettings, { sleepScheduleEnabled: true, sleepStartTime: "00:00", sleepEndTime: "00:01" });
+      window.activateAmbientSleepScreen(false);
+      window.checkScheduledSleepWindow();
+      await new Promise(res => setTimeout(res, 300));
+      const t = document.getElementById("today-screen");
+      return { today: !!(t && !t.hidden && t.offsetParent), view: window.currentActiveView, idleSetting: !!document.getElementById("settings-today-idle"), morningSetting: !!document.getElementById("settings-today-enabled") };
+    });
+    if (r.today || r.view !== "chores") throw new Error(`waking up didn't stay on Tasks: ${JSON.stringify(r)}`);
+    if (r.idleSetting || r.morningSetting) throw new Error("the Today at a glance settings are still there");
+    await p.evaluate(() => { window.boardSettings.sleepScheduleEnabled = false; window.deactivateAmbientSleepScreen(); });
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
