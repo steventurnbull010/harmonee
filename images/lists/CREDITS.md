@@ -10,3 +10,6 @@ no attribution required), cropped to 800×400.
 | packing.jpg | https://images.unsplash.com/photo-1502301197179-65228ab57f78 |
 | wish.jpg | https://images.unsplash.com/photo-1513885535751-8b9238bd345a |
 | todo.jpg | https://images.unsplash.com/photo-1598791318878-10e76d178023 |
+
+Each cover also has a small 360×270 copy (`*-thumb.jpg`, same photo) for the
+list tiles and the New list kind picker, about a third of the size.

@@ -14,10 +14,10 @@
 // ============================================================================
 (function () {
   const TYPES = {
-    shopping: { key: "shopping", label: "Shopping", emoji: "🛒", color: "sky", cover: "images/lists/shopping.jpg", blurb: "Sorted into aisles, with your usuals" },
-    packing: { key: "packing", label: "Packing", emoji: "🧳", color: "teal", cover: "images/lists/packing.jpg", blurb: "Holidays and days out, a bit for each of you" },
-    wish: { key: "wish", label: "Wish list", emoji: "🎁", color: "rose", cover: "images/lists/wish.jpg", blurb: "Christmas and birthdays, with links and prices" },
-    todo: { key: "todo", label: "To-do", emoji: "✅", color: "amber", cover: "images/lists/todo.jpg", blurb: "Anything else" }
+    shopping: { key: "shopping", label: "Shopping", emoji: "🛒", color: "sky", cover: "images/lists/shopping.jpg", thumb: "images/lists/shopping-thumb.jpg", blurb: "Sorted into aisles, with your usuals" },
+    packing: { key: "packing", label: "Packing", emoji: "🧳", color: "teal", cover: "images/lists/packing.jpg", thumb: "images/lists/packing-thumb.jpg", blurb: "Holidays and days out, a bit for each of you" },
+    wish: { key: "wish", label: "Wish list", emoji: "🎁", color: "rose", cover: "images/lists/wish.jpg", thumb: "images/lists/wish-thumb.jpg", blurb: "Christmas and birthdays, with links and prices" },
+    todo: { key: "todo", label: "To-do", emoji: "✅", color: "amber", cover: "images/lists/todo.jpg", thumb: "images/lists/todo-thumb.jpg", blurb: "Anything else" }
   };
   const ORDER = ["shopping", "packing", "wish", "todo"];
 

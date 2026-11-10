@@ -659,7 +659,7 @@ function renderListsRail(lists, selectedId) {
           const on = list.id === selectedId;
           const kind = window.ListTypes ? window.ListTypes.info(list) : null;
           return `<li><button type="button" class="lists-rail-row${on ? " is-selected" : ""}" data-open-list="${escapeHtml(list.id)}" aria-current="${on ? "true" : "false"}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
-            ${kind ? `<span class="lists-rail-photo" style="background-image: url('${kind.cover}')" aria-hidden="true"><span class="lists-rail-photo-emoji">${escapeHtml(list.emoji || kind.emoji)}</span></span>` : ""}
+            ${kind ? `<span class="lists-rail-photo" style="background-image: url('${kind.thumb}')" aria-hidden="true"><span class="lists-rail-photo-emoji">${escapeHtml(list.emoji || kind.emoji)}</span></span>` : ""}
             <span class="lists-rail-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
             <span class="lists-rail-words"><span class="lists-rail-name">${escapeHtml(list.title)}</span>${kind ? `<span class="lists-rail-kind">${escapeHtml(railSubtitle(list))}</span>` : ""}</span>
             <span class="lists-rail-count" aria-label="${toDo} to do">${toDo || ""}</span>
@@ -1353,7 +1353,7 @@ function openCreateListModal(listId = null) {
     const row = document.getElementById("new-list-kind-picker");
     if (!row || !T) return;
     row.innerHTML = T.ORDER.map(k => { const t = T.TYPES[k]; const on = k === panelType; return `<button type="button" class="list-kind${on ? " is-on" : ""}" data-kind="${k}" role="radio" aria-checked="${on}">
-        <span class="list-kind-photo" style="background-image: url('${t.cover}')" aria-hidden="true"></span>
+        <span class="list-kind-photo" style="background-image: url('${t.thumb}')" aria-hidden="true"></span>
         <span class="list-kind-words"><strong>${t.emoji} ${t.label}</strong><small>${t.blurb}</small></span>
       </button>`; }).join("");
     if (ownerGroup) ownerGroup.hidden = panelType !== "wish";
