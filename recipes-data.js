@@ -65,6 +65,11 @@ export function getAllFamilyRecipes() {
   } catch (e) {
     console.warn("Could not load custom recipes from localStorage:", e);
   }
+  // A family recipe with no photo of its own shows a stand-in (js/recipe-stock.js).
+  // Copies, so the stand-in is never saved with the recipe.
+  if (typeof window !== "undefined" && window.RecipeStock) {
+    custom = custom.map(r => (r && !r.image && !r.imageUrl ? { ...r, image: window.RecipeStock.photoFor(r), stockImage: true } : r));
+  }
   // Real recipes from TheMealDB, after the starter set (see recipes-themealdb.js)
   const all = [...custom, ...PRELOADED_RECIPES, ...MEALDB_RECIPES];
 

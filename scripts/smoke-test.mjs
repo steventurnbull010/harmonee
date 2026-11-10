@@ -654,6 +654,9 @@ const PAGES = [
     });
     if (!home.shown || home.weekShown) throw new Error(`the Recipes tab didn't replace the week: ${JSON.stringify(home)}`);
     if (!home.own) throw new Error("your own recipe isn't under Your family's recipes");
+    // No photo of its own: a stand-in photo (flapjacks: baking), not an emoji tile
+    const standIn = await p.evaluate(() => { const t = [...document.querySelectorAll("#meals-recipes-view .rb-tile")].find(x => x.textContent.includes("Nana's flapjacks")); const img = t && t.querySelector(".rb-photo img"); return img ? img.getAttribute("src") : "none"; });
+    if (standIn !== "images/recipes/stock/baking.jpg") throw new Error(`Nana's flapjacks shows ${standIn}, not the baking stand-in`);
     if (home.collections < 6) throw new Error(`only ${home.collections} collections`);
     if (!(await p.locator("#meals-recipes-view [data-snap-recipe]").isVisible())) throw new Error("no Snap a recipe on the Recipes tab");
     if (!(await p.locator("#meals-recipes-view [data-open-genie]").isVisible())) throw new Error("no Magic Mealtime ideas on the Recipes tab");
@@ -688,6 +691,9 @@ const PAGES = [
     await p.locator("#meals-recipes-view [data-rb-recipe]").first().click();
     await p.waitForTimeout(500);
     if (!(await p.evaluate(() => document.getElementById("cooking-recipe-modal").open))) throw new Error("tapping a recipe didn't open it");
+    const hero = await p.evaluate(() => document.getElementById("cooking-modal-hero").style.backgroundImage);
+    if (!/stock\/baking\.jpg/.test(hero)) throw new Error(`the recipe's card has no stand-in photo: ${hero}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-family-card.png`) });
     await p.evaluate(() => document.getElementById("cooking-recipe-modal").close());
     await p.fill("#meals-recipes-view [data-rb-search]", "");
     // Back to the week, and it's all there again

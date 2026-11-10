@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=d0049424";
+} from "../recipes-data.js?v=00dfa8e4";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -919,10 +919,13 @@ function renderDrawerRecipeList() {
     // All the family's own recipes, whatever meal they're saved under (a
     // crumble saved as a snack shows when planning dinner), this meal's first
     const isMeal = (r) => [r.mealType, r.category].some(v => String(v || "").toLowerCase() === String(currentDrawerCategory || "").toLowerCase());
-    const own = getAllFamilyRecipes().filter(r => !favs.includes(r) && !String(r.id || "").startsWith("mealdb-"))
+    // (by id: each getAllFamilyRecipes() call gives fresh copies of your own)
+    const favIds = new Set(favs.map(r => String(r.id)));
+    const own = getAllFamilyRecipes().filter(r => !favIds.has(String(r.id)) && !String(r.id || "").startsWith("mealdb-"))
       .sort((a, b) => Number(isMeal(b)) - Number(isMeal(a)));
+    const ownIds = new Set(own.map(r => String(r.id)));
     const fits = (r) => !window.MealGenie || !window.MealGenie.fitsEveryone || window.MealGenie.fitsEveryone(r);
-    const builtIn = recipes.filter(r => !favs.includes(r) && !own.includes(r));
+    const builtIn = recipes.filter(r => !favIds.has(String(r.id)) && !ownIds.has(String(r.id)));
     const pool = builtIn.filter(fits).length >= 6 ? builtIn.filter(fits) : builtIn;
     // Six ideas spread across the whole list (it's grouped by kind), a different six each day
     const day = Math.floor(Date.now() / 86400000);
