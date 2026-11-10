@@ -835,7 +835,16 @@ const PAGES = [
     if (bottom.lastBottom > bottom.floor) throw new Error(`can't scroll to the bottom of Recipes: ${JSON.stringify(bottom)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-bottom.png`) });
     await p.evaluate(() => { document.getElementById("meals-recipes-view").scrollTop = 0; window.scrollTo(0, 0); });
+    // Liking a recipe: the heart fills and stays the same size
+    const heartSize = () => p.evaluate(() => { const s = document.querySelector("#meals-recipes-view .rb-fav .heart-icon"); const r = s.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), filled: s.querySelector("path").getAttribute("fill") !== "none" }; });
+    const before = await heartSize();
+    await p.click("#meals-recipes-view .rb-fav");
+    await p.waitForTimeout(500);
+    const after = await heartSize();
+    if (!after.filled || after.w !== before.w || after.h !== before.h) throw new Error(`liking a recipe changed the heart: ${JSON.stringify({ before, after })}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-home.png`) });
+    await p.click("#meals-recipes-view .rb-fav");
+    await p.waitForTimeout(300);
     await p.evaluate(() => document.querySelector("#meals-recipes-view .rb-collections").scrollIntoView({ block: "start" }));
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-collections.png`) });

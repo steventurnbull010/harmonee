@@ -4378,3 +4378,9 @@ body.theme-dark .rb-ideas-chip { background: #1e293b; border-color: #4c1d95; col
   #view-meals.is-recipes-tab .skylight-meals-page-header { row-gap: 0 !important; padding-bottom: 8px !important; border-bottom: 0 !important; }
   #view-meals.is-recipes-tab .recipe-browse { padding-top: 8px; }
 }
+
+/* Favourite hearts (utils.js heartIcon): same size on or off, centred */
+.rb-fav, .recipe-row-fav { display: inline-flex; align-items: center; justify-content: center; }
+.heart-icon { display: block; width: 22px; height: 22px; }
+.rb-fav .heart-icon { width: 24px; height: 24px; }
+.rb-fav.pop { animation: favPop 0.4s ease; }

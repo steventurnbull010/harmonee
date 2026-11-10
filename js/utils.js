@@ -405,3 +405,11 @@ function showActionToast({ icon = "", title = "", text = "", action = null, ms =
   toast._timer = setTimeout(hide, ms);
 }
 window.showActionToast = showActionToast;
+
+// The favourite heart: one rounded, cartoony shape, the same size liked or
+// not (the ♥ / ♡ characters came out at different sizes). Filled when on.
+function heartIcon(on) {
+  const d = "M12 20.6c-.3 0-.6-.1-.8-.3C8.4 18 3 13.9 3 8.9 3 6 5.3 3.8 8.1 3.8c1.6 0 3 .8 3.9 2 .9-1.2 2.3-2 3.9-2C18.7 3.8 21 6 21 8.9c0 5-5.4 9.1-8.2 11.4-.2.2-.5.3-.8.3z";
+  return `<svg class="heart-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="${d}" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="${on ? 1 : 2}" stroke-linejoin="round"/></svg>`;
+}
+window.heartIcon = heartIcon;

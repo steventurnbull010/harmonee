@@ -70,7 +70,7 @@
         <span class="rb-title">${esc(r.title)}</span>
         ${sub ? `<span class="rb-sub">${esc(sub)}</span>` : ""}
       </button>
-      <button type="button" class="rb-fav${fav ? " is-on" : ""}" data-rb-fav="${esc(r.id)}" aria-pressed="${fav}" aria-label="Family favourite: ${esc(r.title)}">${fav ? "♥" : "♡"}</button>
+      <button type="button" class="rb-fav${fav ? " is-on" : ""}" data-rb-fav="${esc(r.id)}" aria-pressed="${fav}" aria-label="Family favourite: ${esc(r.title)}">${window.heartIcon ? window.heartIcon(fav) : (fav ? "♥" : "♡")}</button>
     </div>`;
   }
   // Each collection gets its own cover photo (a built-in one if it can)
@@ -177,7 +177,8 @@
       const on = R().toggleFav(fav.getAttribute("data-rb-fav"));
       fav.classList.toggle("is-on", on);
       fav.setAttribute("aria-pressed", String(on));
-      fav.textContent = on ? "♥" : "♡";
+      if (window.heartIcon) fav.innerHTML = window.heartIcon(on); else fav.textContent = on ? "♥" : "♡";
+      fav.classList.remove("pop"); void fav.offsetWidth; if (on) fav.classList.add("pop");
       return;
     }
     const open = e.target.closest("[data-rb-recipe]");

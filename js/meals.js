@@ -1051,7 +1051,7 @@ function wireDrawerRecipeRows(container) {
       const on = toggleFavouriteRecipe(btn.getAttribute("data-fav"));
       btn.classList.toggle("is-on", on);
       btn.setAttribute("aria-pressed", String(on));
-      btn.innerHTML = on ? "♥" : "♡";
+      btn.innerHTML = window.heartIcon(on);
       if (on) { btn.classList.remove("pop"); void btn.offsetWidth; btn.classList.add("pop"); }
       // Move it into (or out of) Family favourites after the little pop
       setTimeout(renderDrawerRecipeList, on ? 450 : 0);
@@ -1112,7 +1112,7 @@ function recipeRowHtml(recipe) {
           <div class="recipe-row-title">${escapeHtml(recipe.title)}</div>
           <div class="recipe-row-time">${timeDisplay ? `⏱️ ${timeDisplay} • ` : ""}${escapeHtml(recipe.subtitle || "")}</div>
         </div>
-        <button type="button" class="recipe-row-fav${isFavouriteRecipe(recipe) ? " is-on" : ""}" data-fav="${escapeHtml(String(recipe.id))}" aria-pressed="${isFavouriteRecipe(recipe)}" aria-label="Family favourite">${isFavouriteRecipe(recipe) ? "♥" : "♡"}</button>
+        <button type="button" class="recipe-row-fav${isFavouriteRecipe(recipe) ? " is-on" : ""}" data-fav="${escapeHtml(String(recipe.id))}" aria-pressed="${isFavouriteRecipe(recipe)}" aria-label="Family favourite">${window.heartIcon(isFavouriteRecipe(recipe))}</button>
         <div class="recipe-row-arrow" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
