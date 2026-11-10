@@ -4285,3 +4285,41 @@ body.theme-dark .skylight-plan-drawer .drawer-recipe-card.drawer-recipe-tile { b
 .family-recipe-dish-remove[hidden] { display: none; }
 body.theme-dark .family-recipe-dish-preview.is-empty { background-color: #1e293b; border-color: #334155; }
 body.theme-dark .family-recipe-dish-pick { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #7dd3fc; }
+
+/* Recipe card photo strip: it grows to fit the badge, name and time pills
+   (on short screens it was 128px and the badge was pushed off the top), and
+   the words keep clear of the close button */
+#cooking-recipe-modal .cooking-modal-content .cooking-modal-hero { max-height: none; min-height: 160px; padding: 0; align-items: stretch; }
+#cooking-recipe-modal .cooking-modal-content .cooking-hero-overlay { position: relative; inset: auto; width: 100%; box-sizing: border-box; padding: 32px 80px 24px 24px; justify-content: flex-end; }
+@media (max-height: 860px) and (min-width: 861px) {
+  /* (tablet-fit.css had it fixed at 128px) */
+  #cooking-recipe-modal .cooking-modal-content .cooking-modal-hero { min-height: 136px; max-height: none; }
+}
+
+/* "A few ideas" hover: a soft glow and a small lift, eased in. The row has
+   room round it so the glow isn't cut off at the top (it scrolls sideways,
+   which clips anything outside it) */
+.meal-ideas-row { padding: 8px 8px 16px; margin: -8px -8px -12px; }
+.meal-idea { transition: transform 0.2s ease, box-shadow 0.25s ease; }
+.meal-idea:hover, .meal-idea:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.55), 0 8px 24px rgba(2, 132, 199, 0.22), 0 0 16px rgba(56, 189, 248, 0.35);
+  outline: none;
+}
+.meal-idea:active { transform: translateY(0) scale(0.98); }
+body.theme-dark .meal-idea:hover, body.theme-dark .meal-idea:focus-visible { box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.6), 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(56, 189, 248, 0.35); }
+@media (prefers-reduced-motion: reduce) { .meal-idea { transition: none; } .meal-idea:hover { transform: none; } }
+
+/* Week grid: the month by the first day and where a new month starts */
+.matrix-date-row { display: inline-flex; align-items: center; gap: 4px; }
+.matrix-month { font-size: 0.8rem; font-weight: 800; color: #0284c7; letter-spacing: 0.02em; }
+.matrix-day-header-cell.is-month-start { box-shadow: inset 2px 0 0 #7dd3fc; }
+body.theme-dark .matrix-month { color: #7dd3fc; }
+/* Swiping the week: the days follow the finger, the meal names stay put */
+#skylight-meals-matrix-wrapper { touch-action: pan-y; }
+.skylight-meals-matrix.is-swiping { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.skylight-meals-matrix.is-swiping > :not(.matrix-corner-cell):not(.matrix-cat-label-cell) { transform: translateX(var(--swipe-x, 0)); opacity: 0.85; }
+.skylight-meals-matrix > :not(.matrix-corner-cell):not(.matrix-cat-label-cell) { transition: transform 0.18s ease; }
+.skylight-meals-matrix.is-swiping > * { transition: none; }
+.skylight-meals-matrix .matrix-cat-label-cell, .skylight-meals-matrix .matrix-corner-cell { position: relative; z-index: 2; }
+#skylight-meals-matrix-wrapper { overflow: hidden; }

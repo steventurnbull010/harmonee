@@ -720,6 +720,43 @@ const PAGES = [
     if (gone.photo || gone.doc) throw new Error(`removing the dish photo didn't: ${JSON.stringify(gone)}`);
     await p.evaluate((rid) => { window.FamilyRecipes.remove(rid); window.RecipeBrowse.setTab("week"); }, id);
   }],
+  // The week starts today, shows the month, and moves a day at a time when
+  // dragged sideways (tablets and computers); the recipe card has room at the
+  // top and closes when you tap outside it
+  ["week-from-today", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); document.getElementById("btn-meals-today") && document.getElementById("btn-meals-today").click(); });
+    await goTo("meals")(p);
+    await p.waitForTimeout(300);
+    const first = await p.evaluate(() => window.getLocalDateKey(window.getMealsWeekDates(window.mealsWeekOffset || 0)[0]) === window.getLocalDateKey(new Date()));
+    if (!first) throw new Error("the week doesn't start today");
+    if (p.__size !== "phone") {
+      const head = await p.evaluate(() => { const h = document.querySelector("#skylight-meals-matrix .matrix-day-header-cell"); return h ? h.textContent.replace(/\s+/g, " ").trim() : ""; });
+      if (!/[A-Z][a-z]{2}$/.test(head)) throw new Error(`no month by the first day: "${head}"`);
+      // Drag the grid two columns to the left: the week moves on two days
+      const box = await p.evaluate(() => { const r = document.querySelector('#skylight-meals-matrix .matrix-meal-cell[data-slot="lunch"]').getBoundingClientRect(); const c = document.querySelector("#skylight-meals-matrix .matrix-day-header-cell").getBoundingClientRect(); return { x: r.x + r.width / 2 + c.width * 2, y: r.y + r.height / 2, w: c.width }; });
+      await p.mouse.move(box.x, box.y);
+      await p.mouse.down();
+      for (let i = 1; i <= 10; i++) await p.mouse.move(box.x - (box.w * 2) * i / 10, box.y);
+      await p.mouse.up();
+      await p.waitForTimeout(400);
+      const moved = await p.evaluate(() => { const d = window.getMealsWeekDates(window.mealsWeekOffset || 0)[0]; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); });
+      if (moved !== 2) throw new Error(`dragging the week two days moved it ${moved}`);
+      if (await p.evaluate(() => document.getElementById("plan-meal-drawer").style.display !== "none")) throw new Error("the drag opened Plan Meal");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-week-dragged.png`) });
+      await p.click("#btn-meals-today");
+    }
+    // Recipe card: badge inside the photo strip; tapping outside closes it
+    await p.evaluate(() => window.RecipeRows.open(window.RecipeRows.all().find(r => r.id.startsWith("mealdb-"))));
+    await p.waitForTimeout(500);
+    const fits = await p.evaluate(() => { const h = document.getElementById("cooking-modal-hero").getBoundingClientRect(); const b = document.getElementById("cooking-badge").getBoundingClientRect(); return b.top >= h.top + 8; });
+    if (!fits) throw new Error("the recipe badge is cut off at the top of the card");
+    const scrolled = await p.evaluate(() => [...document.querySelectorAll("#cooking-recipe-modal, #cooking-recipe-modal *")].filter(e => e.scrollTop > 0).map(e => e.className));
+    if (scrolled.length) throw new Error(`the recipe card opened scrolled down: ${scrolled.join(", ")}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-card-top.png`) });
+    await p.mouse.click(4, 4);
+    await p.waitForTimeout(300);
+    if (await p.evaluate(() => document.getElementById("cooking-recipe-modal").open)) throw new Error("tapping outside the recipe card didn't close it");
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });

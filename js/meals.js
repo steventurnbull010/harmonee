@@ -20,6 +20,9 @@ window.findRecipeByIdOrTitle = findRecipeByIdOrTitle;
 
 let mealsWeekOffset = 0;
 window.mealsWeekOffset = mealsWeekOffset;
+// The week starts today (yesterday's meals are done with). The arrows move it
+// 7 days; swiping or dragging the week moves it a day or two (mealsDayNudge).
+let mealsDayNudge = 0;
 
 
 
@@ -381,14 +384,10 @@ window.showGroceryAddToast = showGroceryAddToast;
 
 // Returns array of 7 dates for the week (starting on Monday: Mon to Sun)
 function getMealsWeekDates(offsetWeeks = 0) {
-  const now = new Date();
-  const base = new Date(now);
-  base.setDate(base.getDate() + (offsetWeeks * 7));
-  const dow = base.getDay(); // 0 is Sun, 1 is Mon...
-  const distToMon = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(base);
-  monday.setDate(base.getDate() + distToMon);
+  // Seven days from today (plus whole weeks, plus any swipe)
+  const monday = new Date();
   monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() + offsetWeeks * 7 + mealsDayNudge);
 
   const dates = [];
   for (let i = 0; i < 7; i++) {
@@ -475,16 +474,18 @@ function renderMealsView() {
   // =========================================================================
   let matrixHtml = `<div class="matrix-corner-cell"></div>`;
 
-  weekDates.forEach((colDate) => {
+  weekDates.forEach((colDate, colIdx) => {
     const dateStr = (window.getLocalDateKey || getLocalDateKey)(colDate);
     const isToday = dateStr === todayStr;
     const dayName = dayShortNames[colDate.getDay()];
     const dateNum = colDate.getDate();
+    // The month by the first day, and again where a new month starts
+    const month = colIdx === 0 || dateNum === 1 ? monthShortNames[colDate.getMonth()] : "";
 
     matrixHtml += `
-      <div class="matrix-day-header-cell ${isToday ? 'is-today-col' : ''}">
+      <div class="matrix-day-header-cell ${isToday ? 'is-today-col' : ''}${dateNum === 1 && colIdx ? ' is-month-start' : ''}">
         <span class="matrix-day-label">${dayName}</span>
-        <span class="matrix-date-number ${isToday ? 'is-today-badge' : ''}">${dateNum}</span>
+        <span class="matrix-date-row"><span class="matrix-date-number ${isToday ? 'is-today-badge' : ''}">${dateNum}</span>${month ? `<span class="matrix-month">${month}</span>` : ""}</span>
       </div>
     `;
   });
@@ -527,6 +528,7 @@ function renderMealsView() {
   });
 
   matrixContainer.innerHTML = matrixHtml;
+  wireMealsSwipe();
   fitMealCards(matrixContainer);
   watchMealCardFit(matrixContainer);
 
@@ -744,8 +746,12 @@ function showMealsWeekFor(dateStr) {
   const [y, m, d] = String(dateStr).split("-").map(Number);
   if (!y) return;
   const target = new Date(y, m - 1, d);
-  const mondayOf = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-  mealsWeekOffset = Math.round((mondayOf(target) - mondayOf(new Date())) / (7 * 86400000));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((target - today) / 86400000);
+  const start = mealsWeekOffset * 7 + mealsDayNudge;
+  if (diff >= start && diff < start + 7) return; // already showing
+  mealsDayNudge = 0;
+  mealsWeekOffset = Math.floor(diff / 7);
   window.mealsWeekOffset = mealsWeekOffset;
 }
 
@@ -1298,6 +1304,8 @@ function updateCookingSlotPills(slot) {
 function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot = null) {
   const modal = document.getElementById("cooking-recipe-modal");
   if (!modal) return;
+  // Each recipe opens at the top (it kept the last one's scroll)
+  modal.querySelectorAll(".cooking-modal-content, .cooking-modal-body").forEach(el => { el.scrollTop = 0; });
 
   const recipe = findRecipeByIdOrTitle(recipeOrMeal.id || recipeOrMeal.recipeId || recipeOrMeal.title) || recipeOrMeal;
   currentCookingRecipe = recipe;
@@ -1483,7 +1491,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       return `
         <div class="cooking-step-row">
           <span class="cooking-step-badge">${idx + 1}</span>
-          <div class="cooking-step-text">${escapeHtml(step)}</div>
+          <div class="cooking-step-text">${escapeHtml(String(step).replace(/^\s*(?:step\s*)?\d{1,2}\s*[.):-]?\s+(?=\S)/i, ""))}</div>
         </div>
       `;
     }).join("");
@@ -1533,6 +1541,12 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
 
   if (typeof modal.showModal === "function") modal.showModal();
   else modal.setAttribute("open", "true");
+  // Opening focuses something inside and scrolled the card down to it: start
+  // on the close button, at the top
+  if (btnClose) { try { btnClose.focus({ preventScroll: true }); } catch (e) {} }
+  const toTop = () => modal.querySelectorAll(".cooking-modal-content, .cooking-modal-body").forEach(el => { el.scrollTop = 0; });
+  toTop();
+  requestAnimationFrame(toTop);
 }
 window.openCookingRecipeModal = openCookingRecipeModal;
 window.renderDrawerRecipeList = () => renderDrawerRecipeList();
@@ -1575,6 +1589,12 @@ window.planRecipeOn = function (recipe, dateStr, slot = "dinner") {
   if (typeof window.celebrateFirst === "function") window.celebrateFirst("meal");
   if (window.MealGroceries) window.MealGroceries.afterPlan({ dateStr, slot, before, meal: (window.getMealForDate || getMealForDate)(dateStr, slot) });
 };
+
+// Tapping outside the recipe card (on the dimmed page) closes it
+document.addEventListener("click", (e) => {
+  const modal = document.getElementById("cooking-recipe-modal");
+  if (modal && modal.open && e.target === modal) closeCookingRecipeModal();
+});
 
 function closeCookingRecipeModal() {
   const modal = document.getElementById("cooking-recipe-modal");
@@ -1762,6 +1782,7 @@ function wireMealsHeaderAndDrawerListeners() {
     btnToday.setAttribute("data-wired", "true");
     btnToday.onclick = () => {
       mealsWeekOffset = 0;
+      mealsDayNudge = 0;
       window.mealsWeekOffset = mealsWeekOffset; // read by "Add this week's meals"
       renderMealsView();
     };
@@ -2110,6 +2131,61 @@ function markMealDayTab(day) {
     t.setAttribute("aria-selected", on ? "true" : "false");
   });
 }
+// Swipe or drag the week grid: move it a few days (whole weeks go into the offset)
+function shiftMealsDays(n) {
+  if (!n) return;
+  mealsDayNudge += n;
+  while (mealsDayNudge >= 7) { mealsDayNudge -= 7; mealsWeekOffset++; }
+  while (mealsDayNudge <= -7) { mealsDayNudge += 7; mealsWeekOffset--; }
+  window.mealsWeekOffset = mealsWeekOffset;
+  renderMealsView();
+}
+window.shiftMealsDays = shiftMealsDays;
+
+// Tablets and computers: drag or swipe the grid sideways. The days follow the
+// finger (or mouse); letting go moves the week by as many days as it was
+// dragged (at least one). Up and down still scrolls.
+function wireMealsSwipe() {
+  const wrap = document.getElementById("skylight-meals-matrix-wrapper");
+  const grid = document.getElementById("skylight-meals-matrix");
+  if (!wrap || !grid || wrap._swipeWired) return;
+  wrap._swipeWired = true;
+  let st = null, swallowUntil = 0;
+  const colWidth = () => { const c = grid.querySelector(".matrix-day-header-cell"); return c ? c.getBoundingClientRect().width : 120; };
+  wrap.addEventListener("click", (e) => { if (Date.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
+  wrap.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || (window.ItemDrag && window.ItemDrag.isDragging())) return;
+    st = { x: e.clientX, y: e.clientY, id: e.pointerId, moving: false };
+  });
+  wrap.addEventListener("pointermove", (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    const dx = e.clientX - st.x, dy = e.clientY - st.y;
+    if (!st.moving) {
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        st.moving = true;
+        try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+        grid.classList.add("is-swiping");
+      } else if (Math.abs(dy) > 12) { st = null; return; } else return;
+    }
+    grid.style.setProperty("--swipe-x", `${dx}px`);
+  });
+  const end = (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    const s = st; st = null;
+    if (!s.moving) return;
+    const dx = e.clientX - s.x;
+    grid.classList.remove("is-swiping");
+    grid.style.removeProperty("--swipe-x");
+    swallowUntil = Date.now() + 350;
+    let days = -Math.round(dx / colWidth());
+    if (!days && Math.abs(dx) > 40) days = dx < 0 ? 1 : -1;
+    if (e.type === "pointercancel") days = 0;
+    shiftMealsDays(days);
+  };
+  wrap.addEventListener("pointerup", end);
+  wrap.addEventListener("pointercancel", end);
+}
+
 var mealsLandOn = null; // "first" / "last": after moving a week, land on Monday / Sunday
 function changeMealsWeek(dir) {
   mealsWeekOffset += dir;
@@ -2123,7 +2199,7 @@ function mealsWeekLabel(firstKey, lastKey) {
   const [y1, m1, d1] = firstKey.split("-").map(Number);
   const [y2, m2, d2] = lastKey.split("-").map(Number);
   const range = m1 === m2 ? `${d1} – ${d2} ${MEALS_MONTHS[m2 - 1]}` : `${d1} ${MEALS_MONTHS[m1 - 1]} – ${d2} ${MEALS_MONTHS[m2 - 1]}`;
-  const which = mealsWeekOffset === 0 ? "This week" : mealsWeekOffset === 1 ? "Next week" : mealsWeekOffset === -1 ? "Last week" : "";
+  const which = mealsDayNudge !== 0 ? "" : mealsWeekOffset === 0 ? "This week" : mealsWeekOffset === 1 ? "Next week" : mealsWeekOffset === -1 ? "Last week" : "";
   return which ? `<strong>${which}</strong> · ${range}` : `<strong>${range}</strong>`;
 }
 
