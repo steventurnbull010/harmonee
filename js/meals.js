@@ -529,6 +529,7 @@ function renderMealsView() {
 
   matrixContainer.innerHTML = matrixHtml;
   wireMealsSwipe();
+  wireMealMoveDrag(matrixContainer, ".meal-card-v2");
   fitMealCards(matrixContainer);
   watchMealCardFit(matrixContainer);
 
@@ -649,6 +650,7 @@ function renderMealsView() {
 
     const shownDay = mealsPhoneShownDay;
     mobileCardsContainer.innerHTML = feedHtml;
+    wireMealMoveDrag(mobileCardsContainer, ".mobile-slot-card");
     renderMealDayTabs(mobileCardsContainer, shownDay, todayStr);
 
     // Wire mobile slot card clicks (open details)
@@ -2131,6 +2133,81 @@ function markMealDayTab(day) {
     t.setAttribute("aria-selected", on ? "true" : "false");
   });
 }
+// Drag a planned meal: onto another slot (it swaps with a meal already there),
+// or onto "Take off the plan", which appears at the bottom while dragging.
+// That only takes it off the plan; the recipe stays in Recipes.
+// Grid: press and drag (mouse) or press, hold and drag (touch). Phone: the
+// day card's meal, press, hold and drag.
+const MEAL_SLOT_NAMES = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
+function mealSlotLabel(dateStr, slot) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${MEAL_SLOT_NAMES[slot] || slot}, ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getDay()]} ${d}`;
+}
+function moveMealTo(from, to) {
+  const get = window.getMealForDate || getMealForDate;
+  const set = window.setMealForDate || setMealForDate;
+  const moving = get(from.date, from.slot);
+  if (!moving || !moving.title) return;
+  const there = get(to.date, to.slot);
+  const hadThere = !!(there && there.title);
+  set(to.date, { ...moving, category: to.slot }, to.slot);
+  set(from.date, hadThere ? { ...there, category: from.slot } : null, from.slot);
+  renderMealsView();
+  if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+  const undo = () => {
+    set(from.date, moving, from.slot);
+    set(to.date, hadThere ? there : null, to.slot);
+    renderMealsView();
+    if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+  };
+  if (typeof window.showActionToast === "function") {
+    window.showActionToast({ icon: moving.emoji || "🍽️", title: hadThere ? "Swapped" : "Moved", text: `${moving.title} → ${mealSlotLabel(to.date, to.slot)}`, action: { label: "Undo", onClick: undo }, ms: 6000 });
+  }
+}
+function takeMealOffPlan(from) {
+  const get = window.getMealForDate || getMealForDate;
+  const set = window.setMealForDate || setMealForDate;
+  const meal = get(from.date, from.slot);
+  if (!meal || !meal.title) return;
+  set(from.date, null, from.slot);
+  renderMealsView();
+  if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+  if (typeof window.showActionToast === "function") {
+    window.showActionToast({ icon: meal.emoji || "🍽️", title: "Taken off the plan", text: `${meal.title} is still in your recipes`, action: { label: "Undo", onClick: () => { set(from.date, meal, from.slot); renderMealsView(); if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar(); } }, ms: 6000 });
+  }
+}
+function wireMealMoveDrag(root, itemSelector) {
+  if (!root || !window.ItemDrag) return;
+  window.ItemDrag.attach(root, {
+    itemSelector,
+    start(item) {
+      const holder = item.closest("[data-date][data-slot]");
+      if (!holder) return null;
+      const from = { date: holder.getAttribute("data-date"), slot: holder.getAttribute("data-slot") || "dinner" };
+      const t = (window.getLocalDateKey || getLocalDateKey)(new Date());
+      const zones = [...document.querySelectorAll('#skylight-meals-matrix .matrix-meal-cell[data-date], #meals-mobile-cards-feed .mobile-slot-card[data-date], #meals-mobile-cards-feed .mobile-slot-empty-btn[data-date]')]
+        .filter(z => z.offsetParent && z !== holder && (z.getAttribute("data-date") || "") >= t && !(z.getAttribute("data-date") === from.date && z.getAttribute("data-slot") === from.slot));
+      const off = document.createElement("div");
+      off.className = "meal-off-plan-zone";
+      off.innerHTML = `<span aria-hidden="true">↩</span> Take off the plan`;
+      document.body.appendChild(off);
+      return { zones: [...zones, off], origin: holder, data: { from, off } };
+    },
+    label(ctx, zone) {
+      if (zone === ctx.data.off) return "Take it off the plan";
+      const filled = (window.getMealForDate || getMealForDate)(zone.getAttribute("data-date"), zone.getAttribute("data-slot"));
+      return `${filled && filled.title ? "Swap with " : ""}${mealSlotLabel(zone.getAttribute("data-date"), zone.getAttribute("data-slot"))}`;
+    },
+    drop(ctx, zone) {
+      if (zone === ctx.data.off) { takeMealOffPlan(ctx.data.from); return; }
+      moveMealTo(ctx.data.from, { date: zone.getAttribute("data-date"), slot: zone.getAttribute("data-slot") || "dinner" });
+    },
+    end(ctx) { if (ctx.data && ctx.data.off) ctx.data.off.remove(); },
+    scroller: () => document.scrollingElement
+  });
+}
+
 // Swipe or drag the week grid: move it a few days (whole weeks go into the offset)
 function shiftMealsDays(n) {
   if (!n) return;
@@ -2155,10 +2232,13 @@ function wireMealsSwipe() {
   wrap.addEventListener("click", (e) => { if (Date.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
   wrap.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 || (window.ItemDrag && window.ItemDrag.isDragging())) return;
+    // With a mouse, pressing on a meal picks the meal up (wireMealMoveDrag)
+    if (e.pointerType === "mouse" && e.target.closest && e.target.closest(".meal-card-v2")) return;
     st = { x: e.clientX, y: e.clientY, id: e.pointerId, moving: false };
   });
   wrap.addEventListener("pointermove", (e) => {
     if (!st || e.pointerId !== st.id) return;
+    if (window.ItemDrag && window.ItemDrag.isDragging()) { st = null; grid.classList.remove("is-swiping"); grid.style.removeProperty("--swipe-x"); return; }
     const dx = e.clientX - st.x, dy = e.clientY - st.y;
     if (!st.moving) {
       if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {

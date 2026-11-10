@@ -669,7 +669,36 @@ const PAGES = [
     await p.keyboard.press("Escape");
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas-planned.png`) });
-    await p.evaluate(({ date }) => { window.setMealForDate(date, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, plan);
+    if (p.__size !== "phone") {
+      // Drag the planned meal from Dinner to Lunch (same day), then off the plan
+      const drag = async (fromSel, toFn) => {
+        const a = await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, fromSel);
+        await p.mouse.move(a[0], a[1]); await p.mouse.down();
+        await p.mouse.move(a[0] + 10, a[1] + 10); await p.waitForTimeout(100);
+        const b = await p.evaluate(toFn);
+        for (let i = 1; i <= 10; i++) await p.mouse.move(a[0] + (b[0] - a[0]) * i / 10, a[1] + (b[1] - a[1]) * i / 10);
+        await p.waitForTimeout(120); await p.mouse.up(); await p.waitForTimeout(500);
+      };
+      await drag(`#skylight-meals-matrix .matrix-meal-cell[data-date="${plan.date}"][data-slot="dinner"] .meal-card-v2`,
+        new Function(`const r = document.querySelector('#skylight-meals-matrix .matrix-meal-cell[data-date="${plan.date}"][data-slot="lunch"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2];`));
+      const moved = await p.evaluate(({ date }) => ({ lunch: (window.getMealForDate(date, "lunch") || {}).recipeId, dinner: (window.getMealForDate(date, "dinner") || {}).title || null }), plan);
+      if (String(moved.lunch) !== String(plan.id) || moved.dinner) throw new Error(`dragging Dinner to Lunch didn't move it: ${JSON.stringify(moved)}`);
+      await drag(`#skylight-meals-matrix .matrix-meal-cell[data-date="${plan.date}"][data-slot="lunch"] .meal-card-v2`,
+        () => { const z = document.querySelector(".meal-off-plan-zone"); if (!z) return [0, 0]; const r = z.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
+      const off = await p.evaluate(({ date }) => ({ lunch: (window.getMealForDate(date, "lunch") || {}).title || null, zoneLeft: !!document.querySelector(".meal-off-plan-zone"), recipe: !!window.RecipeRows.find(window.MealIdeas.picks()[0]) }), plan);
+      if (off.lunch) throw new Error("dropping on Take off the plan didn't take it off");
+      if (off.zoneLeft) throw new Error("the Take off the plan bar stayed after the drag");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-taken-off.png`) });
+      // A short tablet screen (browser bars showing): Dinner still fits
+      const size = p.viewportSize();
+      await p.setViewportSize({ width: 1280, height: 600 });
+      await p.waitForTimeout(400);
+      const fit = await p.evaluate(() => { const c = [...document.querySelectorAll('#skylight-meals-matrix .matrix-meal-cell[data-slot="dinner"]')][0].getBoundingClientRect(); return { bottom: Math.round(c.bottom), h: window.innerHeight }; });
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-short-screen.png`) });
+      await p.setViewportSize(size);
+      if (fit.bottom > fit.h) throw new Error(`Dinner runs off a 600px-tall screen: ${JSON.stringify(fit)}`);
+    }
+    await p.evaluate(({ date }) => { ["breakfast", "lunch", "dinner"].forEach(s => { if ((window.getMealForDate(date, s) || {}).recipeId) window.setMealForDate(date, null, s); }); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, plan);
     // "More" opens the Recipes tab
     await p.click("#meal-ideas [data-meal-ideas-more]");
     await p.waitForTimeout(300);

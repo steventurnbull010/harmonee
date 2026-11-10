@@ -18,6 +18,7 @@
 //     label(ctx, zone, x, y) -> string      (optional; the label by the finger)
 //     drop(ctx, zone, x, y)
 //     scroller: el | () => el       (optional; scrolls up/down near its edges)
+//     end(ctx)                      (optional; after every drag, dropped or not)
 //   })
 // Styles: css/item-drag.css. Used by the calendar (js/calendar-drag.js).
 // ============================================================================
@@ -184,6 +185,8 @@
     if (zone) {
       try { s.opts.drop(s, zone, s.x, s.y); } catch (err) { console.warn("Couldn't move it:", err); }
     }
+    // Tidy up whatever start() added (dropped or not)
+    if (s.opts.end) { try { s.opts.end(s); } catch (err) {} }
   }
 
   function cleanupListeners(clearState) {
