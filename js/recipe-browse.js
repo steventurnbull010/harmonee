@@ -25,7 +25,8 @@
   const isOwn = (r) => !String(r.id || "").startsWith("mealdb-");
 
   const COLLECTIONS = [
-    { id: "breakfast", name: "Breakfast", test: r => meal(r) === "breakfast" },
+    // A fixed cover where the recipes' own photos don't suit (a fry-up for "Breakfast")
+    { id: "breakfast", name: "Breakfast", cover: "images/recipes/stock/porridge.jpg", test: r => meal(r) === "breakfast" },
     { id: "lunch", name: "Lunch", test: r => meal(r) === "lunch" },
     { id: "veggie", name: "Veggie", test: r => ["vegetarian", "vegan"].includes(part(r, 1)) || tags(r).includes("veggie") || tags(r).includes("vegetarian") },
     { id: "chicken", name: "Chicken", test: r => part(r, 1) === "chicken" || part(r, 0) === "chicken" },
@@ -75,7 +76,7 @@
   let usedCovers = new Set();
   function collectionRow(c, list) {
     const withPhoto = list.filter(r => photo(r, "small"));
-    const cover = withPhoto.find(r => !isOwn(r) && !usedCovers.has(r.id)) || withPhoto.find(r => !usedCovers.has(r.id)) || withPhoto[0] || list[0];
+    const cover = c.cover ? { id: c.id, image: c.cover } : withPhoto.find(r => !isOwn(r) && !usedCovers.has(r.id)) || withPhoto.find(r => !usedCovers.has(r.id)) || withPhoto[0] || list[0];
     usedCovers.add(cover.id);
     return `<button type="button" class="rb-collection" data-rb-collection="${esc(c.id)}">
       ${picture(cover, "small", "rb-collection-photo")}

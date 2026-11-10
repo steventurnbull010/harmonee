@@ -56,10 +56,10 @@
   <link rel="stylesheet" href="style.css?v=db2626c8">
   <link rel="stylesheet" href="css/navigation.css?v=ff92f63a">
   <link rel="stylesheet" href="css/tasks.css?v=2a087a0f">
-  <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
+  <link rel="stylesheet" href="css/item-drag.css?v=46615749">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
-  <link rel="stylesheet" href="css/meals.css?v=bc325b4b">
+  <link rel="stylesheet" href="css/meals.css?v=bf2956c3">
   <link rel="stylesheet" href="css/calendar.css?v=94300d0c">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
@@ -409,6 +409,9 @@
               </div>
             </header>
 
+            <!-- A few ideas to drag onto a free slot (js/meal-ideas.js) -->
+            <section class="meal-ideas" id="meal-ideas" aria-label="A few ideas" hidden></section>
+
             <!-- 7-Day x 3-Row Weekly Meal Matrix (Desktop & Tablet Landscape) -->
             <div class="skylight-meals-matrix-wrapper" id="skylight-meals-matrix-wrapper">
               <div class="skylight-meals-matrix" id="skylight-meals-matrix">
@@ -470,6 +473,8 @@
                 <button type="button" class="plan-snap-btn" data-snap-recipe><span aria-hidden="true">📷</span> Snap a recipe</button>
                 <button type="button" class="plan-type-btn" data-add-family-recipe><span aria-hidden="true">＋</span> Type one</button>
               </div>
+              <!-- Rows of recipe photos to tap (js/meals.js renderDrawerRecipeList), then the search -->
+              <div class="drawer-recipe-strips" id="drawer-recipe-strips"></div>
               <!-- Search bar and filter -->
               <div class="drawer-search-filter-row">
                 <div class="drawer-input-row drawer-search-bar">
@@ -2550,7 +2555,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=04e4ff06"></script>
+  <script src="js/build-info.js?v=731ac1fa"></script>
   <script src="js/utils.js?v=b97647a6"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2593,7 +2598,8 @@
   <script src="js/setup-wizard.js?v=0cd14412"></script>
   <script src="js/recipe-stock.js?v=729089c0"></script>
   <script src="js/family-recipes.js?v=894bfae2"></script>
-  <script src="js/recipe-browse.js?v=03144ca0"></script>
+  <script src="js/meal-ideas.js?v=d55da1f8"></script>
+  <script src="js/recipe-browse.js?v=3417d5c4"></script>
   <script src="js/magic-import.js?v=b7981b4f"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
@@ -2604,7 +2610,7 @@
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
-  <script type="module" src="js/meals.js?v=846693a1"></script>
+  <script type="module" src="js/meals.js?v=1c492d11"></script>
   <script type="module" src="app.js?v=712ed2f8"></script>
   <script>
     // Offline support and "Install app" (sw.js)

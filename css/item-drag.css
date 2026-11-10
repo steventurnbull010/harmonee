@@ -74,3 +74,9 @@ body.theme-dark .item-drag-hint { background: #f8fafc; color: #0f172a; }
   .item-drag-ghost { transform: none; }
   .skylight-sidebar, .calendar-header, .calendar-fab-container, .is-drag-origin, .is-drop-zone, .item-drag-hint { transition: none; }
 }
+
+/* While dragging, messages along the bottom fade and let the drop through
+   (a "Recipe saved" pill was sitting over Wednesday's dinner) */
+body.is-item-dragging .hm-action-toast,
+body.is-item-dragging .calendar-drag-toast,
+body.is-item-dragging .event-chime-banner { pointer-events: none !important; opacity: 0.25 !important; }

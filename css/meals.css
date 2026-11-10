@@ -4215,3 +4215,61 @@ body.theme-dark .rb-ideas { background: rgba(124, 58, 237, 0.16); color: #ddd6fe
 body.theme-dark .rb-ideas-words span { color: #c4b5fd; }
 @media (max-width: 600px) { .rb-ideas-go { display: none; } }
 .recipe-browse:not(.is-home) .rb-ideas { display: none; }
+
+/* Week: a planned recipe shows its photo (js/meals.js mealPhotoUrl). On the
+   grid the photo fills the card, the name sits on a dark fade at the bottom;
+   on a phone it's a rounded thumbnail where the emoji was. */
+#view-meals .meal-block-card.meal-card-v2.has-photo {
+  justify-content: flex-end;
+  border: 0;
+  color: #fff;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.45) 45%, rgba(15, 23, 42, 0) 75%), var(--meal-photo) center / cover no-repeat;
+}
+#view-meals .meal-card-v2.has-photo .meal-card-title,
+body.theme-dark #view-meals .meal-card-v2.has-photo .meal-card-title { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+#view-meals .meal-card-v2.has-photo .meal-card-title .ev-block-icon { display: none; }
+#view-meals .meal-card-v2.has-photo .meal-card-cooks,
+body.theme-dark #view-meals .meal-card-v2.has-photo .meal-card-cooks { color: rgba(255, 255, 255, 0.9); }
+#view-meals .meal-card-v2.has-photo .ev-block-people { margin-top: 4px; }
+.mobile-meal-photo { flex: none; width: 56px; height: 56px; border-radius: 12px; background: #e2e8f0 center / cover no-repeat; }
+
+/* "A few ideas" above the week (js/meal-ideas.js): one row of photo chips to
+   drag onto a free slot. Hidden on the Recipes tab. */
+#view-meals.is-recipes-tab .meal-ideas { display: none !important; }
+.meal-ideas[hidden] { display: none; }
+.meal-ideas { flex: none; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.meal-ideas-head { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.meal-ideas-title { margin: 0; font-size: 1rem; font-weight: 800; color: var(--text-primary); }
+.meal-ideas-hint { flex: 1; min-width: 0; font-size: 0.85rem; color: var(--text-muted, #64748b); }
+.meal-ideas-more { border: 0; background: none; padding: 8px 0; min-height: 40px; font: inherit; font-size: 0.9rem; font-weight: 700; color: #0284c7; cursor: pointer; }
+.meal-ideas-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; }
+.meal-idea { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; width: 216px; padding: 4px 16px 4px 4px; border: 0; border-radius: 14px; background: var(--bg-surface, #fff); box-shadow: 0 0 0 1px var(--card-border, #e2e8f0); font: inherit; color: var(--text-primary); text-align: left; cursor: grab; scroll-snap-align: start; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.meal-idea:hover { box-shadow: 0 0 0 2px #7dd3fc; }
+.meal-idea-photo { flex: none; width: 64px; height: 48px; border-radius: 10px; background: #e2e8f0 center / cover no-repeat; }
+.meal-idea-name { min-width: 0; font-size: 0.85rem; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.theme-dark .meal-idea { background: #1e293b; box-shadow: 0 0 0 1px #334155; }
+@media (max-width: 600px) {
+  .meal-ideas { margin-top: 8px; }
+  .meal-idea { width: 176px; }
+}
+
+/* Plan Meal: Magic Mealtime as one slim row, and rows of recipe photos */
+.magic-slim { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 16px; border-radius: 14px; background: #f5f3ff; box-shadow: 0 0 0 1px #ddd6fe; }
+.magic-slim-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; color: #4c1d95; text-align: left; cursor: pointer; }
+.magic-slim-wand { font-size: 1.2rem; }
+.magic-slim-words { font-size: 0.95rem; }
+.magic-slim-tastes { flex: none; min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: #ede9fe; color: #5b21b6; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+body.theme-dark .magic-slim { background: rgba(124, 58, 237, 0.16); box-shadow: 0 0 0 1px #4c1d95; }
+body.theme-dark .magic-slim-main { color: #ddd6fe; }
+body.theme-dark .magic-slim-tastes { background: rgba(124, 58, 237, 0.3); color: #ede9fe; }
+#drawer-magic-hero { margin: 8px 0; }
+.drawer-photo-strip { display: grid; grid-auto-flow: column; grid-auto-columns: 136px; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; scroll-snap-type: x proximity; }
+.drawer-recipe-card.drawer-recipe-tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 0; border: 0; background: none; box-shadow: none; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer; scroll-snap-align: start; min-height: 0; }
+.drawer-tile-photo { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; background: var(--card-border, #e2e8f0) center / cover no-repeat; font-size: 2rem; }
+.drawer-tile-title { font-size: 0.85rem; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.drawer-strip-note { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-muted, #64748b); }
+.skylight-plan-drawer .drawer-recipe-card.drawer-recipe-tile { padding: 0 !important; gap: 4px !important; border: 0; background: none; border-radius: 12px; }
+.skylight-plan-drawer .drawer-recipe-card.drawer-recipe-tile:hover .drawer-tile-photo { box-shadow: 0 0 0 2px #0284c7; }
+body.theme-dark .skylight-plan-drawer .drawer-recipe-card.drawer-recipe-tile { background: none; }
+.drawer-recipe-strips[hidden] { display: none; }
+.drawer-recipe-strips { margin-top: 8px; }

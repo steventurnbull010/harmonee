@@ -412,6 +412,26 @@ function getNextMealToPlan(now) {
 }
 window.getNextMealToPlan = getNextMealToPlan;
 
+// The recipe a planned meal came from: by its recipe id, or a recipe with
+// exactly its name (never a near match: "Pizza" mustn't borrow another
+// pizza's photo)
+function plannedRecipeFor(meal, all) {
+  if (!meal) return null;
+  const list = all || getAllFamilyRecipes();
+  if (meal.recipeId) { const r = list.find(x => String(x.id) === String(meal.recipeId)); if (r) return r; }
+  const t = String(meal.title || "").trim().toLowerCase();
+  return t ? list.find(x => String(x.title || "").trim().toLowerCase() === t) || null : null;
+}
+// Its photo, sized for a card (TheMealDB serves /small and /medium copies)
+function mealPhotoUrl(meal, all, size = "medium") {
+  const r = plannedRecipeFor(meal, all);
+  const src = String((r && (r.image || r.imageUrl)) || "");
+  if (/^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src)) return `${src}/${size}`;
+  if (/^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src)) return src;
+  return "";
+}
+window.mealPhotoUrl = mealPhotoUrl;
+
 function renderMealsView() {
   const matrixContainer = document.getElementById("skylight-meals-matrix");
   if (!matrixContainer) return;
@@ -446,6 +466,8 @@ function renderMealsView() {
     { key: "lunch", label: "Lunch", emoji: "🥪", themeClass: "cat-theme-lunch" },
     { key: "dinner", label: "Dinner", emoji: "🥘", themeClass: "cat-theme-dinner" }
   ];
+
+  const recipesAll = getAllFamilyRecipes();
 
   // =========================================================================
   // 1. DESKTOP / TABLET: 3-Tier Skylight Grid Matrix
@@ -482,9 +504,10 @@ function renderMealsView() {
 
       if (hasMeal) {
         const emoji = meal.emoji || cat.emoji;
+        const photo = mealPhotoUrl(meal, recipesAll);
         matrixHtml += `
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
-            <div class="meal-block-card meal-cat-${cat.key} meal-card-v2" role="button" tabindex="0" title="${escapeHtml(meal.title)}">
+            <div class="meal-block-card meal-cat-${cat.key} meal-card-v2${photo ? " has-photo" : ""}" role="button" tabindex="0" title="${escapeHtml(meal.title)}"${photo ? ` style="--meal-photo: url('${escapeHtml(photo)}')"` : ""}>
               <span class="ev-block-title meal-card-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(emoji)}</span>${escapeHtml(meal.title)}</span>
               ${(() => { const c = renderMealCardCooksHtml(meal.cook); return c.names ? `<span class="ev-block-time meal-card-cooks">${escapeHtml(c.names)}</span><div class="ev-block-people">${c.avatars}</div>` : ""; })()}
             </div>
@@ -584,11 +607,12 @@ function renderMealsView() {
           const prepMin = recipe ? (parseInt(recipe.prepTime, 10) || 0) : 0;
           const totalMin = recipe ? (recipe.totalMinutes || (prepMin + cookMin) || cookMin || prepMin || 0) : 0;
           const timeText = totalMin > 0 ? (typeof formatMinutesToDuration === "function" ? formatMinutesToDuration(totalMin) : `${totalMin}m`) : "";
+          const photo = mealPhotoUrl(meal, recipesAll, "small");
 
           feedHtml += `
             <div class="mobile-slot-card mobile-slot-card-${cat.key}" role="button" tabindex="0" data-date="${dateStr}" data-slot="${cat.key}" title="Tap to view meal details: ${escapeHtml(meal.title)}">
               <div class="mobile-meal-main">
-                <span class="mobile-meal-emoji">${escapeHtml(emoji)}</span>
+                ${photo ? `<span class="mobile-meal-photo" style="background-image: url('${escapeHtml(photo)}')" aria-hidden="true"></span>` : `<span class="mobile-meal-emoji">${escapeHtml(emoji)}</span>`}
                 <div class="mobile-meal-info">
                   <div class="mobile-meal-title">${escapeHtml(meal.title)}</div>
                   <div class="mobile-meal-sub">
@@ -652,6 +676,8 @@ function renderMealsView() {
 
   wireMealsHeaderAndDrawerListeners();
 
+  // "A few ideas" above the week, to drag onto a free slot (js/meal-ideas.js)
+  if (window.MealIdeas) window.MealIdeas.render(weekDates.map(d => (window.getLocalDateKey || getLocalDateKey)(d)), recipesAll);
 }
 window.renderMealsView = renderMealsView;
 
@@ -914,6 +940,8 @@ function renderDrawerRecipeList() {
   const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner", snack: "snack" }[currentDrawerCategory] || "meal";
   let visible = recipes, footer = "";
   renderDrawerMagicHero();
+  const strips = document.getElementById("drawer-recipe-strips");
+  if (strips) { strips.hidden = true; strips.innerHTML = ""; }
   if (browsing && !drawerShowAll && recipes.length > 8) {
     const favs = recipes.filter(isFavouriteRecipe);
     // All the family's own recipes, whatever meal they're saved under (a
@@ -937,13 +965,16 @@ function renderDrawerRecipeList() {
       if (!ideas.includes(r)) ideas.push(r);
     }
     const tasteful = window.MealGenie && window.MealGenie.peopleWithTastes && window.MealGenie.peopleWithTastes().length;
-    container.innerHTML =
-      `<p class="drawer-recipes-heading">❤️ Family favourites</p>`
-      + (favs.length ? favs.map(recipeRowHtml).join("") : `<p class="drawer-fav-empty">Tap the <span aria-hidden="true">♡</span> on any recipe to keep your family's favourites here.</p>`)
-      + (own.length ? `<p class="drawer-recipes-heading">Your recipes</p>${own.map(recipeRowHtml).join("")}` : "")
-      + `<p class="drawer-recipes-heading">A few ${slotWord} ideas</p>`
-      + (tasteful && pool !== builtIn ? `<p class="drawer-ideas-note">Picked to suit everyone</p>` : "")
-      + ideas.map(recipeRowHtml).join("")
+    // Rows of photos to tap (your own and favourites first), not lists of text
+    const strip = (title, list, note = "") => list.length
+      ? `<p class="drawer-recipes-heading">${title}${note ? ` <span class="drawer-strip-note">${note}</span>` : ""}</p><div class="drawer-photo-strip">${list.map(recipeTileHtml).join("")}</div>`
+      : "";
+    const stripsHtml = strip("Your recipes", own)
+      + strip("❤️ Family favourites", favs)
+      + strip(`A few ${slotWord} ideas`, ideas, tasteful && pool !== builtIn ? "Picked to suit everyone" : "");
+    // Above the search when it can be (the list under it then just offers the rest)
+    if (strips) { strips.innerHTML = stripsHtml; strips.hidden = !stripsHtml; wireDrawerRecipeRows(strips); }
+    container.innerHTML = (strips ? "" : stripsHtml)
       + `<button type="button" class="drawer-recipes-more" data-drawer-show-all>Browse all ${recipes.length} ${slotWord} recipes</button>`;
     wireDrawerRecipeRows(container);
     return;
@@ -976,7 +1007,7 @@ function renderDrawerMagicHero() {
   if (!hero) {
     hero = document.createElement("div");
     hero.id = "drawer-magic-hero";
-    // After Snap a recipe / Type one, before the search
+    // A slim row under the recipe photos, above the search
     pane.insertBefore(hero, pane.querySelector(".drawer-search-filter-row") || pane.firstChild);
     hero.addEventListener("click", (e) => {
       if (!window.MealGenie) return;
@@ -989,17 +1020,13 @@ function renderDrawerMagicHero() {
   const who = names.length === 0 ? "Answer a few quick questions, get three ideas."
     : names.length <= 2 ? `Knows what ${names.join(" and ")} eat${names.length === 1 ? "s" : ""}.`
     : `Knows what ${names.slice(0, 2).join(", ")} +${names.length - 2} eat.`;
-  hero.innerHTML = `<div class="magic-hero">
-      <button type="button" class="magic-hero-main" data-drawer-genie>
-        <span class="magic-hero-wand" aria-hidden="true">🪄</span>
-        <span class="magic-hero-words">
-          <span class="magic-hero-kicker">Magic Mealtime</span>
-          <strong>Not sure what to make?</strong>
-          <small>${escapeHtml(who)}</small>
-        </span>
-        <span class="magic-hero-cta">Find me a ${escapeHtml(slotWord)} ✨</span>
+  // One slim row (it was a big purple card above everything)
+  hero.innerHTML = `<div class="magic-slim">
+      <button type="button" class="magic-slim-main" data-drawer-genie title="${escapeHtml(who)}">
+        <span class="magic-slim-wand" aria-hidden="true">🪄</span>
+        <span class="magic-slim-words"><strong>Not sure?</strong> Find me a ${escapeHtml(slotWord)}</span>
       </button>
-      <button type="button" class="magic-hero-tastes" data-drawer-tastes>🍽️ Who eats what</button>
+      <button type="button" class="magic-slim-tastes" data-drawer-tastes>Who eats what</button>
     </div>`;
   // A gentle glow each time the drawer opens (not on every search keystroke)
   if (drawerHeroGlow) { drawerHeroGlow = false; hero.classList.remove("is-glowing"); void hero.offsetWidth; hero.classList.add("is-glowing"); }
@@ -1032,6 +1059,17 @@ function wireDrawerRecipeRows(container) {
   });
   const more = container.querySelector("[data-drawer-show-all]");
   if (more) more.onclick = () => { drawerShowAll = true; renderDrawerRecipeList(); };
+}
+
+// A photo tile for Plan Meal's rows of photos (same tap as a recipe row)
+function recipeTileHtml(recipe) {
+  const src = String(recipe.image || recipe.imageUrl || "");
+  const photo = /^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src) ? `${src}/small`
+    : /^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src) ? src : "";
+  return `<button type="button" class="drawer-recipe-card drawer-recipe-tile" data-recipe-id="${escapeHtml(String(recipe.id))}" title="${escapeHtml(recipe.title)}">
+      <span class="drawer-tile-photo"${photo ? ` style="background-image: url('${escapeHtml(photo)}')"` : ""} aria-hidden="true">${photo ? "" : escapeHtml(recipe.emoji || "🍽️")}</span>
+      <span class="drawer-tile-title">${escapeHtml(recipe.title)}</span>
+    </button>`;
 }
 
 function recipeRowHtml(recipe) {

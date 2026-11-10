@@ -620,7 +620,7 @@ const PAGES = [
     const found = await p.evaluate(async () => {
       window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "breakfast");
       await new Promise(r => setTimeout(r, 200));
-      const list = () => document.getElementById("drawer-recipes-list").textContent;
+      const list = () => document.getElementById("pane-from-recipes").textContent;
       const browsing = list().includes("Grandad's beef stew");
       const i = document.getElementById("recipe-search-input"); i.value = "beef"; i.dispatchEvent(new Event("input", { bubbles: true }));
       await new Promise(r => setTimeout(r, 200));
@@ -633,6 +633,41 @@ const PAGES = [
     await p.evaluate(async () => { const m = await import("./recipes-data.js"); window.openCookingRecipeModal(m.getAllFamilyRecipes().find(x => x.title === "Grandad's beef stew")); });
     await p.evaluate(() => document.getElementById("cooking-credit").scrollIntoView({ block: "center" }));
     await shot("11-card-credit");
+  }],
+  // This week: "A few ideas" with photos; drag one onto a free dinner, and the
+  // week shows it with its photo
+  ["meal-ideas", async (p) => {
+    await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
+    await goTo("meals")(p);
+    await p.waitForTimeout(400);
+    const ideas = await p.locator("#meal-ideas .meal-idea").count();
+    if (ideas < 3) throw new Error(`only ${ideas} ideas above an empty week`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas.png`) });
+    const plan = await p.evaluate(() => {
+      const idea = document.querySelector("#meal-ideas .meal-idea");
+      const t = window.getLocalDateKey(new Date());
+      const zone = [...document.querySelectorAll('#skylight-meals-matrix .matrix-meal-cell[data-slot="dinner"], #meals-mobile-cards-feed .mobile-slot-empty-btn[data-slot="dinner"]')]
+        .filter(z => z.offsetParent && (z.matches(".mobile-slot-empty-btn") || z.querySelector(".meal-empty-slot")) && z.getAttribute("data-date") >= t)[0];
+      if (!zone) return null;
+      zone.scrollIntoView({ block: "center" });
+      idea.scrollIntoView({ block: "nearest", inline: "nearest" });
+      const a = idea.getBoundingClientRect(), b = zone.getBoundingClientRect();
+      return { id: idea.getAttribute("data-idea-id"), date: zone.getAttribute("data-date"), from: [a.x + a.width / 2, a.y + a.height / 2], to: [b.x + b.width / 2, b.y + b.height / 2] };
+    });
+    if (!plan) throw new Error("no free dinner on screen to drop an idea on");
+    await p.mouse.move(plan.from[0], plan.from[1]);
+    await p.mouse.down();
+    for (let i = 1; i <= 12; i++) await p.mouse.move(plan.from[0] + (plan.to[0] - plan.from[0]) * i / 12, plan.from[1] + (plan.to[1] - plan.from[1]) * i / 12);
+    await p.waitForTimeout(150);
+    await p.mouse.up();
+    await p.waitForTimeout(600);
+    const after = await p.evaluate(({ date }) => { const m = window.getMealForDate(date, "dinner"); return { recipeId: m && m.recipeId, photo: !!document.querySelector(`#skylight-meals-matrix .matrix-meal-cell[data-date="${date}"][data-slot="dinner"] .has-photo, #meals-mobile-cards-feed .mobile-meal-photo`) }; }, plan);
+    if (String(after.recipeId) !== String(plan.id)) throw new Error(`dropping the idea didn't plan it: ${JSON.stringify({ plan, after })}`);
+    if (!after.photo) throw new Error("the planned recipe doesn't show its photo on the week");
+    await p.keyboard.press("Escape");
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas-planned.png`) });
+    await p.evaluate(({ date }) => { window.setMealForDate(date, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, plan);
   }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {

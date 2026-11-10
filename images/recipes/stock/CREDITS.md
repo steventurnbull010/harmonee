@@ -15,3 +15,4 @@ Unsplash License (free to use, no attribution required), resized to 600×450.
 | salad.jpg | https://images.unsplash.com/photo-1512621776951-a57141f2eefd |
 | breakfast.jpg | https://images.unsplash.com/photo-1504754524776-8f4f37790ca0 |
 | table.jpg | https://images.unsplash.com/photo-1547573854-74d2a71d0826 |
+| porridge.jpg | https://images.unsplash.com/photo-1604324496390-b1fed252b9b0 (the Breakfast collection's cover) |
