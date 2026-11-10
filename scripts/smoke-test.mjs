@@ -641,7 +641,9 @@ const PAGES = [
     await goTo("meals")(p);
     const fits = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button, #view-meals .meals-tab")].filter(b => b.offsetParent).every(b => b.scrollWidth <= b.clientWidth + 1));
     if (!fits) throw new Error("a Meals header button's words don't fit");
-    if (!(await p.locator("#view-meals [data-snap-recipe]").first().isVisible())) throw new Error("no Snap a recipe button on the Meals page");
+    // This week's header: just Grocery List and Plan Meal (Ideas and Snap moved)
+    const headerBtns = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button")].filter(b => b.offsetParent).map(b => b.id || b.className));
+    if (headerBtns.length !== 2) throw new Error(`the This week header has ${headerBtns.length} buttons: ${headerBtns.join(", ")}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meals-header-tabs.png`) });
     await p.click('[data-meals-tab="recipes"]');
     await p.waitForTimeout(800);
@@ -653,6 +655,21 @@ const PAGES = [
     if (!home.shown || home.weekShown) throw new Error(`the Recipes tab didn't replace the week: ${JSON.stringify(home)}`);
     if (!home.own) throw new Error("your own recipe isn't under Your family's recipes");
     if (home.collections < 6) throw new Error(`only ${home.collections} collections`);
+    if (!(await p.locator("#meals-recipes-view [data-snap-recipe]").isVisible())) throw new Error("no Snap a recipe on the Recipes tab");
+    if (!(await p.locator("#meals-recipes-view [data-open-genie]").isVisible())) throw new Error("no Magic Mealtime ideas on the Recipes tab");
+    // The very bottom can be scrolled to, with room under it
+    const bottom = await p.evaluate(async () => {
+      const v = document.getElementById("meals-recipes-view");
+      v.scrollTop = v.scrollHeight; window.scrollTo(0, document.body.scrollHeight);
+      await new Promise(r => setTimeout(r, 300));
+      const last = v.querySelector(".rb-count").getBoundingClientRect();
+      const nav = document.querySelector(".mobile-bottom-nav, .skylight-bottom-nav, nav[class*='bottom']");
+      const floor = nav && nav.offsetParent ? nav.getBoundingClientRect().top : window.innerHeight;
+      return { lastBottom: Math.round(last.bottom), floor: Math.round(floor) };
+    });
+    if (bottom.lastBottom > bottom.floor) throw new Error(`can't scroll to the bottom of Recipes: ${JSON.stringify(bottom)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-bottom.png`) });
+    await p.evaluate(() => { document.getElementById("meals-recipes-view").scrollTop = 0; window.scrollTo(0, 0); });
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-home.png`) });
     await p.evaluate(() => document.querySelector("#meals-recipes-view .rb-collections").scrollIntoView({ block: "start" }));
     await p.waitForTimeout(300);

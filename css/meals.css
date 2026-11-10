@@ -4095,7 +4095,7 @@ body.theme-dark .family-recipe-note { background: rgba(245, 158, 11, 0.16); colo
 
 .cooking-credit-edit { border: none; background: none; padding: 0 4px; color: #0284c7; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
 
-/* Phones: four buttons on two rows (🛒 · Ideas, Snap a recipe · Plan Meal) */
+/* Phones: the two header buttons side by side (🛒 Grocery List · Plan Meal) */
 @media (max-width: 600px) {
   /* (navigation.css lays phone header buttons out in a row with !important) */
   #view-meals .skylight-single-header .skylight-meals-nav-controls { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; }
@@ -4115,8 +4115,12 @@ body.theme-dark .meals-tab.is-on { background: #334155; }
 /* The Recipes tab hides the week (grid, phone day cards, week arrows) */
 #view-meals.is-recipes-tab .skylight-meals-matrix-wrapper,
 #view-meals.is-recipes-tab .skylight-meals-mobile-wrapper,
-#view-meals.is-recipes-tab .calendar-nav-buttons,
-#view-meals.is-recipes-tab .btn-snap-recipe { display: none !important; }
+#view-meals.is-recipes-tab .calendar-nav-buttons { display: none !important; }
+/* Tablets and computers: the Meals page fits the screen (for the week grid),
+   so the Recipes tab scrolls on its own, with room at the bottom */
+@media (min-width: 601px) {
+  #view-meals.is-recipes-tab .recipe-browse { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 64px; }
+}
 /* Phones: on Recipes the header is just the tabs, so the photos start high up
    (Plan Meal is on every recipe's card; Grocery List and Ideas on This week) */
 @media (max-width: 600px) {
@@ -4195,9 +4199,16 @@ body.theme-dark .rb-collection { background: #1e293b; box-shadow: 0 0 0 1px #334
 body.theme-dark .plan-type-btn { background: rgba(22, 163, 74, 0.12); border-color: #166534; color: #86efac; }
 #pane-new-entry .plan-add-recipe-row { margin-bottom: 16px; }
 
-/* Tablets and small laptops: the tabs share the header with five buttons, so
-   the shopping list is 🛒 15 and the tabs are a little tighter */
-@media (min-width: 601px) and (max-width: 1439px) {
-  #view-meals #btn-open-grocery-list .pill-text { display: none; }
-  .meals-tab { padding: 8px 12px; }
-}
+
+/* Recipes tab: Magic Mealtime ideas, now that Ideas isn't in the header */
+.rb-ideas { display: flex; align-items: center; gap: 16px; width: 100%; margin-top: 16px; padding: 16px; border: 0; border-radius: 16px; background: #f5f3ff; color: #4c1d95; font: inherit; text-align: left; cursor: pointer; box-shadow: 0 0 0 1px #ddd6fe; }
+.rb-ideas:hover { background: #ede9fe; }
+.rb-ideas-icon { font-size: 1.8rem; line-height: 1; }
+.rb-ideas-words { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rb-ideas-words strong { font-size: 1.05rem; }
+.rb-ideas-words span { font-size: 0.9rem; color: #6d28d9; }
+.rb-ideas-go { flex: none; padding: 8px 16px; border-radius: 999px; background: #7c3aed; color: #fff; font-weight: 700; white-space: nowrap; }
+body.theme-dark .rb-ideas { background: rgba(124, 58, 237, 0.16); color: #ddd6fe; box-shadow: 0 0 0 1px #4c1d95; }
+body.theme-dark .rb-ideas-words span { color: #c4b5fd; }
+@media (max-width: 600px) { .rb-ideas-go { display: none; } }
+.recipe-browse:not(.is-home) .rb-ideas { display: none; }

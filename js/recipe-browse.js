@@ -92,7 +92,12 @@
         <input type="search" data-rb-search placeholder="Search recipes or ingredients" autocomplete="off" aria-label="Search recipes" value="${esc(q)}">
       </label>
       <button type="button" class="rb-snap" data-snap-recipe><span aria-hidden="true">📷</span> Snap a recipe</button>
-    </div>`;
+    </div>
+    <button type="button" class="rb-ideas" data-open-genie>
+      <span class="rb-ideas-icon" aria-hidden="true">🪄</span>
+      <span class="rb-ideas-words"><strong>Not sure what to make?</strong><span>Answer a few quick questions, get three ideas</span></span>
+      <span class="rb-ideas-go" aria-hidden="true">Get ideas</span>
+    </button>`;
   }
 
   function home(all) {
@@ -144,6 +149,7 @@
       : home(all);
     if (!input) view.innerHTML = topBar("") + `<div class="rb-body" data-rb-body></div>`;
     view.querySelector("[data-rb-body]").innerHTML = body;
+    view.classList.toggle("is-home", !q && state.mode !== "collection");
     if (hadFocus) view.querySelector("[data-rb-search]").focus();
   }
 
@@ -179,7 +185,7 @@
     const open = e.target.closest("[data-rb-recipe]");
     if (open) { const r = R().find(open.getAttribute("data-rb-recipe")); if (r) R().open(r); return; }
     const col = e.target.closest("[data-rb-collection]");
-    if (col) { state = { mode: "collection", id: col.getAttribute("data-rb-collection") }; render(); view.scrollIntoView({ block: "start" }); return; }
+    if (col) { state = { mode: "collection", id: col.getAttribute("data-rb-collection") }; render(); view.scrollTop = 0; view.scrollIntoView({ block: "start" }); return; }
     if (e.target.closest("[data-rb-home]")) { state = { mode: "home", id: null }; render(); }
   });
   document.addEventListener("input", (e) => {
