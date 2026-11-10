@@ -101,21 +101,33 @@
     });
   }
 
+  // Each field described, with an example, in a fixed order. Without that
+  // (tested live 10 Nov) Gemini often stopped after the first event's start
+  // time and filled it with junk ("10:00px"); with it, 3 out of 3 were right.
   async function schemaFor(ai) {
     const S = ai.Schema;
+    const order = ["title", "date", "allDay", "startTime", "endTime", "location", "notes", "people", "emoji"];
     return S.object({
       properties: {
         events: S.array({
           items: S.object({
             properties: {
-              title: S.string(), date: S.string(), startTime: S.string(), endTime: S.string(),
-              allDay: S.boolean(), location: S.string(), notes: S.string(),
-              people: S.array({ items: S.string() }), emoji: S.string()
+              title: S.string({ description: "Short plain name, at most 60 characters" }),
+              date: S.string({ description: "The date as YYYY-MM-DD, e.g. 2026-12-05" }),
+              allDay: S.boolean({ description: "true if no time is given" }),
+              startTime: S.string({ description: "24-hour time as HH:MM, e.g. 14:00. Empty string if none" }),
+              endTime: S.string({ description: "24-hour time as HH:MM, e.g. 16:30. Empty string if none" }),
+              location: S.string({ description: "The place as written, or empty" }),
+              notes: S.string({ description: "What to bring or remember, or empty" }),
+              people: S.array({ items: S.string() }),
+              emoji: S.string({ description: "One emoji" })
             },
-            optionalProperties: ["startTime", "endTime", "location", "notes", "people", "emoji"]
+            optionalProperties: ["startTime", "endTime", "location", "notes", "people", "emoji"],
+            propertyOrdering: order
           })
         })
-      }
+      },
+      propertyOrdering: ["events"]
     });
   }
 
@@ -218,7 +230,8 @@
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const earliest = new Date(today.getTime() - 366 * 86400000), latest = new Date(today.getTime() + 2 * 366 * 86400000);
     const family = people();
-    const time = (t) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t || "").trim()) ? String(t).trim() : "");
+    // "14:00", and also "9:30" or "14:00px" (the time at the start is kept)
+    const time = (t) => { const m = String(t || "").trim().match(/^([01]?\d|2[0-3]):([0-5]\d)(?!\d)/); return m ? `${m[1].padStart(2, "0")}:${m[2]}` : ""; };
     return list.map(e => {
       const date = String(e && e.date || "").trim();
       const [y, mo, d] = date.split("-").map(Number);
