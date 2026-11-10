@@ -685,6 +685,8 @@ function renderMealsView() {
 
   // "A few ideas" above the week, to drag onto a free slot (js/meal-ideas.js)
   if (window.MealIdeas) window.MealIdeas.render(weekDates.map(d => (window.getLocalDateKey || getLocalDateKey)(d)), recipesAll);
+  // Phones: the week as one scrolling list, dinner first (js/meals-phone.js)
+  if (window.MealsPhone) window.MealsPhone.render(weekDates.map(d => (window.getLocalDateKey || getLocalDateKey)(d)), recipesAll);
 }
 window.renderMealsView = renderMealsView;
 
@@ -1138,6 +1140,12 @@ function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
   const btnOpenRecipe = document.getElementById("btn-popover-open-recipe");
   const btnEditMeal = document.getElementById("btn-popover-edit-meal");
   const btnDeleteMeal = document.getElementById("btn-popover-delete-meal");
+  // Move it to another day (js/meals-phone.js): what phones have instead of dragging
+  const btnMoveMeal = document.getElementById("btn-popover-move-meal");
+  if (btnMoveMeal) btnMoveMeal.onclick = () => {
+    if (popover.open) popover.close();
+    if (window.MealsPhone) window.MealsPhone.moveMeal(dateStr, slot);
+  };
   const btnClose = document.getElementById("btn-popover-close");
 
   const recipe = findRecipeByIdOrTitle(meal.recipeId || meal.title);
@@ -2220,6 +2228,10 @@ function shiftMealsDays(n) {
   renderMealsView();
 }
 window.shiftMealsDays = shiftMealsDays;
+// Jump to a week (0 = from today): the phone's "Next 7 days" and "Back to today"
+window.setMealsWeek = (n) => { mealsWeekOffset = n; mealsDayNudge = 0; window.mealsWeekOffset = n; renderMealsView(); };
+window.moveMealTo = (from, to) => moveMealTo(from, to);
+window.takeMealOffPlan = (from) => takeMealOffPlan(from);
 
 // Tablets and computers: drag or swipe the grid sideways. The days follow the
 // finger (or mouse); letting go moves the week by as many days as it was

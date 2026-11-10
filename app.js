@@ -4568,6 +4568,11 @@ function setupEventListeners() {
       dialog.addEventListener("close", syncModalScrollLock);
       dialog.addEventListener("cancel", syncModalScrollLock);
     });
+    // Panels made later (the plan sheet, "Move to which day?", ...) too: any
+    // dialog opening or closing anywhere re-checks the lock, so the page is
+    // never left unable to scroll after one closes
+    dialogObserver.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["open"] });
+    document.addEventListener("close", syncModalScrollLock, true);
   }
 
   // Prevent wheel and touch gestures on modal backdrop from scrolling background app.

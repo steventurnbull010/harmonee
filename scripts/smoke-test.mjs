@@ -639,6 +639,7 @@ const PAGES = [
   // This week: "A few ideas" with photos; drag one onto a free dinner, and the
   // week shows it with its photo
   ["meal-ideas", async (p) => {
+    if (p.__size === "phone") return; // phones plan with a tap instead (phone-week)
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
     await goTo("meals")(p);
     await p.waitForTimeout(400);
@@ -886,6 +887,56 @@ const PAGES = [
     await p.evaluate((ids) => ids.forEach(id => window.handleDeleteList(id)), [made.id, maxList.id]);
     await p.evaluate(() => { const l = window.loadFamilyLists().find(x => x.id === "packing"); const t = l.items.find(i => i.text === "Teddy"); if (t) window.handleDeleteListItem("packing", t.id); });
   }],
+  // Phones: This week is one scrolling list, dinner first; "Plan dinner"
+  // opens photo ideas, one tap plans it; a planned meal can be moved
+  ["phone-week", async (p) => {
+    if (p.__size !== "phone") return;
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); window.setMealsWeek(0); });
+    await goTo("meals")(p);
+    await p.waitForTimeout(300);
+    const look = await p.evaluate(() => {
+      const box = document.getElementById("meals-phone-week");
+      const vis = (sel) => { const el = document.querySelector(sel); return !!(el && el.offsetParent); };
+      const tabs = document.querySelector("#view-meals .meals-tabs").getBoundingClientRect(), cart = document.getElementById("meals-grocery-mini").getBoundingClientRect();
+      return { shown: !!(box && box.offsetParent), days: box ? box.querySelectorAll(".mp-day").length : 0, first: box ? box.querySelector(".mp-day-head").textContent : "", oldFeed: vis("#meals-mobile-cards-feed"), ideas: vis("#meal-ideas"), planBtn: vis("#btn-meals-plan-dinner"), cartBesideTabs: Math.abs((cart.top + cart.bottom) / 2 - (tabs.top + tabs.bottom) / 2) < 12 };
+    });
+    if (!look.shown || look.days !== 7 || !/^Today/.test(look.first)) throw new Error(`the phone week looks wrong: ${JSON.stringify(look)}`);
+    if (look.oldFeed || look.ideas || look.planBtn) throw new Error(`old phone pieces still show: ${JSON.stringify(look)}`);
+    if (!look.cartBesideTabs) throw new Error("the 🛒 isn't beside the tabs");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-week-list.png`) });
+    // Plan a free dinner with one tap on a photo
+    const date = await p.evaluate(() => document.querySelector('#meals-phone-week [data-mp-plan][data-slot="dinner"]').getAttribute("data-date"));
+    await p.click(`#meals-phone-week [data-mp-plan][data-slot="dinner"][data-date="${date}"]`);
+    await p.waitForTimeout(400);
+    const ideas = await p.locator("#meal-quick-plan .mp-idea").count();
+    if (ideas < 3) throw new Error(`the plan sheet shows ${ideas} ideas`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-plan-sheet.png`) });
+    const before = await p.evaluate(() => [...document.querySelectorAll("#meal-quick-plan [data-mp-pick]")].map(b => b.getAttribute("data-mp-pick")).join());
+    await p.click("#meal-quick-plan [data-mqp-others]");
+    const after = await p.evaluate(() => [...document.querySelectorAll("#meal-quick-plan [data-mp-pick]")].map(b => b.getAttribute("data-mp-pick")).join());
+    if (before === after) throw new Error("Show me others showed the same ideas");
+    const pickId = await p.evaluate(() => document.querySelector("#meal-quick-plan [data-mp-pick]").getAttribute("data-mp-pick"));
+    await p.click("#meal-quick-plan [data-mp-pick]");
+    await p.waitForTimeout(600);
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    const planned = await p.evaluate((d) => ({ id: (window.getMealForDate(d, "dinner") || {}).recipeId, sheet: document.getElementById("meal-quick-plan").open, photo: !!document.querySelector(`#meals-phone-week .mp-dinner.has-photo[data-date="${d}"]`) }), date);
+    if (String(planned.id) !== String(pickId) || planned.sheet || !planned.photo) throw new Error(`tapping an idea didn't plan it: ${JSON.stringify({ pickId, planned })}`);
+    await p.evaluate((d) => document.querySelector(`#meals-phone-week .mp-dinner[data-date="${d}"]`).scrollIntoView({ block: "center" }), date);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-week-planned.png`) });
+    // Move it: tap it, Move, pick a day
+    await p.click(`#meals-phone-week .mp-dinner[data-date="${date}"]`);
+    await p.waitForTimeout(400);
+    await p.click("#btn-popover-move-meal");
+    await p.waitForTimeout(400);
+    const target = await p.evaluate((d) => { const opts = [...document.querySelectorAll("#hm-confirm [data-sheet-pick]")].map(b => b.getAttribute("data-sheet-pick")); return opts.find(k => k > d && !(window.getMealForDate(k, "dinner") || {}).title) || null; }, date);
+    if (!target) throw new Error("Move doesn't offer a free day");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-move-sheet.png`) });
+    await p.click(`#hm-confirm [data-sheet-pick="${target}"]`);
+    await p.waitForTimeout(600);
+    const moved = await p.evaluate(({ d, t }) => ({ from: (window.getMealForDate(d, "dinner") || {}).title || null, to: (window.getMealForDate(t, "dinner") || {}).recipeId }), { d: date, t: target });
+    if (moved.from || String(moved.to) !== String(pickId)) throw new Error(`Move didn't move it: ${JSON.stringify(moved)}`);
+    await p.evaluate((t) => { window.setMealForDate(t, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, target);
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
@@ -895,7 +946,7 @@ const PAGES = [
     if (!fits) throw new Error("a Meals header button's words don't fit");
     // This week's header: just Grocery List and Plan Meal (Ideas and Snap moved)
     const headerBtns = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button")].filter(b => b.offsetParent).map(b => b.id || b.className));
-    if (headerBtns.length !== 2) throw new Error(`the This week header has ${headerBtns.length} buttons: ${headerBtns.join(", ")}`);
+    if (p.__size !== "phone" && headerBtns.length !== 2) throw new Error(`the This week header has ${headerBtns.length} buttons: ${headerBtns.join(", ")}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meals-header-tabs.png`) });
     await p.click('[data-meals-tab="recipes"]');
     await p.waitForTimeout(800);

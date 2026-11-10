@@ -59,7 +59,7 @@
   <link rel="stylesheet" href="css/item-drag.css?v=46615749">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
-  <link rel="stylesheet" href="css/meals.css?v=b3b2fed7">
+  <link rel="stylesheet" href="css/meals.css?v=8e229746">
   <link rel="stylesheet" href="css/calendar.css?v=94300d0c">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
@@ -383,6 +383,8 @@
                   <button type="button" role="tab" class="meals-tab is-on" data-meals-tab="week" aria-selected="true">This week</button>
                   <button type="button" role="tab" class="meals-tab" data-meals-tab="recipes" aria-selected="false">Recipes</button>
                 </div>
+                <!-- Phones: the shopping list beside the tabs (opens the same panel) -->
+                <button type="button" class="meals-grocery-mini" id="meals-grocery-mini" aria-label="Grocery list" onclick="document.getElementById('btn-open-grocery-list').click()"><span aria-hidden="true">🛒</span> <span class="meals-grocery-mini-count" id="meals-grocery-mini-count"></span></button>
               </div>
               <!-- Top Right Controls: Grocery List, Plan Meal, then week navigation far right -->
               <div class="calendar-header-controls skylight-meals-nav-controls">
@@ -2039,6 +2041,10 @@
           <span class="btn-pill-icon">📖</span>
           <span class="btn-pill-label">Open Recipe</span>
         </button>
+        <button type="button" class="btn-popover-action-pill" id="btn-popover-move-meal">
+          <span class="btn-pill-icon">📅</span>
+          <span class="btn-pill-label">Move</span>
+        </button>
       </div>
 
       <!-- Date Display -->
@@ -2569,7 +2575,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=9c7e2810"></script>
+  <script src="js/build-info.js?v=2252464a"></script>
   <script src="js/utils.js?v=c243e9da"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2614,6 +2620,7 @@
   <script src="js/recipe-photos.js?v=7f174d3c"></script>
   <script src="js/recipe-stock.js?v=729089c0"></script>
   <script src="js/family-recipes.js?v=94dd3c75"></script>
+  <script src="js/meals-phone.js?v=05e12980"></script>
   <script src="js/meal-ideas.js?v=9717439a"></script>
   <script src="js/recipe-browse.js?v=9baecb94"></script>
   <script src="js/magic-import.js?v=b7981b4f"></script>
@@ -2626,8 +2633,8 @@
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
-  <script type="module" src="js/meals.js?v=f4ce78da"></script>
-  <script type="module" src="app.js?v=712ed2f8"></script>
+  <script type="module" src="js/meals.js?v=d10c6d78"></script>
+  <script type="module" src="app.js?v=17b79571"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {
