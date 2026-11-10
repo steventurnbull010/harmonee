@@ -880,8 +880,9 @@ function renderDrawerRecipeList() {
   // Filter recipes by category and search query
   let recipes = getAllFamilyRecipes();
 
-  // Category filter
-  if (currentDrawerCategory && currentDrawerCategory !== "all") {
+  // Category filter. Not while searching: a pudding saved as a snack (or
+  // pancakes saved as breakfast) is still found when you're planning dinner.
+  if (currentDrawerCategory && currentDrawerCategory !== "all" && !query) {
     recipes = recipes.filter(r => (r.mealType && r.mealType.toLowerCase() === currentDrawerCategory.toLowerCase()) || (r.category && r.category.toLowerCase() === currentDrawerCategory.toLowerCase()));
   }
 

@@ -81,7 +81,7 @@
           <button type="button" class="family-recipe-photo" data-fr-photo aria-label="Fill in from a photo of a recipe book page or a handwritten recipe" hidden>
             <span aria-hidden="true">📷</span> From a photo
           </button>
-          <p class="family-recipe-note" data-fr-note role="status" hidden>📷 Filled in from your photo. Check it, then Save.</p>
+          <p class="family-recipe-note" data-fr-note role="status" hidden>📷 Filled in. Check it, then Save.</p>
           <label class="ev-field"><span class="ev-field-label">Name</span>
             <span class="family-recipe-name-row">
               <input class="ev-native-input family-recipe-emoji" data-fr="emoji" maxlength="4" aria-label="Emoji" placeholder="🍲">

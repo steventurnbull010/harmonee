@@ -4088,7 +4088,7 @@ body.theme-dark .family-recipe-add small { color: #86efac; }
 .family-recipe-error:empty { display: none; }
 .family-recipe-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .family-recipe-actions [hidden] { display: none; }
-.family-recipe-actions .btn-primary-modal { min-height: 48px; padding: 8px 24px; }
+.family-recipe-actions .btn-primary-modal { min-height: 48px; padding: 8px 24px; font-size: 1.05rem; }
 .family-recipe-actions [data-fr-delete] { margin-right: auto; }
 body.theme-dark .family-recipe-photo { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #7dd3fc; }
 body.theme-dark .family-recipe-note { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
