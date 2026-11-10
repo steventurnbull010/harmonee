@@ -953,6 +953,61 @@ const PAGES = [
     if (moved.from || String(moved.to) !== String(pickId)) throw new Error(`Move didn't move it: ${JSON.stringify(moved)}`);
     await p.evaluate((t) => { window.setMealForDate(t, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, target);
   }],
+  // Back and Forward: each page has its own address; Back closes what's open
+  // first (a recipe card, a list on a phone), then goes to the page before;
+  // a refresh stays on the page
+  ["back-button", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
+    await p.waitForTimeout(300);
+    const nav = async (view) => { await p.click(`.skylight-nav-item[data-view="${view}"]`); await p.waitForTimeout(250); };
+    const where = () => p.evaluate(() => ({ view: window.currentActiveView, hash: location.hash }));
+    const back = async () => { await p.evaluate(() => history.back()); await p.waitForTimeout(400); };
+    await nav("calendar"); await nav("meals"); await nav("lists");
+    let w = await where();
+    if (w.view !== "lists" || w.hash !== "#lists") throw new Error(`Lists has no address: ${JSON.stringify(w)}`);
+    await back();
+    w = await where();
+    if (w.view !== "meals" || w.hash !== "#meals") throw new Error(`Back from Lists didn't go to Meals: ${JSON.stringify(w)}`);
+    // The Recipes tab is a step too
+    await p.click('[data-meals-tab="recipes"]');
+    await p.waitForTimeout(300);
+    if ((await where()).hash !== "#meals/recipes") throw new Error("the Recipes tab has no address");
+    // Back closes an open recipe card first, and stays on Recipes
+    await p.locator("#meals-recipes-view [data-rb-recipe]").first().click();
+    await p.waitForTimeout(500);
+    if (!(await p.evaluate(() => document.getElementById("cooking-recipe-modal").open))) throw new Error("the recipe card didn't open");
+    await back();
+    const afterCard = await p.evaluate(() => ({ card: document.getElementById("cooking-recipe-modal").open, view: window.currentActiveView, tab: window.RecipeBrowse.tab() }));
+    if (afterCard.card || afterCard.view !== "meals" || afterCard.tab !== "recipes") throw new Error(`Back didn't just close the recipe card: ${JSON.stringify(afterCard)}`);
+    // Closing it with its own ✕ doesn't leave a step behind
+    await p.locator("#meals-recipes-view [data-rb-recipe]").first().click();
+    await p.waitForTimeout(500);
+    await p.click("#btn-close-cooking-modal");
+    await p.waitForTimeout(500);
+    await back();
+    const tab = await p.evaluate(() => window.RecipeBrowse.tab());
+    if (tab !== "week") throw new Error(`after closing a card with ✕, Back didn't go to This week (${tab})`);
+    // Forward comes back to Recipes
+    await p.evaluate(() => history.forward()); await p.waitForTimeout(400);
+    if ((await p.evaluate(() => window.RecipeBrowse.tab())) !== "recipes") throw new Error("Forward didn't return to Recipes");
+    await p.evaluate(() => window.RecipeBrowse.setTab("week"));
+    // Phones: Back from an open list goes to My lists
+    if (p.__size === "phone") {
+      await nav("lists");
+      await p.click('[data-open-list="groceries"]');
+      await p.waitForTimeout(400);
+      await back();
+      const lists = await p.evaluate(() => ({ view: window.currentActiveView, open: document.getElementById("lists-board").classList.contains("is-phone-detail") }));
+      if (lists.view !== "lists" || lists.open) throw new Error(`Back from a list didn't go to My lists: ${JSON.stringify(lists)}`);
+    }
+    // A refresh stays on the page
+    await nav("rewards");
+    await p.reload();
+    await p.waitForTimeout(1500);
+    const after = await where();
+    if (after.view !== "rewards") throw new Error(`a refresh on Rewards opened ${after.view}`);
+    await nav("calendar");
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });

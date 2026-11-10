@@ -6113,6 +6113,8 @@ function switchSkylightView(viewName) {
   // First visit to this page on this device: show its intro (js/page-intro.js)
   const introPage = ["calendar", "meals", "lists", "rewards"].includes(viewName) ? viewName : "chores";
   if (typeof window.maybeShowPageIntro === "function") setTimeout(() => window.maybeShowPageIntro(introPage), 0);
+  // Its own address and a step in the history, so Back comes here (js/nav-history.js)
+  if (window.NavHistory) window.NavHistory.viewShown(viewName);
 }
 window.switchSkylightView = switchSkylightView;
 
@@ -6590,10 +6592,15 @@ function initSkylightNavigation() {
   // Initialize Real-time Local Weather
   initLocalWeather();
 
-  // Set Calendar as Default View
+  // Set Calendar as Default View, unless the address asks for a page
+  // (#meals, #lists/... from a refresh, Back or a link; js/nav-history.js)
+  const fromAddress = window.NavHistory ? window.NavHistory.fromAddress() : null;
   const urlParams = new URLSearchParams(window.location.search);
   const requestedView = urlParams.get("view");
-  if (requestedView === "chores") {
+  if (fromAddress) {
+    switchSkylightView(fromAddress.view);
+    if (fromAddress.view === "meals" && fromAddress.tab === "recipes" && window.RecipeBrowse) window.RecipeBrowse.setTab("recipes");
+  } else if (requestedView === "chores") {
     switchSkylightView("chores");
   } else if (requestedView === "meals") {
     switchSkylightView("meals");

@@ -164,6 +164,8 @@
     const view = document.getElementById("meals-recipes-view");
     if (view) view.hidden = tab !== "recipes";
     if (tab === "recipes") { render(); if (view) view.scrollTop = 0; }
+    // Its own address (#meals/recipes), so Back goes to This week (js/nav-history.js)
+    if (window.NavHistory) window.NavHistory.tabShown();
   }
 
   // ---- Taps --------------------------------------------------------------------------
