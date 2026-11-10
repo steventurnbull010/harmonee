@@ -1719,21 +1719,7 @@ function renderWeekCalendar() {
 
   if (!window.familyEvents) window.familyEvents = loadFamilyEvents();
 
-  // Helper: Routine label for chores
-  function getTaskRoutineInfo(task) {
-    const t = (task.title || "").toLowerCase();
-    const cat = (task.category || task.taskType || "").toLowerCase();
-    if (t.includes("(morning)") || t.includes("morning") || cat.includes("morning")) {
-      return { order: 1, label: "☀️ Morning" };
-    }
-    if (t.includes("(afternoon)") || t.includes("afternoon") || cat.includes("afternoon")) {
-      return { order: 2, label: "⛅ Afternoon" };
-    }
-    if (t.includes("(evening)") || t.includes("evening") || t.includes("dinner") || t.includes("bed") || t.includes("night") || cat.includes("evening")) {
-      return { order: 4, label: "🌙 Evening" };
-    }
-    return { order: 3, label: "" };
-  }
+  // Routine label for chores: getTaskRoutineInfo in js/utils.js
 
   // Helper: Event minutes for sorting
   function getEventMinutes(evt) {

@@ -163,18 +163,24 @@ function getTaskRoutineInfo(task) {
   if (task.routineSlot === "evening") return { order: 4, label: "🌙 Evening" };
   if (task.routineSlot === "anytime") return { order: 5, label: "🕑 Anytime" };
 
-  const t = (task.title || "").toLowerCase();
-  const cat = (task.category || task.taskType || "").toLowerCase();
-  if (t.includes("(morning)") || t.includes("morning") || cat.includes("morning")) {
-    return { order: 1, label: "☀️ Morning" };
-  }
-  if (t.includes("(afternoon)") || t.includes("afternoon") || cat.includes("afternoon")) {
-    return { order: 2, label: "⛅ Afternoon" };
-  }
-  if (t.includes("(evening)") || t.includes("evening") || t.includes("dinner") || t.includes("bed") || t.includes("night") || cat.includes("evening")) {
-    return { order: 4, label: "🌙 Evening" };
-  }
+  // No slot set: guess from whole words in the title or category that really
+  // mean a time of day. Never parts of words: "Change the bedsheets" is any
+  // time, not Evening, and "Ava Bedroom" isn't bedtime.
+  const text = `${task.title || ""} ${task.category || task.taskType || ""}`;
+  const slot = guessRoutineSlotFromText(text);
+  if (slot === "morning") return { order: 1, label: "☀️ Morning" };
+  if (slot === "afternoon") return { order: 2, label: "⛅ Afternoon" };
+  if (slot === "evening") return { order: 4, label: "🌙 Evening" };
   return { order: 3, label: "" };
+}
+const ROUTINE_WORDS = {
+  morning: /\b(morning|mornings|before school)\b|\(am\)/i,
+  afternoon: /\b(afternoon|afternoons|after school)\b/i,
+  evening: /\b(evening|evenings|night|nights|tonight|nighttime|bedtime|bed time|before bed|after dinner)\b|\(pm\)/i
+};
+function guessRoutineSlotFromText(text) {
+  const s = String(text || "");
+  return ["morning", "afternoon", "evening"].find(k => ROUTINE_WORDS[k].test(s)) || null;
 }
 window.getTaskRoutineInfo = getTaskRoutineInfo;
 
