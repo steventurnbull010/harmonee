@@ -3676,9 +3676,12 @@ body.theme-dark .is-unknown-cook { background: #1e293b !important; color: #94a3b
 .cooking-check-item:hover { background: rgba(15, 23, 42, 0.04); }
 .cooking-check-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #0284c7; flex-shrink: 0; cursor: pointer; }
 .cooking-check-item label { cursor: pointer; flex: 1; }
+/* Method: a plain numbered list, not a box per step ("Bake." took a 60px card) */
 .cooking-steps-list { gap: 8px; margin-top: 8px; }
-.cooking-step-row { padding: 16px; gap: 16px; border-radius: 16px; }
+.cooking-step-row { padding: 0; gap: 16px; border: 0; border-radius: 0; background: none; align-items: flex-start; }
 .cooking-step-badge { width: 28px; height: 28px; }
+.cooking-step-row .cooking-step-text { padding-top: 2px; line-height: 1.5; }
+.cooking-step-row + .cooking-step-row { padding-top: 8px; border-top: 1px solid var(--card-border, #e2e8f0); }
 .cooking-step-text { font-size: 0.95rem; line-height: 1.5; color: var(--text-primary); }
 
 /* Plan it */
