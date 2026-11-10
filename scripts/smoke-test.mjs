@@ -98,7 +98,7 @@ function sampleStore() {
     [`${b}/tasks/t7`]: t("t7", "Feed the cats", "Anyone", { icon: "🐾", value: 1 }),
     [`${b}/tasks/t8`]: t("t8", "Water the plants", null, { icon: "🪴", value: 1 }),
     [`${b}/tasks/t9`]: t("t9", "Clear the garden", null, { icon: "🌳", value: 5, grabSize: "big" }),
-    [`${b}/tasks/t14`]: t("t14", "Change the bedsheets", null, { taskType: "Standard", day: "Anyday", repeat: "weekly", anyDay: true, icon: "🛏️", value: 3 }),
+    [`${b}/tasks/t14`]: t("t14", "Change the bedsheets", null, { taskType: "Standard", day: "Anyday", repeat: "weekly", anyDay: true, icon: "🛏️", value: 3, routineSlot: "anytime" }),
     // Big jobs nobody's doing: one from an earlier day (no "Overdue" in the panel)
     [`${b}/tasks/t15`]: t("t15", "Fix the shed door", "Up for grabs", { taskType: "Standard", day: "Saturday", repeat: "none", date: keyOf(new Date(today.getTime() - 2 * 86400000)), icon: "🔨", value: 10 }),
     [`${b}/tasks/t16`]: t("t16", "Clean the car inside", "Up for grabs", { taskType: "Standard", day: "Friday", repeat: "none", date: keyOf(today), icon: "🚗", value: 5 }),
@@ -160,6 +160,8 @@ async function routeOutside(context, origin) {
     if (/api\.open-meteo\.com/.test(u)) return reply(forecast, "application/json");
     if (/geocoding-api\.open-meteo\.com/.test(u)) return reply('{"results":[]}', "application/json");
     if (/\.(woff2?|ttf)(\?|$)/.test(u)) return route.fulfill({ status: 200, contentType: "font/woff2", body: Buffer.alloc(0) });
+    // Recipe photos (and their /small, /medium copies): real ones with REAL_PHOTOS=1
+    if (/themealdb\.com\/images\//.test(u)) return process.env.REAL_PHOTOS ? route.continue() : route.fulfill({ status: 200, contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><rect width="4" height="3" fill="#d6b88a"/></svg>' });
     if (/\.(png|jpe?g|webp|gif|svg)(\?|$)/.test(u)) return route.fulfill({ status: 200, contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>' });
     return reply("{}", "application/json");
   });
@@ -521,7 +523,7 @@ const PAGES = [
       : { events: [] }; });
     await p.evaluate(() => window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"));
     await p.waitForTimeout(500);
-    await p.locator("[data-add-family-recipe]").click();
+    await p.locator("#plan-meal-drawer [data-add-family-recipe]").click();
     await p.waitForTimeout(400);
     if (!(await p.locator("#family-recipe-modal [data-fr-photo]").isVisible())) throw new Error("no 📷 Fill in from a photo button in the recipe form");
     // Typed in
@@ -593,13 +595,10 @@ const PAGES = [
     // The way in: tap an empty dinner slot (as a person would)
     await p.evaluate(() => window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"));
     await shot("2-plan-drawer");
-    await p.evaluate(() => document.querySelector("[data-add-family-recipe]").scrollIntoView({ block: "center" }));
-    await shot("3-add-button");
-    await p.locator("[data-add-family-recipe]").click();
-    await shot("4-empty-form");
     await p.evaluate(() => { window.__SMOKE_AI = async (photo, kind) => { await new Promise(r => setTimeout(r, 2500)); return kind === "recipe" ? { isRecipe: true, title: "Grandad's beef stew", servings: 4, prepMinutes: 20, cookMinutes: 120, mealType: "dinner", ingredients: ["500g stewing beef, cubed", "2 tbsp plain flour", "1 onion, chopped", "2 carrots, sliced", "500ml beef stock", "1 tbsp tomato purée", "Salt and pepper"], method: ["Toss the beef in the flour.", "Brown the beef in batches in a hot pan with a little oil.", "Add the onion and carrots and cook for 5 minutes.", "Pour in the stock and tomato purée, cover and simmer for 2 hours until tender.", "Season to taste and serve with mash."], emoji: "🍲" } : { events: [] }; }; });
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#family-recipe-modal [data-fr-photo]")]);
+    // 📷 Snap a recipe, at the top of Plan Meal: straight to the photo
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#pane-from-recipes [data-snap-recipe]")]);
     await chooser.setFiles({ name: "page.png", mimeType: "image/png", buffer: png });
     await shot("5-reading");
     await p.waitForTimeout(2600);
@@ -635,32 +634,51 @@ const PAGES = [
     await p.evaluate(() => document.getElementById("cooking-credit").scrollIntoView({ block: "center" }));
     await shot("11-card-credit");
   }],
-  // 📖 Recipes on the Meals page: your own recipes without going through Plan Meal
-  ["recipes-panel", async (p) => {
+  // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
+  ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
     await p.evaluate(() => window.FamilyRecipes.save({ id: "family-smoke-flapjacks", title: "Nana's flapjacks", emoji: "🍪", mealType: "snack", category: "snack", source: "family", subtitle: "Family recipe", ingredients: ["250g oats"], instructions: ["Bake."] }));
     await goTo("meals")(p);
-    const btn = p.locator("#btn-open-recipes");
-    if (!(await btn.isVisible())) throw new Error("no Recipes button on the Meals page");
-    const fits = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button")].every(b => b.scrollWidth <= b.clientWidth + 1));
+    const fits = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button, #view-meals .meals-tab")].filter(b => b.offsetParent).every(b => b.scrollWidth <= b.clientWidth + 1));
     if (!fits) throw new Error("a Meals header button's words don't fit");
-    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meals-header-recipes.png`) });
-    await btn.click();
-    await p.waitForTimeout(600);
-    const own = await p.evaluate(() => document.querySelector("#recipes-panel [data-rp-list]").textContent.includes("Nana's flapjacks"));
-    if (!own) throw new Error("your own recipe (a snack) isn't under Your recipes");
-    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-list.png`) });
-    await p.fill("#recipes-panel [data-rp-search]", "chicken");
-    await p.waitForTimeout(200);
-    const hits = await p.locator("#recipes-panel .drawer-recipe-card").count();
-    if (hits < 1) throw new Error("searching chicken found nothing");
-    await p.fill("#recipes-panel [data-rp-search]", "flapjack");
-    await p.waitForTimeout(200);
-    await p.locator("#recipes-panel .drawer-recipe-card").first().click();
+    if (!(await p.locator("#view-meals [data-snap-recipe]").first().isVisible())) throw new Error("no Snap a recipe button on the Meals page");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meals-header-tabs.png`) });
+    await p.click('[data-meals-tab="recipes"]');
+    await p.waitForTimeout(800);
+    const home = await p.evaluate(() => {
+      const v = document.getElementById("meals-recipes-view");
+      const weekShown = [...document.querySelectorAll(".skylight-meals-matrix-wrapper, .skylight-meals-mobile-wrapper")].some(w => w.offsetParent);
+      return { shown: !v.hidden && !!v.offsetParent, weekShown, own: v.textContent.includes("Nana's flapjacks"), collections: v.querySelectorAll("[data-rb-collection]").length, photos: v.querySelectorAll(".rb-photo img").length };
+    });
+    if (!home.shown || home.weekShown) throw new Error(`the Recipes tab didn't replace the week: ${JSON.stringify(home)}`);
+    if (!home.own) throw new Error("your own recipe isn't under Your family's recipes");
+    if (home.collections < 6) throw new Error(`only ${home.collections} collections`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-home.png`) });
+    await p.evaluate(() => document.querySelector("#meals-recipes-view .rb-collections").scrollIntoView({ block: "start" }));
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-collections.png`) });
+    await p.click('[data-rb-collection="chicken"]');
+    await p.waitForTimeout(800);
+    const chicken = await p.locator("#meals-recipes-view .rb-tile").count();
+    if (chicken < 10) throw new Error(`the Chicken collection shows ${chicken} recipes`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-chicken.png`) });
+    await p.click("[data-rb-home]");
+    await p.fill("#meals-recipes-view [data-rb-search]", "beef");
+    await p.waitForTimeout(300);
+    if ((await p.locator("#meals-recipes-view .rb-tile").count()) < 5) throw new Error("searching beef found too little");
+    await p.fill("#meals-recipes-view [data-rb-search]", "flapjack");
+    await p.waitForTimeout(300);
+    await p.locator("#meals-recipes-view [data-rb-recipe]").first().click();
     await p.waitForTimeout(500);
     if (!(await p.evaluate(() => document.getElementById("cooking-recipe-modal").open))) throw new Error("tapping a recipe didn't open it");
-    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-card.png`) });
-    await p.evaluate(() => { document.getElementById("cooking-recipe-modal").close(); document.getElementById("recipes-panel").close(); window.FamilyRecipes.remove("family-smoke-flapjacks"); });
+    await p.evaluate(() => document.getElementById("cooking-recipe-modal").close());
+    await p.fill("#meals-recipes-view [data-rb-search]", "");
+    // Back to the week, and it's all there again
+    await p.click('[data-meals-tab="week"]');
+    await p.waitForTimeout(300);
+    const back = await p.evaluate(() => [...document.querySelectorAll(".skylight-meals-matrix-wrapper, .skylight-meals-mobile-wrapper")].some(w => w.offsetParent) && document.getElementById("meals-recipes-view").hidden);
+    if (!back) throw new Error("This week didn't come back");
+    await p.evaluate(() => window.FamilyRecipes.remove("family-smoke-flapjacks"));
   }],
   // Night clock: not while someone's using the screen (it came down mid-recipe at 12:30am)
   ["night-clock", async (p) => {

@@ -973,7 +973,8 @@ function renderDrawerMagicHero() {
   if (!hero) {
     hero = document.createElement("div");
     hero.id = "drawer-magic-hero";
-    pane.insertBefore(hero, pane.firstChild);
+    // After Snap a recipe / Type one, before the search
+    pane.insertBefore(hero, pane.querySelector(".drawer-search-filter-row") || pane.firstChild);
     hero.addEventListener("click", (e) => {
       if (!window.MealGenie) return;
       if (e.target.closest("[data-drawer-tastes]")) { window.MealGenie.openTastes(); return; }

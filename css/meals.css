@@ -4095,22 +4095,109 @@ body.theme-dark .family-recipe-note { background: rgba(245, 158, 11, 0.16); colo
 
 .cooking-credit-edit { border: none; background: none; padding: 0 4px; color: #0284c7; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
 
-/* ---------------------------------------------------------------------------
-   RECIPES PANEL (js/recipes-panel.js): "📖 Recipes" on the Meals page
-   --------------------------------------------------------------------------- */
-.recipes-panel-body { display: flex; flex-direction: column; gap: 16px; padding-bottom: 24px; }
-.recipes-panel-search { display: flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 48px; border: 1.5px solid var(--border-color, #e2e8f0); border-radius: 14px; background: var(--card-bg, #fff); }
-.recipes-panel-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; color: var(--text-primary); }
-.recipes-panel-search:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
-.recipes-panel-list { display: flex; flex-direction: column; gap: 8px; }
-.recipes-panel-empty { margin: 0; padding: 24px 16px; text-align: center; color: var(--text-muted, #64748b); }
-.recipes-panel-empty strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
-.recipes-panel-hint { margin: 8px 0 0; text-align: center; font-size: 0.9rem; color: var(--text-muted, #64748b); }
-body.theme-dark .recipes-panel-search { background: #1e293b; border-color: #334155; }
-
-/* Phones: four buttons on two rows (🛒 · Ideas, Recipes · Plan Meal) */
+/* Phones: four buttons on two rows (🛒 · Ideas, Snap a recipe · Plan Meal) */
 @media (max-width: 600px) {
   /* (navigation.css lays phone header buttons out in a row with !important) */
   #view-meals .skylight-single-header .skylight-meals-nav-controls { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; }
   #view-meals .skylight-meals-nav-controls .calendar-nav-buttons { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   MEALS TABS + RECIPES TAB (js/recipe-browse.js): "This week" / "Recipes".
+   Recipes is photo-led: tiles, collections with a cover photo, search.
+   --------------------------------------------------------------------------- */
+.meals-tabs { display: inline-flex; gap: 4px; padding: 4px; margin-left: 16px; border-radius: 14px; background: var(--card-border, #e2e8f0); align-self: center; }
+.meals-tab { border: 0; background: transparent; font: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text-secondary, #475569); padding: 8px 16px; min-height: 40px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+.meals-tab.is-on { background: var(--bg-surface, #fff); color: var(--text-primary); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+body.theme-dark .meals-tabs { background: #1e293b; }
+body.theme-dark .meals-tab.is-on { background: #334155; }
+
+/* The Recipes tab hides the week (grid, phone day cards, week arrows) */
+#view-meals.is-recipes-tab .skylight-meals-matrix-wrapper,
+#view-meals.is-recipes-tab .skylight-meals-mobile-wrapper,
+#view-meals.is-recipes-tab .calendar-nav-buttons,
+#view-meals.is-recipes-tab .btn-snap-recipe { display: none !important; }
+/* Phones: on Recipes the header is just the tabs, so the photos start high up
+   (Plan Meal is on every recipe's card; Grocery List and Ideas on This week) */
+@media (max-width: 600px) {
+  #view-meals.is-recipes-tab .skylight-meals-nav-controls { display: none !important; }
+}
+
+.recipe-browse[hidden] { display: none; }
+.recipe-browse { padding: 16px 0 32px; }
+.rb-top { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+.rb-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 48px; border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 14px; background: var(--bg-surface, #fff); }
+.rb-search:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+.rb-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; color: var(--text-primary); }
+.rb-snap { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 48px; border: 0; border-radius: 14px; background: #0284c7; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.rb-snap:hover { background: #0369a1; }
+
+.rb-section { margin-top: 24px; }
+.rb-h { display: flex; align-items: baseline; gap: 8px; margin: 0 0 16px; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); }
+.rb-h span { font-size: 0.9rem; font-weight: 600; color: var(--text-muted, #64748b); }
+.rb-h-big { font-size: 1.5rem; margin-top: 8px; }
+
+/* Photo tiles */
+.rb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.rb-tile { position: relative; min-width: 0; }
+.rb-open { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0; border: 0; background: none; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer; }
+.rb-photo { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: var(--card-border, #e2e8f0); }
+.rb-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+.rb-open:hover .rb-photo img { transform: scale(1.04); }
+.rb-photo.is-emoji, .rb-collection-photo.is-emoji { display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+.rb-title { margin-top: 4px; font-weight: 700; font-size: 1rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rb-sub { font-size: 0.85rem; color: var(--text-muted, #64748b); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-fav { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.92); color: #e11d48; font-size: 1.2rem; line-height: 1; cursor: pointer; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2); }
+.rb-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; aspect-ratio: 4 / 3; border: 2px dashed #86efac; border-radius: 16px; background: #f0fdf4; color: #15803d; font: inherit; font-weight: 700; cursor: pointer; }
+.rb-add span { font-size: 1.6rem; line-height: 1; }
+body.theme-dark .rb-add { background: rgba(22, 163, 74, 0.12); border-color: #166534; color: #86efac; }
+
+/* Favourites: one row that scrolls sideways */
+.rb-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 220px); gap: 16px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+.rb-strip .rb-tile { scroll-snap-align: start; }
+
+/* Collections: photo on the left, like a recipe magazine's contents */
+.rb-collections { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px 16px; }
+.rb-collection { display: flex; align-items: center; gap: 16px; min-height: 88px; padding: 0 16px 0 0; border: 0; border-radius: 16px; overflow: hidden; background: var(--bg-surface, #fff); font: inherit; color: var(--text-primary); text-align: left; cursor: pointer; box-shadow: 0 0 0 1px var(--card-border, #e2e8f0); }
+.rb-collection-photo { flex: none; width: 120px; align-self: stretch; overflow: hidden; }
+.rb-collection-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rb-collection-words { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rb-collection-words strong { font-size: 1.05rem; }
+.rb-collection-words span { font-size: 0.85rem; color: var(--text-muted, #64748b); }
+.rb-chevron { font-size: 1.5rem; color: var(--text-muted, #94a3b8); }
+body.theme-dark .rb-collection { background: #1e293b; box-shadow: 0 0 0 1px #334155; }
+
+.rb-back-row { margin-top: 16px; }
+.rb-back { border: 0; background: none; padding: 8px 0; font: inherit; font-weight: 700; color: #0284c7; cursor: pointer; min-height: 44px; }
+.rb-empty { margin: 24px 0; padding: 24px 16px; text-align: center; color: var(--text-muted, #64748b); }
+.rb-empty strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+.rb-count { margin: 24px 0 0; text-align: center; font-size: 0.9rem; color: var(--text-muted, #64748b); }
+
+/* Phones: tabs on their own line, two tiles a row, Snap fills its row */
+@media (max-width: 600px) {
+  .meals-tabs { display: grid; grid-template-columns: 1fr 1fr; flex-basis: 100%; margin: 8px 0 0; }
+  .rb-top { flex-wrap: wrap; }
+  .rb-search { flex-basis: 100%; }
+  .rb-snap { flex: 1; justify-content: center; }
+  .rb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 8px; }
+  .rb-strip { grid-auto-columns: 44%; gap: 8px; }
+  .rb-photo, .rb-add { border-radius: 12px; }
+  .rb-title { font-size: 0.95rem; }
+  .rb-collection-photo { width: 104px; }
+}
+
+/* Plan Meal: Snap a recipe (and Type one) at the top of both tabs */
+.plan-add-recipe-row { display: flex; gap: 8px; }
+.plan-snap-btn, .plan-type-btn { min-height: 48px; padding: 0 16px; border-radius: 14px; font: inherit; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.plan-snap-btn { flex: 1.4; border: 0; background: #0284c7; color: #fff; }
+.plan-snap-btn:hover { background: #0369a1; }
+.plan-type-btn { flex: 1; border: 1.5px dashed #86efac; background: #f0fdf4; color: #15803d; }
+body.theme-dark .plan-type-btn { background: rgba(22, 163, 74, 0.12); border-color: #166534; color: #86efac; }
+#pane-new-entry .plan-add-recipe-row { margin-bottom: 16px; }
+
+/* Tablets and small laptops: the tabs share the header with five buttons, so
+   the shopping list is 🛒 15 and the tabs are a little tighter */
+@media (min-width: 601px) and (max-width: 1439px) {
+  #view-meals #btn-open-grocery-list .pill-text { display: none; }
+  .meals-tab { padding: 8px 12px; }
 }

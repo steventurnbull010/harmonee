@@ -49,7 +49,7 @@
       window.BoardSync.saveListChanges(FIELD, next);
     }
     if (typeof window.renderDrawerRecipeList === "function") window.renderDrawerRecipeList();
-    if (window.RecipesPanel) window.RecipesPanel.refresh();
+    if (window.RecipeBrowse) window.RecipeBrowse.refresh();
     if (typeof window.notifyBoardChanged === "function") window.notifyBoardChanged();
   }
   function save(recipe) {
@@ -146,15 +146,21 @@
     if (note) note.hidden = !fromPhoto;
   }
 
-  function openEditor(id = null, opts = {}) {
+  // Set the form up for a new recipe (or one to edit), without showing it
+  function prepare(r, opts = {}) {
     const dlg = dialog();
-    const r = id ? list().find(x => x.id === id) : null;
     editingId = r ? r.id : null;
     dlg.querySelector("#family-recipe-title").textContent = r ? "Edit recipe" : "Add a recipe";
     dlg.querySelector("[data-fr-delete]").hidden = !r;
     dlg.querySelector("[data-fr-photo]").hidden = !(window.MagicImport && window.MagicImport.available("recipe"));
     dlg.querySelector("[data-fr-error]").textContent = "";
     fill(r || { mealType: opts.mealType || "dinner" }, false);
+    return dlg;
+  }
+
+  function openEditor(id = null, opts = {}) {
+    const r = id ? list().find(x => x.id === id) : null;
+    const dlg = prepare(r, opts);
     if (!dlg.open) dlg.showModal();
     if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
     // Straight into the name with a keyboard and mouse. Not on a phone or
@@ -215,7 +221,8 @@
     // tap outside the Plan Meal panel underneath (which would close it).
     input.hidden = true;
     input.addEventListener("click", (e) => e.stopPropagation());
-    (document.getElementById("family-recipe-modal") || document.body).appendChild(input);
+    const form = document.getElementById("family-recipe-modal");
+    (form && form.open ? form : document.body).appendChild(input);
     const done = () => setTimeout(() => input.remove(), 0);
     input.addEventListener("cancel", done);
     input.addEventListener("change", async () => {
@@ -231,8 +238,19 @@
     input.click();
   }
 
+  // "📷 Snap a recipe": straight to the camera / photos; the form opens
+  // filled in once it's read. Without the photo reader, the empty form.
+  function snap(opts = {}) {
+    if (!(window.MagicImport && window.MagicImport.available("recipe"))) { openEditor(null, opts); return; }
+    const dlg = prepare(null, opts);
+    if (dlg.open) dlg.close();
+    pickPhotos();
+  }
+
   // The button in the Meals recipe list, and Edit on a family recipe's card
   document.addEventListener("click", (e) => {
+    const snapBtn = e.target.closest("[data-snap-recipe]");
+    if (snapBtn) { e.preventDefault(); e.stopPropagation(); snap({ mealType: snapBtn.getAttribute("data-meal") || undefined }); return; }
     const add = e.target.closest("[data-add-family-recipe]");
     if (add) { e.preventDefault(); openEditor(null, { mealType: add.getAttribute("data-meal") || undefined }); return; }
     const edit = e.target.closest("[data-edit-family-recipe]");
@@ -244,5 +262,5 @@
     }
   });
 
-  window.FamilyRecipes = { list, save, remove, openEditor, fromBoard, _fill: fill };
+  window.FamilyRecipes = { list, save, remove, openEditor, snap, fromBoard, _fill: fill };
 })();
