@@ -766,6 +766,25 @@ const PAGES = [
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); document.getElementById("btn-meals-today") && document.getElementById("btn-meals-today").click(); });
     await goTo("meals")(p);
     await p.waitForTimeout(300);
+    // The header fits at tablet widths: the tabs never run under the buttons
+    if (p.__size !== "phone") {
+      const size = p.viewportSize();
+      for (const w of [1440, 1280, 1180, 1100, 1024, 900]) {
+        await p.setViewportSize({ width: w, height: size.height });
+        await p.waitForTimeout(250);
+        const m = await p.evaluate(() => {
+          const tabs = document.querySelector("#view-meals .meals-tabs").getBoundingClientRect();
+          const btns = [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > *")].filter(b => b.offsetParent).map(b => b.getBoundingClientRect());
+          const clash = btns.some(b => b.left < tabs.right - 1 && b.right > tabs.left + 1 && b.top < tabs.bottom - 1 && b.bottom > tabs.top + 1);
+          const words = [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button, #view-meals .meals-tab")].filter(b => b.offsetParent).every(b => b.scrollWidth <= b.clientWidth + 1);
+          return { clash, words };
+        });
+        if (w === 1100 || w === 1024) await p.screenshot({ path: path.join(SHOTS, `${p.__size}-header-${w}.png`), clip: { x: 0, y: 0, width: w, height: 140 } });
+        if (m.clash || !m.words) { await p.screenshot({ path: path.join(SHOTS, `${p.__size}-header-${w}.png`) }); await p.setViewportSize(size); throw new Error(`the Meals header doesn't fit at ${w}px wide: ${JSON.stringify(m)}`); }
+      }
+      await p.setViewportSize(size);
+      await p.waitForTimeout(250);
+    }
     const first = await p.evaluate(() => window.getLocalDateKey(window.getMealsWeekDates(window.mealsWeekOffset || 0)[0]) === window.getLocalDateKey(new Date()));
     if (!first) throw new Error("the week doesn't start today");
     if (p.__size !== "phone") {

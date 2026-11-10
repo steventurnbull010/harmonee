@@ -4384,3 +4384,22 @@ body.theme-dark .rb-ideas-chip { background: #1e293b; border-color: #4c1d95; col
 .heart-icon { display: block; width: 22px; height: 22px; }
 .rb-fav .heart-icon { width: 24px; height: 24px; }
 .rb-fav.pop { animation: favPop 0.4s ease; }
+
+/* Meals header on tablets: the tabs and the buttons never overlap. Under
+   1440px the grocery list is 🛒 and its count; under 1180px the clock goes
+   (the weather stays); and if it's still too tight the buttons wrap onto a
+   second line rather than sliding under the tabs. */
+@media (min-width: 601px) {
+  #view-meals .skylight-meals-page-header { flex-wrap: wrap; row-gap: 8px; }
+  #view-meals .skylight-meals-page-header .calendar-header-left { min-width: 0; }
+  #view-meals .skylight-meals-nav-controls { margin-left: auto; }
+}
+@media (min-width: 601px) and (max-width: 1439px) {
+  #view-meals #btn-open-grocery-list .pill-text { display: none; }
+  #view-meals #btn-open-grocery-list { padding-left: 16px !important; padding-right: 16px !important; }
+  .meals-tab { padding: 8px 12px; }
+}
+@media (min-width: 601px) and (max-width: 1179px) {
+  #view-meals #meals-live-clock { display: none; }
+  .meals-tabs { margin-left: 8px; }
+}
