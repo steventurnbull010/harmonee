@@ -916,7 +916,11 @@ function renderDrawerRecipeList() {
   renderDrawerMagicHero();
   if (browsing && !drawerShowAll && recipes.length > 8) {
     const favs = recipes.filter(isFavouriteRecipe);
-    const own = recipes.filter(r => !favs.includes(r) && !String(r.id || "").startsWith("mealdb-"));
+    // All the family's own recipes, whatever meal they're saved under (a
+    // crumble saved as a snack shows when planning dinner), this meal's first
+    const isMeal = (r) => [r.mealType, r.category].some(v => String(v || "").toLowerCase() === String(currentDrawerCategory || "").toLowerCase());
+    const own = getAllFamilyRecipes().filter(r => !favs.includes(r) && !String(r.id || "").startsWith("mealdb-"))
+      .sort((a, b) => Number(isMeal(b)) - Number(isMeal(a)));
     const fits = (r) => !window.MealGenie || !window.MealGenie.fitsEveryone || window.MealGenie.fitsEveryone(r);
     const builtIn = recipes.filter(r => !favs.includes(r) && !own.includes(r));
     const pool = builtIn.filter(fits).length >= 6 ? builtIn.filter(fits) : builtIn;

@@ -21,6 +21,15 @@ window.toggleSleepTheme = toggleSleepTheme;
 
 // State
 let sleepScreenTemporaryWakeUntil = 0;
+// The night clock only comes on once nobody has touched the screen for 2
+// minutes. Before, a tap kept it away for just 60 seconds, so it came down
+// on whoever was using the board at night (half way through adding a recipe
+// on a phone). The kitchen tablet, untouched at night, still dims as before.
+const SLEEP_IDLE_MS = 2 * 60 * 1000;
+let lastScreenActivityAt = Date.now();
+["pointerdown", "keydown", "input", "change", "wheel", "touchmove"].forEach((t) =>
+  document.addEventListener(t, () => { lastScreenActivityAt = Date.now(); }, { capture: true, passive: true }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) lastScreenActivityAt = Date.now(); });
 let isSleepScreenActive = false;
 window.isSleepScreenActive = isSleepScreenActive;
 
@@ -60,13 +69,13 @@ function activateAmbientSleepScreen(isPreview = false) {
   overlay.style.display = "flex";
   isSleepScreenActive = true;
 
-  // Single tap on the overlay wakes the screen for 60 seconds
+  // Single tap on the overlay wakes the screen; it dims again after 2 minutes untouched
   overlay.onclick = (e) => {
     if (e.target && e.target.id === "btn-sleep-manual-wake") return;
     deactivateAmbientSleepScreen();
     sleepScreenTemporaryWakeUntil = Date.now() + 60000;
     if (typeof showCalendarToast === "function") {
-      showCalendarToast("☀️ Display awakened for 60 seconds");
+      showCalendarToast("☀️ Awake. The night clock comes back after 2 minutes untouched.");
     }
   };
 
@@ -121,6 +130,7 @@ function checkScheduledSleepWindow() {
   }
 
   if (isBedtime && !isSleepScreenActive) {
+    if (Date.now() - lastScreenActivityAt < SLEEP_IDLE_MS) return; // someone's using it
     activateAmbientSleepScreen(false);
   } else if (!isBedtime && isSleepScreenActive) {
     deactivateAmbientSleepScreen();

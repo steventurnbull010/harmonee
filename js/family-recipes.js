@@ -186,7 +186,10 @@
     };
     save(recipe);
     document.getElementById("family-recipe-modal").close();
-    if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🍲 ${editingId ? "Saved" : "Added"} ${title} to your recipes`);
+    const view = () => { if (typeof window.openCookingRecipeModal === "function") window.openCookingRecipeModal(recipe); };
+    if (typeof window.showActionToast === "function") {
+      window.showActionToast({ icon: recipe.emoji, title: "Recipe saved", text: title, action: { label: "View recipe", onClick: view }, ms: 10000 });
+    } else if (typeof window.showCalendarToast === "function") window.showCalendarToast(`${recipe.emoji} Saved ${title} to your recipes`);
   }
 
   async function askDelete() {

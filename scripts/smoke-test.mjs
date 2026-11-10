@@ -609,12 +609,45 @@ const PAGES = [
     await p.click('#family-recipe-modal button[type="submit"]');
     await shot("8-after-save");
     if (await p.evaluate(() => document.getElementById("plan-meal-drawer").style.display === "none")) throw new Error("adding a recipe from a photo closed the Plan Meal panel");
-    await p.evaluate(() => { const i = document.getElementById("recipe-search-input"); if (i) { i.value = "stew"; i.dispatchEvent(new Event("input", { bubbles: true })); } });
-    await shot("9-search-finds-it");
+    // Saved: a message that names it, and a button into the recipe
+    const saved = await p.evaluate(() => { const t = document.getElementById("hm-action-toast"); return t && t.classList.contains("is-visible") ? t.textContent.replace(/\s+/g, " ").trim() : ""; });
+    if (!/Grandad's beef stew/.test(saved) || !/View recipe/.test(saved)) throw new Error(`no "saved" message with View recipe: "${saved}"`);
+    await p.click("#hm-action-toast .hm-action-toast-btn");
+    await shot("9-view-recipe");
+    if (!(await p.evaluate(() => document.getElementById("cooking-recipe-modal").open))) throw new Error("View recipe didn't open the recipe");
+    await p.evaluate(() => document.getElementById("cooking-recipe-modal").close());
+    // Planning breakfast (Plan Meal after midnight): the dinner recipe is still
+    // under Your recipes, and searching "beef" finds it
+    const found = await p.evaluate(async () => {
+      window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "breakfast");
+      await new Promise(r => setTimeout(r, 200));
+      const list = () => document.getElementById("drawer-recipes-list").textContent;
+      const browsing = list().includes("Grandad's beef stew");
+      const i = document.getElementById("recipe-search-input"); i.value = "beef"; i.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise(r => setTimeout(r, 200));
+      return { browsing, search: list().includes("Grandad's beef stew") };
+    });
+    if (!found.browsing) throw new Error("a dinner recipe of your own is missing from Your recipes when planning breakfast");
+    if (!found.search) throw new Error(`searching "beef" while planning breakfast doesn't find Grandad's beef stew`);
+    await shot("10-search-beef-at-breakfast");
+    await p.evaluate(() => { const i = document.getElementById("recipe-search-input"); i.value = ""; i.dispatchEvent(new Event("input", { bubbles: true })); });
     await p.evaluate(async () => { const m = await import("./recipes-data.js"); window.openCookingRecipeModal(m.getAllFamilyRecipes().find(x => x.title === "Grandad's beef stew")); });
-    await shot("10-recipe-card");
     await p.evaluate(() => document.getElementById("cooking-credit").scrollIntoView({ block: "center" }));
     await shot("11-card-credit");
+  }],
+  // Night clock: not while someone's using the screen (it came down mid-recipe at 12:30am)
+  ["night-clock", async (p) => {
+    const shown = await p.evaluate(() => {
+      const before = { ...window.boardSettings };
+      Object.assign(window.boardSettings, { sleepScheduleEnabled: true, sleepStartTime: "00:00", sleepEndTime: "23:59" });
+      document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.checkScheduledSleepWindow();
+      const o = document.getElementById("ambient-sleep-overlay");
+      const on = !!o && o.style.display === "flex";
+      window.boardSettings = before; window.deactivateAmbientSleepScreen();
+      return on;
+    });
+    if (shown) throw new Error("the night clock came on while the screen was being used");
   }],
   // Add Event: the Starts / Ends times fit the panel, and no stray date box
   ["event-editor", async (p) => {
