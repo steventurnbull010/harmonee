@@ -11,7 +11,7 @@ import {
   findRecipeByIdOrTitle, 
   toggleRecipeFavorite,
   addCustomRecipe
-} from "../recipes-data.js?v=00dfa8e4";
+} from "../recipes-data.js?v=b6bad2dc";
 
 let familyGroceryList = null;
 window.familyGroceryList = familyGroceryList;
@@ -428,6 +428,7 @@ function mealPhotoUrl(meal, all, size = "medium") {
   const src = String((r && (r.image || r.imageUrl)) || "");
   if (/^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src)) return `${src}/${size}`;
   if (/^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src)) return src;
+  if (window.RecipePhotos && window.RecipePhotos.isDataUrl(src)) return src;
   return "";
 }
 window.mealPhotoUrl = mealPhotoUrl;
@@ -1065,7 +1066,7 @@ function wireDrawerRecipeRows(container) {
 function recipeTileHtml(recipe) {
   const src = String(recipe.image || recipe.imageUrl || "");
   const photo = /^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src) ? `${src}/small`
-    : /^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src) ? src : "";
+    : /^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src) || (window.RecipePhotos && window.RecipePhotos.isDataUrl(src)) ? src : "";
   return `<button type="button" class="drawer-recipe-card drawer-recipe-tile" data-recipe-id="${escapeHtml(String(recipe.id))}" title="${escapeHtml(recipe.title)}">
       <span class="drawer-tile-photo"${photo ? ` style="background-image: url('${escapeHtml(photo)}')"` : ""} aria-hidden="true">${photo ? "" : escapeHtml(recipe.emoji || "🍽️")}</span>
       <span class="drawer-tile-title">${escapeHtml(recipe.title)}</span>

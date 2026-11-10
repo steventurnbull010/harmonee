@@ -47,6 +47,7 @@
     const src = String(r.image || r.imageUrl || "");
     if (/^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src)) return `${src}/${size}`;
     if (/^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src)) return src;
+    if (window.RecipePhotos && window.RecipePhotos.isDataUrl(src)) return src; // a photo of your own dish
     return "";
   }
   // No photo (your own recipes, for now): a bright tile with its emoji

@@ -89,6 +89,15 @@
               <input class="ev-native-input" data-fr="title" maxlength="80" placeholder="Grandad's beef stew" aria-label="Recipe name" required>
             </span>
           </label>
+          <div class="ev-field"><span class="ev-field-label">Photo of the dish <small>optional</small></span>
+            <div class="family-recipe-dish">
+              <span class="family-recipe-dish-preview" data-fr-dish-preview aria-hidden="true"></span>
+              <div class="family-recipe-dish-btns">
+                <button type="button" class="family-recipe-dish-pick" data-fr-dish-pick>📷 Add a photo</button>
+                <button type="button" class="family-recipe-dish-remove" data-fr-dish-remove hidden>Remove</button>
+              </div>
+            </div>
+          </div>
           <div class="ev-field"><span class="ev-field-label">Which meal</span>
             <div class="drawer-segmented-pills family-recipe-meals" role="radiogroup" aria-label="Which meal">
               ${MEALS.map(([k, label]) => `<button type="button" class="drawer-pill-segment" data-fr-meal="${k}" role="radio" aria-checked="false">${label}</button>`).join("")}
@@ -118,6 +127,8 @@
       const meal = e.target.closest("[data-fr-meal]");
       if (meal) { setMeal(meal.getAttribute("data-fr-meal")); return; }
       if (e.target.closest("[data-fr-photo]")) { pickPhotos(); return; }
+      if (e.target.closest("[data-fr-dish-pick]")) { pickDish(); return; }
+      if (e.target.closest("[data-fr-dish-remove]")) { dish = { ...dish, data: null, removed: true }; showDish(); return; }
       if (e.target.closest("[data-fr-delete]")) { askDelete(); }
     });
     dlg.querySelector("#family-recipe-form").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
@@ -132,6 +143,48 @@
     });
   }
   const mealChosen = () => (document.querySelector("#family-recipe-modal [data-fr-meal].active") || {}).getAttribute?.("data-fr-meal") || "dinner";
+
+  // ---- Photo of the dish (js/recipe-photos.js) ----------------------------------------
+  // existing: the recipe's photo { rev } when editing; data: a new photo picked
+  // here (saved with the recipe); removed: Remove tapped
+  let dish = { existing: null, data: null, removed: false, recipe: null };
+  function showDish() {
+    const box = document.querySelector("#family-recipe-modal [data-fr-dish-preview]");
+    if (!box) return;
+    const current = dish.data || (!dish.removed && dish.existing && window.RecipePhotos ? window.RecipePhotos.url(dish.recipe) : "");
+    const has = !!(dish.data || (!dish.removed && dish.existing));
+    box.style.backgroundImage = current ? `url('${current}')` : "";
+    box.classList.toggle("is-empty", !has);
+    box.textContent = has ? "" : "🍽️";
+    document.querySelector("#family-recipe-modal [data-fr-dish-pick]").textContent = has ? "📷 Change photo" : "📷 Add a photo";
+    document.querySelector("#family-recipe-modal [data-fr-dish-remove]").hidden = !has;
+  }
+  function pickDish() {
+    if (!window.RecipePhotos) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.hidden = true;
+    input.addEventListener("click", (e) => e.stopPropagation());
+    const form = document.getElementById("family-recipe-modal");
+    (form && form.open ? form : document.body).appendChild(input);
+    const done = () => setTimeout(() => input.remove(), 0);
+    input.addEventListener("cancel", done);
+    input.addEventListener("change", async () => {
+      done();
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const err = document.querySelector("#family-recipe-modal [data-fr-error]");
+      try {
+        dish = { ...dish, data: await window.RecipePhotos.shrink(file), removed: false };
+        if (err) err.textContent = "";
+      } catch (e) {
+        if (err) err.textContent = e.message || "Couldn't use that photo.";
+      }
+      showDish();
+    });
+    input.click();
+  }
 
   function fill(r, fromPhoto) {
     field("title").value = r.title || "";
@@ -155,6 +208,8 @@
     dlg.querySelector("[data-fr-photo]").hidden = !(window.MagicImport && window.MagicImport.available("recipe"));
     dlg.querySelector("[data-fr-error]").textContent = "";
     fill(r || { mealType: opts.mealType || "dinner" }, false);
+    dish = { existing: r && r.photo && r.photo.rev ? { rev: r.photo.rev } : null, data: null, removed: false, recipe: r || null };
+    showDish();
     return dlg;
   }
 
@@ -191,6 +246,17 @@
       ingredients, instructions,
       updatedAt: new Date().toISOString()
     };
+    // The photo of the dish: a new one is saved to its own document (it
+    // syncs when there's a signal); the recipe just remembers its rev
+    if (dish.data && window.RecipePhotos) {
+      const rev = Date.now();
+      recipe.photo = { rev };
+      window.RecipePhotos.save(recipe.id, dish.data, rev).catch(e => console.warn("Couldn't save the dish photo:", e));
+    } else if (dish.removed) {
+      if (window.RecipePhotos) window.RecipePhotos.remove(recipe.id);
+    } else if (dish.existing) {
+      recipe.photo = { rev: dish.existing.rev };
+    }
     save(recipe);
     document.getElementById("family-recipe-modal").close();
     const view = () => { if (typeof window.openCookingRecipeModal === "function") window.openCookingRecipeModal(recipe); };
@@ -206,6 +272,7 @@
     const sure = window.Sheet ? await window.Sheet.confirm(ask) : window.confirm(ask.title);
     if (!sure) return;
     remove(r.id);
+    if (r.photo && window.RecipePhotos) window.RecipePhotos.remove(r.id);
     document.getElementById("family-recipe-modal").close();
     if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🗑️ Deleted ${r.title}`);
   }

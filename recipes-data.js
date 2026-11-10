@@ -68,7 +68,12 @@ export function getAllFamilyRecipes() {
   // A family recipe with no photo of its own shows a stand-in (js/recipe-stock.js).
   // Copies, so the stand-in is never saved with the recipe.
   if (typeof window !== "undefined" && window.RecipeStock) {
-    custom = custom.map(r => (r && !r.image && !r.imageUrl ? { ...r, image: window.RecipeStock.photoFor(r), stockImage: true } : r));
+    custom = custom.map(r => {
+      if (!r || r.image || r.imageUrl) return r;
+      // A photo of the dish (js/recipe-photos.js), once this device has it
+      const own = r.photo && window.RecipePhotos ? window.RecipePhotos.url(r) : "";
+      return own ? { ...r, image: own } : { ...r, image: window.RecipeStock.photoFor(r), stockImage: true };
+    });
   }
   // Real recipes from TheMealDB, after the starter set (see recipes-themealdb.js)
   const all = [...custom, ...PRELOADED_RECIPES, ...MEALDB_RECIPES];

@@ -669,6 +669,57 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas-planned.png`) });
     await p.evaluate(({ date }) => { window.setMealForDate(date, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, plan);
   }],
+  // A photo of the dish on your own recipe: picked in the form, saved to its
+  // own document, shown on the Recipes tab, fetched by another device, removed
+  ["dish-photo", async (p) => {
+    const id = "family-smoke-dish";
+    const photoPath = "boards/sidepanel-test-x7q2/recipePhotos/" + id;
+    await p.evaluate((rid) => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.FamilyRecipes.save({ id: rid, title: "Mum's lasagne", emoji: "🍝", mealType: "dinner", category: "dinner", source: "family", subtitle: "Family recipe", ingredients: ["500g mince"], instructions: ["Layer it up.", "Bake."] }); window.FamilyRecipes.openEditor(rid); }, id);
+    await p.waitForTimeout(500);
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#family-recipe-modal [data-fr-dish-pick]")]);
+    await chooser.setFiles({ name: "dish.png", mimeType: "image/png", buffer: png });
+    await p.waitForTimeout(500);
+    const preview = await p.evaluate(() => document.querySelector("#family-recipe-modal [data-fr-dish-preview]").style.backgroundImage);
+    if (!/data:image\/jpeg/.test(preview)) throw new Error("the picked dish photo doesn't show in the form");
+    await p.evaluate(() => document.querySelector("#family-recipe-modal [data-fr-dish-pick]").scrollIntoView({ block: "center" }));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-dish-photo-form.png`) });
+    await p.click('#family-recipe-modal button[type="submit"]');
+    await p.waitForTimeout(600);
+    const saved = await p.evaluate(({ rid, pp }) => {
+      const r = window.FamilyRecipes.list().find(x => x.id === rid);
+      const doc = (window.__SMOKE_STORE || {})[pp];
+      const shown = window.RecipeRows.all().find(x => x.id === rid);
+      return { rev: r && r.photo && r.photo.rev, stored: !!(doc && /^data:image\/jpeg;base64,/.test(doc.data)), shown: !!(shown && /^data:image\/jpeg/.test(shown.image)), boardHasNoPhoto: !JSON.stringify((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).customRecipes || []).includes("base64") };
+    }, { rid: id, pp: photoPath });
+    if (!saved.rev || !saved.stored || !saved.shown) throw new Error(`the dish photo wasn't saved and shown: ${JSON.stringify(saved)}`);
+    if (!saved.boardHasNoPhoto) throw new Error("the photo itself went into the board document");
+    // Another device: nothing cached, so it fetches the photo, then shows it
+    const fetched = await p.evaluate(async (rid) => {
+      Object.keys(localStorage).filter(k => k.startsWith("harmonee_recipe_photo_")).forEach(k => localStorage.removeItem(k));
+      const r = window.FamilyRecipes.list().find(x => x.id === rid);
+      const other = { ...r, photo: { rev: r.photo.rev + 1 } }; // a rev this device hasn't seen
+      const first = window.RecipePhotos.url(other);
+      await new Promise(res => setTimeout(res, 300));
+      return { first, later: /^data:image\/jpeg/.test(window.RecipePhotos.url(other)) };
+    }, id);
+    if (fetched.first !== "" || !fetched.later) throw new Error(`another device didn't fetch the photo: ${JSON.stringify(fetched)}`);
+    await goTo("meals")(p);
+    await p.evaluate(() => window.RecipeBrowse.setTab("recipes"));
+    await p.waitForTimeout(500);
+    const tile = await p.evaluate(() => { const t = [...document.querySelectorAll("#meals-recipes-view .rb-tile")].find(x => x.textContent.includes("Mum's lasagne")); const img = t && t.querySelector(".rb-photo img"); return img ? img.getAttribute("src").slice(0, 23) : "none"; });
+    if (tile !== "data:image/jpeg;base64,") throw new Error(`the Recipes tab shows ${tile} for the lasagne, not its photo`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-dish-photo-tile.png`) });
+    // Remove it
+    await p.evaluate((rid) => window.FamilyRecipes.openEditor(rid), id);
+    await p.waitForTimeout(500);
+    await p.click("#family-recipe-modal [data-fr-dish-remove]");
+    await p.click('#family-recipe-modal button[type="submit"]');
+    await p.waitForTimeout(600);
+    const gone = await p.evaluate(({ rid, pp }) => ({ photo: (window.FamilyRecipes.list().find(x => x.id === rid) || {}).photo || null, doc: !!window.__SMOKE_STORE[pp] }), { rid: id, pp: photoPath });
+    if (gone.photo || gone.doc) throw new Error(`removing the dish photo didn't: ${JSON.stringify(gone)}`);
+    await p.evaluate((rid) => { window.FamilyRecipes.remove(rid); window.RecipeBrowse.setTab("week"); }, id);
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });

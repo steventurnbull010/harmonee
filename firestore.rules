@@ -8,6 +8,7 @@ rules_version = '2';
 //
 //   boards/{boardId}                       board settings, calendar, meals, lists
 //   boards/{boardId}/tasks/{taskId}        chores & routines
+//   boards/{boardId}/recipePhotos/{id}     photos of the family's own dishes
 //   boards/{boardId}/private/access        { code } — the family code
 //   boards/{boardId}/devices/{uid}         one doc per joined device
 //
@@ -45,6 +46,18 @@ service cloud.firestore {
 
       match /tasks/{taskId} {
         allow read, write: if isMember(boardId);
+      }
+
+      // Photos of the family's own dishes (js/recipe-photos.js): one small
+      // JPEG per recipe, kept out of the board document so it stays small
+      match /recipePhotos/{recipeId} {
+        allow read, delete: if isMember(boardId);
+        allow create, update: if isMember(boardId)
+          && recipeId.size() <= 80
+          && request.resource.data.keys().hasOnly(['data', 'updatedAt'])
+          && request.resource.data.data is string
+          && request.resource.data.data.size() <= 400000
+          && request.resource.data.data.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
       }
 
       match /private/access {

@@ -52,6 +52,7 @@
   function cardPhoto(r) {
     const src = String(r.image || r.imageUrl || "");
     if (/^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src)) return `${src}/small`;
+    if (window.RecipePhotos && window.RecipePhotos.isDataUrl(src)) return src;
     return /^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src) ? src : "";
   }
 

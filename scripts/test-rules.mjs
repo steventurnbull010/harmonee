@@ -98,6 +98,23 @@ s = await call(owner, "DELETE", `boards/${testBoard}/devices/${joiner.uid}`);
 check("Member: can remove another device", s === 200, s);
 s = await call(joiner, "GET", `boards/${testBoard}/tasks`);           check("Removed device: loses access", denied(s), s);
 
+// --- Photos of the family's own dishes (recipePhotos) ------------------------
+const tinyJpeg = "data:image/jpeg;base64," + "A".repeat(400);
+s = await call(owner, "PATCH", `boards/${testBoard}/recipePhotos/family-1`, { fields: { data: str(tinyJpeg) } });
+check("Member: can save a dish photo", s === 200, s);
+s = await call(owner, "GET", `boards/${testBoard}/recipePhotos/family-1`);  check("Member: can read a dish photo", s === 200, s);
+s = await call(stranger, "GET", `boards/${testBoard}/recipePhotos/family-1`); check("Stranger: can't read a dish photo", denied(s), s);
+s = await call(stranger, "PATCH", `boards/${testBoard}/recipePhotos/family-2`, { fields: { data: str(tinyJpeg) } });
+check("Stranger: can't save a dish photo", denied(s), s);
+s = await call(stranger, "GET", "boards/turnbull/recipePhotos");     check("Stranger: can't list Turnbull dish photos", denied(s), s);
+s = await call(owner, "PATCH", `boards/${testBoard}/recipePhotos/family-3`, { fields: { data: str("data:image/jpeg;base64," + "A".repeat(400001)) } });
+check("Member: a photo over 400,000 characters is refused", denied(s), s);
+s = await call(owner, "PATCH", `boards/${testBoard}/recipePhotos/family-4`, { fields: { data: str("<script>not a photo</script>") } });
+check("Member: something that isn't a JPEG is refused", denied(s), s);
+s = await call(owner, "PATCH", `boards/${testBoard}/recipePhotos/family-5`, { fields: { data: str(tinyJpeg), extra: str("x") } });
+check("Member: a dish photo holds only the photo", denied(s), s);
+s = await call(owner, "DELETE", `boards/${testBoard}/recipePhotos/family-1`); check("Member: can delete a dish photo", s === 200, s);
+
 // --- List-only links (sharedLists) -----------------------------------------
 const shareKey = `rulestest${Date.now().toString(36)}abcdefgh`.slice(0, 24);
 const listCopy = (board) => ({ fields: { boardId: str(board), listId: str("l1"), title: str("Test list"), emoji: str("📋"), color: str("sky"), items: { arrayValue: { values: [] } } } });
