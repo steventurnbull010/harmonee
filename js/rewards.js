@@ -264,11 +264,14 @@ function renderRewardsStandings(grid, sortedMembers, formatScore) {
 
 // Daily routines done day after day. Only real streaks are shown.
 function renderRewardsStreaks(streaksGrid) {
+  // Counted from the days each daily job was done (js/streaks.js)
+  const streakOf = (t) => (window.Streaks ? window.Streaks.streakOf(t) : (Number(t.streak) || 0));
   const streakTasks = (window.currentTasks || [])
-    .filter(t => (t.streak && t.streak >= 2) || (t.repeat === "daily" || t.day === "Daily"))
-    .sort((a, b) => (b.streak || 0) - (a.streak || 0));
+    .map(t => ({ t, n: streakOf(t) }))
+    .filter(x => x.n >= 1)
+    .sort((a, b) => b.n - a.n);
 
-  if (streakTasks.length === 0 || !streakTasks.some(t => t.streak && t.streak >= 1)) {
+  if (streakTasks.length === 0) {
     streaksGrid.innerHTML = `
       <p class="rw-streaks-empty">
         <span class="rw-streaks-empty-flame" aria-hidden="true">🔥</span>
@@ -277,8 +280,8 @@ function renderRewardsStreaks(streaksGrid) {
     return;
   }
 
-  streaksGrid.innerHTML = streakTasks.filter(t => t.streak && t.streak >= 1).slice(0, 6).map(t => {
-    const count = Number(t.streak) || 1;
+  streaksGrid.innerHTML = streakTasks.slice(0, 6).map(({ t, n }) => {
+    const count = n;
     const names = typeof window.getAssigneeNames === "function" ? window.getAssigneeNames(t.assignedTo) : [];
     const assignedName = formatAssigneeNames(t.assignedTo);
     const pal = rewardsPalette(names[0] || null);

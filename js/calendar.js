@@ -1887,8 +1887,9 @@ function renderWeekCalendar() {
     const choreIconHtml = choreIcon ? `<span class="chore-icon">${escapeHtml(choreIcon)}</span> ` : "";
 
     const repeatBadgeHtml = isWeekly ? ` <span title="Repeats Weekly on ${escapeHtml(task.day)}">🔁</span>` : "";
-    const streakBadgeHtml = (task.streak && task.streak >= 2)
-      ? ` <span class="chore-streak-badge ${task.streak >= 7 ? 'milestone' : ''}" title="${task.streak}-Day Streak!">🔥 ${task.streak}d</span>`
+    const streakDays = window.Streaks ? window.Streaks.streakOf(task) : (task.streak || 0);
+    const streakBadgeHtml = streakDays >= 2
+      ? ` <span class="chore-streak-badge ${streakDays >= 7 ? 'milestone' : ''}" title="${streakDays} days in a row">🔥 ${streakDays}d</span>`
       : "";
 
     const routineInfo = getTaskRoutineInfo(task);

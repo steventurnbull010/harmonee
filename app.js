@@ -2765,8 +2765,9 @@ function createTaskCardElement(task, highlightMember = null, targetDay = null) {
     badgesHtml += `<span class="badge badge-diy">🔨 DIY Project</span>`;
   } else if (task.taskType === "Daily Task" || task.day === "Daily" || task.repeat === "daily") {
     badgesHtml += `<span class="badge badge-daily">🔄 Daily Routine</span>`;
-    if (task.streak && task.streak >= 2) {
-      badgesHtml += `<span class="chore-streak-badge ${task.streak >= 7 ? 'milestone' : ''}">🔥 ${task.streak}d streak</span>`;
+    const streakDays = window.Streaks ? window.Streaks.streakOf(task) : (task.streak || 0);
+    if (streakDays >= 2) {
+      badgesHtml += `<span class="chore-streak-badge ${streakDays >= 7 ? 'milestone' : ''}">🔥 ${streakDays}d streak</span>`;
     }
   } else if (task.taskType && task.taskType !== "Standard") {
     badgesHtml += `<span class="badge badge-type">🏷️ ${escapeHtml(task.taskType)}</span>`;
@@ -4235,22 +4236,21 @@ async function handleConfirmClaim() {
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterdayKey = getLocalDateKey(yesterdayDate);
 
-    let streak = Number(task.streak) || 0;
+    // The day it was done, for its streak (js/streaks.js: counted from the
+    // days a job was done, whichever page it's ticked on)
+    const tickDayKey = window.Streaks ? window.Streaks.dateOfWeekday(targetDay) : "";
+    const tickFields = window.Streaks && tickDayKey ? window.Streaks.recordTick(task, tickDayKey) : {};
+    task.completedDays = currentCompletedDays;
+    let streak = window.Streaks ? window.Streaks.streakOf(task) : (Number(task.streak) || 0);
     if (isToday) {
-      if (task.lastStreakDate === yesterdayKey) {
-        streak += 1;
-      } else if (task.lastStreakDate === todayKey) {
-        streak = Math.max(1, streak);
-      } else {
-        streak = 1;
-      }
       task.streak = streak;
       task.lastStreakDate = todayKey;
     }
 
     // Only this day's tick, so a tick on another tablet isn't overwritten
     const updatePayload = {
-      [`completedDays.${targetDay}`]: currentCompletedDays[targetDay]
+      [`completedDays.${targetDay}`]: currentCompletedDays[targetDay],
+      ...tickFields
     };
     if (isToday) {
       updatePayload.done = true;
@@ -4263,7 +4263,7 @@ async function handleConfirmClaim() {
       if (streak === 7) {
         if (typeof sfx !== "undefined" && sfx && sfx.playTrophyChime) sfx.playTrophyChime();
         if (typeof showCalendarToast === "function") {
-          showCalendarToast(`🏆 7-Day Streak Milestone! +5 Bonus Points for ${claimValue}! 🔥`);
+          showCalendarToast(`🔥 7 days in a row: ${task.title}! Well done, ${claimValue}`);
         }
       }
     }
@@ -4403,17 +4403,23 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
       delete currentCompletedDays[dayToRemove];
     }
     const isToday = dayToRemove === getTodayDayName();
+    // Nobody's tick left on that day: it comes off the job's streak too
+    const untickFields = (window.Streaks && !currentCompletedDays[dayToRemove])
+      ? window.Streaks.recordUntick(task, (targetDate instanceof Date ? window.Streaks.keyOf(targetDate) : (typeof targetDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(targetDate) ? targetDate : window.Streaks.dateOfWeekday(dayToRemove))))
+      : {};
 
     // Only this day's tick (or this person's part of it)
     const updatePayload = {
-      [`completedDays.${dayToRemove}`]: currentCompletedDays[dayToRemove] ? currentCompletedDays[dayToRemove] : deleteField()
+      [`completedDays.${dayToRemove}`]: currentCompletedDays[dayToRemove] ? currentCompletedDays[dayToRemove] : deleteField(),
+      ...untickFields
     };
     if (memberToUndo && isMultiAssign && currentCompletedDays[dayToRemove] && Array.isArray((task.completedDays || {})[dayToRemove]?.completedBy)) {
       delete updatePayload[`completedDays.${dayToRemove}`];
       updatePayload[`completedDays.${dayToRemove}.completedBy`] = arrayRemove(task.completedDays[dayToRemove].completedBy.find(m => m.toLowerCase() === memberToUndo.toLowerCase()) || memberToUndo);
     }
     if (isToday) {
-      const undoStreak = Math.max(0, (Number(task.streak) || 1) - 1);
+      task.completedDays = currentCompletedDays;
+      const undoStreak = window.Streaks ? window.Streaks.streakOf(task) : Math.max(0, (Number(task.streak) || 1) - 1);
       updatePayload.done = false;
       updatePayload.completedBy = null;
       updatePayload.completedAt = null;

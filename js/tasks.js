@@ -1112,6 +1112,11 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
       const field = (...path) => (FP ? new FP(...path) : path.join("."));
       if (isDaily) {
         const rec = task.completedDays[targetDay];
+        // The day it was done, for its streak (js/streaks.js)
+        if (window.Streaks) {
+          const dayKey = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr : window.Streaks.dateOfWeekday(targetDay, tickDate);
+          if (dayKey) { const t = window.Streaks.recordTick(task, dayKey); args.push(field("tickDates"), t.tickDates); }
+        }
         if (isMultiAssign && window.arrayUnion && (!priorDayRec || Array.isArray(priorDayRec.completedBy))) {
           args.push(field("completedDays", targetDay, "completedBy"), window.arrayUnion(completer),
             field("completedDays", targetDay, "completedAt"), rec.completedAt,
@@ -1128,6 +1133,12 @@ function handleCompleteTaskWithCelebration(taskId, targetDay, memberCompleter = 
       }
       updateDoc(getTaskDocRef(taskId), ...args).catch(err => console.warn("Couldn't save the tick:", err));
     } catch (err) {}
+  }
+
+  // A week of it: a trophy chime and a cheer
+  if (isDaily && window.Streaks && window.Streaks.streakOf(task) === 7 && typeof showCalendarToast === "function") {
+    if (typeof sfx !== "undefined" && sfx && sfx.playTrophyChime) sfx.playTrophyChime();
+    showCalendarToast(`🔥 7 days in a row: ${task.title}! Well done, ${completer}`);
   }
 
   // Play crisp completion chime

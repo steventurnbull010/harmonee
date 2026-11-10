@@ -1052,6 +1052,30 @@ const PAGES = [
     if (r.idleSetting || r.morningSetting) throw new Error("the Today at a glance settings are still there");
     await p.evaluate(() => { window.boardSettings.sleepScheduleEnabled = false; window.deactivateAmbientSleepScreen(); });
   }],
+  // Streaks: a tick on the Tasks page counts (it never used to), and taking
+  // it back takes the day off again
+  ["streak-ticks", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("chores"); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const today = window.getLocalDateKey(new Date());
+      const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
+      const task = (window.currentTasks || []).find(t => window.Streaks.isDailyTask(t) && !(t.completedDays || {})[dayName] && !String(t.assignedTo || "").includes(","));
+      if (!task) return { none: true };
+      window.handleCompleteTaskWithCelebration(task.id, dayName, null, today);
+      await new Promise(res => setTimeout(res, 400));
+      const stored = (window.__SMOKE_STORE[`boards/sidepanel-test-x7q2/tasks/${task.id}`] || {});
+      const after = { local: window.Streaks.streakOf(task), stored: (stored.tickDates || []).includes(today) };
+      if (window.TickCheer) window.TickCheer.close(true);
+      await window.handleUndoTask(task.id, dayName, today);
+      await new Promise(res => setTimeout(res, 400));
+      const stored2 = (window.__SMOKE_STORE[`boards/sidepanel-test-x7q2/tasks/${task.id}`] || {});
+      return { id: task.id, after, undone: !(stored2.tickDates || []).includes(today) };
+    });
+    if (r.none) throw new Error("no daily job to tick in the sample family");
+    if (r.after.local < 1 || !r.after.stored) throw new Error(`a tick on the Tasks page didn't count towards its streak: ${JSON.stringify(r)}`);
+    if (!r.undone) throw new Error(`taking the tick back left the day on its streak: ${JSON.stringify(r)}`);
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
