@@ -675,6 +675,9 @@ const PAGES = [
         const a = await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, fromSel);
         await p.mouse.move(a[0], a[1]); await p.mouse.down();
         await p.mouse.move(a[0] + 10, a[1] + 10); await p.waitForTimeout(100);
+        // The meal being dragged keeps its photo
+        const ghostPhoto = await p.evaluate(() => { const g = document.querySelector(".item-drag-ghost"); return g ? getComputedStyle(g).backgroundImage : "no ghost"; });
+        if (!/url\(/.test(ghostPhoto)) throw new Error(`the meal lost its photo while being dragged: ${ghostPhoto.slice(0, 80)}`);
         const b = await p.evaluate(toFn);
         for (let i = 1; i <= 10; i++) await p.mouse.move(a[0] + (b[0] - a[0]) * i / 10, a[1] + (b[1] - a[1]) * i / 10);
         await p.waitForTimeout(120); await p.mouse.up(); await p.waitForTimeout(500);

@@ -93,13 +93,9 @@
       <label class="rb-search"><span aria-hidden="true">🔍</span>
         <input type="search" data-rb-search placeholder="Search recipes or ingredients" autocomplete="off" aria-label="Search recipes" value="${esc(q)}">
       </label>
+      <button type="button" class="rb-ideas-chip" data-open-genie title="Not sure what to make? Answer a few questions, get three ideas"><span aria-hidden="true">🪄</span> Ideas</button>
       <button type="button" class="rb-snap" data-snap-recipe><span aria-hidden="true">📷</span> Snap a recipe</button>
-    </div>
-    <button type="button" class="rb-ideas" data-open-genie>
-      <span class="rb-ideas-icon" aria-hidden="true">🪄</span>
-      <span class="rb-ideas-words"><strong>Not sure what to make?</strong><span>Answer a few quick questions, get three ideas</span></span>
-      <span class="rb-ideas-go" aria-hidden="true">Get ideas</span>
-    </button>`;
+    </div>`;
   }
 
   function home(all) {
