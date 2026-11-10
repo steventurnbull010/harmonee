@@ -4496,3 +4496,9 @@ body.theme-dark .mp-nav { background: #1e293b; border-color: #334155; color: #7d
 body.theme-dark .meal-quick-plan { background: #0f172a; }
 body.theme-dark .mqp-close { background: #1e293b; }
 body.theme-dark .mqp-search, body.theme-dark .mqp-link { border-color: #334155; }
+
+/* Plan sheet title: always one line ("Plan breakfast · Thu 1 Jan" is the
+   longest), a touch smaller on narrow phones rather than wrapping */
+.mqp-head-words { flex: 1; min-width: 0; }
+.mqp-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(1.05rem, 5.4vw, 1.3rem); }
+.mqp-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

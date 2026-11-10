@@ -911,6 +911,22 @@ const PAGES = [
     const ideas = await p.locator("#meal-quick-plan .mp-idea").count();
     if (ideas < 3) throw new Error(`the plan sheet shows ${ideas} ideas`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-plan-sheet.png`) });
+    // The title stays on one line, even the longest at a narrow 360px phone
+    for (const w of [390, 360]) {
+      await p.setViewportSize({ width: w, height: 844 });
+      await p.waitForTimeout(200);
+      const fit = await p.evaluate(() => {
+        const t = document.getElementById("mqp-title"), s = document.querySelector("#meal-quick-plan .mqp-sub");
+        const was = t.textContent;
+        t.textContent = "Plan breakfast · Thu 1 Jan";
+        const one = (el) => el.scrollWidth <= el.clientWidth + 1 && el.getBoundingClientRect().height < parseFloat(getComputedStyle(el).fontSize) * 2;
+        const r = { title: one(t), sub: one(s) };
+        t.textContent = was;
+        return r;
+      });
+      if (!fit.title || !fit.sub) throw new Error(`the plan sheet title doesn't fit on one line at ${w}px: ${JSON.stringify(fit)}`);
+    }
+    await p.setViewportSize({ width: 390, height: 844 });
     const before = await p.evaluate(() => [...document.querySelectorAll("#meal-quick-plan [data-mp-pick]")].map(b => b.getAttribute("data-mp-pick")).join());
     await p.click("#meal-quick-plan [data-mqp-others]");
     const after = await p.evaluate(() => [...document.querySelectorAll("#meal-quick-plan [data-mp-pick]")].map(b => b.getAttribute("data-mp-pick")).join());

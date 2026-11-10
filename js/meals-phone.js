@@ -158,10 +158,13 @@
     sheet = { date, slot, picks: [], shown: new Set() };
     sheet.picks = pickIdeas();
     const d = sheetBox();
-    const day = dayLabel(date, false).replace(/^(Today|Tomorrow) · /, (m, w) => `${w}, `);
+    // One line each: "Plan dinner · Wed 11", then "Tomorrow · tap one…"
+    const full = dayLabel(date, false);
+    const when = (full.match(/^(Today|Tomorrow) · /) || [])[1] || "";
+    const day = full.replace(/^(Today|Tomorrow) · /, "");
     d.innerHTML = `<div class="mqp-card">
         <div class="mqp-head">
-          <div><h2 class="mqp-title" id="mqp-title">Plan ${SLOT_NAMES[slot].toLowerCase()}</h2><p class="mqp-sub"><strong>${esc(day)}</strong> · tap one and it's planned</p></div>
+          <div class="mqp-head-words"><h2 class="mqp-title" id="mqp-title">Plan ${SLOT_NAMES[slot].toLowerCase()} · ${esc(day)}</h2><p class="mqp-sub">${when ? `${when} · tap` : "Tap"} one and it's planned</p></div>
           <button type="button" class="mqp-close" data-mqp-close aria-label="Close">✕</button>
         </div>
         <label class="mqp-search"><span aria-hidden="true">🔍</span><input type="search" data-mqp-search placeholder="Search recipes or ingredients" autocomplete="off" aria-label="Search recipes"></label>
