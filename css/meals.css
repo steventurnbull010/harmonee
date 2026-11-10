@@ -4323,3 +4323,7 @@ body.theme-dark .matrix-month { color: #7dd3fc; }
 .skylight-meals-matrix.is-swiping > * { transition: none; }
 .skylight-meals-matrix .matrix-cat-label-cell, .skylight-meals-matrix .matrix-corner-cell { position: relative; z-index: 2; }
 #skylight-meals-matrix-wrapper { overflow: hidden; }
+
+/* Rows that scroll sideways: no grey scrollbar (swipe, or a trackpad) */
+.meal-ideas-row, .drawer-photo-strip, .rb-strip { scrollbar-width: none; -ms-overflow-style: none; }
+.meal-ideas-row::-webkit-scrollbar, .drawer-photo-strip::-webkit-scrollbar, .rb-strip::-webkit-scrollbar { display: none; }

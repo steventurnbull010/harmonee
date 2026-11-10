@@ -3,7 +3,8 @@
 // An empty week is bland and a bit daunting, so above the week sits a row of
 // dinner ideas with photos: a couple of your family's own recipes and some
 // from the recipe list (ones that suit everyone, if tastes are set in Magic
-// Mealtime). A different handful each time you come to Meals, or tap "More".
+// Mealtime). A different handful each time you come to Meals; "More" opens
+// the Recipes tab.
 //
 // Drag one onto a free slot to plan it (press and hold on a touch screen),
 // or tap it for the recipe card and "Add to meal plan".
@@ -80,7 +81,7 @@
       <div class="meal-ideas-head">
         <h3 class="meal-ideas-title">A few ideas</h3>
         <span class="meal-ideas-hint">${touch ? "Hold one and drag it onto a day, or tap it" : "Drag one onto a day, or click it"}</span>
-        <button type="button" class="meal-ideas-more" data-meal-ideas-more>↻ More</button>
+        <button type="button" class="meal-ideas-more" data-meal-ideas-more>More</button>
       </div>
       <div class="meal-ideas-row" role="list">
         ${list.map(r => `<button type="button" class="meal-idea" role="listitem" data-idea-id="${esc(r.id)}" title="${esc(r.title)}">
@@ -131,13 +132,10 @@
   document.addEventListener("click", (e) => {
     const box = document.getElementById("meal-ideas");
     if (!box || !box.contains(e.target)) return;
+    // "More": all the recipes (the Recipes tab)
     if (e.target.closest("[data-meal-ideas-more]")) {
-      // A new handful, not the ones just showing (unless that's all there is)
-      const avoid = new Set([...lastPlanned, ...(picks || []).map(String)]);
-      picks = choose(lastAll, avoid);
-      if (picks.length < 3) picks = choose(lastAll, lastPlanned);
-      pickedAt = Date.now();
-      render(lastWeek, lastAll);
+      if (window.RecipeBrowse) window.RecipeBrowse.setTab("recipes");
+      window.scrollTo({ top: 0 });
       return;
     }
     const card = e.target.closest(".meal-idea[data-idea-id]");

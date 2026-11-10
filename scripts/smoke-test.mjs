@@ -643,6 +643,8 @@ const PAGES = [
     const ideas = await p.locator("#meal-ideas .meal-idea").count();
     if (ideas < 3) throw new Error(`only ${ideas} ideas above an empty week`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas.png`) });
+    const bar = await p.evaluate(() => { const r = document.querySelector("#meal-ideas .meal-ideas-row"); return r.offsetHeight - r.clientHeight; });
+    if (bar > 0) throw new Error(`the ideas row shows a ${bar}px scrollbar`);
     const plan = await p.evaluate(() => {
       const idea = document.querySelector("#meal-ideas .meal-idea");
       const t = window.getLocalDateKey(new Date());
@@ -668,6 +670,11 @@ const PAGES = [
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-ideas-planned.png`) });
     await p.evaluate(({ date }) => { window.setMealForDate(date, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, plan);
+    // "More" opens the Recipes tab
+    await p.click("#meal-ideas [data-meal-ideas-more]");
+    await p.waitForTimeout(300);
+    if (!(await p.evaluate(() => window.RecipeBrowse.tab() === "recipes" && !document.getElementById("meals-recipes-view").hidden))) throw new Error("More didn't open the Recipes tab");
+    await p.evaluate(() => window.RecipeBrowse.setTab("week"));
   }],
   // A photo of the dish on your own recipe: picked in the form, saved to its
   // own document, shown on the Recipes tab, fetched by another device, removed
