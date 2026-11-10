@@ -84,7 +84,9 @@ function sampleStore() {
           // For yesterday's dinner (clears itself) and tomorrow's breakfast (a teaspoon: just "Cinnamon")
           { id: "g4", text: "500g Beef mince", checked: false, source: "Lasagne", grocery: { key: "beef mince", name: "Beef mince", label: "Beef mince", amounts: { mass: 500 }, sources: ["Lasagne"], sourceKeys: [`Lasagne|${keyOf(new Date(today.getTime() - 86400000))}|dinner`] } },
           { id: "g5", text: "1 tsp Cinnamon", checked: false, source: "Muffins", grocery: { key: "cinnamon", name: "Cinnamon", label: "Cinnamon", amounts: { spoon: 1 }, sources: ["Muffins"], sourceKeys: [`Muffins|${keyOf(tomorrow)}|breakfast`] } }] },
-        { id: "packing", title: "Holiday packing", emoji: "🧳", color: "mint", items: [{ id: "p1", text: "Suncream", checked: false }] }
+        { id: "packing", title: "Holiday packing", emoji: "🧳", color: "mint", items: [{ id: "p1", text: "Suncream", checked: false }] },
+        { id: "list-jo-xmas", title: "Jo Christmas List", emoji: "🎄", color: "rose", items: [{ id: "w1", text: "Lego castle £45 https://www.example.com/lego-castle", checked: false }, { id: "w2", text: "Art set", checked: false }] },
+        { id: "list-jobs", title: "Weekend jobs", emoji: "📋", color: "amber", items: [{ id: "j1", text: "Fix the gate", checked: false }] }
       ]
     },
     [`${b}/devices/smoke-test-device`]: { code: "SMOKE-TEST", label: "Smoke test" },
@@ -815,6 +817,75 @@ const PAGES = [
     await p.waitForTimeout(300);
     if (await p.evaluate(() => document.getElementById("cooking-recipe-modal").open)) throw new Error("tapping outside the recipe card didn't close it");
   }],
+  // Kinds of list: worked out from their names, each with its own tools;
+  // New list starts by picking one
+  ["list-kinds", async (p) => {
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    await goTo("lists")(p);
+    await p.waitForTimeout(300);
+    const kinds = await p.evaluate(() => (window.loadFamilyLists() || []).map(l => `${l.id}:${window.ListTypes.typeOf(l)}:${window.ListTypes.ownerOf(l)}`));
+    for (const want of ["groceries:shopping:", "packing:packing:", "list-jo-xmas:wish:Jo", "list-jobs:todo:"]) {
+      if (!kinds.includes(want)) throw new Error(`list kinds wrong: ${kinds.join(", ")}`);
+    }
+    const phone = p.__size === "phone";
+    if (phone) await p.screenshot({ path: path.join(SHOTS, `${p.__size}-lists-home.png`) });
+    const open = async (id) => { await p.click(`[data-open-list="${id}"]`); await p.waitForTimeout(300); };
+    // Groceries: Shop is its main button
+    await open("groceries");
+    if (!(await p.locator('.list-detail [data-shop-list]').count())) throw new Error("no Shop on the shopping list");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-shopping.png`) });
+    if (phone) await p.click("[data-lists-back]");
+    // Packing: no Shop; add for Jo; tick, then Start again
+    await open("packing");
+    if (await p.locator('.list-detail [data-shop-list]').count()) throw new Error("Shop shows on a packing list");
+    await p.click('.list-detail [data-pack-who="Jo"]');
+    await p.fill(".list-detail .list-column-add input", "Teddy");
+    await p.press(".list-detail .list-column-add input", "Enter");
+    await p.waitForTimeout(300);
+    const teddy = await p.evaluate(() => (window.loadFamilyLists().find(l => l.id === "packing").items || []).find(i => i.text === "Teddy"));
+    if (!teddy || teddy.who !== "Jo") throw new Error(`Teddy wasn't added for Jo: ${JSON.stringify(teddy)}`);
+    if (!(await p.locator('.list-detail [data-section="who:Jo"]').count())) throw new Error("no section for Jo on the packing list");
+    await p.locator('.list-detail [data-section="who:Jo"] [data-toggle-item]').first().click();
+    await p.waitForTimeout(1500);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-packing.png`) });
+    await p.click(".list-detail [data-start-again]");
+    await p.waitForTimeout(300);
+    if (await p.evaluate(() => window.loadFamilyLists().find(l => l.id === "packing").items.some(i => i.checked))) throw new Error("Start again didn't untick everything");
+    if (phone) await p.click("[data-lists-back]");
+    // Wish list: Jo's, no ticks, a price and a link
+    await open("list-jo-xmas");
+    const wish = await p.evaluate(() => ({ kind: document.querySelector(".list-detail .list-hero-kind").textContent, ticks: document.querySelectorAll(".list-detail [data-toggle-item]").length, price: (document.querySelector(".list-detail .list-row-price") || {}).textContent, link: (document.querySelector(".list-detail .list-row-link") || {}).href || "", shop: document.querySelectorAll(".list-detail [data-shop-list]").length }));
+    // (its name already says it's Jo's, so the label just says Wish list)
+    if (!/^Wish list$/i.test(wish.kind) || wish.ticks || wish.price !== "£45" || !/example\.com/.test(wish.link) || wish.shop) throw new Error(`the wish list looks wrong: ${JSON.stringify(wish)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-wish.png`) });
+    if (phone) await p.click("[data-lists-back]");
+    // New list: pick Packing, keep the suggestions
+    await p.evaluate(() => window.openCreateListModal());
+    await p.waitForTimeout(500);
+    if ((await p.locator("#new-list-kind-picker [data-kind]").count()) !== 4) throw new Error("New list doesn't offer the four kinds");
+    await p.click('#new-list-kind-picker [data-kind="packing"]');
+    await p.fill("#new-list-title-input", "Summer holiday");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-new.png`) });
+    await p.click("#btn-save-new-list");
+    await p.waitForTimeout(500);
+    const made = await p.evaluate(() => { const l = window.loadFamilyLists().find(x => x.title === "Summer holiday"); return l ? { id: l.id, type: l.type, n: l.items.length, jo: l.items.filter(i => i.who === "Jo").length, fam: l.items.filter(i => (i.who || "Family") === "Family").length } : null; });
+    if (!made || made.type !== "packing" || made.jo < 3 || made.fam < 3) throw new Error(`the new packing list didn't start with suggestions: ${JSON.stringify(made)}`);
+    // New wish list: whose, and the name follows
+    await p.evaluate(() => window.openCreateListModal());
+    await p.waitForTimeout(500);
+    await p.click('#new-list-kind-picker [data-kind="wish"]');
+    await p.click('#new-list-owner-picker [data-owner="Max"]');
+    const name = await p.inputValue("#new-list-title-input");
+    if (name !== "Max's wish list") throw new Error(`a new wish list for Max is called "${name}"`);
+    await p.click("#btn-save-new-list");
+    await p.waitForTimeout(400);
+    const maxList = await p.evaluate(() => { const l = window.loadFamilyLists().find(x => x.title === "Max's wish list"); return l ? { id: l.id, type: l.type, owner: l.owner } : null; });
+    if (!maxList || maxList.type !== "wish" || maxList.owner !== "Max") throw new Error(`Max's wish list saved wrongly: ${JSON.stringify(maxList)}`);
+    if (phone) { await p.click("[data-lists-back]"); await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOTS, `${p.__size}-lists-home-after.png`) }); }
+    else await p.screenshot({ path: path.join(SHOTS, `${p.__size}-lists-rail.png`) });
+    await p.evaluate((ids) => ids.forEach(id => window.handleDeleteList(id)), [made.id, maxList.id]);
+    await p.evaluate(() => { const l = window.loadFamilyLists().find(x => x.id === "packing"); const t = l.items.find(i => i.text === "Teddy"); if (t) window.handleDeleteListItem("packing", t.id); });
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
@@ -993,6 +1064,7 @@ async function main() {
       const page = await context.newPage();
       page.__size = sizeName;
       const problems = [];
+      page.on("response", (r) => { if (r.status() === 404) console.log("404:", r.url()); });
       page.on("console", (m) => {
         if (m.type() === "error") problems.push(`console error: ${m.text()}`);
         // Chrome reports the report-only content policy as "info", so look for it by name

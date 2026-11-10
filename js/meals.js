@@ -426,7 +426,9 @@ function mealPhotoUrl(meal, all, size = "medium") {
   const r = plannedRecipeFor(meal, all);
   const src = String((r && (r.image || r.imageUrl)) || "");
   if (/^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src)) return `${src}/${size}`;
-  if (/^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src)) return src;
+  // A full address: it goes into a CSS variable, where a relative path would
+  // be read from the stylesheet's folder (css/images/... = not found)
+  if (/^images\/[\w\/.-]+\.(jpg|jpeg|png|webp)$/i.test(src)) { try { return new URL(src, document.baseURI).href; } catch (e) { return src; } }
   if (window.RecipePhotos && window.RecipePhotos.isDataUrl(src)) return src;
   return "";
 }

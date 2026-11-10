@@ -210,7 +210,8 @@ function applyListOp(lists, tomb, op, now) {
       if (!meta.id || tomb["list:" + meta.id]) return null;
       const target = lists.find(l => l.id === meta.id);
       const fields = {};
-      ["title", "emoji", "color", "isDefault", "shareKey"].forEach(k => { if (meta[k] !== undefined) fields[k] = meta[k]; });
+      // type and owner: the kind of list and whose it is (js/list-types.js)
+      ["title", "emoji", "color", "isDefault", "shareKey", "type", "owner"].forEach(k => { if (meta[k] !== undefined) fields[k] = meta[k]; });
       if (target) Object.assign(target, fields);
       else lists.push({ id: meta.id, ...fields, items: [] });
       return null;
@@ -572,6 +573,12 @@ function renderListsView() {
     if (inp) inp.focus();
   }
 
+  // Phones: the person you're adding for stays in view in their scrolling row
+  board.querySelectorAll(".list-who-picker").forEach(row => {
+    const on = row.querySelector(".list-who.is-on");
+    if (on && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, on.offsetLeft - row.clientWidth / 2 + on.offsetWidth / 2);
+  });
+
   if (listsFlashIds.size) {
     const first = board.querySelector(".list-row.is-flash");
     if (first) { try { first.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }
@@ -631,6 +638,16 @@ function listSectionFolded(listId, key) {
   return v === undefined ? key === "done" : !!v;
 }
 
+// Under a list's name in the rail: its kind, and whose or how far along
+function railSubtitle(list) {
+  const T = window.ListTypes;
+  const type = T.typeOf(list);
+  const items = Array.isArray(list.items) ? list.items : [];
+  if (type === "wish") { const o = T.ownerOf(list); return o && !String(list.title || "").toLowerCase().includes(o.toLowerCase()) ? `${o}'s wish list` : "Wish list"; }
+  if (type === "packing") { const done = items.filter(i => i.checked).length; return items.length ? `${done} of ${items.length} packed` : "Packing"; }
+  return T.TYPES[type].label;
+}
+
 function renderListsRail(lists, selectedId) {
   return `
     <nav class="lists-rail" aria-label="Your lists">
@@ -640,9 +657,11 @@ function renderListsRail(lists, selectedId) {
           const col = getListColor(list, index);
           const toDo = (Array.isArray(list.items) ? list.items : []).filter(i => !i.checked).length;
           const on = list.id === selectedId;
+          const kind = window.ListTypes ? window.ListTypes.info(list) : null;
           return `<li><button type="button" class="lists-rail-row${on ? " is-selected" : ""}" data-open-list="${escapeHtml(list.id)}" aria-current="${on ? "true" : "false"}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+            ${kind ? `<span class="lists-rail-photo" style="background-image: url('${kind.cover}')" aria-hidden="true"><span class="lists-rail-photo-emoji">${escapeHtml(list.emoji || kind.emoji)}</span></span>` : ""}
             <span class="lists-rail-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
-            <span class="lists-rail-name">${escapeHtml(list.title)}</span>
+            <span class="lists-rail-words"><span class="lists-rail-name">${escapeHtml(list.title)}</span>${kind ? `<span class="lists-rail-kind">${escapeHtml(railSubtitle(list))}</span>` : ""}</span>
             <span class="lists-rail-count" aria-label="${toDo} to do">${toDo || ""}</span>
             <svg class="lists-rail-go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
           </button></li>`;
@@ -652,6 +671,9 @@ function renderListsRail(lists, selectedId) {
 }
 
 function renderListDetail(list, index, justTicked) {
+  const T = window.ListTypes;
+  const type = T ? T.typeOf(list) : "todo";
+  const kind = T ? T.TYPES[type] : null;
   const col = getListColor(list, index);
   const items = Array.isArray(list.items) ? list.items : [];
   const nowMs = Date.now();
@@ -659,20 +681,41 @@ function renderListDetail(list, index, justTicked) {
   const open = items.filter(i => !i.checked || settling(i));
   const done = items.filter(i => i.checked && !settling(i));
   const toDo = items.filter(i => !i.checked).length;
-  const countText = items.length === 0 ? "Empty" : `${toDo} to do${done.length ? ` · ${done.length} done` : ""}`;
-  const isGrocery = !!(window.Aisles && window.Aisles.isGroceryList(list));
+  const isGrocery = type === "shopping" && !!window.Aisles;
+  const isPacking = type === "packing";
+  const isWish = type === "wish";
+  const owner = isWish && T ? T.ownerOf(list) : "";
   const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
   const aisleOf = (item) => window.Aisles.aisleFor(textOf(item), list.aisles);
+  const countText = items.length === 0 ? "Empty"
+    : isPacking ? `${items.filter(i => i.checked).length} of ${items.length} packed`
+    : isWish ? `${items.length} idea${items.length === 1 ? "" : "s"}`
+    : `${toDo} to do${done.length ? ` · ${done.length} done` : ""}`;
 
+  const tick = `<span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
   const itemHtml = (item) => {
     const text = textOf(item);
-    const forLine = window.Grocery ? window.Grocery.sourcesLabel(item) : "";
     const pop = justTicked === item.id ? " is-just-ticked" : "";
     const flash = listsFlashIds.has(item.id) ? " is-flash" : "";
+    if (isWish) {
+      // Wish lists: no ticks (nothing to give the surprise away), a link and a price
+      const w = T.wishParts(text);
+      return `
+      <li class="list-row is-wish${flash}" data-item-id="${escapeHtml(item.id)}">
+        <span class="list-row-gift" aria-hidden="true">🎁</span>
+        <span class="list-row-text">
+          <span class="list-row-name">${escapeHtml(w.name)}</span>
+          ${w.price || w.site ? `<span class="list-row-for">${w.price ? `<span class="list-row-price">${escapeHtml(w.price)}</span>` : ""}${w.site ? ` ${escapeHtml(w.site)}` : ""}</span>` : ""}
+        </span>
+        ${w.link ? `<a class="list-row-link" href="${escapeHtml(w.link)}" target="_blank" rel="noopener noreferrer" aria-label="Open the link for ${escapeHtml(w.name)}">Open ↗</a>` : ""}
+        <button type="button" class="list-row-del" data-delete-item aria-label="Remove ${escapeHtml(w.name)}">✕</button>
+      </li>`;
+    }
+    const forLine = window.Grocery && isGrocery ? window.Grocery.sourcesLabel(item) : "";
     return `
       <li class="list-row ${item.checked ? "is-checked" : ""}${pop}${flash}" data-item-id="${escapeHtml(item.id)}">
         <button type="button" class="list-row-check" data-toggle-item aria-pressed="${item.checked ? "true" : "false"}" aria-label="${item.checked ? "Untick" : "Tick"} ${escapeHtml(text)}">
-          <span class="list-row-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+          ${tick}
           <span class="list-row-text">
             <span class="list-row-name">${escapeHtml(text)}</span>
             ${forLine ? `<span class="list-row-for">${escapeHtml(forLine)}</span>` : ""}
@@ -684,13 +727,13 @@ function renderListDetail(list, index, justTicked) {
   };
 
   // A section: a heading that folds it away (like Reminders), then its rows
-  const section = (key, title, rows, extra = "") => {
+  const section = (key, title, rows, extra = "", countLabel = null) => {
     const folded = listSectionFolded(list.id, key);
     return `
       <section class="list-section${folded ? " is-folded" : ""}${key === "done" ? " is-done" : ""}" data-section="${escapeHtml(key)}">
         ${title ? `<button type="button" class="list-section-head" data-fold-section="${escapeHtml(key)}" aria-expanded="${folded ? "false" : "true"}">
           <span class="list-section-title">${title}</span>
-          <span class="list-section-n">${rows.length}</span>
+          <span class="list-section-n">${countLabel === null ? rows.length : countLabel}</span>
           ${LISTS_CHEVRON}
         </button>` : ""}
         ${folded ? "" : `<ul class="list-column-items">${rows.map(itemHtml).join("")}</ul>${extra}`}
@@ -698,20 +741,37 @@ function renderListDetail(list, index, justTicked) {
   };
 
   let sections = "";
-  if (isGrocery && open.length) {
-    const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
-    open.forEach(i => groups.get(aisleOf(i)).push(i));
-    sections = window.Aisles.AISLES.filter(a => groups.get(a.key).length)
-      .map(a => section(a.key, `${a.icon} ${escapeHtml(a.label)}`, groups.get(a.key))).join("");
-  } else if (open.length) {
-    sections = section("items", "", open);
-  }
-  if (done.length) {
-    sections += section("done", "✓ Done", done,
-      `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>`);
+  if (isPacking && items.length) {
+    // A section for Family, then each of you (and anyone else named on an
+    // item); packed things sink to the bottom of their section
+    const order = [T.FAMILY, ...T.people()];
+    items.forEach(i => { const w = T.whoOf(i); if (!order.includes(w)) order.push(w); });
+    sections = order.map(who => {
+      const mine = items.filter(i => T.whoOf(i) === who);
+      if (!mine.length) return "";
+      const rows = [...mine.filter(i => !i.checked || settling(i)), ...mine.filter(i => i.checked && !settling(i))];
+      const packed = mine.filter(i => i.checked).length;
+      return section(`who:${who}`, `${who === T.FAMILY ? "👪" : "🧍"} ${escapeHtml(who)}`, rows, "", `${packed}/${mine.length}`);
+    }).join("");
+  } else if (isWish && items.length) {
+    sections = section("items", "", items);
+  } else {
+    if (isGrocery && open.length) {
+      const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
+      open.forEach(i => groups.get(aisleOf(i)).push(i));
+      sections = window.Aisles.AISLES.filter(a => groups.get(a.key).length)
+        .map(a => section(a.key, `${a.icon} ${escapeHtml(a.label)}`, groups.get(a.key))).join("");
+    } else if (open.length) {
+      sections = section("items", "", open);
+    }
+    if (done.length) {
+      sections += section("done", "✓ Done", done,
+        `<button type="button" class="list-column-clear" data-clear-done>Clear ${done.length} done</button>`);
+    }
   }
 
-  const usuals = getListUsuals(list);
+  // Usuals: for the food shop and to-dos (not packing or presents)
+  const usuals = (type === "shopping" || type === "todo") ? getListUsuals(list) : [];
   const editing = listsUsualsEditing.has(list.id);
   const usualsHtml = usuals.length ? `<div class="list-usuals${editing ? " is-editing" : ""}" role="group" aria-label="Your usuals for ${escapeHtml(list.title)}">
       <span class="list-usuals-label">${editing ? "Tap to remove" : "Usuals"}</span>
@@ -721,36 +781,69 @@ function renderListDetail(list, index, justTicked) {
       <button type="button" class="list-usuals-edit" data-edit-usuals aria-pressed="${editing}">${editing ? "Done" : "Edit"}</button>
     </div>` : "";
 
+  // Packing: who you're adding for
+  const packWho = isPacking ? currentPackWho(list.id) : "";
+  const whoPicker = isPacking ? `<div class="list-who-picker" role="radiogroup" aria-label="Adding for">
+      <span class="list-usuals-label">Adding for</span>
+      ${[T.FAMILY, ...T.people()].map(n => `<button type="button" class="list-who${n === packWho ? " is-on" : ""}" data-pack-who="${escapeHtml(n)}" role="radio" aria-checked="${n === packWho}">${escapeHtml(n)}</button>`).join("")}
+    </div>` : "";
+
+  // One main action per kind; Send and Edit are quiet
+  const anyPacked = items.some(i => i.checked);
+  const primary = isGrocery && open.length
+    ? `<button type="button" class="list-hero-main" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>`
+    : isPacking && anyPacked
+      ? `<button type="button" class="list-hero-main" data-start-again title="Untick everything, ready for the next trip">↺ Start again</button>`
+      : "";
+  const addPlaceholder = isPacking ? `Add for ${packWho}` : isWish ? "Add an idea, link or price" : `Add to ${list.title}`;
+  const emptyText = isGrocery ? "Add things above. They're sorted into aisles for you."
+    : isPacking ? "Add things above. Pick who each one is for."
+    : isWish ? `Add ${owner ? `${owner}'s` : "the"} ideas above. Paste a link or add a price and they show up neatly.`
+    : "Add things above, one at a time or several at once with +.";
+
   return `
-    <section class="list-detail" data-list-id="${escapeHtml(list.id)}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+    <section class="list-detail list-type-${type}" data-list-id="${escapeHtml(list.id)}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
       <button type="button" class="list-detail-back" data-lists-back>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
         My lists
       </button>
-      <header class="list-detail-head">
+      <header class="list-detail-head list-hero"${kind ? ` style="--list-cover: url('${T.coverUrl(list)}')"` : ""}>
         <div class="list-detail-titles">
+          ${kind ? `<span class="list-hero-kind">${escapeHtml(isWish && owner && !String(list.title || "").toLowerCase().includes(owner.toLowerCase()) ? `${owner}'s wish list` : kind.label)}</span>` : ""}
           <h2 class="list-detail-title"><span aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span> ${escapeHtml(list.title)}</h2>
           <span class="list-detail-count">${countText}</span>
         </div>
-        <button type="button" class="list-detail-send" data-send-list aria-label="Send ${escapeHtml(list.title)}" title="Send this list">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          <span>Send</span>
-        </button>
-        ${open.length ? `<button type="button" class="list-column-shop" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>` : ""}
-        <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, icon, colour">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-        </button>
+        <div class="list-hero-actions">
+          ${primary}
+          <button type="button" class="list-detail-send" data-send-list aria-label="Send ${escapeHtml(list.title)}" title="Send this list">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <span>Send</span>
+          </button>
+          <button type="button" class="list-column-edit" data-edit-list aria-label="Edit ${escapeHtml(list.title)}" title="Rename, kind, icon, colour">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          </button>
+        </div>
       </header>
+      ${whoPicker}
       <form class="list-column-add" data-add-item>
         <span class="list-add-ring" aria-hidden="true"></span>
-        <input type="text" placeholder="Add to ${escapeHtml(list.title)}" aria-label="Add to ${escapeHtml(list.title)}" autocomplete="off" enterkeyhint="done">
+        <input type="text" placeholder="${escapeHtml(addPlaceholder)}" aria-label="${escapeHtml(addPlaceholder)}" autocomplete="off" enterkeyhint="done">
         <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
       </form>
       ${usualsHtml}
       ${items.length === 0
-        ? `<div class="list-detail-empty"><span class="list-detail-empty-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span><p class="list-detail-empty-title">Nothing on ${escapeHtml(list.title)} yet</p><p class="list-detail-empty-text">${isGrocery ? "Add things above. They're sorted into aisles for you." : "Add things above, one at a time or several at once with +."}</p></div>`
-        : `<div class="list-detail-sections${isGrocery ? " is-aisled" : ""}">${sections}</div>`}
+        ? `<div class="list-detail-empty"><span class="list-detail-empty-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span><p class="list-detail-empty-title">Nothing on ${escapeHtml(list.title)} yet</p><p class="list-detail-empty-text">${escapeHtml(emptyText)}</p></div>`
+        : `<div class="list-detail-sections${isGrocery ? " is-aisled" : ""}${isPacking ? " is-packing" : ""}">${sections}</div>`}
     </section>`;
+}
+
+// Packing: who new things are for, per list (this device only)
+function currentPackWho(listId) {
+  const T = window.ListTypes;
+  const ui = listsUi();
+  ui.packWho = ui.packWho || {};
+  const who = ui.packWho[listId];
+  return who && (who === T.FAMILY || T.people().includes(who)) ? who : T.FAMILY;
 }
 
 // A list taller than its card (tablets: each list scrolls inside its card):
@@ -827,6 +920,23 @@ function onListsBoardClick(e) {
   if (e.target.closest("[data-send-list]")) {
     const id = e.target.closest("[data-list-id]").getAttribute("data-list-id");
     sendList(id);
+    return;
+  }
+  // Packing: who you're adding for, and untick it all for the next trip
+  const whoBtn = e.target.closest("[data-pack-who]");
+  if (whoBtn) {
+    const listId = whoBtn.closest("[data-list-id]").getAttribute("data-list-id");
+    const ui = listsUi();
+    ui.packWho = ui.packWho || {};
+    ui.packWho[listId] = whoBtn.getAttribute("data-pack-who");
+    renderListsView();
+    const inp = document.querySelector(`#lists-board [data-list-id="${CSS.escape(listId)}"] .list-column-add input`);
+    if (inp && !window.matchMedia("(pointer: coarse)").matches) inp.focus();
+    return;
+  }
+  if (e.target.closest("[data-start-again]")) {
+    const listId = e.target.closest("[data-list-id]").getAttribute("data-list-id");
+    startPackingAgain(listId);
     return;
   }
   const fold = e.target.closest("[data-fold-section]");
@@ -960,19 +1070,24 @@ window.openAddListItemPanel = openAddListItemPanel;
 // Adds typed items to a list, without doubling up: something already on the
 // list is just highlighted, and something ticked off is put back. Returns
 // { added, already, back } (arrays of item texts) for the toast.
-function addTextsToList(listId, texts) {
+function addTextsToList(listId, texts, extra = {}) {
   const list = loadFamilyLists().find(l => l.id === listId);
   if (!list) return { added: [], already: [], back: [] };
   const res = { added: [], already: [], back: [] };
+  // Packing: each thing is for someone (or the Family), and the same thing
+  // can be on everyone's bit ("Toothbrush" for each of you)
+  const T = window.ListTypes;
+  const packWho = T && T.typeOf(list) === "packing" ? (extra.who || currentPackWho(listId)) : null;
+  const keyOf = (text, who) => { const k = listItemKey(text); return k && packWho ? `${who || T.FAMILY}|${k}` : k; };
   const byKey = new Map();
   (list.items || []).forEach(i => {
-    const k = listItemKey(window.Grocery ? window.Grocery.displayText(i) : i.text);
+    const k = keyOf(window.Grocery ? window.Grocery.displayText(i) : i.text, packWho ? T.whoOf(i) : null);
     if (k && (!byKey.has(k) || !i.checked)) byKey.set(k, i); // prefer one still to buy
   });
   const fresh = [];
   const stamp = Date.now();
   texts.forEach((text, n) => {
-    const key = listItemKey(text);
+    const key = keyOf(text, packWho);
     const existing = key && byKey.get(key);
     if (existing && !existing.checked) { res.already.push(existing); return; }
     if (existing && existing.checked) {
@@ -981,6 +1096,7 @@ function addTextsToList(listId, texts) {
       return;
     }
     const item = { id: `item-${stamp}-${n}-${Math.random().toString(36).slice(2, 6)}`, text, checked: false, addedAt: new Date().toISOString() };
+    if (packWho) item.who = packWho;
     fresh.push(item);
     if (key) byKey.set(key, item); // "milk" twice in one go counts once
   });
@@ -1132,6 +1248,21 @@ function handleToggleListItem(listId, itemId, checked) {
   renderListsView();
 }
 
+// Packing: untick everything, ready for the next trip (with Undo)
+function startPackingAgain(listId) {
+  const list = loadFamilyLists().find(l => l.id === listId);
+  if (!list) return;
+  const ticked = (list.items || []).filter(i => i.checked).map(i => i.id);
+  if (!ticked.length) return;
+  ticked.forEach(itemId => mutateFamilyLists({ type: "toggleItem", listId, itemId, checked: false }));
+  if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
+  renderListsView();
+  if (typeof window.showActionToast === "function") {
+    window.showActionToast({ icon: "🧳", title: "Ready for the next trip", text: `${ticked.length} thing${ticked.length === 1 ? "" : "s"} unticked`, action: { label: "Undo", onClick: () => { ticked.forEach(itemId => mutateFamilyLists({ type: "toggleItem", listId, itemId, checked: true })); renderListsView(); } }, ms: 6000 });
+  }
+}
+window.startPackingAgain = startPackingAgain;
+
 function handleDeleteListItem(listId, itemId) {
   const lists = loadFamilyLists();
   const list = lists.find(l => l.id === listId);
@@ -1204,6 +1335,55 @@ function openCreateListModal(listId = null) {
   if (input) input.value = editing ? editing.title : "";
   listPanelEmoji = editing ? (editing.emoji || "📋") : "📋";
   listPanelColor = editing ? getListColor(editing, lists.indexOf(editing)).key : LIST_COLOR_ORDER[lists.length % LIST_COLOR_ORDER.length];
+  // The kind of list and (wish lists) whose it is
+  const T = window.ListTypes;
+  let panelType = editing && T ? T.typeOf(editing) : "todo";
+  let panelOwner = editing && T ? T.ownerOf(editing) : "";
+  let titleTouched = !!editing;
+  let looksTouched = !!editing; // icon or colour picked by hand
+  if (input) input.oninput = () => { titleTouched = !!input.value.trim(); };
+  const ownerGroup = document.getElementById("new-list-owner-group");
+  const starterRow = document.getElementById("new-list-starter-row");
+  const suggestTitle = () => {
+    if (titleTouched || !input) return;
+    input.value = panelType === "wish" && panelOwner ? `${panelOwner}'s wish list` : "";
+    input.placeholder = { shopping: "List name, e.g. Big shop", packing: "List name, e.g. Summer holiday", wish: "List name, e.g. Ava's Christmas list", todo: "List name, e.g. Weekend jobs" }[panelType] || "List name";
+  };
+  const renderKinds = () => {
+    const row = document.getElementById("new-list-kind-picker");
+    if (!row || !T) return;
+    row.innerHTML = T.ORDER.map(k => { const t = T.TYPES[k]; const on = k === panelType; return `<button type="button" class="list-kind${on ? " is-on" : ""}" data-kind="${k}" role="radio" aria-checked="${on}">
+        <span class="list-kind-photo" style="background-image: url('${t.cover}')" aria-hidden="true"></span>
+        <span class="list-kind-words"><strong>${t.emoji} ${t.label}</strong><small>${t.blurb}</small></span>
+      </button>`; }).join("");
+    if (ownerGroup) ownerGroup.hidden = panelType !== "wish";
+    // Groceries is shared with Meals (ingredients go onto it), so it stays a shopping list
+    const kindGroup = row.closest(".drawer-field-group");
+    if (kindGroup) kindGroup.hidden = !!(editing && editing.id === GROCERIES_LIST_ID);
+    if (starterRow) starterRow.hidden = !!editing || panelType !== "packing";
+    const ownerRow = document.getElementById("new-list-owner-picker");
+    if (ownerRow) ownerRow.innerHTML = T.people().map(n => `<button type="button" class="list-who${n === panelOwner ? " is-on" : ""}" data-owner="${escapeHtml(n)}" role="radio" aria-checked="${n === panelOwner}">${escapeHtml(n)}</button>`).join("");
+  };
+  renderKinds();
+  suggestTitle();
+  const kindRow = document.getElementById("new-list-kind-picker");
+  if (kindRow) kindRow.onclick = (e) => {
+    const b = e.target.closest("[data-kind]");
+    if (!b) return;
+    panelType = b.getAttribute("data-kind");
+    // A new list takes its kind's icon and colour (until you pick your own)
+    if (!looksTouched && T) { listPanelEmoji = T.TYPES[panelType].emoji; listPanelColor = T.TYPES[panelType].color; renderListEmojiPicker(modal); renderListColorPicker(); }
+    renderKinds();
+    suggestTitle();
+  };
+  const ownerRowEl = document.getElementById("new-list-owner-picker");
+  if (ownerRowEl) ownerRowEl.onclick = (e) => {
+    const b = e.target.closest("[data-owner]");
+    if (!b) return;
+    panelOwner = b.getAttribute("data-owner");
+    renderKinds();
+    suggestTitle();
+  };
   if (titleEl) titleEl.textContent = editing ? "Edit List" : "New List";
   if (btnSave) btnSave.textContent = editing ? "Save" : "Create List";
   if (btnDelete) {
@@ -1219,6 +1399,7 @@ function openCreateListModal(listId = null) {
     emojiRow.onclick = (e) => {
       const btn = e.target.closest("[data-emoji]");
       if (!btn) return;
+      looksTouched = true;
       listPanelEmoji = btn.getAttribute("data-emoji");
       emojiRow.querySelectorAll(".emoji-picker-btn").forEach(b => {
         b.classList.toggle("selected", b === btn);
@@ -1234,6 +1415,7 @@ function openCreateListModal(listId = null) {
     colorRow.onclick = (e) => {
       const sw = e.target.closest("[data-color]");
       if (!sw) return;
+      looksTouched = true;
       listPanelColor = sw.getAttribute("data-color");
       renderListColorPicker();
     };
@@ -1250,7 +1432,14 @@ function openCreateListModal(listId = null) {
       const title = input ? input.value.trim() : "";
       if (!title) { if (input) input.focus(); return; }
       const savedId = editing ? editing.id : "list-" + Date.now() + "-" + Math.random().toString(36).slice(2, 5);
-      mutateFamilyLists({ type: "upsertList", list: { id: savedId, title, emoji: listPanelEmoji, color: listPanelColor } });
+      mutateFamilyLists({ type: "upsertList", list: { id: savedId, title, emoji: listPanelEmoji, color: listPanelColor, type: panelType, owner: panelType === "wish" ? panelOwner : "" } });
+      // A new packing list: the suggestions, if wanted
+      const starter = document.getElementById("new-list-starter");
+      if (!editing && T && panelType === "packing" && starter && starter.checked) {
+        const stamp = Date.now();
+        const items = T.packingStarter().map((s, n) => ({ id: `item-${stamp}-${n}-${Math.random().toString(36).slice(2, 6)}`, text: s.text, who: s.who, checked: false, addedAt: new Date().toISOString() }));
+        mutateFamilyLists({ type: "addItems", listId: savedId, items, atEnd: true });
+      }
       closeModal();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime && !editing) sfx.playCelebrationChime();
       // A new list opens straight away, ready to add to

@@ -74,6 +74,7 @@
   <link rel="stylesheet" href="css/tablet-fit.css?v=8fc9f89c">
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
   <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
+  <link rel="stylesheet" href="css/lists-v3.css?v=2cf30815">
   <link rel="stylesheet" href="css/sheet.css?v=9776fb49">
   <link rel="stylesheet" href="css/magic-import.css?v=b473ad17">
   <link rel="stylesheet" href="css/meal-genie.css?v=049102e8">
@@ -2462,6 +2463,15 @@
         <button type="button" class="btn-modal-close" id="btn-close-create-list" aria-label="Close">✕</button>
       </div>
       <div class="modal-body list-panel-form">
+        <!-- What kind of list (js/list-types.js): photo tiles -->
+        <div class="drawer-field-group">
+          <div class="drawer-section-label-row"><span class="drawer-section-label" id="new-list-kind-label">What kind of list?</span></div>
+          <div class="list-kind-picker" id="new-list-kind-picker" role="radiogroup" aria-labelledby="new-list-kind-label"></div>
+        </div>
+        <div class="drawer-field-group" id="new-list-owner-group" hidden>
+          <div class="drawer-section-label-row"><span class="drawer-section-label" id="new-list-owner-label">Whose wish list?</span></div>
+          <div class="list-owner-picker" id="new-list-owner-picker" role="radiogroup" aria-labelledby="new-list-owner-label"></div>
+        </div>
         <div class="drawer-input-row">
           <span class="drawer-input-icon" aria-hidden="true">≡</span>
           <input type="text" id="new-list-title-input" class="drawer-input-title" placeholder="List name, e.g. Camping Gear" aria-label="List name" autocomplete="off">
@@ -2480,6 +2490,10 @@
           </div>
           <div class="list-color-picker" id="new-list-color-picker" role="group" aria-labelledby="new-list-color-label"></div>
         </div>
+        <label class="list-starter-row" id="new-list-starter-row" hidden>
+          <input type="checkbox" id="new-list-starter" checked>
+          <span>Start with suggestions <small>passports, chargers, and a few things for each of you</small></span>
+        </label>
       </div>
       <div class="modal-footer create-list-footer">
         <button type="button" class="btn-sticky-delete" id="btn-delete-list-panel" style="display: none;">Delete List</button>
@@ -2555,7 +2569,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=8fe90d0c"></script>
+  <script src="js/build-info.js?v=9c7e2810"></script>
   <script src="js/utils.js?v=c243e9da"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2569,7 +2583,8 @@
   <script src="js/weather.js?v=be0a8650"></script>
   <script src="js/sleep.js?v=4f386c0a"></script>
   <script src="js/grocery.js?v=f93c76e7"></script>
-  <script src="js/lists.js?v=b9d2a959"></script>
+  <script src="js/list-types.js?v=81b36fd2"></script>
+  <script src="js/lists.js?v=c662bea9"></script>
   <script src="js/aisles.js?v=171f4f8e"></script>
   <script src="js/shop-mode.js?v=7d6e082d"></script>
   <script src="js/rewards.js?v=321182dd"></script>
@@ -2611,7 +2626,7 @@
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
-  <script type="module" src="js/meals.js?v=f73e834c"></script>
+  <script type="module" src="js/meals.js?v=f4ce78da"></script>
   <script type="module" src="app.js?v=712ed2f8"></script>
   <script>
     // Offline support and "Install app" (sw.js)
