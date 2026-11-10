@@ -211,15 +211,16 @@ const PAGE_INTROS = {
     seenKey: "harmonee_rewards_intro_seen",
     container: "#view-rewards .rewards-view-container",
     steps: [
-      { title: "Rewards", lead: "Every chore earns points. The podium shows who's on top this week.",
-        rows: [["🏆", "The podium starts again every Sunday at midnight."],
-               ["💷", "Prefer pocket money? Switch to £ in Settings."],
-               ["🔥", "Doing daily routines day after day builds a streak."]] },
-      { title: "Reward goals", lead: "Everyone can save up for something: a cinema trip, extra screen time, a new toy.",
-        rows: [["🎯", "Add a goal and set how many points it costs."],
-               ["📈", "The bar fills up as chores get done."]] },
+      { title: "Rewards", lead: "Every job earns stars. The bars at the top show this week's stars, and start again every Monday.",
+        rows: [["👑", "Whoever's ahead this week wears the crown."],
+               ["🤝", "Set a family goal: everyone's stars add up to one treat together."],
+               ["💷", "Prefer pocket money? Switch to £ in Settings."]] },
+      { title: "Everyone's card", lead: "Each person has a card: today's jobs, points to spend and what they're saving up for.",
+        rows: [["🎯", "Tap ＋ Set a goal, then pick how many points it costs."],
+               ["🔥", "Daily jobs done day after day build a streak."],
+               ["⭐", "Stickers are earned for real things: a first job, 7 days in a row, a Big job."]] },
       { title: "Redeem", lead: "When there are enough points, tap Redeem, then tap again to confirm. Unspent points carry over from week to week.",
-        rows: [["🎉", "Reaching a goal gets a little celebration."]] }
+        rows: [["👆", "Tap someone's card to see all their goals, stickers and jobs this week."]] }
     ]
   }
 };

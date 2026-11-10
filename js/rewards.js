@@ -1,6 +1,7 @@
 // ============================================================================
-// REWARDS PODIUM & LEADERBOARD MODULE (js/rewards.js)
-// Champions Podium, Weekly Ledger, Pocket Money & Points Breakdown
+// REWARDS: SCORES AND SHARED PIECES (js/rewards.js)
+// This week's points per person, and the colours, sounds and confetti the
+// Rewards page uses. The page itself is drawn by js/rewards-page.js.
 // ============================================================================
 
 // Points (or money) each member earned in one ISO week, from the chores'
@@ -66,11 +67,9 @@ function computeMemberScores(weekKey) {
 window.computeMemberScores = computeMemberScores;
 
 // ============================================================================
-// REWARDS PAGE (render only: the scoring above and the goals data in
-// js/reward-goals.js are unchanged). Built for young children on the kitchen
-// tablet: big avatars in each person's own colour, a podium that grows and
-// bounces, tap-to-boing, and a calm version when the device asks for less
-// motion.
+// SHARED PIECES for the Rewards page: each person's colours, tap-to-boing,
+// confetti in their colours, and a calm version when the device asks for
+// less motion.
 // ============================================================================
 
 function rewardsReduceMotion() {
@@ -174,162 +173,16 @@ function wireRewardsPageTaps() {
   });
 }
 
-function rewardsPlaceLabel(place) {
-  return place === 1 ? "🥇" : (place === 2 ? "🥈" : (place === 3 ? "🥉" : `#${place}`));
-}
-
-// Podium: one column per person, kept between renders so a pillar grows
-// smoothly when its score changes instead of being rebuilt.
-function renderRewardsPodiumStage(stage, sortedMembers, formatScore) {
-  const roster = sortedMembers.map(m => m.name).slice().sort().join("|");
-  if (stage.getAttribute("data-roster") !== roster) {
-    stage.setAttribute("data-roster", roster);
-    stage.innerHTML = sortedMembers.map(m => {
-      const pal = rewardsPalette(m.name);
-      return `
-        <button type="button" class="podium-col" data-member="${escapeHtml(m.name)}" data-rw-bounce style="${rewardsPaletteStyle(pal)}">
-          <span class="podium-avatar-wrap">
-            <span class="podium-crown" aria-hidden="true">👑</span>
-            <span class="podium-avatar">${escapeHtml(m.name.charAt(0).toUpperCase())}</span>
-          </span>
-          <span class="podium-name">${escapeHtml(m.name)}</span>
-          <span class="podium-pillar">
-            <span class="podium-place" aria-hidden="true"></span>
-            <span class="podium-bar-score"></span>
-          </span>
-        </button>`;
-    }).join("");
-  }
-
-  const cols = {};
-  stage.querySelectorAll(".podium-col").forEach(c => { cols[c.getAttribute("data-member")] = c; });
-
-  const maxScore = sortedMembers.length > 0 ? Math.max(...sortedMembers.map(m => m.score)) : 0;
-  const minBarHeight = 64;  // so 0 pts still has a step to stand on
-  const maxBarHeight = 176; // tallest pillar, fits a 768px-tall tablet
-  // Only reorder 2nd-1st-3rd once someone has points; with no scores yet keep
-  // the family's own order so the podium matches the "Saving up for" cards.
-  const many = sortedMembers.length >= 2 && maxScore > 0;
-
-  sortedMembers.forEach((m, rankIdx) => {
-    const col = cols[m.name];
-    if (!col) return;
-    const place = 1 + sortedMembers.filter(o => o.score > m.score).length;
-    const isLeader = maxScore > 0 && m.score === maxScore;
-    const height = maxScore > 0
-      ? Math.round(minBarHeight + (m.score / maxScore) * (maxBarHeight - minBarHeight))
-      : minBarHeight;
-    // Olympic order: 2nd, 1st, 3rd, then everyone else
-    const position = many ? (rankIdx === 0 ? 1 : (rankIdx === 1 ? 0 : rankIdx)) : rankIdx;
-
-    col.classList.toggle("is-leader", isLeader);
-    col.style.order = String(position);
-    col.style.setProperty("--i", String(position));
-    col.querySelector(".podium-pillar").style.height = `${height}px`;
-    col.querySelector(".podium-bar-score").textContent = formatScore(m.score);
-    col.querySelector(".podium-place").textContent = m.score > 0 ? rewardsPlaceLabel(place) : "";
-    col.setAttribute("aria-label", `${m.name}: ${formatScore(m.score)} this week${m.score > 0 ? `, place ${place}` : ""}`);
-  });
-}
-
-// For grown-ups: who did what this week, compact, chores tucked away
-function renderRewardsStandings(grid, sortedMembers, formatScore) {
-  grid.innerHTML = sortedMembers.map(m => {
-    const pal = rewardsPalette(m.name);
-    const place = 1 + sortedMembers.filter(o => o.score > m.score).length;
-    const tied = sortedMembers.filter(o => o.score === m.score).length > 1;
-    const placeText = m.score > 0 ? `${tied ? "Joint " : ""}${place === 1 ? "1st" : place === 2 ? "2nd" : place === 3 ? "3rd" : `${place}th`}` : "";
-    const tasksCount = m.tasks.length;
-    const choresHtml = tasksCount > 0
-      ? `<details class="rewards-card-tasklist">
-           <summary>${tasksCount} chore${tasksCount === 1 ? "" : "s"} done</summary>
-           <ul>${m.tasks.map(t => `<li>✓ ${escapeHtml(t)}</li>`).join("")}</ul>
-         </details>`
-      : `<span class="rewards-empty-note">No chores done yet this week.</span>`;
-
-    return `
-      <div class="rewards-member-card" style="${rewardsPaletteStyle(pal)}">
-        <div class="rewards-card-top">
-          <span class="rewards-card-avatar">${escapeHtml(m.name.charAt(0).toUpperCase())}</span>
-          <div class="rewards-card-names">
-            <span class="rewards-card-name">${escapeHtml(m.name)}</span>
-            ${placeText ? `<span class="rewards-card-place">${placeText}</span>` : ""}
-          </div>
-          <span class="rewards-card-score">${formatScore(m.score)}</span>
-        </div>
-        ${choresHtml}
-      </div>`;
-  }).join("");
-}
-
-// Daily routines done day after day. Only real streaks are shown.
-function renderRewardsStreaks(streaksGrid) {
-  // Counted from the days each daily job was done (js/streaks.js)
-  const streakOf = (t) => (window.Streaks ? window.Streaks.streakOf(t) : (Number(t.streak) || 0));
-  const streakTasks = (window.currentTasks || [])
-    .map(t => ({ t, n: streakOf(t) }))
-    .filter(x => x.n >= 1)
-    .sort((a, b) => b.n - a.n);
-
-  if (streakTasks.length === 0) {
-    streaksGrid.innerHTML = `
-      <p class="rw-streaks-empty">
-        <span class="rw-streaks-empty-flame" aria-hidden="true">🔥</span>
-        <span>Do a daily routine (like feeding the cats or emptying the dishwasher) day after day to light a streak!</span>
-      </p>`;
-    return;
-  }
-
-  streaksGrid.innerHTML = streakTasks.slice(0, 6).map(({ t, n }) => {
-    const count = n;
-    const names = typeof window.getAssigneeNames === "function" ? window.getAssigneeNames(t.assignedTo) : [];
-    const assignedName = formatAssigneeNames(t.assignedTo);
-    const pal = rewardsPalette(names[0] || null);
-    const milestone = count >= 7;
-    return `
-      <button type="button" class="rw-streak ${milestone ? "is-milestone" : ""}" data-rw-bounce style="${rewardsPaletteStyle(pal)}"
-              aria-label="${escapeHtml(t.title)}: ${count} day${count === 1 ? "" : "s"} in a row, ${escapeHtml(assignedName)}">
-        <span class="rw-streak-flame-wrap" aria-hidden="true">
-          <span class="rw-streak-flame">🔥</span>
-          <span class="rw-streak-count">${count}</span>
-        </span>
-        <span class="rw-streak-text">
-          <span class="rw-streak-days">${count} day${count === 1 ? "" : "s"} in a row${milestone ? " 🏆" : ""}</span>
-          <span class="rw-streak-title">${escapeHtml(t.title)}</span>
-          <span class="rw-streak-who">${escapeHtml(assignedName)}</span>
-        </span>
-      </button>`;
-  }).join("");
-}
-
 function renderPodiumRewards() {
-  const stage = document.getElementById("podium-stage");
-  const grid = document.getElementById("rewards-members-grid");
   const modeBadge = document.getElementById("rewards-mode-badge");
   const weekLabel = document.getElementById("rewards-week-label");
-  if (!stage || !grid) return;
-
   const isMoney = (window.boardSettings && window.boardSettings.gameMode) === "money";
   const currency = (window.boardSettings && window.boardSettings.currency) || "£";
-  const activeWeekKey = getIsoWeekKey();
 
   if (modeBadge) modeBadge.textContent = isMoney ? `Pocket money (${currency})` : "Points";
   // "Week Commencing 2nd Nov" on tablets, "Week of 2nd Nov" on phones (so
   // the countdown fits on the same line, like the other pages)
   if (weekLabel) weekLabel.innerHTML = `<span class="rw-week-long">Week Commencing</span><span class="rw-week-short">Week of</span> ${escapeHtml(getWeekCommencingDateStr())}`;
-
-  const memberData = computeMemberScores(activeWeekKey);
-
-  const sortedMembers = (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]).map(name => ({
-    name,
-    score: memberData[name] ? memberData[name].score : 0,
-    tasks: memberData[name] ? memberData[name].tasks : []
-  })).sort((a, b) => b.score - a.score);
-
-  const formatScore = (val) => isMoney ? `${currency}${val.toFixed(2)}` : `${val} pt${val === 1 ? "" : "s"}`;
-
-  renderRewardsPodiumStage(stage, sortedMembers, formatScore);
-  renderRewardsStandings(grid, sortedMembers, formatScore);
 
   const confettiBtn = document.getElementById("btn-podium-confetti");
   if (confettiBtn && !confettiBtn.hasAttribute("data-wired")) {
@@ -337,23 +190,17 @@ function renderPodiumRewards() {
     confettiBtn.addEventListener("click", () => {
       if (!rewardsReduceMotion() && typeof triggerConfettiBurst === "function") triggerConfettiBurst();
       if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
-      const st = document.getElementById("podium-stage");
-      if (st && !rewardsReduceMotion()) {
-        st.querySelectorAll(".podium-col").forEach(c => {
-          c.classList.remove("rw-boing");
-          void c.offsetWidth;
-          c.classList.add("rw-boing");
-        });
-      }
+      if (rewardsReduceMotion()) return;
+      document.querySelectorAll("#rewards-leaderboard .rw-lb-row").forEach(r => {
+        r.classList.remove("rw-boing");
+        void r.offsetWidth;
+        r.classList.add("rw-boing");
+      });
     });
   }
 
-  const streaksGrid = document.getElementById("rewards-streaks-grid");
-  if (streaksGrid) renderRewardsStreaks(streaksGrid);
-
   wireRewardsPageTaps();
   watchRewardsEntrance();
-
-  if (typeof window.renderRewardGoals === "function") window.renderRewardGoals();
+  if (window.RewardsPage) window.RewardsPage.render();
 }
 window.renderPodiumRewards = renderPodiumRewards;

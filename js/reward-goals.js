@@ -8,6 +8,10 @@
 //   rewardGoals:       [{ id, member, title, emoji, cost }]
 //   rewardRedemptions: [{ id, goalId, member, title, emoji, cost, redeemedAt }]
 //   rewardWeeks:       { "2026-W45": { Ava: 23, Dara: 12, ... }, ... }
+//   familyGoal:        { title, target, photo? } (everyone's stars this week)
+//   rewardStickers:    { "ava": { first: "2026-11-10", ... } }
+// Goals can also have photo: a key from js/reward-photos.js, or "none".
+// The page itself is drawn by js/rewards-page.js.
 //
 // rewardWeeks is written by the Sunday reset in app.js (bankRewardWeek): it
 // keeps each finished week's totals, keyed by week, so points carry over
@@ -29,6 +33,8 @@ function rewardDataCacheKey() {
     window.rewardGoals = (cached && Array.isArray(cached.goals)) ? cached.goals : [];
     window.rewardRedemptions = (cached && Array.isArray(cached.redemptions)) ? cached.redemptions : [];
     window.rewardWeeks = (cached && cached.weeks && typeof cached.weeks === "object") ? cached.weeks : {};
+    window.familyRewardGoal = (cached && cached.familyGoal && typeof cached.familyGoal === "object") ? cached.familyGoal : null;
+    window.rewardStickers = (cached && cached.stickers && typeof cached.stickers === "object") ? cached.stickers : {};
     // Until the board arrives, changes are worked out from this saved copy
     if (cached && window.BoardSync) {
       window.BoardSync.setBaseline("rewardGoals", window.rewardGoals);
@@ -38,6 +44,8 @@ function rewardDataCacheKey() {
     window.rewardGoals = [];
     window.rewardRedemptions = [];
     window.rewardWeeks = {};
+    window.familyRewardGoal = null;
+    window.rewardStickers = {};
   }
 })();
 
@@ -46,10 +54,13 @@ function cacheRewardData() {
     localStorage.setItem(rewardDataCacheKey(), JSON.stringify({
       goals: window.rewardGoals || [],
       redemptions: window.rewardRedemptions || [],
-      weeks: window.rewardWeeks || {}
+      weeks: window.rewardWeeks || {},
+      familyGoal: window.familyRewardGoal || null,
+      stickers: window.rewardStickers || {}
     }));
   } catch (e) {}
 }
+window.cacheRewardData = cacheRewardData;
 
 // Called from the board-doc listener in app.js whenever the board changes
 function applyBoardRewardData(data) {
@@ -68,6 +79,13 @@ function applyBoardRewardData(data) {
     changed = true;
   }
   if (data.rewardWeeks && typeof data.rewardWeeks === "object") { window.rewardWeeks = data.rewardWeeks; changed = true; }
+  // The family goal and stickers: whatever the board has (none is none)
+  const fam = data.familyGoal && typeof data.familyGoal === "object" ? data.familyGoal : null;
+  if (JSON.stringify(fam) !== JSON.stringify(window.familyRewardGoal || null)) { window.familyRewardGoal = fam; changed = true; }
+  const stickers = data.rewardStickers && typeof data.rewardStickers === "object" ? data.rewardStickers : {};
+  if (JSON.stringify(stickers) !== JSON.stringify(window.rewardStickers || {})) { window.rewardStickers = stickers; changed = true; }
+  // From now on new stickers can be given (js/rewards-page.js)
+  if (!window.rewardBoardLoaded) { window.rewardBoardLoaded = true; changed = true; }
   if (changed) {
     cacheRewardData();
     renderRewardGoals();
@@ -158,138 +176,19 @@ window.getMemberRewardBalance = getMemberRewardBalance;
 let rewardRedeemArmed = null; // goal id waiting for its confirming second tap
 let rewardRedeemTimer = null;
 
-// Remembered between renders so live updates (which re-render often) only
-// animate what actually changed:
-const rewardGoalShownPct = new Map();   // goal id -> % the bar showed last time
-const rewardGoalWasReady = new Map();   // goal id -> was it ready last time
-// Data settles in the first few seconds after the page loads (cache, then
-// the live board), so a goal "becoming ready" then isn't a real moment.
-const REWARD_GOALS_SETTLE_MS = 5000;
-const rewardGoalsLoadedAt = Date.now();
+window.rewardRedeemArmedId = () => rewardRedeemArmed;
 
+// The page (leaderboard, family goal, person cards) is drawn by
+// js/rewards-page.js; everything here that changes a goal redraws it
 function renderRewardGoals() {
-  const grid = document.getElementById("rewards-goals-grid");
-  if (!grid) return;
-  const members = window.familyMembers || [];
-  const goals = window.rewardGoals || [];
-  const redemptions = window.rewardRedemptions || [];
-  const paletteStyle = typeof window.rewardsPaletteStyle === "function"
-    ? window.rewardsPaletteStyle
-    : (pal) => `--member-primary: ${pal.primary}; --member-light: ${pal.lightBg}; --member-border: ${pal.border}; --member-text: ${pal.text};`;
-  const liveScores = typeof window.computeMemberScores === "function" ? window.computeMemberScores() : {};
-  const visible = grid.getClientRects().length > 0;
-  const settled = Date.now() - rewardGoalsLoadedAt > REWARD_GOALS_SETTLE_MS;
-  const justReady = []; // goals that have just crossed into "ready" while someone's watching
-  const fills = [];     // [element, target %] to animate after the HTML is in
-
-  const shownMember = rewardGoalsPhoneShown || null;
-  grid.innerHTML = members.map(member => {
-    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(member) : { primary: "#0284c7", lightBg: "#e0f2fe", border: "#7dd3fc", text: "#075985" };
-    const balance = getMemberRewardBalance(member);
-    // Split for grown-ups: earned this week, and what's left over from before
-    const live = (liveScores[member] && liveScores[member].score) || 0;
-    const saved = Math.round((balance - live) * 100) / 100;
-    const memberGoals = goals.filter(g => g.member === member).sort((a, b) => (a.cost || 0) - (b.cost || 0));
-    const recent = redemptions.filter(r => r.member === member)
-      .sort((a, b) => String(b.redeemedAt).localeCompare(String(a.redeemedAt)))
-      .slice(0, 2);
-
-    const goalsHtml = memberGoals.length ? memberGoals.map(g => {
-      const cost = Number(g.cost) || 0;
-      const pct = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
-      const ready = balance >= cost && cost > 0;
-      const armed = rewardRedeemArmed === g.id;
-
-      // Celebrate only a real change seen on screen, never the first look
-      if (visible && settled && rewardGoalWasReady.has(g.id) && !rewardGoalWasReady.get(g.id) && ready) justReady.push(g.id);
-      if (visible || !rewardGoalWasReady.has(g.id)) rewardGoalWasReady.set(g.id, ready);
-      const fromPct = rewardGoalShownPct.has(g.id) ? rewardGoalShownPct.get(g.id) : pct;
-      rewardGoalShownPct.set(g.id, pct);
-
-      const btn = ready
-        ? `<button type="button" class="reward-goal-redeem ${armed ? "is-armed" : ""}" data-redeem-goal="${escapeHtml(g.id)}">${armed ? "Tap again to redeem" : "🎉 Redeem"}</button>`
-        : `<span class="reward-goal-togo">${formatRewardAmount(cost - balance)} to go</span>`;
-      return `
-        <div class="reward-goal-row ${ready ? "is-ready" : ""}" data-goal-row="${escapeHtml(g.id)}">
-          <button type="button" class="reward-goal-main" data-edit-goal="${escapeHtml(g.id)}" title="Edit goal">
-            <span class="reward-goal-emoji">${escapeHtml(g.emoji || "🎁")}</span>
-            <span class="reward-goal-text">
-              <span class="reward-goal-title">${escapeHtml(g.title)}</span>
-              <span class="reward-goal-cost">${formatRewardAmount(Math.min(balance, cost))} of ${formatRewardAmount(cost)}</span>
-            </span>
-          </button>
-          <div class="reward-goal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${escapeHtml(g.title)}: ${pct}%">
-            <div class="reward-goal-bar-fill" data-fill-goal="${escapeHtml(g.id)}" data-pct="${pct}" style="width: ${fromPct}%;">
-              <span class="reward-goal-bar-star" aria-hidden="true">${ready ? "🌟" : "⭐"}</span>
-            </div>
-          </div>
-          <div class="reward-goal-action">${btn}</div>
-        </div>`;
-    }).join("") : `<p class="reward-goals-empty">No goals yet. What is ${escapeHtml(member)} saving up for?</p>`;
-
-    const recentHtml = recent.length ? `
-      <div class="reward-goals-recent">
-        ${recent.map(r => `<span>✓ ${escapeHtml(r.emoji || "🎁")} ${escapeHtml(r.title)} · ${new Date(r.redeemedAt).toLocaleDateString([], { day: "numeric", month: "short" })}</span>`).join("")}
-      </div>` : "";
-
-    const splitHtml = `
-      <div class="reward-goals-split">
-        <span class="reward-goals-chip">⭐ This week <strong>${formatRewardAmount(live)}</strong></span>
-        ${saved > 0 ? `<span class="reward-goals-chip">🏦 Saved <strong>${formatRewardAmount(saved)}</strong></span>` : ""}
-      </div>`;
-
-    return `
-      <div class="reward-goals-member" data-goals-member="${escapeHtml(member)}" style="${paletteStyle(pal)}">
-        <div class="reward-goals-member-head">
-          <button type="button" class="reward-goals-avatar" data-rw-bounce aria-label="${escapeHtml(member)}">${escapeHtml(member.charAt(0).toUpperCase())}</button>
-          <div class="reward-goals-member-names">
-            <span class="reward-goals-member-name">${escapeHtml(member)}</span>
-            <span class="reward-goals-balance"><strong>${formatRewardAmount(balance)}</strong> to spend</span>
-          </div>
-        </div>
-        ${splitHtml}
-        <div class="reward-goals-list">${goalsHtml}</div>
-        ${recentHtml}
-        <button type="button" class="reward-goals-add" data-add-goal-for="${escapeHtml(member)}">+ Add goal</button>
-      </div>`;
-  }).join("");
-
-  renderRewardGoalsTabs(grid, shownMember);
-
-  // Bars grow from where they were to where they are now
-  grid.querySelectorAll("[data-fill-goal]").forEach(el => fills.push(el));
-  if (fills.length) {
-    void grid.offsetWidth; // lock in the starting widths so the change animates
-    fills.forEach(el => { el.style.width = `${el.getAttribute("data-pct")}%`; });
-  }
-
-  // Someone just reached a goal: a burst of confetti in their colour
-  if (justReady.length) {
-    const reduce = typeof window.rewardsReduceMotion === "function" && window.rewardsReduceMotion();
-    justReady.forEach(id => {
-      const row = grid.querySelector(`[data-goal-row="${CSS.escape(id)}"]`);
-      if (!row) return;
-      if (!reduce) row.classList.add("is-just-ready");
-      const goal = goals.find(g => g.id === id);
-      const pal = goal && typeof window.getMemberPalette === "function" ? window.getMemberPalette(goal.member) : null;
-      if (typeof window.rewardsConfettiFrom === "function") window.rewardsConfettiFrom(row, pal ? [pal.primary, pal.border] : null);
-    });
-    try {
-      if (typeof sfx !== "undefined" && sfx && typeof sfx.playCelebrationChime === "function") sfx.playCelebrationChime();
-    } catch (e) {}
-  }
-
-  if (!grid.hasAttribute("data-wired")) {
-    grid.setAttribute("data-wired", "true");
-    grid.addEventListener("click", onRewardGoalsGridClick);
-  }
+  if (window.RewardsPage) window.RewardsPage.render();
 }
 window.renderRewardGoals = renderRewardGoals;
 
 // With a parent PIN set, adding/editing goals and redeeming need the PIN
 const rewardParentOk = (reason) => (window.ParentPin ? window.ParentPin.require(reason) : Promise.resolve(true));
 
-async function onRewardGoalsGridClick(e) {
+async function onRewardGoalClick(e) {
   const addBtn = e.target.closest("[data-add-goal-for]");
   if (addBtn) {
     const who = addBtn.getAttribute("data-add-goal-for");
@@ -321,6 +220,7 @@ async function onRewardGoalsGridClick(e) {
     redeemRewardGoal(goalId);
   }
 }
+window.onRewardGoalClick = onRewardGoalClick;
 
 function redeemRewardGoal(goalId) {
   const goal = (window.rewardGoals || []).find(g => g.id === goalId);
@@ -357,6 +257,7 @@ function redeemRewardGoal(goalId) {
 // ---------------------------------------------------------------------------
 let rewardGoalPanelMember = null;
 let rewardGoalPanelEmoji = "🎁";
+let rewardGoalPanelPhoto = ""; // a photo key, "none", or "" to match the name
 
 function openRewardGoalPanel(goalId = null, member = null) {
   const dialog = document.getElementById("reward-goal-modal");
@@ -366,6 +267,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
 
   rewardGoalPanelMember = goal ? goal.member : (member || (window.familyMembers || [])[0] || "");
   rewardGoalPanelEmoji = goal ? (goal.emoji || "🎁") : "🎁";
+  rewardGoalPanelPhoto = goal ? (goal.photo || "") : "";
 
   document.getElementById("reward-goal-title").textContent = goal ? "Edit Reward Goal" : "Add Reward Goal";
   document.getElementById("reward-goal-id").value = goal ? goal.id : "";
@@ -397,6 +299,14 @@ function renderRewardGoalPanelPickers() {
   const emojiRow = document.getElementById("reward-goal-emojis");
   emojiRow.innerHTML = REWARD_GOAL_EMOJIS.map(em =>
     `<button type="button" class="reward-goal-emoji-btn ${em === rewardGoalPanelEmoji ? "is-selected" : ""}" data-emoji="${em}" aria-label="Icon ${em}">${em}</button>`).join("");
+  renderRewardGoalPhotos();
+}
+
+// The photo on the goal's card: matched from its name, one of the stock
+// photos, or none (js/reward-photos.js)
+function renderRewardGoalPhotos() {
+  const row = document.getElementById("reward-goal-photos");
+  if (row && window.RewardPhotos) row.innerHTML = window.RewardPhotos.pickerHtml(rewardGoalPanelPhoto, document.getElementById("reward-goal-name").value, rewardGoalPanelEmoji);
 }
 
 function wireRewardGoalPanel() {
@@ -418,6 +328,14 @@ function wireRewardGoalPanel() {
     rewardGoalPanelEmoji = b.getAttribute("data-emoji");
     renderRewardGoalPanelPickers();
   });
+
+  document.getElementById("reward-goal-photos").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-photo-pick]");
+    if (!b) return;
+    rewardGoalPanelPhoto = b.getAttribute("data-photo-pick");
+    renderRewardGoalPhotos();
+  });
+  document.getElementById("reward-goal-name").addEventListener("input", () => { if (!rewardGoalPanelPhoto) renderRewardGoalPhotos(); });
 
   const costInput = document.getElementById("reward-goal-cost");
   const stepCost = (dir) => {
@@ -446,9 +364,15 @@ function wireRewardGoalPanel() {
     const goals = [...(window.rewardGoals || [])];
     if (id) {
       const idx = goals.findIndex(g => g.id === id);
-      if (idx !== -1) goals[idx] = { ...goals[idx], title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember };
+      if (idx !== -1) {
+        const next = { ...goals[idx], title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember };
+        if (rewardGoalPanelPhoto) next.photo = rewardGoalPanelPhoto; else delete next.photo;
+        goals[idx] = next;
+      }
     } else {
-      goals.push({ id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember });
+      const next = { id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember };
+      if (rewardGoalPanelPhoto) next.photo = rewardGoalPanelPhoto;
+      goals.push(next);
     }
     window.rewardGoals = goals;
     saveRewardDataToBoard({ rewardGoals: goals });
@@ -474,79 +398,4 @@ function wireRewardGoalPanel() {
     dialog.close();
     renderRewardGoals();
   });
-}
-
-
-// ============================================================================
-// PHONES: ONE PERSON AT A TIME (same as Tasks)
-// Four tall goal cards stacked made the page three screens long. On phones
-// a row of tabs (avatar, name, points to spend) sits over full-width cards
-// that snap as you swipe; tap a tab to jump. Tablets keep the grid.
-// ============================================================================
-var rewardGoalsPhoneShown = null;
-var rewardGoalsTabScrollUntil = 0;
-function rewardGoalsIsPhone() {
-  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 600px)").matches;
-}
-function rewardGoalsShownByScroll(grid) {
-  const cards = [...grid.querySelectorAll(".reward-goals-member")];
-  if (!cards.length || !grid.clientWidth) return null;
-  const i = Math.max(0, Math.min(cards.length - 1, Math.round(grid.scrollLeft / grid.clientWidth)));
-  return cards[i].getAttribute("data-goals-member");
-}
-function markRewardGoalsTab(member) {
-  document.querySelectorAll("#rewards-goals-tabs .tasks-person-tab").forEach(t => {
-    const on = t.getAttribute("data-goals-tab") === member;
-    t.classList.toggle("is-active", on);
-    t.setAttribute("aria-selected", on ? "true" : "false");
-  });
-}
-function renderRewardGoalsTabs(grid, showMember) {
-  let bar = document.getElementById("rewards-goals-tabs");
-  if (!bar) {
-    bar = document.createElement("div");
-    bar.id = "rewards-goals-tabs";
-    bar.className = "tasks-person-tabs rewards-goals-tabs";
-    bar.setAttribute("role", "tablist");
-    bar.setAttribute("aria-label", "Whose goals");
-    grid.parentNode.insertBefore(bar, grid);
-    bar.addEventListener("click", (e) => {
-      const tab = e.target.closest("[data-goals-tab]");
-      if (!tab) return;
-      const card = [...grid.querySelectorAll(".reward-goals-member")].find(c => c.getAttribute("data-goals-member") === tab.getAttribute("data-goals-tab"));
-      if (!card) return;
-      rewardGoalsPhoneShown = tab.getAttribute("data-goals-tab");
-      rewardGoalsTabScrollUntil = Date.now() + 700;
-      const reduce = typeof window.rewardsReduceMotion === "function" && window.rewardsReduceMotion();
-      grid.scrollTo({ left: card.offsetLeft - grid.offsetLeft, behavior: reduce ? "auto" : "smooth" });
-      markRewardGoalsTab(rewardGoalsPhoneShown);
-    });
-    let raf = 0;
-    grid.addEventListener("scroll", () => {
-      if (raf || !rewardGoalsIsPhone()) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (Date.now() < rewardGoalsTabScrollUntil) return;
-        rewardGoalsPhoneShown = rewardGoalsShownByScroll(grid);
-        markRewardGoalsTab(rewardGoalsPhoneShown);
-      });
-    }, { passive: true });
-  }
-  const cards = [...grid.querySelectorAll(".reward-goals-member")];
-  bar.innerHTML = cards.map(card => {
-    const m = card.getAttribute("data-goals-member");
-    const avatar = card.querySelector(".reward-goals-avatar");
-    const bal = card.querySelector(".reward-goals-balance strong");
-    const color = avatar ? getComputedStyle(avatar).backgroundColor : "#94a3b8";
-    return `<button type="button" class="tasks-person-tab" role="tab" data-goals-tab="${escapeHtml(m)}" style="--tab-color: ${color};">
-      <span class="tasks-person-tab-avatar">${escapeHtml(m.charAt(0).toUpperCase())}</span>
-      <span class="tasks-person-tab-name">${escapeHtml(m)}</span>
-      <span class="tasks-person-tab-tally">${bal ? escapeHtml(bal.textContent.trim()) : ""}</span>
-    </button>`;
-  }).join("");
-  if (!rewardGoalsIsPhone()) return;
-  const target = cards.find(c => c.getAttribute("data-goals-member") === showMember) || cards[0];
-  if (target) grid.scrollLeft = target.offsetLeft - grid.offsetLeft;
-  rewardGoalsPhoneShown = target ? target.getAttribute("data-goals-member") : null;
-  markRewardGoalsTab(rewardGoalsPhoneShown);
 }

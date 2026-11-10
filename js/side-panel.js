@@ -19,6 +19,8 @@ const SIDE_PANEL_DIALOGS = [
   "roster-modal",       // Family members
   "settings-modal",     // Settings
   "reward-goal-modal",  // Rewards: add / edit a goal
+  "reward-person-modal", // Rewards: one person's goals, stickers and week
+  "family-goal-modal",  // Rewards: the family goal
   "grocery-list-modal", // Meals: the shared Groceries list
   "list-item-modal",    // Lists: add items to a list
   "meal-details-modal", // Meals: tap a planned meal

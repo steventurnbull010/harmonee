@@ -78,6 +78,14 @@ function sampleStore() {
         { id: "e3", title: "Football", day: "Saturday", time: "10:00", duration: "1 hour", repeat: "weekly", member: "Max", icon: "⚽" },
         { id: "e4", title: "School trip to the zoo", date: keyOf(new Date(today.getTime() + 3 * 86400000)), time: "09:00", duration: "1 day", repeat: "none", member: "Jo", icon: "🦁", countdown: true }
       ],
+      // Rewards: two goals, last week banked, and a family goal
+      rewardGoals: [
+        { id: "goal-jo-1", member: "Jo", title: "Cinema trip", emoji: "🎬", cost: 30 },
+        { id: "goal-jo-2", member: "Jo", title: "New Lego set", emoji: "🧸", cost: 120 },
+        { id: "goal-sam-1", member: "Sam", title: "Takeaway pizza", emoji: "🍕", cost: 10 }
+      ],
+      rewardWeeks: { "2000-W01": { Jo: 12, Sam: 14, Max: 3 } },
+      familyGoal: { title: "Pizza and film night", target: 40 },
       meals: { [keyOf(today)]: { dinner: { title: "Spaghetti bolognese", emoji: "🍝", cook: "Alex" } } },
       familyLists: [
         { id: "groceries", title: "Groceries", emoji: "🛒", color: "sky", isDefault: true, items: [{ id: "g1", text: "Milk", checked: false }, { id: "g2", text: "Bread", checked: false }, { id: "g3", text: "Apples", checked: true },
@@ -1076,6 +1084,113 @@ const PAGES = [
     if (r.after.local < 1 || !r.after.stored) throw new Error(`a tick on the Tasks page didn't count towards its streak: ${JSON.stringify(r)}`);
     if (!r.undone) throw new Error(`taking the tick back left the day on its streak: ${JSON.stringify(r)}`);
   }],
+  // Rewards (10 Nov): this week's stars with a crown, the family goal, a card
+  // for each person (photo goals, "Set a goal for"), stickers kept on the
+  // board, the person panel and the family goal panel
+  ["rewards-page", async (p) => {
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      window.boardSettings.memberBuddies = { jo: "dragon" };
+      window.switchSkylightView("rewards");
+    });
+    await p.waitForTimeout(400);
+    const B = "boards/sidepanel-test-x7q2";
+    const r = await p.evaluate(async (B) => {
+      const q = (s) => document.querySelector(s);
+      const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
+      const today = window.getLocalDateKey(new Date());
+      const out = {};
+      out.rows = document.querySelectorAll("#rewards-leaderboard .rw-lb-row").length;
+      out.cards = document.querySelectorAll("#rewards-people-grid .rw-person").length;
+      out.family = !!q("#rewards-family .rw-family") && /Pizza and film night/.test(q("#rewards-family").textContent);
+      out.setGoalAlex = /Set a goal for Alex/.test(q('[data-person="Alex"]').textContent);
+      out.joPhoto = (q('[data-person="Jo"] .rw-goal-photo') || {}).getAttribute?.("style") || "";
+      out.joBuddy = !!q('[data-person="Jo"] .rw-face.is-buddy svg');
+      out.lastWords = /last/i.test(q("#rewards-leaderboard").textContent);
+      // Jo does a job: Jo leads, with the crown
+      const t1 = window.currentTasks.find(t => t.id === "t1");
+      const was = !!(t1.completedDays || {})[dayName];
+      const joBefore = (window.computeMemberScores()["Jo"] || {}).score || 0;
+      if (!was) window.handleCompleteTaskWithCelebration("t1", dayName, null, today);
+      await new Promise(res => setTimeout(res, 500));
+      if (window.TickCheer) window.TickCheer.close(true);
+      if (window.Buddies) window.Buddies.close();
+      window.renderPodiumRewards();
+      const scores = window.computeMemberScores();
+      const top = Math.max(...window.familyMembers.map(m => (scores[m] || {}).score || 0));
+      out.top = window.familyMembers.filter(m => ((scores[m] || {}).score || 0) === top);
+      out.joUp = ((scores["Jo"] || {}).score || 0) > joBefore || was;
+      const first = q("#rewards-leaderboard .rw-lb-row");
+      out.leader = first ? first.querySelector(".rw-lb-name").textContent : "";
+      out.crown = !!(first && first.querySelector(".rw-lb-crown"));
+      out.crowns = document.querySelectorAll("#rewards-leaderboard .rw-lb-crown").length;
+      out.ring = (q('[data-person="Jo"] .rw-ring') || {}).getAttribute?.("aria-label") || "";
+      const doc = window.__SMOKE_STORE[B] || {};
+      out.stickers = doc.rewardStickers || null;
+      out.wasTicked = was;
+      return out;
+    }, B);
+    if (r.rows !== 4 || r.cards !== 4) throw new Error(`expected 4 stars rows and 4 person cards: ${JSON.stringify(r)}`);
+    if (!r.family) throw new Error("the family goal bar isn't under the stars");
+    if (!r.setGoalAlex) throw new Error("Alex has no goal but there's no \"Set a goal for Alex\"");
+    if (!/images\/rewards\/film\.jpg/.test(r.joPhoto)) throw new Error(`Jo's Cinema trip has no film photo: ${r.joPhoto}`);
+    if (!r.joBuddy) throw new Error("Jo's buddy isn't on Jo's card");
+    if (r.lastWords) throw new Error("the stars say \"last\"");
+    if (!r.joUp) throw new Error(`Jo's job didn't add to Jo's stars: ${JSON.stringify(r)}`);
+    if (!r.top.includes(r.leader) || !r.crown || r.crowns !== r.top.length) throw new Error(`whoever has the most stars should be first, with a crown each for the top: ${JSON.stringify(r)}`);
+    if (!/of \d+ today/.test(r.ring)) throw new Error(`Jo's ring doesn't show today's jobs: ${r.ring}`);
+    if (!r.stickers || !r.stickers.jo || !r.stickers.jo.first || !r.stickers.sam || !r.stickers.sam.first) throw new Error(`first-job stickers weren't saved to the board: ${JSON.stringify(r.stickers)}`);
+    if (r.stickers.alex) throw new Error("Alex got a sticker for nothing");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards.png`) });
+    await p.evaluate(() => document.getElementById("rewards-people-grid").scrollIntoView({ block: "end" }));
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-cards.png`) });
+
+    // Jo's panel: goals, six stickers (one earned), the week
+    const panel = await p.evaluate(async () => {
+      window.RewardsPage.openPerson("Jo");
+      await new Promise(res => setTimeout(res, 450));
+      const body = document.getElementById("reward-person-body");
+      return {
+        open: document.getElementById("reward-person-modal").open,
+        goals: body.querySelectorAll(".rp-goal").length,
+        stickers: body.querySelectorAll(".rp-sticker").length,
+        earned: body.querySelectorAll(".rp-sticker.is-on").length,
+        done: /Make your bed/.test(body.textContent)
+      };
+    });
+    if (!panel.open || panel.goals !== 2 || panel.stickers !== 6 || panel.earned < 1 || !panel.done) throw new Error(`Jo's panel isn't right: ${JSON.stringify(panel)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-person.png`) });
+
+    // The family goal panel: change it and it's saved
+    const fam = await p.evaluate(async (B) => {
+      document.getElementById("reward-person-modal").close();
+      await new Promise(res => setTimeout(res, 350));
+      window.RewardsPage.openFamilyGoal();
+      await new Promise(res => setTimeout(res, 350));
+      const name = document.getElementById("family-goal-name");
+      name.value = "Trip to the zoo";
+      name.dispatchEvent(new Event("input"));
+      const tiles = document.querySelectorAll("#family-goal-photos [data-photo-pick]").length;
+      const auto = (document.querySelector('#family-goal-photos [data-photo-pick=""] .rw-photo-pick-img') || {}).getAttribute?.("style") || "";
+      document.getElementById("family-goal-target").value = "60";
+      document.getElementById("btn-save-family-goal").click();
+      await new Promise(res => setTimeout(res, 450));
+      const doc = window.__SMOKE_STORE[B] || {};
+      return { tiles, auto, saved: doc.familyGoal || null, shown: document.getElementById("rewards-family").textContent };
+    }, B);
+    if (fam.tiles !== 14) throw new Error(`the family goal photo picker should have 14 tiles: ${fam.tiles}`);
+    if (!/dayout\.jpg/.test(fam.auto)) throw new Error(`"Trip to the zoo" didn't match the day out photo: ${fam.auto}`);
+    if (!fam.saved || fam.saved.title !== "Trip to the zoo" || fam.saved.target !== 60) throw new Error(`the family goal wasn't saved: ${JSON.stringify(fam.saved)}`);
+    if (!/Trip to the zoo/.test(fam.shown)) throw new Error("the new family goal isn't shown");
+
+    // Put things back for the other steps
+    await p.evaluate(async (was) => {
+      const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
+      if (!was) await window.handleUndoTask("t1", dayName, window.getLocalDateKey(new Date()));
+      window.boardSettings.memberBuddies = {};
+    }, r.wasTicked);
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
@@ -1267,6 +1382,8 @@ async function main() {
       await page.waitForTimeout(800);
       // The app's own error log (js/errors.js) counts too
       for (const [name, open] of PAGES) {
+        // ONLY=rewards,rewards-page runs just those steps (quicker while working on a page)
+        if (process.env.ONLY && !process.env.ONLY.split(",").includes(name)) continue;
         const before = problems.length;
         try { await open(page); } catch (e) { problems.push(`couldn't open ${name}: ${e.message.split("\n")[0]}`); }
         await page.waitForTimeout(700);
