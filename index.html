@@ -59,7 +59,7 @@
   <link rel="stylesheet" href="css/item-drag.css?v=bdc26170">
   <link rel="stylesheet" href="css/buddies.css?v=8186728c">
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
-  <link rel="stylesheet" href="css/meals.css?v=d3cca26a">
+  <link rel="stylesheet" href="css/meals.css?v=cbac3913">
   <link rel="stylesheet" href="css/calendar.css?v=94300d0c">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=9b22410d">
@@ -76,7 +76,7 @@
   <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
   <link rel="stylesheet" href="css/sheet.css?v=9776fb49">
   <link rel="stylesheet" href="css/magic-import.css?v=b473ad17">
-  <link rel="stylesheet" href="css/meal-genie.css?v=27f8eaef">
+  <link rel="stylesheet" href="css/meal-genie.css?v=049102e8">
   
   <!-- The error log and the "Reload app" banner: first, so it catches everything (Settings → Diagnostics) -->
   <script src="js/errors.js?v=bf20e338"></script>
@@ -389,6 +389,11 @@
                 <button type="button" class="btn-skylight-action-pill btn-meal-genie" data-open-genie title="Magic Mealtime: ideas for what to cook">
                   <span class="pill-icon">🪄</span>
                   <span class="pill-text">Ideas</span>
+                </button>
+
+                <button type="button" class="btn-skylight-action-pill" id="btn-open-recipes" data-open-recipes title="Your recipes, favourites and search">
+                  <span class="pill-icon">📖</span>
+                  <span class="pill-text">Recipes</span>
                 </button>
 
                 <button type="button" class="btn-skylight-primary-pill" id="btn-meals-plan-dinner" title="Plan the next meal">
@@ -2543,7 +2548,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=5df68c03"></script>
+  <script src="js/build-info.js?v=d2734edb"></script>
   <script src="js/utils.js?v=53ae68b2"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
@@ -2584,7 +2589,8 @@
   <script src="js/parent-pin.js?v=b6e3c20f"></script>
   <script src="js/music.js?v=d89c674f"></script>
   <script src="js/setup-wizard.js?v=0cd14412"></script>
-  <script src="js/family-recipes.js?v=fd2c72be"></script>
+  <script src="js/family-recipes.js?v=026c576c"></script>
+  <script src="js/recipes-panel.js?v=1934ddf0"></script>
   <script src="js/magic-import.js?v=b7981b4f"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
@@ -2595,7 +2601,7 @@
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=49966559"></script>
   <script src="js/side-panel.js?v=804be778"></script>
-  <script type="module" src="js/meals.js?v=8d9fa7d8"></script>
+  <script type="module" src="js/meals.js?v=c4dd36e1"></script>
   <script type="module" src="app.js?v=712ed2f8"></script>
   <script>
     // Offline support and "Install app" (sw.js)

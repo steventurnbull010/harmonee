@@ -49,6 +49,7 @@
       window.BoardSync.saveListChanges(FIELD, next);
     }
     if (typeof window.renderDrawerRecipeList === "function") window.renderDrawerRecipeList();
+    if (window.RecipesPanel) window.RecipesPanel.refresh();
     if (typeof window.notifyBoardChanged === "function") window.notifyBoardChanged();
   }
   function save(recipe) {

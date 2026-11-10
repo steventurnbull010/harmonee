@@ -1493,6 +1493,19 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
 }
 window.openCookingRecipeModal = openCookingRecipeModal;
 window.renderDrawerRecipeList = () => renderDrawerRecipeList();
+// For the Recipes panel on the Meals page (js/recipes-panel.js)
+window.RecipeRows = {
+  all: () => getAllFamilyRecipes(),
+  find: (id) => findRecipeByIdOrTitle(id),
+  rowHtml: (r) => recipeRowHtml(r),
+  isFav: (r) => isFavouriteRecipe(r),
+  toggleFav: (id) => toggleFavouriteRecipe(id),
+  // Its card, set to plan it for today at its own meal (a snack: dinner)
+  open: (r) => {
+    const meal = String(r.mealType || r.category || "").toLowerCase();
+    openCookingRecipeModal(r, (window.getLocalDateKey || getLocalDateKey)(new Date()), ["breakfast", "lunch", "dinner"].includes(meal) ? meal : "dinner");
+  }
+};
 
 // Plan a recipe straight onto a day (Meal Genie): the same meal the recipe
 // card's "Add to plan" saves, then the ingredients question slides up

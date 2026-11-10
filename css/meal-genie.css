@@ -80,8 +80,9 @@ body.theme-dark .genie-more { background: rgba(124, 58, 237, 0.2); border-color:
   .genie-photo { width: 72px; height: 72px; }
   .genie-opt { min-height: 64px; }
 }
-/* Phones: three header buttons on Meals, so the shopping list is just 🛒 17 */
-@media (max-width: 600px) {
+/* Very narrow phones: the shopping list button is just 🛒 17 (Meals has four
+   header buttons, two to a row on a phone) */
+@media (max-width: 359px) {
   #btn-open-grocery-list .pill-text { display: none; }
 }
 

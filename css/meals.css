@@ -4094,3 +4094,23 @@ body.theme-dark .family-recipe-photo { background: rgba(2, 132, 199, 0.15); bord
 body.theme-dark .family-recipe-note { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
 
 .cooking-credit-edit { border: none; background: none; padding: 0 4px; color: #0284c7; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* ---------------------------------------------------------------------------
+   RECIPES PANEL (js/recipes-panel.js): "📖 Recipes" on the Meals page
+   --------------------------------------------------------------------------- */
+.recipes-panel-body { display: flex; flex-direction: column; gap: 16px; padding-bottom: 24px; }
+.recipes-panel-search { display: flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 48px; border: 1.5px solid var(--border-color, #e2e8f0); border-radius: 14px; background: var(--card-bg, #fff); }
+.recipes-panel-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; color: var(--text-primary); }
+.recipes-panel-search:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+.recipes-panel-list { display: flex; flex-direction: column; gap: 8px; }
+.recipes-panel-empty { margin: 0; padding: 24px 16px; text-align: center; color: var(--text-muted, #64748b); }
+.recipes-panel-empty strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+.recipes-panel-hint { margin: 8px 0 0; text-align: center; font-size: 0.9rem; color: var(--text-muted, #64748b); }
+body.theme-dark .recipes-panel-search { background: #1e293b; border-color: #334155; }
+
+/* Phones: four buttons on two rows (🛒 · Ideas, Recipes · Plan Meal) */
+@media (max-width: 600px) {
+  /* (navigation.css lays phone header buttons out in a row with !important) */
+  #view-meals .skylight-single-header .skylight-meals-nav-controls { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; }
+  #view-meals .skylight-meals-nav-controls .calendar-nav-buttons { display: none !important; }
+}

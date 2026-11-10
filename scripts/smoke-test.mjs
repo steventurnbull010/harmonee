@@ -635,6 +635,33 @@ const PAGES = [
     await p.evaluate(() => document.getElementById("cooking-credit").scrollIntoView({ block: "center" }));
     await shot("11-card-credit");
   }],
+  // 📖 Recipes on the Meals page: your own recipes without going through Plan Meal
+  ["recipes-panel", async (p) => {
+    await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });
+    await p.evaluate(() => window.FamilyRecipes.save({ id: "family-smoke-flapjacks", title: "Nana's flapjacks", emoji: "🍪", mealType: "snack", category: "snack", source: "family", subtitle: "Family recipe", ingredients: ["250g oats"], instructions: ["Bake."] }));
+    await goTo("meals")(p);
+    const btn = p.locator("#btn-open-recipes");
+    if (!(await btn.isVisible())) throw new Error("no Recipes button on the Meals page");
+    const fits = await p.evaluate(() => [...document.querySelectorAll("#view-meals .skylight-meals-nav-controls > button")].every(b => b.scrollWidth <= b.clientWidth + 1));
+    if (!fits) throw new Error("a Meals header button's words don't fit");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meals-header-recipes.png`) });
+    await btn.click();
+    await p.waitForTimeout(600);
+    const own = await p.evaluate(() => document.querySelector("#recipes-panel [data-rp-list]").textContent.includes("Nana's flapjacks"));
+    if (!own) throw new Error("your own recipe (a snack) isn't under Your recipes");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-list.png`) });
+    await p.fill("#recipes-panel [data-rp-search]", "chicken");
+    await p.waitForTimeout(200);
+    const hits = await p.locator("#recipes-panel .drawer-recipe-card").count();
+    if (hits < 1) throw new Error("searching chicken found nothing");
+    await p.fill("#recipes-panel [data-rp-search]", "flapjack");
+    await p.waitForTimeout(200);
+    await p.locator("#recipes-panel .drawer-recipe-card").first().click();
+    await p.waitForTimeout(500);
+    if (!(await p.evaluate(() => document.getElementById("cooking-recipe-modal").open))) throw new Error("tapping a recipe didn't open it");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-recipes-card.png`) });
+    await p.evaluate(() => { document.getElementById("cooking-recipe-modal").close(); document.getElementById("recipes-panel").close(); window.FamilyRecipes.remove("family-smoke-flapjacks"); });
+  }],
   // Night clock: not while someone's using the screen (it came down mid-recipe at 12:30am)
   ["night-clock", async (p) => {
     const shown = await p.evaluate(() => {
