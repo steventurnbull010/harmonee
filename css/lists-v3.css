@@ -211,3 +211,38 @@ body.theme-dark .list-starter-row { background: rgba(13, 148, 136, 0.15); color:
   .list-who-picker .list-who { flex: none; }
   .list-who-picker .list-usuals-label { flex: none; }
 }
+
+/* --- Add items: which list, as chips with the whole name ------------------- */
+#list-item-list-picker.list-item-picker { display: flex; flex-wrap: wrap; justify-content: flex-start !important; gap: 8px !important; }
+.list-pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 4px 14px 4px 4px;
+  border: 1.5px solid color-mix(in srgb, var(--list-accent) 35%, transparent);
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.list-pick-chip-emoji {
+  flex: none;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--list-light);
+  font-size: 1.05rem;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+.list-pick-chip-name { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.list-pick-chip.is-on { border-color: var(--list-accent); background: var(--list-light); color: color-mix(in srgb, var(--list-accent) 80%, #0f172a); box-shadow: 0 0 0 2px color-mix(in srgb, var(--list-accent) 25%, transparent); }
+.list-pick-chip.is-on .list-pick-chip-emoji { background: #fff; }
+.list-pick-chip-tick { flex: none; font-weight: 900; }
+body.theme-dark .list-pick-chip { background: #0f172a; color: #f8fafc; }
+body.theme-dark .list-pick-chip.is-on { background: color-mix(in srgb, var(--list-accent) 28%, #1e293b); color: #f8fafc; }

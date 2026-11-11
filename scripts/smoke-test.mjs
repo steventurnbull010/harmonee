@@ -851,6 +851,52 @@ const PAGES = [
   }],
   // Kinds of list: worked out from their names, each with its own tools;
   // New list starts by picking one
+  // Lists: type an item and tap ＋ and it's on the list (it used to open the
+  // Add panel on a phone); ＋ with nothing typed opens the panel, whose list
+  // chips show whole names
+  ["list-plus", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
+    await p.waitForTimeout(300);
+    // Open Groceries (a tile on phones, the rail elsewhere)
+    await p.evaluate(() => { const b = document.querySelector('#lists-board [data-open-list="groceries"]'); if (b) b.click(); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      const col = document.querySelector('#lists-board [data-list-id="groceries"]');
+      const input = col && col.querySelector(".list-column-add input");
+      const plus = col && col.querySelector("[data-open-add-panel]");
+      if (!input || !plus) return { found: false };
+      input.value = "Dishwasher tablets";
+      plus.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+      plus.click();
+      await wait(300);
+      const g = (window.familyLists || []).find(l => l.id === "groceries") || {};
+      const added = (g.items || []).some(i => /dishwasher tablets/i.test(i.text || ""));
+      const panelAfterTyped = !!(document.getElementById("list-item-modal") || {}).open;
+      const inputAfter = document.querySelector('#lists-board [data-list-id="groceries"] .list-column-add input');
+      const cleared = !!inputAfter && inputAfter.value === "";
+      // Nothing typed: the panel for several at once
+      document.querySelector('#lists-board [data-list-id="groceries"] [data-open-add-panel]').click();
+      await wait(400);
+      const panel = !!(document.getElementById("list-item-modal") || {}).open;
+      const chips = [...document.querySelectorAll("#list-item-list-picker .list-pick-chip")];
+      const clipped = chips.filter(c => { const n = c.querySelector(".list-pick-chip-name"); return n && n.scrollWidth > n.clientWidth + 1; }).map(c => c.textContent.trim());
+      const onChip = (document.querySelector("#list-item-list-picker .list-pick-chip.is-on") || {}).textContent || "";
+      return { found: true, added, panelAfterTyped, cleared, panel, chips: chips.length, clipped, onChip: onChip.trim() };
+    });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-add-panel.png`) });
+    await p.evaluate(async () => {
+      const d = document.getElementById("list-item-modal"); if (d && d.open) d.close();
+      await new Promise(res => setTimeout(res, 350));
+      const back = document.querySelector("#lists-board [data-lists-back]"); if (back && back.offsetParent) back.click(); // back to My lists on a phone
+    });
+    await p.waitForTimeout(300);
+    if (!r.found) throw new Error("couldn't find Groceries' add box");
+    if (!r.added || r.panelAfterTyped || !r.cleared) throw new Error(`typing an item and tapping ＋ didn't just add it: ${JSON.stringify(r)}`);
+    if (!r.panel) throw new Error("＋ with nothing typed didn't open the Add panel");
+    if (r.chips < 4 || r.clipped.length) throw new Error(`the Add panel's list chips are cut short: ${JSON.stringify(r)}`);
+    if (!/Groceries/.test(r.onChip)) throw new Error(`the Add panel didn't have Groceries picked: ${r.onChip}`);
+  }],
   ["list-kinds", async (p) => {
     await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
     await goTo("lists")(p);

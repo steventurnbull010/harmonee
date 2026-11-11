@@ -589,6 +589,13 @@ function renderListsView() {
     board.setAttribute("data-wired", "true");
     board.addEventListener("click", onListsBoardClick);
     board.addEventListener("submit", onListsBoardSubmit);
+    // Tapping ＋ with something typed mustn't take the focus from the box,
+    // so the phone's keyboard stays up for the next item
+    board.addEventListener("mousedown", (e) => {
+      const plus = e.target.closest && e.target.closest("[data-open-add-panel]");
+      const typed = plus && plus.closest(".list-column-add") && plus.closest(".list-column-add").querySelector("input");
+      if (typed && typed.value.trim()) e.preventDefault();
+    });
     // "4 more ⌄": scroll the list down a screenful
     board.addEventListener("click", (e) => {
       const more = e.target.closest && e.target.closest("[data-list-more]");
@@ -828,7 +835,7 @@ function renderListDetail(list, index, justTicked) {
       <form class="list-column-add" data-add-item>
         <span class="list-add-ring" aria-hidden="true"></span>
         <input type="text" placeholder="${escapeHtml(addPlaceholder)}" aria-label="${escapeHtml(addPlaceholder)}" autocomplete="off" enterkeyhint="done">
-        <button type="button" data-open-add-panel aria-label="Add several items to ${escapeHtml(list.title)}" title="Add several at once">+</button>
+        <button type="button" data-open-add-panel aria-label="Add to ${escapeHtml(list.title)} (with nothing typed: add several at once)" title="Add (or, with nothing typed, add several at once)">+</button>
       </form>
       ${usualsHtml}
       ${items.length === 0
@@ -996,10 +1003,19 @@ function onListsBoardClick(e) {
     return;
   }
   if (e.target.closest("[data-open-add-panel]")) {
+    // Something typed: ＋ adds it to this list straight away, like Done on
+    // the keyboard (on an iPhone it used to open the Add panel, needing a
+    // second tap). Nothing typed: ＋ opens the panel to add several at once.
     const typed = column.querySelector(".list-column-add input");
     const draft = typed ? typed.value.trim() : "";
-    if (typed) typed.value = "";
-    openAddListItemPanel(listId, draft);
+    if (draft) {
+      typed.value = "";
+      handleAddItemToList(listId, draft);
+      const again = document.querySelector(`#lists-board [data-list-id="${CSS.escape(listId)}"] .list-column-add input`);
+      if (again) again.focus();
+      return;
+    }
+    openAddListItemPanel(listId, "");
   }
 }
 
@@ -1016,9 +1032,12 @@ function renderAddPanelListPicker() {
   row.innerHTML = lists.map((l, i) => {
     const col = getListColor(l, i);
     const on = l.id === addPanelListId;
-    return `<button type="button" class="drawer-profile-pill list-item-picker-pill ${on ? "active is-selected" : ""}" data-pick-list="${escapeHtml(l.id)}" aria-pressed="${on}" style="--profile-color: ${col.accent}; --list-accent: ${col.accent}; --list-light: ${col.light};">
-      <span class="drawer-profile-avatar list-item-picker-emoji">${escapeHtml(l.emoji || "📋")}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span></span>
-      <span class="drawer-profile-name">${escapeHtml(l.title)}</span>
+    // A chip with the list's icon and its whole name (round icons cut names
+    // to "Family G…" on a phone)
+    return `<button type="button" class="list-pick-chip ${on ? "is-on" : ""}" data-pick-list="${escapeHtml(l.id)}" aria-pressed="${on}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
+      <span class="list-pick-chip-emoji" aria-hidden="true">${escapeHtml(l.emoji || "📋")}</span>
+      <span class="list-pick-chip-name">${escapeHtml(l.title)}</span>
+      ${on ? `<span class="list-pick-chip-tick" aria-hidden="true">✓</span>` : ""}
     </button>`;
   }).join("");
   const list = lists.find(l => l.id === addPanelListId);
