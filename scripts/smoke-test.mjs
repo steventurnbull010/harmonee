@@ -1375,11 +1375,15 @@ const PAGES = [
       const more = list().length;
       document.querySelector('#reward-goal-ideas [data-idea="New toy"]').click();
       await new Promise(res => setTimeout(res, 100));
+      // Closed again, with New toy still showing
+      const afterPick = list().length;
+      const toyShown = list().includes("New toy");
+      document.querySelector("#reward-goal-ideas [data-ideas-more]").click();
       const toyOnce = document.querySelector('#reward-goal-repeat [data-repeat="once"]').classList.contains("active");
       document.querySelector('#reward-goal-ideas [data-idea="Pocket money"]').click();
       await new Promise(res => setTimeout(res, 100));
       return {
-        first, more, addRow, addHeight, joBuddy, alexInitial, toyOnce,
+        first, more, addRow, addHeight, joBuddy, alexInitial, toyOnce, afterPick, toyShown,
         name: document.getElementById("reward-goal-name").value,
         moneyAgain: document.querySelector('#reward-goal-repeat [data-repeat="again"]').classList.contains("active"),
         photo: (document.querySelector("#reward-goal-photo .rw-pc-preview") || {}).getAttribute?.("style") || "",
@@ -1387,7 +1391,10 @@ const PAGES = [
         on: [...document.querySelectorAll("#reward-goal-ideas .is-on")].map(b => b.getAttribute("data-idea"))
       };
     });
-    if (ideas.first.join() !== "Pocket money,Cinema trip,Screen time,Pizza night") throw new Error(`the first ideas aren't Pocket money first: ${ideas.first}`);
+    const wantFirst = p.__size === "phone" ? "Pocket money,Cinema trip" : "Pocket money,Cinema trip,Screen time,Pizza night";
+    if (ideas.first.join() !== wantFirst) throw new Error(`the first ideas aren't ${wantFirst}: ${ideas.first}`);
+    if (ideas.afterPick !== ideas.first.length) throw new Error(`the ideas didn't close again after one was picked: ${ideas.afterPick}`);
+    if (!ideas.toyShown) throw new Error("the idea picked isn't shown once the list closes");
     if (ideas.more < 12) throw new Error(`More ideas didn't show more: ${ideas.more}`);
     if (!ideas.addRow || ideas.addHeight > 80) throw new Error(`with no photo the panel doesn't show a slim Add a photo row (${ideas.addHeight}px)`);
     if (!ideas.joBuddy || ideas.alexInitial !== "A") throw new Error(`the picker doesn't show Jo's buddy (and Alex's initial): ${JSON.stringify(ideas)}`);

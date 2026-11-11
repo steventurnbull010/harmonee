@@ -294,7 +294,9 @@ const REWARD_GOAL_IDEAS = [
   { title: "Pamper day", emoji: "🛁", once: false },
   { title: "Night out", emoji: "🍸", once: false }
 ];
-const REWARD_GOAL_IDEAS_SHOWN = 4;
+// Four to start on a tablet, two on a phone (the full list is long there);
+// the list closes again once one is picked (Steven, 11 Nov)
+const rewardGoalIdeasShown = () => (window.matchMedia && window.matchMedia("(max-width: 600px)").matches ? 2 : 4);
 
 // Who → What's the reward → Photo → Points (a slider with shortcuts). The
 // emoji is worked out from the photo (11 Nov: the Icon row went; it was a
@@ -357,11 +359,14 @@ function renderRewardGoalIdeas(show) {
   if (show === true) box.hidden = false;
   if (box.hidden) return;
   const typed = document.getElementById("reward-goal-name").value.trim().toLowerCase();
-  const list = rewardGoalMoreIdeas ? REWARD_GOAL_IDEAS : REWARD_GOAL_IDEAS.slice(0, REWARD_GOAL_IDEAS_SHOWN);
+  let list = rewardGoalMoreIdeas ? REWARD_GOAL_IDEAS : REWARD_GOAL_IDEAS.slice(0, rewardGoalIdeasShown());
+  // The one picked stays in view when the list closes
+  const picked = REWARD_GOAL_IDEAS.find(i => i.title.toLowerCase() === typed);
+  if (picked && !list.includes(picked)) list = [picked, ...list.slice(0, -1)];
   box.innerHTML = list.map(i => {
     const on = typed === i.title.toLowerCase();
     return `<button type="button" class="reward-goal-idea${on ? " is-on" : ""}" data-idea="${escapeHtml(i.title)}" aria-pressed="${on}"><span aria-hidden="true">${i.emoji}</span>${escapeHtml(i.title)}</button>`;
-  }).join("") + `<button type="button" class="reward-goal-idea is-more" data-ideas-more aria-expanded="${rewardGoalMoreIdeas}">${rewardGoalMoreIdeas ? "Fewer ideas" : "More ideas"}</button>`;
+  }).join("") + `<button type="button" class="reward-goal-idea is-more" data-ideas-more aria-expanded="${rewardGoalMoreIdeas}">${rewardGoalMoreIdeas ? "Fewer ideas" : "＋ More ideas"}</button>`;
 }
 
 // Start again (pocket money, screen time) or Remove it (a one-off treat)
@@ -405,6 +410,7 @@ function wireRewardGoalPanel() {
     if (!idea) return;
     document.getElementById("reward-goal-name").value = idea.title;
     rewardGoalOnce = idea.once;
+    rewardGoalMoreIdeas = false;
     // The photo follows the new name (unless one was chosen by hand)
     if (rewardGoalPhoto.choice !== "own") rewardGoalPhoto.choice = "";
     renderRewardGoalRepeat();
