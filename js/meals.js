@@ -59,7 +59,7 @@ function renderCookPickerHtml(selected) {
     const color = fam ? "#f59e0b" : unknown ? "#94a3b8" : (pal ? pal.primary : "#0284c7");
     const on = selected.includes(name);
     return `<button type="button" class="chef-select-chip drawer-profile-pill ${on ? "active is-selected" : ""}" data-chef="${escapeHtml(name)}" aria-pressed="${on}" style="--profile-color: ${color};">
-      <span class="drawer-profile-avatar">${fam ? "👪" : unknown ? "?" : escapeHtml(name.charAt(0).toUpperCase())}${tick}</span>
+      <span class="drawer-profile-avatar${!fam && !unknown && memberFace(name).buddy ? " is-buddy" : ""}">${fam ? "👪" : unknown ? "?" : memberFace(name).html}${tick}</span>
       <span class="drawer-profile-name">${fam ? "Everyone" : unknown ? "Not sure" : escapeHtml(name)}</span>
     </button>`;
   }).join("");
@@ -98,7 +98,8 @@ function renderMealCardCooksHtml(cookStr) {
     if (n === MEAL_COOK_UNKNOWN) return `<span class="ev-block-avatar meal-cook-unknown" title="Not sure who's cooking yet">?</span>`;
     if (n === "Family") return `<span class="ev-block-avatar" style="background:#f59e0b" title="Everyone">👪</span>`;
     const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(n) : null;
-    return `<span class="ev-block-avatar" style="background:${pal ? pal.primary : "#0284c7"}" title="${escapeHtml(n)}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`;
+    const f = memberFace(n);
+    return `<span class="ev-block-avatar${f.cls}" style="background:${pal ? pal.primary : "#0284c7"};${f.style}" title="${escapeHtml(n)}">${f.html}</span>`;
   }).join("");
   const names = cooks.includes(MEAL_COOK_UNKNOWN) ? "No cook yet"
     : cooks.includes("Family") ? "Everyone"
@@ -123,7 +124,8 @@ function renderChefAvatarsHtml(cookStr) {
     const mIdx = (window.familyMembers || ["Steven", "Sorcha", "Ava", "Dara"]).findIndex(m => m.toLowerCase() === normalized.toLowerCase());
     const col = (window.getMemberColor || getMemberColor)(mIdx !== -1 ? mIdx : 0);
     const initial = name.charAt(0).toUpperCase();
-    return `<div class="avatar-ring" style="background: ${col.bg}; border: 2px solid ${col.border};" title="Chef: ${escapeHtml(name)}">${escapeHtml(initial)}</div>`;
+    const f = memberFace(normalized || name, initial);
+    return `<div class="avatar-ring${f.cls}" style="background: ${col.bg}; border: 2px solid ${col.border};${f.style}" title="Chef: ${escapeHtml(name)}">${f.html}</div>`;
   }).join("");
 
   return `<div class="meal-chef-avatars-wrap" title="Chefs: ${escapeHtml(cookStr)}">${avatars}</div>`;

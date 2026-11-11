@@ -220,7 +220,7 @@
         actions = `<button type="button" class="gcal-row-btn is-quiet" data-gcal-remove="${esc(name)}" aria-label="Unlink ${esc(name)}'s calendar">Unlink</button>`;
       }
       return `<div class="gcal-row ${p ? (p.ok ? "is-linked" : "is-problem") : ""}"${p && !p.ok && p.problem ? ` title="${esc(p.problem)}"` : ""}>
-        <span class="gcal-face" style="background:${pal.primary}" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}${p && p.ok ? `<span class="gcal-face-g">G</span>` : ""}</span>
+        ${(() => { const f = window.memberFace(name); return `<span class="gcal-face${f.cls}" style="background:${pal.primary};${f.style}" aria-hidden="true">${f.html}${p && p.ok ? `<span class="gcal-face-g">G</span>` : ""}</span>`; })()}
         <span class="gcal-words"><strong>${esc(name)}</strong>${status}</span>
         <span class="gcal-actions">${actions}</span>
       </div>`;

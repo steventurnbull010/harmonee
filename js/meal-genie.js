@@ -11,7 +11,13 @@
 // ============================================================================
 (function () {
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
-  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // Each person's buddy or initial beside their name (Steven, 11 Nov)
+  const genieFace = (n) => {
+    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(n) : { primary: "#64748b" };
+    const f = typeof window.memberFace === "function" ? window.memberFace(n) : { cls: "", style: "", html: esc(String(n).charAt(0).toUpperCase()) };
+    return `<span class="genie-face${f.cls}" style="background:${pal.primary};${f.style}" aria-hidden="true">${f.html}</span>`;
+  };  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const STEPS = {
     meal: { q: "Which meal?", opts: [
@@ -394,8 +400,8 @@
         <p class="genie-hint">${tastes ? "Each person's diet and what they won't eat. Meal ideas suit everyone." : "I'll only suggest dishes that suit everyone ticked."}</p>
         <ul class="genie-people">${people().map(n => `<li class="genie-person${chosen.includes(n) ? " is-on" : ""}">
           ${tastes
-            ? `<button type="button" class="genie-person-pick" data-genie="edit" data-name="${esc(n)}"><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`
-            : `<button type="button" class="genie-person-pick" data-genie="who-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span><span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`}
+            ? `<button type="button" class="genie-person-pick" data-genie="edit" data-name="${esc(n)}">${genieFace(n)}<span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`
+            : `<button type="button" class="genie-person-pick" data-genie="who-pick" data-name="${esc(n)}" aria-pressed="${chosen.includes(n)}"><span class="genie-person-check" aria-hidden="true">${chosen.includes(n) ? "✓" : ""}</span>${genieFace(n)}<span class="genie-person-words"><strong>${esc(n)}</strong>${line(n)}</span></button>`}
           <button type="button" class="genie-person-edit" data-genie="edit" data-name="${esc(n)}" aria-label="What ${esc(n)} eats">✏️</button>
         </li>`).join("")}</ul>
         <div class="genie-foot is-sticky">${tastes

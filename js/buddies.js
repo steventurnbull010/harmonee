@@ -35,7 +35,16 @@
   // In js/buddy-art.js (loaded first): all twelve, in the soft 3D style
   const DRAW = window.BUDDY_ART || {};
 
-  const svgFor = (id) => (DRAW[id] ? `<svg class="buddy-svg buddy-${id}" viewBox="0 0 200 200" aria-hidden="true" focusable="false">${DRAW[id]()}</svg>` : "");
+  // Each copy gets its own gradient names: a buddy is now on screen many
+  // times (every avatar), and copies sharing names all used the first one,
+  // which drew pale when it was in a hidden screen
+  let copies = 0;
+  const svgFor = (id) => {
+    if (!DRAW[id]) return "";
+    const n = (copies = (copies + 1) % 1e6);
+    const art = DRAW[id]().replace(/id="([^"]+)"/g, `id="$1-c${n}"`).replace(/url\(#([^)]+)\)/g, `url(#$1-c${n})`);
+    return `<svg class="buddy-svg buddy-${id}" viewBox="0 0 200 200" aria-hidden="true" focusable="false">${art}</svg>`;
+  };
   const available = () => BUDDIES.filter(b => DRAW[b.id]);
   const byId = (id) => BUDDIES.find(b => b.id === id) || null;
 

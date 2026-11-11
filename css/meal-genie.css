@@ -91,7 +91,7 @@ body.theme-dark .genie-more { background: rgba(124, 58, 237, 0.2); border-color:
 .genie-person { display: flex; align-items: stretch; gap: 8px; }
 .genie-person-pick {
   flex: 1; min-width: 0; min-height: 64px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 16px;
   padding: 8px 16px; box-sizing: border-box;
   border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 16px;
   background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
@@ -104,6 +104,7 @@ body.theme-dark .genie-more { background: rgba(124, 58, 237, 0.2); border-color:
   font-size: 0.8rem; font-weight: 900; color: #ffffff;
 }
 .genie-person.is-on .genie-person-check { background: #7c3aed; border-color: #7c3aed; }
+.genie-face { flex: none; width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.1rem; }
 .genie-person-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .genie-person-words strong { font-size: 1rem; }
 .genie-person-words small { font-size: 0.8rem; color: var(--text-secondary, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -390,7 +390,7 @@ function openEventQuickView(evt, dateStr = null) {
   $("event-pop-title").textContent = `${evt.icon || "📅"} ${shown.title || "Event"}`;
   $("event-pop-when").textContent = `${dayLabel} · ${timeText}`;
   $("event-pop-who").innerHTML = named.length
-    ? `<span class="task-pop-avatars">${named.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("")}</span><span>${escapeHtml(named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} & ${named[named.length - 1]}`)}</span>`
+    ? `<span class="task-pop-avatars">${named.map(n => { const f = memberFace(n); return `<span class="task-pop-avatar${f.cls}" style="background:${getMemberPalette(n).primary};${f.style}">${f.html}</span>`; }).join("")}</span><span>${escapeHtml(named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} & ${named[named.length - 1]}`)}</span>`
     : `<span class="task-pop-avatar" style="background:#f59e0b">👪</span><span>Everyone</span>`;
 
   // Repeat
@@ -753,7 +753,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
         const color = fam ? "#f59e0b" : getMemberPalette(p).primary;
         const on = fam ? selectedEventMembers[0] === "Family" : selectedEventMembers.includes(p);
         return `<button type="button" class="drawer-profile-pill ${on ? "active" : ""}" data-event-member="${escapeHtml(p)}" aria-pressed="${on}" style="--profile-color: ${color};">
-          <span class="drawer-profile-avatar">${fam ? "👪" : escapeHtml(p.charAt(0).toUpperCase())}${tick}</span>
+          <span class="drawer-profile-avatar${!fam && memberFace(p).buddy ? " is-buddy" : ""}">${fam ? "👪" : memberFace(p).html}${tick}</span>
           <span class="drawer-profile-name">${fam ? "Everyone" : escapeHtml(p)}</span>
         </button>`;
       }).join("");

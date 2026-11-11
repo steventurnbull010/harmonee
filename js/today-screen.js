@@ -24,7 +24,10 @@
 
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]))); // escapes even if utils.js hasn't loaded
   const palette = (name) => (typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" });
-  const avatar = (name) => `<span class="today-avatar" style="background:${palette(name).primary}" aria-hidden="true">${esc(String(name).charAt(0).toUpperCase())}</span>`;
+  const avatar = (name) => {
+    const f = typeof window.memberFace === "function" ? window.memberFace(name) : { cls: "", style: "", html: esc(String(name).charAt(0).toUpperCase()) };
+    return `<span class="today-avatar${f.cls}" style="background:${palette(name).primary};${f.style}" aria-hidden="true">${f.html}</span>`;
+  };
   const startMins = (evt) => (typeof window.getEventMinutes === "function" ? window.getEventMinutes(evt) : 0);
 
   function partOfDay(now) {

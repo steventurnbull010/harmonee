@@ -1221,6 +1221,67 @@ const PAGES = [
   // Rewards (10 Nov): this week's stars with a crown, the family goal, a card
   // for each person (photo goals, "Set a goal for"), stickers kept on the
   // board, the person panel and the family goal panel
+  // Each person's buddy as their avatar wherever their name is shown (Steven, 11 Nov):
+  // Alex the robot, Jo the dragon, Sam the kitten; Max has none and keeps his initial
+  ["buddy-faces", async (p) => {
+    const shot = async (name) => { await p.waitForTimeout(250); await p.screenshot({ path: path.join(SHOTS, `${p.__size}-buddy-${name}.png`) }); };
+    const close = () => p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      window.boardSettings.memberBuddies = { alex: "robot", jo: "dragon", sam: "kitten" };
+      window.switchSkylightView("tasks");
+    });
+    await p.waitForTimeout(400);
+    const where = {};
+    const count = (sel) => p.evaluate((sel) => document.querySelectorAll(sel).length, sel);
+    where.taskColumns = await count(".skylight-tasks-col .tasks-col-avatar.has-buddy svg");
+    where.maxInitial = await p.evaluate(() => { const a = document.querySelector('.skylight-tasks-col[data-col-member="Max"] .tasks-col-avatar'); return a ? a.textContent.trim() : "(no Max column)"; });
+    await shot("tasks");
+    await p.evaluate(() => window.openSkylightTaskDrawer());
+    await p.waitForTimeout(300);
+    where.jobPanel = await count("#skylight-task-drawer .drawer-profile-avatar.is-buddy svg");
+    await shot("job-panel");
+    await p.evaluate(() => { const o = document.getElementById("skylight-task-drawer-overlay"); if (typeof window.closeSkylightTaskDrawer === "function") window.closeSkylightTaskDrawer(); else if (o) o.style.display = "none"; });
+    await close();
+    await p.evaluate(() => window.openGrabsPanel());
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { const b = document.querySelector("#grabs-list [data-grabs-who]"); if (b) b.click(); });
+    await p.waitForTimeout(200);
+    where.bigJobs = await count("#grabs-list .drawer-profile-avatar.is-buddy svg");
+    await shot("big-jobs");
+    await close();
+    await p.evaluate(() => { window.switchSkylightView("meals"); window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"); });
+    await p.waitForTimeout(400);
+    where.cookPicker = await count(".chef-select-chip .drawer-profile-avatar.is-buddy svg");
+    await shot("meal-cook");
+    await close();
+    await p.evaluate(() => window.MealGenie.openTastes());
+    await p.waitForTimeout(400);
+    where.mealtime = await count(".genie-face.has-buddy svg");
+    where.mealtimeMax = await p.evaluate(() => [...document.querySelectorAll(".genie-face")].map(f => f.textContent.trim()).filter(Boolean).join(","));
+    await shot("magic-mealtime");
+    await close();
+    await p.evaluate(() => window.openSettingsModal());
+    await p.waitForTimeout(400);
+    where.settings = await count(".roster-color-trigger-btn.has-buddy svg");
+    await p.evaluate(() => { const r = document.querySelector(".roster-member-row"); if (r) r.scrollIntoView({ block: "center" }); });
+    await shot("settings");
+    await close();
+    await p.evaluate(() => window.openProfilePanel("Alex"));
+    await p.waitForTimeout(300);
+    where.profile = await count(".profile-hero-avatar.has-buddy svg");
+    await close();
+    await p.evaluate(() => window.switchSkylightView("calendar"));
+    await p.waitForTimeout(200);
+    where.dupIds = await p.evaluate(() => { const ids = [...document.querySelectorAll(".buddy-svg [id]")].map(e => e.id); return ids.length - new Set(ids).size; });
+    if (where.dupIds) throw new Error(`buddy drawings share gradient names (${where.dupIds}), so copies draw pale`);
+    const want = { taskColumns: 3, jobPanel: 3, bigJobs: 1, cookPicker: 3, mealtime: 3, settings: 3, profile: 1 };
+    const short = Object.entries(want).filter(([k, n]) => !(where[k] >= n)).map(([k]) => k);
+    if (short.length) throw new Error(`buddies missing in: ${short.join(", ")} ${JSON.stringify(where)}`);
+    if (where.maxInitial !== "M") throw new Error(`Max (no buddy) should keep his initial: ${where.maxInitial}`);
+    if (where.mealtimeMax !== "M") throw new Error(`Magic Mealtime faces: ${where.mealtimeMax}`);
+    await p.evaluate(() => { window.boardSettings.memberBuddies = {}; });
+  }],
   ["rewards-page", async (p) => {
     await p.evaluate(() => {
       document.querySelectorAll("dialog[open]").forEach(d => d.close());

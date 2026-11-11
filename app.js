@@ -2151,9 +2151,7 @@ function getRosterDayCardInnerHtml(day, assignedPerson, isTarget) {
       <span class="daily-roster-day-name">${shortName}</span>
       ${starHtml}
     </div>
-    <div class="roster-avatar-circle" style="background: ${colorBg}; border: 1.5px solid ${colorBorder}; color: ${colorText};">
-      ${escapeHtml(initial)}
-    </div>
+    ${(() => { const f = nameLabel !== "Anyone" && !nameLabel.includes(",") ? memberFace(nameLabel) : { cls: "", style: "", html: escapeHtml(initial) }; return `<div class="roster-avatar-circle${f.cls}" style="background: ${colorBg}; border: 1.5px solid ${colorBorder}; color: ${colorText};${f.style}">${f.html}</div>`; })()}
     <span class="roster-member-name" title="${escapeHtml(nameLabel)}">${escapeHtml(nameLabel)}</span>
   `;
 }
@@ -3203,7 +3201,7 @@ function showGamifiedCelebration({ claimValue, rewardVal, isMoney, currency, tas
       const initial = memberName.charAt(0).toUpperCase();
 
       avatarHtml = `
-        <div class="celebration-avatar-ring" style="background: ${col.bg}; border-color: ${col.border};">${escapeHtml(initial)}</div>
+        ${(() => { const f = memberFace(memberName); return `<div class="celebration-avatar-ring${f.cls}" style="background: ${col.bg}; border-color: ${col.border};${f.style}">${f.html}</div>`; })()}
         <span class="celebration-avatar-badge">${isMoney ? '💰' : '🏆'}</span>
       `;
       headlineHtml = `${escapeHtml(memberName)} Crushed It! 🎉`;
@@ -4302,9 +4300,7 @@ function setupEventListeners() {
 
       row.innerHTML = `
         <div class="roster-member-info">
-          <button type="button" class="roster-color-trigger-btn" data-member="${escapeHtml(member)}" title="Open ${escapeHtml(member)}'s profile" aria-label="Open ${escapeHtml(member)}'s profile" style="--profile-color: ${pal.primary};">
-            ${escapeHtml(initial)}
-          </button>
+          ${(() => { const f = memberFace(member, initial); return `<button type="button" class="roster-color-trigger-btn${f.cls}" data-member="${escapeHtml(member)}" title="Open ${escapeHtml(member)}'s profile" aria-label="Open ${escapeHtml(member)}'s profile" style="--profile-color: ${pal.primary};${f.style}">${f.html}</button>`; })()}
           <div class="roster-member-names-wrap">
             <span class="roster-member-name">${escapeHtml(member)}</span>
             <span class="roster-member-color-name">${escapeHtml([pal.name || "Custom", buddyName ? `${buddyName} buddy` : ""].filter(Boolean).join(" · "))}</span>

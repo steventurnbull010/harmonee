@@ -381,7 +381,7 @@
     if (!bar) return;
     bar.innerHTML = members().map(name => `
       <button type="button" class="tasks-person-tab" role="tab" data-people-tab="${esc(name)}" style="--tab-color: ${palette(name).primary};">
-        <span class="tasks-person-tab-avatar">${esc(name.charAt(0).toUpperCase())}</span>
+        ${(() => { const f = window.memberFace(name); return `<span class="tasks-person-tab-avatar${f.cls}" style="${f.style}">${f.html}</span>`; })()}
         <span class="tasks-person-tab-name">${esc(name)}</span>
       </button>`).join("");
     if (!bar.hasAttribute("data-wired")) {

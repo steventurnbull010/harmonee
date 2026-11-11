@@ -49,7 +49,7 @@
       </button>`;
     dlg.querySelector("#profile-body").innerHTML = `
       <div class="profile-hero">
-        <span class="profile-hero-avatar" aria-hidden="true">${escapeHtml(person.charAt(0).toUpperCase())}</span>
+        ${(() => { const f = memberFace(person); return `<span class="profile-hero-avatar${f.cls}" style="${f.style}" aria-hidden="true">${f.html}</span>`; })()}
         <div><p class="profile-hero-name">${escapeHtml(person)}</p>
           <p class="profile-hero-sub">${escapeHtml([pal.name, buddy ? `${buddy.name} buddy` : "No buddy yet"].filter(Boolean).join(" · "))}</p></div>
       </div>

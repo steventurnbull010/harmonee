@@ -265,15 +265,32 @@ function personPillHtml({ label, initial, color, active = false, attrs = "", ext
 }
 window.personPillHtml = personPillHtml;
 
-// A family member's pill: their initial and colour. opts.buddy: their buddy
-// (the robot, the cat) instead of the initial, if they've picked one
+// A person's face wherever their name is shown: their buddy (the robot, the
+// cat) if they've picked one, otherwise their initial (Steven, 11 Nov).
+//   const f = memberFace(name);
+//   `<span class="my-avatar${f.cls}" style="background:…;${f.style}">${f.html}</span>`
+// f.cls is " has-buddy" for a buddy (styled in css/buddies.css: their colour
+// as a soft ring, the drawing filling the circle); f.html is the drawing or
+// the escaped initial. initial: what to show without a buddy (default: the
+// first letter).
+function memberFace(name, initial) {
+  const B = window.Buddies;
+  const id = name && B && B.getMemberBuddy ? B.getMemberBuddy(name) : null;
+  if (id && B.svgFor) {
+    const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" };
+    return { buddy: true, html: B.svgFor(id), cls: " has-buddy", style: `--buddy-ring: ${pal.primary};` };
+  }
+  return { buddy: false, html: escapeHtml(initial != null ? initial : String(name || "?").charAt(0).toUpperCase()), cls: "", style: "" };
+}
+window.memberFace = memberFace;
+
+// A family member's pill: their buddy or initial, and their colour.
+// opts.buddy: false keeps the initial
 function memberPillHtml(name, opts = {}) {
   const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" };
-  const { buddy, ...rest } = opts;
-  const B = buddy ? window.Buddies : null;
-  const id = B && B.getMemberBuddy ? B.getMemberBuddy(name) : null;
-  const face = id && B.svgFor ? B.svgFor(id) : "";
-  return personPillHtml({ label: displayMemberName(name), initial: String(name || "?").charAt(0).toUpperCase(), color: pal.primary, face, ...rest });
+  const { buddy = true, ...rest } = opts;
+  const f = buddy ? memberFace(name) : null;
+  return personPillHtml({ label: displayMemberName(name), initial: String(name || "?").charAt(0).toUpperCase(), color: pal.primary, face: f && f.buddy ? f.html : "", ...rest });
 }
 window.memberPillHtml = memberPillHtml;
 

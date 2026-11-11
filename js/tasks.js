@@ -600,7 +600,7 @@ function renderSkylightTasksPage() {
         <div class="tasks-col-header" style="--head-bg: ${pal.lightBg};">
           <div class="tasks-col-top-row">
             <div class="tasks-col-profile-info">
-              <div class="tasks-col-avatar" style="background: ${pal.primary};">${escapeHtml(initialLetter)}</div>
+              ${(() => { const f = isGrabPool ? { cls: "", style: "", html: escapeHtml(initialLetter) } : memberFace(colMember); return `<div class="tasks-col-avatar${f.cls}" style="background: ${pal.primary};${f.style}">${f.html}</div>`; })()}
               <span class="tasks-col-name">${escapeHtml(displayMemberName(colMember))}</span>
             </div>
             <span class="tasks-col-progress-tally ${isAllDone ? 'all-done' : ''}">
@@ -1274,7 +1274,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
     if (!shown.length) {
       assigneeEl.innerHTML = `<span class="task-pop-avatar" style="background:${grabPal.primary}">⚡</span><span>${GRAB_LABEL}</span>`;
     } else {
-      const avatars = shown.map(n => `<span class="task-pop-avatar" style="background:${getMemberPalette(n).primary}">${escapeHtml(n.charAt(0).toUpperCase())}</span>`).join("");
+      const avatars = shown.map(n => { const f = memberFace(n); return `<span class="task-pop-avatar${f.cls}" style="background:${getMemberPalette(n).primary};${f.style}">${f.html}</span>`; }).join("");
       assigneeEl.innerHTML = `<span class="task-pop-avatars">${avatars}</span><span>${escapeHtml(formatAssigneeNames(shown))}</span>`;
     }
   }
@@ -1327,7 +1327,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   // A quick grab nobody has yet: who's grabbing it? (the same as dragging it to them)
   if (isGrabPool && !isDone && !pastDay && QG && QG.isQuickGrab(task)) {
     hint.innerHTML = `<span class="quick-pick-title">Who's grabbing it?</span><span class="quick-pick-people">${(window.familyMembers || []).map(n =>
-      `<button type="button" class="quick-pick-person" data-quick-pick="${escapeHtml(n)}" style="--who:${getMemberPalette(n).primary}"><span class="quick-pick-avatar" aria-hidden="true">${escapeHtml(n.charAt(0).toUpperCase())}</span>${escapeHtml(displayMemberName(n))}</button>`).join("")}</span>`;
+      `<button type="button" class="quick-pick-person" data-quick-pick="${escapeHtml(n)}" style="--who:${getMemberPalette(n).primary}"><span class="quick-pick-avatar${memberFace(n).cls}" style="${memberFace(n).style}" aria-hidden="true">${memberFace(n).html}</span>${escapeHtml(displayMemberName(n))}</button>`).join("")}</span>`;
     hint.style.display = "";
     hint.querySelectorAll("[data-quick-pick]").forEach(b => {
       b.onclick = () => { close(); moveTaskBetween(taskId, getLocalDateKey(cardDate), "Up for grabs", b.getAttribute("data-quick-pick")); };
@@ -1639,7 +1639,7 @@ function renderDrawerProfilesRow() {
     const isActive = drawerSelectedProfiles.some(sp => sp.toLowerCase() === p.toLowerCase());
     return `
       <button type="button" class="drawer-profile-pill ${isActive ? 'active' : ''}" data-profile="${escapeHtml(p)}" aria-pressed="${isActive}" style="--profile-color: ${pal.primary};">
-        <span class="drawer-profile-avatar">${escapeHtml(initial)}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span>
+        <span class="drawer-profile-avatar${!isGrab && memberFace(p).buddy ? " is-buddy" : ""}">${isGrab ? escapeHtml(initial) : memberFace(p).html}<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span>
         <span class="drawer-profile-name">${escapeHtml(displayMemberName(p))}</span>
       </button>
     `;
@@ -2179,8 +2179,9 @@ function renderTasksPersonTabs(grid, showMember) {
     const avatar = col.querySelector(".tasks-col-avatar");
     const tally = col.querySelector(".tasks-col-progress-tally");
     const done = tally && tally.classList.contains("all-done");
+    const f = avatar && avatar.classList.contains("has-buddy") ? memberFace(m) : null;
     return `<button type="button" class="tasks-person-tab${done ? " is-done" : ""}" role="tab" data-person-tab="${escapeHtml(m)}" style="--tab-color: ${avatar ? avatar.style.background : "#94a3b8"};">
-      <span class="tasks-person-tab-avatar">${avatar ? avatar.innerHTML : ""}</span>
+      <span class="tasks-person-tab-avatar${f ? f.cls : ""}" style="${f ? f.style : ""}">${f ? f.html : avatar ? avatar.innerHTML : ""}</span>
       <span class="tasks-person-tab-name">${escapeHtml(displayMemberName(m))}</span>
       <span class="tasks-person-tab-tally">${tally ? escapeHtml(tally.textContent.trim()) : ""}</span>
     </button>`;
