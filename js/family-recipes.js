@@ -82,7 +82,7 @@
           <button type="button" class="family-recipe-photo" data-fr-photo aria-label="Fill in from a photo of a recipe book page or a handwritten recipe" hidden>
             <span aria-hidden="true">📷</span> From a photo
           </button>
-          <p class="family-recipe-note" data-fr-note role="status" hidden>📷 Filled in. Check it, then Save.</p>
+          <p class="family-recipe-note" data-fr-note role="status" hidden>✓ All filled in. Check it over, then Save.</p>
           <label class="ev-field"><span class="ev-field-label">Name</span>
             <span class="family-recipe-name-row">
               <input class="ev-native-input family-recipe-emoji" data-fr="emoji" maxlength="4" aria-label="Emoji" placeholder="🍲">
@@ -90,12 +90,14 @@
             </span>
           </label>
           <div class="ev-field"><span class="ev-field-label">Photo of the dish <small>optional</small></span>
-            <div class="family-recipe-dish">
-              <span class="family-recipe-dish-preview" data-fr-dish-preview aria-hidden="true"></span>
-              <div class="family-recipe-dish-btns">
-                <button type="button" class="family-recipe-dish-pick" data-fr-dish-pick>📷 Add a photo</button>
-                <button type="button" class="family-recipe-dish-remove" data-fr-dish-remove hidden>Remove</button>
-              </div>
+            <!-- One tile: tap to add a photo; with one, it fills the tile (Change, ✕) -->
+            <div class="fr-dish">
+              <button type="button" class="fr-dish-tile is-empty" data-fr-dish-pick aria-label="Add a photo of the dish">
+                <span class="fr-dish-img" data-fr-dish-preview aria-hidden="true"></span>
+                <span class="fr-dish-add" aria-hidden="true"><span class="fr-dish-plus">＋</span><span>Add a photo of the dish</span></span>
+                <span class="fr-dish-change" aria-hidden="true">📷 Change</span>
+              </button>
+              <button type="button" class="fr-dish-remove" data-fr-dish-remove aria-label="Remove the photo" hidden>✕</button>
             </div>
           </div>
           <div class="ev-field"><span class="ev-field-label">Which meal</span>
@@ -165,9 +167,9 @@
     const current = dish.data || (!dish.removed && dish.existing && window.RecipePhotos ? window.RecipePhotos.url(dish.recipe) : "");
     const has = !!(dish.data || (!dish.removed && dish.existing));
     box.style.backgroundImage = current ? `url('${current}')` : "";
-    box.classList.toggle("is-empty", !has);
-    box.textContent = has ? "" : "🍽️";
-    document.querySelector("#family-recipe-modal [data-fr-dish-pick]").textContent = has ? "📷 Change photo" : "📷 Add a photo";
+    const tile = document.querySelector("#family-recipe-modal [data-fr-dish-pick]");
+    tile.classList.toggle("is-empty", !has);
+    tile.setAttribute("aria-label", has ? "Change the photo of the dish" : "Add a photo of the dish");
     document.querySelector("#family-recipe-modal [data-fr-dish-remove]").hidden = !has;
   }
   function pickDish() {
@@ -328,6 +330,10 @@
     setMeal(r.mealType || r.category || "dinner");
     const note = document.querySelector("#family-recipe-modal [data-fr-note]");
     if (note) note.hidden = !fromPhoto;
+    // Filled in from a photo: where it came from doesn't matter now, so the
+    // "From a photo" button goes (it's back for the next new recipe)
+    const fromBtn = document.querySelector("#family-recipe-modal [data-fr-photo]");
+    if (fromBtn && fromPhoto) fromBtn.hidden = true;
   }
 
   // Set the form up for a new recipe (or one to edit), without showing it
@@ -336,7 +342,8 @@
     editingId = r ? r.id : null;
     dlg.querySelector("#family-recipe-title").textContent = r ? "Edit recipe" : "Add a recipe";
     dlg.querySelector("[data-fr-delete]").hidden = !r;
-    dlg.querySelector("[data-fr-photo]").hidden = !(window.MagicImport && window.MagicImport.available("recipe"));
+    // "From a photo" is for a new recipe (on one being edited it would only overwrite it)
+    dlg.querySelector("[data-fr-photo]").hidden = !!r || !(window.MagicImport && window.MagicImport.available("recipe"));
     dlg.querySelector("[data-fr-error]").textContent = "";
     fill(r || { mealType: opts.mealType || "dinner" }, false);
     dish = { existing: r && r.photo && r.photo.rev ? { rev: r.photo.rev } : null, data: null, removed: false, recipe: r || null };

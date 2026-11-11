@@ -4077,7 +4077,7 @@ body.theme-dark .family-recipe-add small { color: #86efac; }
 }
 .family-recipe-photo[hidden], .family-recipe-note[hidden] { display: none; }
 .family-recipe-photo small { flex-basis: 100%; padding-left: 28px; font-weight: 500; font-size: 0.8rem; color: #0284c7; }
-.family-recipe-note { margin: 0; padding: 8px 16px; border-radius: 12px; background: #fef3c7; color: #92400e; font-weight: 600; font-size: 0.9rem; }
+.family-recipe-note { margin: 0; padding: 8px 12px; border-radius: 10px; background: #ecfdf5; color: #047857; font-weight: 600; font-size: 0.88rem; }
 .family-recipe-name-row { display: flex; gap: 8px; }
 .family-recipe-name-row .family-recipe-emoji { width: 56px; flex: none; text-align: center; font-size: 1.2rem; padding-left: 0; padding-right: 0; }
 .family-recipe-name-row input:not(.family-recipe-emoji) { flex: 1; min-width: 0; }
@@ -4094,7 +4094,7 @@ body.theme-dark .family-recipe-add small { color: #86efac; }
 .family-recipe-actions .btn-primary-modal { min-height: 48px; padding: 8px 24px; font-size: 1.05rem; }
 .family-recipe-actions [data-fr-delete] { margin-right: auto; }
 body.theme-dark .family-recipe-photo { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #7dd3fc; }
-body.theme-dark .family-recipe-note { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
+body.theme-dark .family-recipe-note { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; }
 
 .cooking-credit-edit { border: none; background: none; padding: 0 4px; color: #0284c7; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
 
@@ -4600,3 +4600,37 @@ body.theme-dark .fr-lines.is-method .fr-line::before { background: #f8fafc; colo
   #cooking-recipe-modal .cooking-steps-list { max-height: none !important; overflow: visible !important; }
   #cooking-recipe-modal .cooking-modal-footer { flex: none; }
 }
+
+
+/* Photo of the dish: one tile (11 Nov). Empty: a soft area with a big ＋;
+   with a photo: the photo fills it, with Change and ✕ on top */
+.fr-dish { position: relative; }
+.fr-dish-tile {
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 220px;
+  padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: pointer;
+  background: var(--card-bg, #fff); font: inherit;
+}
+.fr-dish-img { position: absolute; inset: 0; background: #e2e8f0 center / cover no-repeat; }
+.fr-dish-add, .fr-dish-change { display: none; }
+.fr-dish-tile.is-empty { aspect-ratio: 5 / 2; max-height: 150px; }
+.fr-dish-tile.is-empty .fr-dish-img { background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; }
+.fr-dish-tile.is-empty .fr-dish-add {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  color: var(--text-secondary, #64748b); font-weight: 700; font-size: 0.95rem;
+}
+.fr-dish-plus { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #fff; color: #0284c7; font-size: 1.6rem; font-weight: 400; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12); }
+.fr-dish-tile.is-empty:hover .fr-dish-img { border-color: #7dd3fc; background: #f0f9ff; }
+.fr-dish-tile:not(.is-empty) .fr-dish-change {
+  position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px;
+  min-height: 32px; padding: 0 12px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6); color: #fff; font-size: 0.82rem; font-weight: 700;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.fr-dish-remove {
+  position: absolute; top: 8px; right: 8px; width: 36px; height: 36px;
+  border: 0; border-radius: 50%; background: rgba(15, 23, 42, 0.6); color: #fff; font-size: 1rem; cursor: pointer;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.fr-dish-remove[hidden] { display: none; }
+body.theme-dark .fr-dish-tile.is-empty .fr-dish-img { background: #0f172a; border-color: #334155; }
+body.theme-dark .fr-dish-plus { background: #1e293b; }

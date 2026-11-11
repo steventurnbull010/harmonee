@@ -618,8 +618,10 @@ const PAGES = [
       title: document.querySelector('#family-recipe-modal [data-fr="title"]').value,
       ingredients: document.querySelector('#family-recipe-modal [data-fr="ingredients"]').value,
       cook: document.querySelector('#family-recipe-modal [data-fr="cook"]').value,
-      note: !document.querySelector("#family-recipe-modal [data-fr-note]").hidden
+      note: !document.querySelector("#family-recipe-modal [data-fr-note]").hidden,
+      fromPhotoGone: document.querySelector("#family-recipe-modal [data-fr-photo]").hidden
     }));
+    if (!fromPhoto.fromPhotoGone) throw new Error("\"From a photo\" still shows after a photo has filled the recipe in");
     if (!fromPhoto.note) throw new Error("the form doesn't say it was filled from the photo");
     if (fromPhoto.title !== "Grandad's beef stew") throw new Error(`the title wasn't cleaned: ${fromPhoto.title}`);
     if (!/stewing beef/.test(fromPhoto.ingredients) || fromPhoto.cook !== "120") throw new Error(`photo didn't fill the form: ${JSON.stringify(fromPhoto)}`);
