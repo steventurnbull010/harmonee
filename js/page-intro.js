@@ -125,11 +125,12 @@ const INTRO_PREVIEWS = {
   rewards(stepIndex) {
     const people = introPeople(3);
     const pts = [42, 30, 18];
-    const order = [1, 0, 2]; // 2nd, 1st, 3rd
-    const podium = order.map(i => {
-      const p = people[i] || people[0];
-      return `<div class="intro-podium-col"><span class="intro-avatar" style="background:${p.pal.primary}">${i === 0 ? "👑" : escapeHtml(p.name.charAt(0))}</span><span class="intro-podium-name">${escapeHtml(p.name)}</span><div class="intro-podium-pillar" style="height:${40 + pts[i] * 2}px;background:${p.pal.lightBg};border-color:${p.pal.border};color:${p.pal.text}">${pts[i]} pts</div></div>`;
-    }).join("");
+    // This week's stars: a bar each, a crown for whoever's ahead, then the family goal
+    const stars = people.map((p, i) => `
+      <div class="intro-star-row"><span class="intro-avatar" style="background:${p.pal.primary}">${escapeHtml(p.name.charAt(0))}${i === 0 ? `<span class="intro-star-crown">👑</span>` : ""}</span><span class="intro-star-name">${escapeHtml(p.name)}</span><span class="intro-star-track" style="background:${p.pal.lightBg}"><span style="width:${Math.round(pts[i] / pts[0] * 100)}%;background:${p.pal.primary}"></span></span><span class="intro-star-pts" style="color:${p.pal.text}">${pts[i]} pts</span></div>`).join("");
+    const total = pts.slice(0, people.length).reduce((a, n) => a + n, 0);
+    const family = `<div class="intro-family ${stepIndex === 0 ? "page-intro-highlight-soft" : ""}"><strong>Together: ${total} of 150 pts</strong> towards Pizza and film night<span class="intro-family-bar"><span style="width:${Math.round(total / 150 * 100)}%"></span></span></div>`;
+    const podium = `${stars}${family}`;
     const kid = people[2] || people[0];
     const have = stepIndex === 2 ? 50 : 32;
     const goal = `
@@ -139,7 +140,7 @@ const INTRO_PREVIEWS = {
         <div class="intro-goal-bar"><div style="width:${Math.min(100, have * 2)}%"></div></div>
         ${stepIndex === 2 ? `<span class="intro-redeem page-intro-highlight">Redeem</span>` : `<span class="intro-goal-togo">${50 - have} pts to go</span>`}
       </div>`;
-    return `<div class="intro-rewards"><div class="intro-podium">${podium}</div>${goal}</div>`;
+    return `<div class="intro-rewards"><div class="intro-stars">${podium}</div>${goal}</div>`;
   }
 };
 

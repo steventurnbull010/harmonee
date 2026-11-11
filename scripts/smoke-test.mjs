@@ -1184,6 +1184,16 @@ const PAGES = [
     if (!fam.saved || fam.saved.title !== "Trip to the zoo" || fam.saved.target !== 60) throw new Error(`the family goal wasn't saved: ${JSON.stringify(fam.saved)}`);
     if (!/Trip to the zoo/.test(fam.shown)) throw new Error("the new family goal isn't shown");
 
+    // The Rewards intro shows the new page (stars and a family goal, not a podium)
+    const intro = await p.evaluate(async () => {
+      window.showPageIntro("rewards");
+      await new Promise(res => setTimeout(res, 300));
+      return { stars: document.querySelectorAll(".intro-star-row").length, podium: !!document.querySelector(".intro-podium"), family: !!document.querySelector(".intro-family") };
+    });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-intro.png`) });
+    await p.evaluate(() => { const b = document.querySelector("[data-intro-skip]"); if (b) b.click(); });
+    if (!intro.stars || intro.podium || !intro.family) throw new Error(`the Rewards intro still shows the old page: ${JSON.stringify(intro)}`);
+
     // Put things back for the other steps
     await p.evaluate(async (was) => {
       const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];

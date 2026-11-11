@@ -583,36 +583,17 @@ body.theme-dark .intro-ldetail .intro-list-row { background: none; }
   gap: 24px;
 }
 
-.intro-podium {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-}
-
-.intro-podium-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.intro-podium-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.intro-podium-pillar {
-  width: 100%;
-  border: 1.5px solid;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 1rem;
-}
+.intro-stars { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; }
+.intro-star-row { display: grid; grid-template-columns: 32px 64px 1fr auto; align-items: center; gap: 8px; }
+.intro-star-row .intro-avatar { position: relative; }
+.intro-star-crown { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 0.85rem; line-height: 1; }
+.intro-star-name { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intro-star-track { height: 12px; border-radius: 999px; overflow: hidden; }
+.intro-star-track span { display: block; height: 100%; border-radius: 999px; }
+.intro-star-pts { font-size: 0.8rem; font-weight: 800; }
+.intro-family { margin-top: 8px; padding: 8px 12px; border-radius: 12px; background: #fff7ed; color: #9a3412; font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px; }
+.intro-family-bar { display: block; height: 8px; border-radius: 999px; background: #fff; overflow: hidden; }
+.intro-family-bar span { display: block; height: 100%; background: linear-gradient(90deg, #fbbf24, #f97316); }
 
 .intro-goal {
   border: 1.5px solid;
