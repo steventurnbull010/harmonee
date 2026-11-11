@@ -466,16 +466,35 @@ body.theme-dark .rw-card-banner.is-empty { background: rgba(255, 255, 255, 0.05)
 
 /* --- Goal panels: the photo chooser ---------------------------------------------- */
 .rw-pc { display: flex; flex-direction: column; gap: 8px; }
+/* The photo is the button: a short banner with a pencil in the corner */
 .rw-pc-preview {
-  position: relative; display: flex; align-items: flex-end; aspect-ratio: 16 / 9; max-height: 220px; border-radius: 16px;
-  background: #e2e8f0 center / cover no-repeat; overflow: hidden;
+  position: relative; display: flex; align-items: flex-end; width: 100%; height: 144px; padding: 0; border: 0; border-radius: 16px;
+  background: #e2e8f0 center / cover no-repeat; overflow: hidden; cursor: pointer; font: inherit; text-align: left;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
 }
-.rw-pc-preview.is-none { flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #fbcfe8, #fde68a); }
-.rw-pc-gift { font-size: 2.6rem; }
-.rw-pc-none-name { font-family: Georgia, 'Playfair Display', serif; font-weight: 700; font-size: 1.15rem; color: #7c2d12; padding: 0 16px; text-align: center; }
-.rw-pc-tag { margin: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(15, 23, 42, 0.6); color: #fff; font-size: 0.8rem; font-weight: 700; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rw-pc-actions { display: flex; }
-.rw-pc-change { min-height: 40px; padding: 0 16px; border: 1.5px solid var(--card-border, #cbd5e1); border-radius: 999px; background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); font: inherit; font-weight: 700; cursor: pointer; }
+.rw-pc-preview:focus-visible, .rw-pc-add:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.rw-pc-edit {
+  position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.92); color: #0f172a; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+}
+.rw-pc.is-open .rw-pc-edit { background: #0284c7; color: #fff; }
+.rw-pc-tag { margin: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.6); color: #fff; font-size: 0.8rem; font-weight: 700; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); max-width: calc(100% - 64px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* No photo: a slim row */
+.rw-pc-add {
+  position: relative; display: flex; align-items: center; gap: 16px; width: 100%; min-height: 64px; padding: 8px 64px 8px 16px;
+  border: 1.5px dashed var(--card-border, #cbd5e1); border-radius: 16px; background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a); font: inherit; text-align: left; cursor: pointer;
+}
+.rw-pc-add:hover { border-color: #7dd3fc; background: #f0f9ff; }
+.rw-pc-add .rw-pc-edit { top: 50%; transform: translateY(-50%); background: #f1f5f9; box-shadow: none; }
+.rw-pc.is-open .rw-pc-add .rw-pc-edit { background: #0284c7; }
+.rw-pc-add-icon { font-size: 1.6rem; line-height: 1; }
+.rw-pc-add-text { display: flex; flex-direction: column; gap: 0; font-weight: 700; }
+.rw-pc-add-text small { font-size: 0.8rem; font-weight: 500; color: var(--text-muted, #64748b); }
+body.theme-dark .rw-pc-add { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .rw-pc-add .rw-pc-edit { background: #334155; color: #f8fafc; }
+@media (max-width: 600px) { .rw-pc-preview { height: 128px; } }
 .rw-pc-row { display: grid; grid-auto-flow: column; grid-auto-columns: 104px; grid-template-rows: auto auto; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; scroll-snap-type: x proximity; }
 .rw-pc-row[hidden] { display: none; }
 .rw-pc-tile { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; font: inherit; cursor: pointer; scroll-snap-align: start; text-align: center; color: var(--text-secondary, #475569); }
@@ -487,7 +506,6 @@ body.theme-dark .rw-card-banner.is-empty { background: rgba(255, 255, 255, 0.05)
 .rw-pc-tile-label { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rw-pc-tile.is-on .rw-pc-tile-img { box-shadow: 0 0 0 3px #0284c7; }
 .rw-pc-tile.is-on .rw-pc-tile-label { color: #0369a1; }
-body.theme-dark .rw-pc-change { background: #1e293b; border-color: #334155; color: #f8fafc; }
 
 /* --- Goal panels: points slider ---------------------------------------------------- */
 .rw-points { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
@@ -542,3 +560,27 @@ body.theme-dark .rw-points-slider::-webkit-slider-runnable-track { background: l
   color: var(--text-muted, #64748b);
 }
 .rp-goal-again { white-space: nowrap; }
+
+/* Goal panel: ideas under "What's the reward?" (Pocket money first) */
+.reward-goal-ideas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.reward-goal-ideas[hidden] { display: none; }
+.reward-goal-idea {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
+  border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 999px; background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+}
+.reward-goal-idea:hover { border-color: #fdba74; }
+.reward-goal-idea.is-on { border-color: #f97316; background: #fff7ed; color: #c2410c; }
+.reward-goal-idea.is-more { border-style: dashed; color: var(--text-muted, #64748b); }
+body.theme-dark .reward-goal-idea { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .reward-goal-idea.is-on { background: #431407; border-color: #f97316; color: #fed7aa; }
+
+/* Person picker with buddies (the robot, the cat): the drawing fills the circle */
+.drawer-profile-avatar.is-buddy { padding: 4px; background: #f1f5f9; border-style: solid; border-color: #e2e8f0; }
+.drawer-profile-avatar.is-buddy .buddy-svg { width: 100%; height: 100%; filter: saturate(0.6); opacity: 0.75; }
+.drawer-profile-pill:hover .drawer-profile-avatar.is-buddy { border-color: var(--profile-color); }
+.drawer-profile-pill.active .drawer-profile-avatar.is-buddy { background: color-mix(in srgb, var(--profile-color) 22%, #fff); border-color: var(--profile-color); }
+.drawer-profile-pill.active .drawer-profile-avatar.is-buddy .buddy-svg { filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.2)); opacity: 1; }
+body.theme-dark .drawer-profile-avatar.is-buddy { background: #1e293b; border-color: #334155; }
+body.theme-dark .drawer-profile-pill.active .drawer-profile-avatar.is-buddy { background: color-mix(in srgb, var(--profile-color) 30%, #0f172a); border-color: var(--profile-color); }
+#reward-goal-members .drawer-profile-avatar { width: 56px; height: 56px; }

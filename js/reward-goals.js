@@ -269,6 +269,32 @@ let rewardGoalPanelMember = null;
 // a stock key, "own" or "none"
 let rewardGoalPhoto = { choice: "", title: "", own: "", ownNew: false, open: false };
 let rewardGoalOnce = false;
+let rewardGoalMoreIdeas = false;
+
+// Ideas under "What's the reward?": four to start (pocket money first, the
+// one most families want), "More ideas" for the rest. Tapping one fills in
+// the name (which picks its photo) and whether it starts again: pocket money
+// comes round again, a new toy is a one-off. (Asked for by Steven, 11 Nov.)
+// Each name matches its photo in js/reward-photos.js.
+const REWARD_GOAL_IDEAS = [
+  { title: "Pocket money", emoji: "💷", once: false },
+  { title: "Cinema trip", emoji: "🎬", once: false },
+  { title: "Screen time", emoji: "📱", once: false },
+  { title: "Pizza night", emoji: "🍕", once: false },
+  { title: "Day out", emoji: "🎢", once: false },
+  { title: "Sleepover", emoji: "⛺", once: false },
+  { title: "Stay up late", emoji: "🌙", once: false },
+  { title: "Ice cream", emoji: "🍦", once: false },
+  { title: "Games night", emoji: "🎲", once: false },
+  { title: "Meal out", emoji: "🍽️", once: false },
+  { title: "Swimming", emoji: "🏊", once: false },
+  { title: "New toy", emoji: "🧸", once: true },
+  { title: "New book", emoji: "📚", once: true },
+  { title: "Shopping", emoji: "🛍️", once: false },
+  { title: "Pamper day", emoji: "🛁", once: false },
+  { title: "Night out", emoji: "🍸", once: false }
+];
+const REWARD_GOAL_IDEAS_SHOWN = 4;
 
 // Who → What's the reward → Photo → Points (a slider with shortcuts). The
 // emoji is worked out from the photo (11 Nov: the Icon row went; it was a
@@ -282,6 +308,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
   rewardGoalPanelMember = goal ? goal.member : (member || (window.familyMembers || [])[0] || "");
   rewardGoalPhoto = P ? P.stateFor(goal) : { choice: "", title: "" };
   rewardGoalOnce = !!(goal && goal.once);
+  rewardGoalMoreIdeas = false;
 
   document.getElementById("reward-goal-title").textContent = goal ? "Edit goal" : `New goal${rewardGoalPanelMember ? ` for ${rewardGoalPanelMember}` : ""}`;
   document.getElementById("reward-goal-id").value = goal ? goal.id : "";
@@ -298,6 +325,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
 
   renderRewardGoalPanelPickers();
   renderRewardGoalRepeat();
+  renderRewardGoalIdeas(!goal);
   wireRewardGoalPanel();
   if (!dialog.open) dialog.showModal();
   if (!goal) focusAfterPanelOpens(document.getElementById("reward-goal-name"));
@@ -309,7 +337,7 @@ function renderRewardGoalPanelPickers() {
   // The same person picker as events and chores (js/utils.js memberPillHtml)
   membersRow.classList.add("drawer-profiles-pills-row");
   membersRow.innerHTML = (window.familyMembers || []).map(m =>
-    memberPillHtml(m, { active: m === rewardGoalPanelMember, attrs: `data-member="${escapeHtml(m)}"` })).join("");
+    memberPillHtml(m, { buddy: true, active: m === rewardGoalPanelMember, attrs: `data-member="${escapeHtml(m)}"` })).join("");
   renderRewardGoalPhotos();
 }
 
@@ -319,6 +347,21 @@ function renderRewardGoalPhotos() {
   rewardGoalPhoto.title = document.getElementById("reward-goal-name").value;
   box.innerHTML = window.RewardPhotos.chooserHtml(rewardGoalPhoto);
   window.RewardPhotos.wireChooser(box, () => rewardGoalPhoto, (next) => { Object.assign(rewardGoalPhoto, next); renderRewardGoalPhotos(); });
+}
+
+// The ideas (new goals only; an existing goal already has its name)
+function renderRewardGoalIdeas(show) {
+  const box = document.getElementById("reward-goal-ideas");
+  if (!box) return;
+  if (show === false) { box.hidden = true; box.innerHTML = ""; return; }
+  if (show === true) box.hidden = false;
+  if (box.hidden) return;
+  const typed = document.getElementById("reward-goal-name").value.trim().toLowerCase();
+  const list = rewardGoalMoreIdeas ? REWARD_GOAL_IDEAS : REWARD_GOAL_IDEAS.slice(0, REWARD_GOAL_IDEAS_SHOWN);
+  box.innerHTML = list.map(i => {
+    const on = typed === i.title.toLowerCase();
+    return `<button type="button" class="reward-goal-idea${on ? " is-on" : ""}" data-idea="${escapeHtml(i.title)}" aria-pressed="${on}"><span aria-hidden="true">${i.emoji}</span>${escapeHtml(i.title)}</button>`;
+  }).join("") + `<button type="button" class="reward-goal-idea is-more" data-ideas-more aria-expanded="${rewardGoalMoreIdeas}">${rewardGoalMoreIdeas ? "Fewer ideas" : "More ideas"}</button>`;
 }
 
 // Start again (pocket money, screen time) or Remove it (a one-off treat)
@@ -354,7 +397,21 @@ function wireRewardGoalPanel() {
     renderRewardGoalRepeat();
   });
   // Typing the reward picks a photo for it
-  document.getElementById("reward-goal-name").addEventListener("input", () => renderRewardGoalPhotos());
+  document.getElementById("reward-goal-name").addEventListener("input", () => { renderRewardGoalPhotos(); renderRewardGoalIdeas(); });
+  document.getElementById("reward-goal-ideas").addEventListener("click", (e) => {
+    if (e.target.closest("[data-ideas-more]")) { rewardGoalMoreIdeas = !rewardGoalMoreIdeas; renderRewardGoalIdeas(); return; }
+    const b = e.target.closest("[data-idea]");
+    const idea = b && REWARD_GOAL_IDEAS.find(i => i.title === b.getAttribute("data-idea"));
+    if (!idea) return;
+    document.getElementById("reward-goal-name").value = idea.title;
+    rewardGoalOnce = idea.once;
+    // The photo follows the new name (unless one was chosen by hand)
+    if (rewardGoalPhoto.choice !== "own") rewardGoalPhoto.choice = "";
+    renderRewardGoalRepeat();
+    renderRewardGoalPhotos();
+    renderRewardGoalIdeas();
+    if (window.sfx && typeof window.sfx.playTick === "function") window.sfx.playTick(0.5);
+  });
 
   const costInput = document.getElementById("reward-goal-cost");
   document.getElementById("reward-goal-form").addEventListener("submit", async (e) => {

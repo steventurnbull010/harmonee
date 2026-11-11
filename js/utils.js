@@ -256,18 +256,24 @@ window.taskReward = taskReward;
 // .drawer-profiles-pills-row. `value`, `label` and `initial` are escaped here;
 // `attrs` is raw (build it with escapeHtml).
 const PERSON_PILL_TICK = `<span class="drawer-profile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
-function personPillHtml({ label, initial, color, active = false, attrs = "", extraClass = "", ariaLabel = "" }) {
+// face: raw HTML drawn instead of the initial (a buddy's drawing)
+function personPillHtml({ label, initial, color, active = false, attrs = "", extraClass = "", ariaLabel = "", face = "" }) {
   return `<button type="button" class="drawer-profile-pill${extraClass ? ` ${extraClass}` : ""}${active ? " active" : ""}" ${attrs} aria-pressed="${active ? "true" : "false"}"${ariaLabel ? ` aria-label="${escapeHtml(ariaLabel)}"` : ""} style="--profile-color: ${escapeHtml(color || "#64748b")};">
-    <span class="drawer-profile-avatar">${escapeHtml(initial || "")}${PERSON_PILL_TICK}</span>
+    <span class="drawer-profile-avatar${face ? " is-buddy" : ""}">${face || escapeHtml(initial || "")}${PERSON_PILL_TICK}</span>
     <span class="drawer-profile-name">${escapeHtml(label || "")}</span>
   </button>`;
 }
 window.personPillHtml = personPillHtml;
 
-// A family member's pill: their initial and colour
+// A family member's pill: their initial and colour. opts.buddy: their buddy
+// (the robot, the cat) instead of the initial, if they've picked one
 function memberPillHtml(name, opts = {}) {
   const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#64748b" };
-  return personPillHtml({ label: displayMemberName(name), initial: String(name || "?").charAt(0).toUpperCase(), color: pal.primary, ...opts });
+  const { buddy, ...rest } = opts;
+  const B = buddy ? window.Buddies : null;
+  const id = B && B.getMemberBuddy ? B.getMemberBuddy(name) : null;
+  const face = id && B.svgFor ? B.svgFor(id) : "";
+  return personPillHtml({ label: displayMemberName(name), initial: String(name || "?").charAt(0).toUpperCase(), color: pal.primary, face, ...rest });
 }
 window.memberPillHtml = memberPillHtml;
 

@@ -12,7 +12,8 @@
 // photoRev) | "none".
 //
 // Also here, used by both goal panels (a person's goal and the family goal):
-//   chooser  - one big preview, "Change photo" opens a row of choices
+//   chooser  - the photo (tap it or its pencil to open a row of choices),
+//              or a slim "Add a photo" row when there isn't one
 //   slider   - points needed: drag a big slider (a tick per step, a
 //              no sound when you let go: Steven found a ding annoying), with shortcuts underneath
 // ============================================================================
@@ -80,20 +81,26 @@
     else if (state.choice === "own") url = state.own || null;
     else if (state.choice && byKey(state.choice)) url = urlOf(byKey(state.choice));
     else if (auto) { url = urlOf(byKey(auto)); caption = `Picked for “${esc(state.title)}”`; }
-    const name = (state.title || "").trim() || "Your reward";
+    // The photo itself is the button: tap it (or its pencil) to change it.
+    // No photo: a slim row, not a big empty box (Steven, 11 Nov)
+    const pencil = `<span class="rw-pc-edit" aria-hidden="true">${state.open
+      ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`}</span>`;
+    const label = state.open ? "Close the photos" : "Change photo";
     const preview = url
-      ? `<span class="rw-pc-preview" style="background-image: url('${url}')">${caption ? `<span class="rw-pc-tag">✨ ${caption}</span>` : ""}</span>`
-      : `<span class="rw-pc-preview is-none"><span class="rw-pc-gift" aria-hidden="true">🎁</span><span class="rw-pc-none-name">${esc(name)}</span></span>`;
+      ? `<button type="button" class="rw-pc-preview" data-pc-toggle aria-expanded="${!!state.open}" aria-label="${label}" style="background-image: url('${url}')">${caption ? `<span class="rw-pc-tag">✨ ${caption}</span>` : ""}${pencil}</button>`
+      : `<button type="button" class="rw-pc-add" data-pc-toggle aria-expanded="${!!state.open}">
+          <span class="rw-pc-add-icon" aria-hidden="true">${state.choice === "none" ? "🎁" : "📷"}</span>
+          <span class="rw-pc-add-text">${state.choice === "none" ? "No photo" : "Add a photo"}<small>${state.choice === "none" ? "Their card shows a 🎁 in their colour" : "Or name the reward and we'll pick one"}</small></span>
+          ${pencil}
+        </button>`;
     const tile = (val, label, inner, extraClass = "") => `
       <button type="button" class="rw-pc-tile ${extraClass} ${state.choice === val ? "is-on" : ""}" data-pc-pick="${val}" aria-pressed="${state.choice === val}">
         <span class="rw-pc-tile-img">${inner}</span><span class="rw-pc-tile-label">${esc(label)}</span>
       </button>`;
     return `
-      <div class="rw-pc">
+      <div class="rw-pc${state.open ? " is-open" : ""}">
         ${preview}
-        <div class="rw-pc-actions">
-          <button type="button" class="rw-pc-change" data-pc-toggle aria-expanded="${!!state.open}">${state.open ? "Done" : "📷 Change photo"}</button>
-        </div>
         <div class="rw-pc-row" ${state.open ? "" : "hidden"}>
           ${tile("own", "Your own photo", `<span class="rw-pc-own-icon">📷</span>`, "is-own")}
           ${tile("none", "No photo", `<span class="rw-pc-own-icon">🎁</span>`, "is-none")}

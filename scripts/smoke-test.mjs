@@ -1363,6 +1363,39 @@ const PAGES = [
 
     // A person's goal panel: Night out, then no photo, then their own photo; the slider; saved
     await p.evaluate(async () => { window.openRewardGoalPanel(null, "Alex"); await new Promise(res => setTimeout(res, 400)); });
+    // Ideas: Pocket money first, four then More ideas; buddies in the picker; a slim Add a photo row
+    const ideas = await p.evaluate(async () => {
+      const list = () => [...document.querySelectorAll("#reward-goal-ideas [data-idea]")].map(b => b.getAttribute("data-idea"));
+      const first = list();
+      const addRow = !!document.querySelector("#reward-goal-photo .rw-pc-add") && !document.querySelector("#reward-goal-photo .rw-pc-preview");
+      const addHeight = Math.round((document.querySelector("#reward-goal-photo .rw-pc-add") || { getBoundingClientRect: () => ({ height: 999 }) }).getBoundingClientRect().height);
+      const joBuddy = !!document.querySelector('#reward-goal-members [data-member="Jo"] .drawer-profile-avatar.is-buddy svg');
+      const alexInitial = (document.querySelector('#reward-goal-members [data-member="Alex"] .drawer-profile-avatar') || {}).textContent?.trim();
+      document.querySelector("#reward-goal-ideas [data-ideas-more]").click();
+      const more = list().length;
+      document.querySelector('#reward-goal-ideas [data-idea="New toy"]').click();
+      await new Promise(res => setTimeout(res, 100));
+      const toyOnce = document.querySelector('#reward-goal-repeat [data-repeat="once"]').classList.contains("active");
+      document.querySelector('#reward-goal-ideas [data-idea="Pocket money"]').click();
+      await new Promise(res => setTimeout(res, 100));
+      return {
+        first, more, addRow, addHeight, joBuddy, alexInitial, toyOnce,
+        name: document.getElementById("reward-goal-name").value,
+        moneyAgain: document.querySelector('#reward-goal-repeat [data-repeat="again"]').classList.contains("active"),
+        photo: (document.querySelector("#reward-goal-photo .rw-pc-preview") || {}).getAttribute?.("style") || "",
+        pencil: !!document.querySelector("#reward-goal-photo .rw-pc-preview .rw-pc-edit"),
+        on: [...document.querySelectorAll("#reward-goal-ideas .is-on")].map(b => b.getAttribute("data-idea"))
+      };
+    });
+    if (ideas.first.join() !== "Pocket money,Cinema trip,Screen time,Pizza night") throw new Error(`the first ideas aren't Pocket money first: ${ideas.first}`);
+    if (ideas.more < 12) throw new Error(`More ideas didn't show more: ${ideas.more}`);
+    if (!ideas.addRow || ideas.addHeight > 80) throw new Error(`with no photo the panel doesn't show a slim Add a photo row (${ideas.addHeight}px)`);
+    if (!ideas.joBuddy || ideas.alexInitial !== "A") throw new Error(`the picker doesn't show Jo's buddy (and Alex's initial): ${JSON.stringify(ideas)}`);
+    if (!ideas.toyOnce || !ideas.moneyAgain) throw new Error(`ideas don't set After it's redeemed (New toy: Remove it; Pocket money: Start again): ${JSON.stringify(ideas)}`);
+    if (ideas.name !== "Pocket money" || !/money\.jpg/.test(ideas.photo) || !ideas.pencil || ideas.on.join() !== "Pocket money") throw new Error(`Pocket money didn't fill in the name, its photo and pencil: ${JSON.stringify(ideas)}`);
+    await p.evaluate(() => document.getElementById("reward-goal-title").scrollIntoView({ block: "start" }));
+    await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-goal-ideas.png`) });
     const gp = await p.evaluate(async () => {
       const name = document.getElementById("reward-goal-name");
       name.value = "Night out with friends";
@@ -1373,7 +1406,7 @@ const PAGES = [
       await new Promise(res => setTimeout(res, 100));
       document.querySelector('#reward-goal-photo [data-pc-pick="none"]').click();
       await new Promise(res => setTimeout(res, 100));
-      const none = !!document.querySelector("#reward-goal-photo .rw-pc-preview.is-none") && /Night out with friends/.test(document.querySelector("#reward-goal-photo .rw-pc-preview").textContent);
+      const none = !!document.querySelector("#reward-goal-photo .rw-pc-add") && /No photo/.test(document.querySelector("#reward-goal-photo .rw-pc-add").textContent);
       document.querySelector('#reward-goal-points [data-pts-preset="100"]').click();
       const value = document.querySelector("#reward-goal-points [data-pts-value]").textContent;
       // New goals start again after they're redeemed, unless "Remove it" is chosen
@@ -1384,7 +1417,7 @@ const PAGES = [
     });
     if (!/nightout\.jpg/.test(gp.picked)) throw new Error(`"Night out" didn't pick the night out photo: ${gp.picked}`);
     if (gp.iconRow) throw new Error("the goal panel still has the Icon row");
-    if (!gp.none) throw new Error("No photo doesn't show the gift card with the reward's name");
+    if (!gp.none) throw new Error("No photo doesn't show the slim No photo row");
     if (gp.value !== "100 pts") throw new Error(`the 100 shortcut didn't set the points: ${gp.value}`);
     await p.evaluate(() => document.getElementById("reward-goal-repeat").scrollIntoView({ block: "center" }));
     await p.waitForTimeout(150);
