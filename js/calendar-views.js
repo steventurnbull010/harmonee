@@ -62,7 +62,7 @@
   function eventsOn(date) {
     const ds = keyOf(date);
     const dayName = DAYS[idxOf(date)];
-    let list = (window.familyEvents || [])
+    let list = (window.shownEvents ? window.shownEvents() : (window.familyEvents || []))
       .filter(e => e && typeof e === "object" && window.isEventOnDate(e, ds, dayName, date))
       .map(e => (typeof window.eventForDay === "function" ? window.eventForDay(e, date) : e));
     if (filters() !== null && typeof window.isMemberSelected === "function") list = list.filter(e => window.isMemberSelected(e.member));
@@ -107,7 +107,7 @@
       <div class="skylight-card cv-card" data-event-id="${esc(evt.id)}" style="background: ${bg}; border-color: ${pal.border}; --cv-edge: ${pal.primary};" title="${esc(evt.title)}">
         <span class="cv-card-time">${esc(timeLabel(evt))}</span>
         <span class="cv-card-main">
-          <span class="cv-card-title" style="color: ${pal.text};">${esc(evt.icon || "📅")} ${esc(evt.title)}${evt.repeat && evt.repeat !== "none" ? ` <span class="cv-repeat" title="Repeats">🔁</span>` : ""}</span>
+          <span class="cv-card-title" style="color: ${pal.text};">${esc(evt.icon || "📅")} ${esc(evt.title)}${evt.repeat && evt.repeat !== "none" ? ` <span class="cv-repeat" title="Repeats">🔁</span>` : ""}${evt.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>
           ${length ? `<span class="cv-card-sub">${esc(timeLabel(evt))}${length}</span>` : ""}
         </span>
         <span class="skylight-card-avatar-wrap">${faces}</span>

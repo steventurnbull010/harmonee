@@ -1,0 +1,11 @@
+{
+  "name": "harmonee-functions",
+  "private": true,
+  "description": "harmonee's server jobs: Google Calendar (and Outlook / iCloud) into the family calendar, read-only",
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.0"
+  }
+}

@@ -52,7 +52,7 @@
     const dayName = DAYS[now.getDay()];
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const done = doneToday(todayKey);
-    return (window.familyEvents || []).filter(e => {
+    return (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => {
       if (!e || !e.id || done.includes(e.id)) return false;
       const t = String(e.time || "").trim().toLowerCase();
       if (!t || t === "all day" || /all\s*day/i.test(String(e.duration || ""))) return false;

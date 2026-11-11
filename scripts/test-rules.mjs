@@ -118,6 +118,27 @@ s = await call(owner, "PATCH", `boards/${testBoard}/recipePhotos/family-5`, { fi
 check("Member: a dish photo holds only the photo", denied(s), s);
 s = await call(owner, "DELETE", `boards/${testBoard}/recipePhotos/family-1`); check("Member: can delete a dish photo", s === 200, s);
 
+// --- Linked calendars (Google Calendar, read-only; 11 Nov) -------------------
+const linkBody = { fields: { links: { mapValue: { fields: { sam: { mapValue: { fields: { member: str("Sam"), url: str("https://calendar.google.com/calendar/ical/a/private-b/basic.ics") } } } } } } } };
+s = await call(owner, "PATCH", `boards/${testBoard}/private/calendarLinks`, linkBody);
+check("Member: can save a calendar link", s === 200, s);
+s = await call(owner, "GET", `boards/${testBoard}/private/calendarLinks`);
+check("Member: can't read calendar links back (only the server can)", denied(s), s);
+s = await call(stranger, "PATCH", `boards/${testBoard}/private/calendarLinks`, linkBody);
+check("Stranger: can't save a calendar link", denied(s), s);
+s = await call(owner, "PATCH", `boards/${testBoard}/private/calendarLinks`, { fields: { links: linkBody.fields.links, other: str("x") } });
+check("Member: can't add other fields to the links", denied(s), s);
+s = await call(owner, "DELETE", `boards/${testBoard}/private/calendarLinks`);
+check("Member: can't delete the links document", denied(s), s);
+s = await call(owner, "GET", `boards/${testBoard}/private/calendarSync`);
+check("Member: can't read the server's sync note", denied(s), s);
+s = await call(owner, "GET", `boards/${testBoard}/externalEvents/sam`);
+check("Member: can read linked calendar events", ok(s), s);
+s = await call(owner, "PATCH", `boards/${testBoard}/externalEvents/sam`, { fields: { member: str("Sam") } });
+check("Member: can't write linked calendar events (only the server can)", denied(s), s);
+s = await call(stranger, "GET", `boards/${testBoard}/externalEvents/sam`);
+check("Stranger: can't read linked calendar events", denied(s), s);
+
 // --- List-only links (sharedLists) -----------------------------------------
 const shareKey = `rulestest${Date.now().toString(36)}abcdefgh`.slice(0, 24);
 const listCopy = (board) => ({ fields: { boardId: str(board), listId: str("l1"), title: str("Test list"), emoji: str("📋"), color: str("sky"), items: { arrayValue: { values: [] } } } });

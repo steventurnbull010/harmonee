@@ -24,3 +24,5 @@ TODO.md
 
 # Smoke test screenshots (scripts/smoke-test.mjs)
 smoke-shots/
+
+functions/node_modules/

@@ -61,7 +61,7 @@
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
   <link rel="stylesheet" href="css/meals.css?v=23c06bd2">
   <link rel="stylesheet" href="css/calendar.css?v=0110488d">
-  <link rel="stylesheet" href="css/calendar-v2.css?v=27671831">
+  <link rel="stylesheet" href="css/calendar-v2.css?v=0db6cabd">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=a012cf40">
   <link rel="stylesheet" href="css/rewards-v2.css?v=a5c4e145">
@@ -311,6 +311,8 @@
               <button type="button" class="cal-toolbar-title" id="cal-toolbar-title" aria-live="polite"></button>
               <button type="button" class="calendar-btn-nav" id="btn-calendar-next-week" title="Next" aria-label="Next"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
               <button type="button" class="calendar-btn-today" id="btn-calendar-today">Today</button>
+              <!-- Linked Google calendars: check now, and when they were last checked -->
+              <button type="button" class="cal-refresh" id="cal-refresh" hidden><span class="cal-refresh-icon" aria-hidden="true">↻</span><span class="cal-refresh-when" id="cal-refresh-when"></span></button>
             </div>
             <div class="cal-view-switch" id="cal-view-switch" role="group" aria-label="Calendar view"></div>
             <div class="cal-people" id="cal-people" role="group" aria-label="Whose events"></div>
@@ -1449,6 +1451,7 @@
           <button type="button" class="settings-nav-chip" data-section="rewards">🏆 Rewards</button>
           <button type="button" class="settings-nav-chip" data-section="access">🔐 Access</button>
           <button type="button" class="settings-nav-chip" data-section="sleep">🌙 Sleep</button>
+          <button type="button" class="settings-nav-chip" data-section="calendars">📅 Calendars</button>
           <button type="button" class="settings-nav-chip" data-section="music">🎵 Music</button>
           <button type="button" class="settings-nav-chip" data-section="films" hidden>🍿 Watch together</button>
           <button type="button" class="settings-nav-chip" data-section="diagnostics">🩺 Diagnostics</button>
@@ -1661,6 +1664,18 @@
           </section>
 
           <!-- MUSIC: family playlists on Today at a glance (js/music.js) -->
+          <!-- CALENDARS: each person's Google Calendar, read-only (js/google-calendar.js) -->
+          <section class="settings-section" id="settings-sec-calendars" aria-labelledby="settings-head-calendars">
+            <div class="settings-section-head">
+              <h3 class="drawer-section-label-row" id="settings-head-calendars">
+                <span class="drawer-section-icon" aria-hidden="true">📅</span>
+                <span class="drawer-section-label">Calendars</span>
+              </h3>
+              <p class="settings-section-desc">Bring each person's Google Calendar into harmonee, so everything's in one place. We'll walk you through it. It takes about two minutes per person.</p>
+            </div>
+            <div class="settings-section-box gcal-settings" id="gcal-settings"></div>
+          </section>
+
           <section class="settings-section" id="settings-sec-music" aria-labelledby="settings-head-music">
             <div class="settings-section-head">
               <h3 class="drawer-section-label-row" id="settings-head-music">
@@ -2588,7 +2603,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=38cc79af"></script>
+  <script src="js/build-info.js?v=40378d12"></script>
   <script src="js/utils.js?v=c243e9da"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=55f9380e"></script>
@@ -2614,11 +2629,12 @@
   <script src="js/rewards-page.js?v=4cc21a17"></script>
   <script src="js/page-intro.js?v=4c22746c"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar-views.js?v=f86d3eb7"></script>
-  <script src="js/calendar.js?v=201c685d"></script>
+  <script src="js/google-calendar.js?v=a39bbaa7"></script>
+  <script src="js/calendar-views.js?v=4bd80b45"></script>
+  <script src="js/calendar.js?v=9d526658"></script>
   <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
   <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
-  <script src="js/event-chime.js?v=b9ba3896"></script>
+  <script src="js/event-chime.js?v=f2665b30"></script>
   <script src="js/date-picker.js?v=047b5be3"></script>
   <script src="js/tasks.js?v=06142f9a"></script>
   <script src="js/quick-grabs.js?v=7602afaa"></script>
@@ -2649,10 +2665,10 @@
   <script src="js/settings-fold.js?v=687c868e"></script>
   <script src="js/secret-keys.js?v=56739ba9"></script>
   <script src="js/film-night.js?v=bed9b5e2"></script>
-  <script src="js/today-screen.js?v=fd7e00b4"></script>
+  <script src="js/today-screen.js?v=365c2cc9"></script>
   <script src="js/side-panel.js?v=4887e374"></script>
   <script type="module" src="js/meals.js?v=d10c6d78"></script>
-  <script type="module" src="app.js?v=2a0c3fbe"></script>
+  <script type="module" src="app.js?v=f5874a7b"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

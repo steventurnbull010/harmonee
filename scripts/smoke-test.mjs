@@ -1421,6 +1421,138 @@ const PAGES = [
     }, added);
     if (problems.length) throw new Error(problems.join("; "));
   }],
+  // Google Calendar, read-only (11 Nov): Settings → Calendars, the guide
+  // (wrong address explained, right one accepted), events shown with a G and
+  // read-only, ↻ in the bar, never saved into the board's own events, unlink.
+  // The server is stood in for: it "reads" the calendar and saves two events.
+  ["google-calendar", async (p) => {
+    const B = "boards/sidepanel-test-x7q2";
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      window.switchSkylightView("calendar");
+      window.setCalendarView("week", new Date());
+      window.__SMOKE_CAL_REFRESH = async (board, why) => {
+        const linksSnap = window.__SMOKE_STORE[`boards/${board}/private/calendarLinks`] || {};
+        const links = linksSnap.links || {};
+        const results = [];
+        const today = window.getLocalDateKey(new Date());
+        const t = new Date(); t.setDate(t.getDate() + 1);
+        const tomorrow = window.getLocalDateKey(t);
+        for (const [key, link] of Object.entries(links)) {
+          const events = [
+            { id: `g-${key}-1`, title: "Optician", date: today, time: "15:00", duration: "30 mins", member: link.member, icon: "📅", repeat: "none", source: "google", readOnly: true },
+            { id: `g-${key}-2`, title: "Work away day", date: tomorrow, time: "", duration: "All day", member: link.member, icon: "📅", repeat: "none", source: "google", readOnly: true }
+          ];
+          await window.setDoc(window.doc(window.db, "boards", board, "externalEvents", key), { member: link.member, ok: true, problem: null, events, count: events.length, kind: "google", checkedAt: new Date().toISOString() });
+          results.push({ member: link.member, ok: true, count: events.length });
+        }
+        // Unlinked people's events go
+        Object.keys(window.__SMOKE_STORE).filter(k => k.startsWith(`boards/${board}/externalEvents/`)).forEach(k => {
+          const key = k.split("/").pop();
+          if (!links[key]) { delete window.__SMOKE_STORE[k]; }
+        });
+        window.__SMOKE_CAL_CALLS = (window.__SMOKE_CAL_CALLS || []).concat(why);
+        return { ok: true, results };
+      };
+      if (window.GoogleCalendar) window.GoogleCalendar.start();
+    });
+    await p.waitForTimeout(400);
+    const before = await p.evaluate((B) => ({ refreshShown: !document.getElementById("cal-refresh").hidden, boardEvents: ((window.__SMOKE_STORE[B] || {}).events || []).length }), B);
+    if (before.refreshShown) throw new Error("↻ shows before any calendar is linked");
+
+    // Settings → Calendars
+    await p.evaluate(() => window.openSettingsModal("calendars"));
+    await p.waitForTimeout(800);
+    const row = await p.evaluate(() => (document.getElementById("gcal-settings") || {}).textContent || "");
+    if (!/Link Sam's calendar/.test(row)) throw new Error(`Settings → Calendars has no "Link Sam's calendar": ${row.slice(0, 120)}`);
+    await p.evaluate(() => document.getElementById("settings-sec-calendars").scrollIntoView());
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings.png`) });
+
+    // The guide
+    await p.click('#gcal-settings [data-gcal-connect="Sam"]');
+    await p.waitForTimeout(600);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide.png`) });
+    const wrong = await p.evaluate(() => {
+      const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+      box.value = "https://calendar.google.com/calendar/ical/sam%40gmail.com/public/basic.ics";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+      return document.querySelector("#gcal-guide [data-gcal-check]").textContent;
+    });
+    if (!/Public/.test(wrong)) throw new Error(`pasting the public address didn't explain it: ${wrong}`);
+    await p.evaluate(() => {
+      const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+      box.value = "Here it is: https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const right = await p.evaluate(() => document.querySelector("#gcal-guide [data-gcal-check]").textContent);
+    if (!/right kind/.test(right)) throw new Error(`the secret address wasn't accepted: ${right}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-pasted.png`) });
+    await p.click("#gcal-guide [data-gcal-link]");
+    await p.waitForTimeout(900);
+    const done = await p.evaluate((B) => ({
+      text: (document.querySelector("#gcal-guide [data-gcal-body]") || {}).textContent || "",
+      saved: ((window.__SMOKE_STORE[`${B}/private/calendarLinks`] || {}).links || {}).sam || null
+    }), B);
+    if (!/linked/.test(done.text) || !/2 events/.test(done.text)) throw new Error(`the guide didn't finish with what it found: ${done.text.slice(0, 160)}`);
+    if (!done.saved || !/private-0123456789abcdef/.test(done.saved.url) || /Here it is/.test(done.saved.url)) throw new Error(`the link wasn't saved cleanly: ${JSON.stringify(done.saved)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-done.png`) });
+    await p.evaluate(() => { document.querySelector("#gcal-guide [data-gcal-finish]").click(); });
+    await p.waitForTimeout(400);
+    const status = await p.evaluate(() => (document.getElementById("gcal-settings") || {}).textContent || "");
+    if (!/Linked · 2 events/.test(status)) throw new Error(`Settings doesn't show Sam as linked: ${status.slice(0, 160)}`);
+    await p.evaluate(() => document.getElementById("settings-modal").close());
+    await p.waitForTimeout(500);
+
+    // On the calendar: with a G, ↻ showing, read-only, not saved into the board
+    await p.evaluate(() => { window.switchSkylightView("calendar"); window.setCalendarView("week", new Date()); });
+    await p.waitForTimeout(400);
+    const cal = await p.evaluate((B) => {
+      const g = document.getElementById("calendar-week-grid");
+      const card = [...g.querySelectorAll("[data-event-id]")].find(c => /Optician/.test(c.textContent));
+      const refresh = document.getElementById("cal-refresh");
+      return {
+        shown: !!card, hasG: !!(card && card.querySelector(".ev-g")),
+        refresh: !refresh.hidden, refreshText: refresh.textContent.replace(/\s+/g, " ").trim(),
+        familyHasGoogle: (window.familyEvents || []).some(e => e.source === "google"),
+        boardEvents: ((window.__SMOKE_STORE[B] || {}).events || []).length
+      };
+    }, B);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-calendar.png`) });
+    if (!cal.shown || !cal.hasG) throw new Error(`Sam's Google event isn't on the calendar with a G: ${JSON.stringify(cal)}`);
+    if (!cal.refresh) throw new Error("↻ isn't in the calendar bar once a calendar is linked");
+    if (cal.familyHasGoogle || cal.boardEvents !== before.boardEvents) throw new Error(`Google events got into the board's own events: ${JSON.stringify(cal)}`);
+    const pop = await p.evaluate(async () => {
+      const card = [...document.querySelectorAll("#calendar-week-grid [data-event-id]")].find(c => /Optician/.test(c.textContent));
+      card.click();
+      await new Promise(res => setTimeout(res, 300));
+      const r = { edit: getComputedStyle(document.getElementById("btn-event-pop-edit")).display, del: getComputedStyle(document.getElementById("btn-event-pop-delete")).display, note: document.getElementById("event-pop-notes").textContent };
+      document.getElementById("btn-event-pop-close").click();
+      return r;
+    });
+    if (pop.edit !== "none" || pop.del !== "none" || !/Google Calendar/.test(pop.note)) throw new Error(`a Google event can be edited or deleted here: ${JSON.stringify(pop)}`);
+    // ↻ asks the server
+    const calls = await p.evaluate(async () => { window.__SMOKE_CAL_CALLS = []; await new Promise(res => setTimeout(res, 50)); return window.__SMOKE_CAL_CALLS.length; });
+    // Unlink
+    await p.evaluate(() => window.openSettingsModal("calendars"));
+    await p.waitForTimeout(700);
+    await p.evaluate(async () => {
+      const b = document.querySelector('#gcal-settings [data-gcal-remove="Sam"]');
+      b.click(); await new Promise(res => setTimeout(res, 100));
+      document.querySelector('#gcal-settings [data-gcal-remove="Sam"]').click();
+      await new Promise(res => setTimeout(res, 500));
+      document.getElementById("settings-modal").close();
+    });
+    await p.waitForTimeout(500);
+    const after = await p.evaluate(() => ({
+      events: (window.googleEvents || []).length,
+      refresh: !document.getElementById("cal-refresh").hidden,
+      link: ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2/private/calendarLinks"] || {}).links || {}).sam || null
+    }));
+    if (after.events || after.refresh || after.link) throw new Error(`unlinking left things behind: ${JSON.stringify(after)}`);
+    await p.evaluate(() => { delete window.__SMOKE_CAL_REFRESH; window.setCalendarView("schedule", new Date()); });
+    void calls;
+  }],
   // Every Calendar view at this size, for design review (screenshots only)
   ["calendar-views", async (p) => {
     // A realistic day for the review: a few more events, taken out again after

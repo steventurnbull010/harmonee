@@ -66,7 +66,7 @@
   function eventsOn(day) {
     const key = window.getLocalDateKey(day);
     const dayName = DAY_NAMES[day.getDay()];
-    return (window.familyEvents || [])
+    return (window.shownEvents ? window.shownEvents() : (window.familyEvents || []))
       .filter(e => e && typeof e === "object" && typeof window.isEventOnDate === "function" && window.isEventOnDate(e, key, dayName, day))
       .map(e => (typeof window.eventForDay === "function" ? window.eventForDay(e, day) : e))
       .map(e => ({ evt: e, allDay: !e.time || /all\s*day/i.test(e.time) }))

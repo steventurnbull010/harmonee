@@ -414,6 +414,15 @@ function openEventQuickView(evt, dateStr = null) {
   $("event-pop-notes-row").style.display = notes ? "" : "none";
   $("event-pop-notes").textContent = notes;
 
+  // From someone's Google Calendar (js/google-calendar.js): read-only here
+  const fromGoogle = evt.source === "google" || evt.readOnly;
+  $("btn-event-pop-edit").style.display = fromGoogle ? "none" : "";
+  $("btn-event-pop-delete").style.display = fromGoogle ? "none" : "";
+  if (fromGoogle) {
+    $("event-pop-notes-row").style.display = "";
+    $("event-pop-notes").textContent = `From ${evt.member || "someone"}'s Google Calendar. To change it, change it in Google.`;
+  }
+
   const close = () => {
     overlay.style.display = "none";
     document.removeEventListener("keydown", onKey);
@@ -1347,7 +1356,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     const dayName = weekDayNames[dayDowIdx];
     const dateStr = getLocalDateKey(cellDate);
 
-    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, dateStr, dayName, cellDate)).map(e => eventForDay(e, cellDate));
+    let dayEvents = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => isEventOnDate(e, dateStr, dayName, cellDate)).map(e => eventForDay(e, cellDate));
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }
@@ -1436,6 +1445,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
         title: evt.title,
         sub: evt.time || "All Day",
         time: window.CalendarViews && !/all\s*day/i.test(evt.time || "all day") ? window.CalendarViews.timeLabel(evt) : "",
+        google: evt.source === "google",
         pal: pal
       });
     });
@@ -1453,7 +1463,7 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
              title="${escapeHtml(item.title)} (${escapeHtml(item.sub)})">
           <span class="mini-icon">${escapeHtml(item.icon)}</span>
           ${item.time ? `<span class="mini-time">${escapeHtml(item.time)}</span>` : ""}
-          <span class="mini-title">${escapeHtml(item.title)}</span>
+          <span class="mini-title">${escapeHtml(item.title)}</span>${item.google ? `<span class="ev-g" title="From Google Calendar">G</span>` : ""}
         </div>
       `;
     }).join("");
@@ -1880,7 +1890,7 @@ function renderWeekCalendar() {
       <div class="skylight-card" ${inlineStyleAttr} data-event-id="${evt.id}" title="Tap to view/edit ${escapeHtml(evt.title)}">
         <div class="skylight-card-main">
           <div class="skylight-card-title-row">
-            <span class="skylight-card-title">${escapeHtml(evt.icon || "📅")} ${escapeHtml(evt.title)}${repeatBadgeHtml}</span>
+            <span class="skylight-card-title">${escapeHtml(evt.icon || "📅")} ${escapeHtml(evt.title)}${repeatBadgeHtml}${evt.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>
           </div>
           <span class="skylight-card-sub">${timeSubtitle}</span>
         </div>
@@ -2059,7 +2069,7 @@ function renderWeekCalendar() {
     const isToday = today.toDateString() === colDate.toDateString();
     const colDateStr = getLocalDateKey(colDate);
 
-    let dayEvents = (window.familyEvents || []).filter(e => isEventOnDate(e, colDateStr, dayName, colDate)).map(e => eventForDay(e, colDate));
+    let dayEvents = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => isEventOnDate(e, colDateStr, dayName, colDate)).map(e => eventForDay(e, colDate));
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }
@@ -2246,7 +2256,7 @@ function renderWeekCalendar() {
       // Size classes: tiny (one line), short (avatars beside the title), tall
       // (two lines need about 56px: padding, title, time)
       const sizeClass = heightPx < 56 ? "is-tiny" : heightPx < 80 ? "is-short" : "is-tall";
-      const titleHtml = `<span class="ev-block-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(evt.icon || "📅")}</span>${escapeHtml(evt.title)}</span>`;
+      const titleHtml = `<span class="ev-block-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(evt.icon || "📅")}</span>${escapeHtml(evt.title)}${evt.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>`;
       // On one line the start time sits after the title and never gets cut
       const inlineTime = sizeClass === "is-tiny" ? `<span class="ev-block-inline-time">${escapeHtml(clock(startMins, true))}</span>` : "";
 

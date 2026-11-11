@@ -1187,6 +1187,7 @@ async function initializeDataSource() {
         catch (e) { console.warn("App Check didn't start:", e); }
       }
       firebaseApp = app;
+      window.firebaseApp = app; // js/google-calendar.js asks the server to check linked calendars
       // Saved on the device too (IndexedDB): changes made without a signal
       // survive closing the app and sync when it's back, and the board
       // opens from the saved copy when there's no connection at all
@@ -1212,6 +1213,7 @@ async function initializeDataSource() {
       if (statusText) statusText.textContent = "Live Sync";
 
       if (!liveSyncStarted) { liveSyncStarted = true; listenToFirestoreTasks(); }
+      if (window.GoogleCalendar) window.GoogleCalendar.start(); // linked Google calendars (read-only)
       return;
     } catch (err) {
       console.warn("Firebase init failed, falling back to local mode:", err);
@@ -5676,7 +5678,7 @@ function initSkylightNavigation() {
       if (eventCard) {
         e.stopPropagation();
         const eventId = eventCard.getAttribute("data-event-id");
-        const evt = (familyEvents || []).find(x => x.id === eventId) || (window.familyEvents || []).find(x => x.id === eventId);
+        const evt = (familyEvents || []).find(x => x.id === eventId) || (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).find(x => x.id === eventId);
         // A small pop-up first, like tapping a task; Edit in it opens the panel
         const onDate = (eventCard.closest("[data-date]") || {}).getAttribute ? eventCard.closest("[data-date]").getAttribute("data-date") : null;
         if (evt && typeof window.openEventQuickView === "function") window.openEventQuickView(evt, onDate);

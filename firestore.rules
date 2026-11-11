@@ -60,6 +60,27 @@ service cloud.firestore {
           && request.resource.data.data.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
       }
 
+      // Google / Outlook / iCloud calendar links (js/google-calendar.js):
+      // a device can save or remove a link, but never read one back; only
+      // the server (functions/index.js) reads them
+      match /private/calendarLinks {
+        allow read: if false;
+        allow create, update: if isMember(boardId)
+          && request.resource.data.keys().hasOnly(['links', 'updatedAt'])
+          && request.resource.data.links is map
+          && request.resource.data.links.size() <= 20;
+        allow delete: if false;
+      }
+      // The server's own note of when it last checked
+      match /private/calendarSync {
+        allow read, write: if false;
+      }
+      // Each person's events from their linked calendar, written by the server
+      match /externalEvents/{personKey} {
+        allow read: if isMember(boardId);
+        allow write: if false;
+      }
+
       match /private/access {
         allow read: if isMember(boardId);
         // Only when the board itself is being created in the same batch
