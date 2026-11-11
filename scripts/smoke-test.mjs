@@ -1475,8 +1475,28 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings.png`) });
 
     // The guide, walked through as someone would on this device
+    const touch = p.__size !== "laptop";
+    await p.evaluate((t) => { window.__SMOKE_DEVICE = t ? "touch" : "mouse"; }, touch);
     await p.click('#gcal-settings [data-gcal-connect="Sam"]');
     await p.waitForTimeout(600);
+    // Phones and tablets: Google keeps opening its app, so this is done on a computer
+    if (touch) {
+      const comp = await p.evaluate(() => {
+        const b = document.querySelector("#gcal-guide [data-gcal-body]");
+        const mail = (b.querySelector("[data-gcal-email]") || {}).getAttribute?.("href") || "";
+        return { heading: (b.querySelector("h3") || {}).textContent || "", mail: decodeURIComponent(mail), steps: b.querySelectorAll(".gcal-step").length };
+      });
+      if (!/needs a computer/.test(comp.heading) || comp.steps) throw new Error(`a phone or tablet didn't get the "needs a computer" screen: ${JSON.stringify(comp)}`);
+      if (!/^mailto:/.test(comp.mail) || !/#link-calendar\/Sam/.test(comp.mail)) throw new Error(`"Email me the link" doesn't carry the link to Sam's guide: ${comp.mail.slice(0, 160)}`);
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-needs-computer.png`) });
+      await p.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+      await p.click("#gcal-guide [data-gcal-copy-link]");
+      await p.waitForTimeout(200);
+      const copied = await p.evaluate(async () => ({ note: document.querySelector("#gcal-guide [data-gcal-copied]").textContent, clip: await navigator.clipboard.readText().catch(() => "") }));
+      if (!/Copied/.test(copied.note) && !/#link-calendar/.test(copied.note)) throw new Error(`"Copy the link" didn't copy or show the link: ${copied.note}`);
+      await p.click("#gcal-guide [data-gcal-anyway]");
+      await p.waitForTimeout(300);
+    }
     // Nothing spills sideways, buttons are big enough to tap, nothing cut off
     const layout = async () => p.evaluate(() => {
       const dlg = document.getElementById("gcal-guide");
@@ -1492,12 +1512,12 @@ const PAGES = [
       steps: document.querySelectorAll("#gcal-guide .gcal-step").length,
       next: (document.querySelector("#gcal-guide .gcal-step.is-next") || {}).getAttribute?.("data-gcal-step"),
       safe: /Safe and private/.test(document.querySelector("#gcal-guide .gcal-safe").textContent),
-      words: document.querySelector("#gcal-guide [data-gcal-body]").innerText.split(/\s+/).length,
-      phoneTip: !!document.querySelector("#gcal-guide .gcal-tip")
+      words: document.querySelector("#gcal-guide [data-gcal-body]").innerText.split(/\s+/).length
     }));
     if (first.steps !== 5 || first.next !== "0" || !first.safe) throw new Error(`the guide didn't open on step 1 with the safety note: ${JSON.stringify(first)}`);
-    if (first.words > 170) throw new Error(`the guide is too wordy: ${first.words} words`);
-    if ((p.__size === "phone") !== first.phoneTip) throw new Error(`the phone tip should show only on a phone: ${JSON.stringify(first)}`);
+    if (first.words > 190) throw new Error(`the guide is too wordy: ${first.words} words`);
+    const reassure = await p.evaluate(() => (document.querySelector('#gcal-guide [data-gcal-step="3"] .gcal-reassure') || {}).textContent || "");
+    if (!/not to share/.test(reassure) || !/locked away/.test(reassure)) throw new Error(`step 4 doesn't explain Google's warning: ${reassure}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide.png`) });
     // Step 1: "Open Google Calendar" opens a new tab and ticks itself
     const [popup] = await Promise.all([
@@ -1560,6 +1580,24 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings-linked.png`) });
     await p.evaluate(() => document.getElementById("settings-modal").close());
     await p.waitForTimeout(500);
+    // The link from "Email me the link", opened on a computer: Settings and Alex's guide
+    if (p.__size === "laptop") {
+      const opened = await p.evaluate(async () => {
+        window.__SMOKE_DEVICE = "mouse";
+        history.replaceState(null, "", location.pathname + location.search + "#link-calendar/Alex");
+        window.GoogleCalendar.fromAddress();
+        await new Promise(res => setTimeout(res, 2400));
+        const g = document.getElementById("gcal-guide");
+        const r = { settings: document.getElementById("settings-modal").open, guide: !!(g && g.open), title: g ? g.querySelector("#gcal-guide-title").textContent : "", steps: g ? g.querySelectorAll(".gcal-step").length : 0, hash: location.hash };
+        if (g && g.open) g.close();
+        await new Promise(res => setTimeout(res, 400));
+        document.getElementById("settings-modal").close();
+        return r;
+      });
+      if (!opened.settings || !opened.guide || opened.title !== "Link Alex's calendar" || opened.steps !== 5) throw new Error(`the emailed link didn't open Alex's guide: ${JSON.stringify(opened)}`);
+      if (/link-calendar/.test(opened.hash)) throw new Error("the link stayed in the address bar");
+      await p.waitForTimeout(400);
+    }
 
     // On the calendar: with a G, ↻ showing, read-only, not saved into the board
     await p.evaluate(() => { window.switchSkylightView("calendar"); window.setCalendarView("week", new Date()); });

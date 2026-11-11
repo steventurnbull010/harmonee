@@ -448,3 +448,20 @@ body.theme-dark .gcal-step-words p { color: #cbd5e1; }
 body.theme-dark .gcal-tip, body.theme-dark .gcal-mock { background: #1e293b; color: #cbd5e1; }
 body.theme-dark .gcal-step { background: #0f172a; border-color: #334155; }
 body.theme-dark .gcal-intro { color: #f8fafc; }
+
+/* Step 4: Google's "don't share it" warning, explained */
+.gcal-reassure { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; }
+.gcal-reassure > span { font-size: 1.1rem; line-height: 1.4; }
+.gcal-reassure p { margin: 0; font-size: 0.9rem !important; line-height: 1.5; color: #047857 !important; }
+.gcal-reassure strong { color: #065f46; }
+body.theme-dark .gcal-reassure { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); }
+body.theme-dark .gcal-reassure p { color: #6ee7b7 !important; }
+body.theme-dark .gcal-reassure strong { color: #a7f3d0; }
+
+/* Phones and tablets: this part needs a computer */
+.gcal-computer { display: flex; flex-direction: column; align-items: stretch; text-align: center; gap: 12px; padding: 16px 4px; }
+.gcal-computer-icon { align-self: center; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #e0f2fe; font-size: 2rem; }
+.gcal-computer h3 { margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: 1.45rem; color: var(--text-primary, #0f172a); }
+.gcal-computer p { margin: 0; line-height: 1.55; color: var(--text-secondary, #475569); }
+.gcal-computer .gcal-btn.is-big { margin-top: 0; }
+body.theme-dark .gcal-computer h3 { color: #f8fafc; }

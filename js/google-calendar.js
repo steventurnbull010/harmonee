@@ -293,9 +293,16 @@
     const paste = dlg.querySelector('[data-gcal-step="4"]');
     if (paste) paste.scrollIntoView({ behavior: "smooth", block: "center" });
   });
+  // A phone or tablet (iPads say they're Macs, but have touch screens)
+  function isTouchDevice() {
+    if (window.__SMOKE_DEVICE) return window.__SMOKE_DEVICE === "touch";
+    const coarse = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+    const iPad = /Macintosh/.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1;
+    return coarse || iPad || isPhone();
+  }
   function openGuide(name) {
     guideFor = name;
-    device = isPhone() || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse) and (max-width: 900px)").matches) ? "phone" : "computer";
+    device = isTouchDevice() ? "phone" : "computer";
     doneSteps = new Set();
     linking = false;
     const dlg = guideDialog();
@@ -305,19 +312,41 @@
   }
   // The steps, as short as they can be
   function steps() {
-    const tap = device === "phone" ? "Tap" : "Click";
     return [
       { title: "Open Google Calendar", body: `<a class="gcal-btn is-main gcal-open" data-gcal-open href="https://calendar.google.com/calendar/r/settings" target="_blank" rel="noopener">Open Google Calendar ↗</a>
-          <p class="gcal-small">Sign in as ${esc(guideFor)} if asked.</p>
-          ${device === "phone" ? `<p class="gcal-tip">Small phone page? Tap <strong>aA</strong> in the address bar, then <strong>Request Desktop Website</strong>.</p>` : ""}` },
-      { title: `${tap} ${esc(guideFor)}'s name`, body: `<p>It's on the left, under <strong>Settings for my calendars</strong>.</p>` },
+          <p class="gcal-small">Sign in as ${esc(guideFor)} if asked.</p>` },
+      { title: `Click ${esc(guideFor)}'s name`, body: `<p>It's on the left, under <strong>Settings for my calendars</strong>.</p>` },
       { title: "Scroll down to Integrate calendar", body: "" },
       { title: "Copy the secret address", body: `<div class="gcal-mock" aria-hidden="true"><span>Secret address in iCal format</span><span class="gcal-mock-copy">⧉</span></div>
-          <p>${tap} the copy button next to <strong>Secret address in iCal format</strong>. If a warning pops up, ${tap.toLowerCase()} <strong>OK</strong>.</p>` },
+          <p>Click the copy button next to <strong>Secret address in iCal format</strong>.</p>
+          <div class="gcal-reassure"><span aria-hidden="true">🔒</span><p><strong>Google will say not to share it.</strong> That's to stop it reaching other people. harmonee keeps it locked away and only uses it to show ${esc(guideFor)}'s plans here, so it's fine to paste below.</p></div>` },
       { title: "Paste it here", body: `<button type="button" class="gcal-btn is-main is-big" data-gcal-paste>📋 Paste</button>
-          <textarea class="gcal-paste-box" data-gcal-paste-box rows="2" placeholder="Or press and hold here, then Paste" aria-label="${esc(guideFor)}'s secret address" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+          <textarea class="gcal-paste-box" data-gcal-paste-box rows="2" placeholder="Or click here and press Ctrl+V (⌘V on a Mac)" aria-label="${esc(guideFor)}'s secret address" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
           <p class="gcal-check" data-gcal-check role="status"></p>` }
     ];
+  }
+  // A link that opens this guide for this person on a computer (#link-calendar/Sam)
+  function computerLink() {
+    const u = new URL(window.location.href);
+    u.hash = `link-calendar/${encodeURIComponent(guideFor)}`;
+    return u.href;
+  }
+  // Phones and tablets: Google keeps opening its app there, so this part is
+  // done on a computer. Send the link over, or carry on anyway.
+  function needsComputerHtml() {
+    const link = computerLink();
+    const subject = `Link ${guideFor}'s calendar to harmonee`;
+    const body = `On a laptop or computer, open this link and follow the 5 short steps (about two minutes):\n\n${link}\n\nIf it asks for the family code, it's in harmonee: Settings → Access.`;
+    return `
+      <div class="gcal-computer">
+        <span class="gcal-computer-icon" aria-hidden="true">💻</span>
+        <h3>This part needs a computer</h3>
+        <p>On a phone or tablet, Google keeps opening its own app instead of the page we need. On a laptop or computer it takes two minutes.</p>
+        <a class="gcal-btn is-main is-big" data-gcal-email href="mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}">✉️ Email me the link</a>
+        <button type="button" class="gcal-btn is-big" data-gcal-copy-link>🔗 Copy the link</button>
+        <p class="gcal-small" data-gcal-copied role="status">Open it on your computer and we'll take you straight to the steps.</p>
+        <button type="button" class="gcal-switch" data-gcal-anyway>I'm on a computer, show me the steps</button>
+      </div>`;
   }
   function paintGuide(state) {
     const body = document.querySelector("#gcal-guide [data-gcal-body]");
@@ -336,6 +365,7 @@
       body.innerHTML = `<div class="gcal-done"><span class="gcal-spinner" aria-hidden="true"></span><h3>Linking ${esc(guideFor)}'s calendar…</h3><p class="gcal-small">Just a few seconds.</p></div>`;
       return;
     }
+    if (device === "phone") { body.innerHTML = needsComputerHtml(); return; }
     const list = steps();
     const next = list.findIndex((_, i) => !doneSteps.has(i));
     body.innerHTML = `
@@ -356,7 +386,7 @@
           </li>`).join("")}
       </ol>
       ${state && state.error ? `<p class="gcal-check is-bad">${state.error}</p>` : ""}
-      <button type="button" class="gcal-switch" data-gcal-device="${device === "phone" ? "computer" : "phone"}">${device === "phone" ? "On a computer instead?" : "On a phone instead?"}</button>`;
+`;
   }
   function tick(i, on = true) {
     if (on) doneSteps.add(i); else doneSteps.delete(i);
@@ -417,8 +447,13 @@
     }
   }
   async function onGuideClick(e) {
-    const dev = e.target.closest("[data-gcal-device]");
-    if (dev) { device = dev.getAttribute("data-gcal-device"); tick(-1, false); return; }
+    if (e.target.closest("[data-gcal-anyway]")) { device = "computer"; paintGuide(); return; }
+    if (e.target.closest("[data-gcal-copy-link]")) {
+      const note = document.querySelector("#gcal-guide [data-gcal-copied]");
+      try { await navigator.clipboard.writeText(computerLink()); if (note) note.textContent = "✓ Copied. Paste it into an email or message to yourself, then open it on your computer."; }
+      catch (err) { if (note) note.textContent = computerLink(); }
+      return;
+    }
     const t = e.target.closest("[data-gcal-tick]");
     if (t) { const i = +t.getAttribute("data-gcal-tick"); tick(i, !doneSteps.has(i)); return; }
     // Opening Google ticks step 1 (the link still opens in a new tab)
@@ -439,5 +474,21 @@
     if (e.target.closest("[data-gcal-finish]")) document.getElementById("gcal-guide").close();
   }
 
-  window.GoogleCalendar = { start, refresh, saveLink, removeLink, checkLink, openGuide, renderSettings, paintRefresh, connected, lastChecked, people: () => people, keyOf };
+  // #link-calendar/Sam (from "Email me the link"): open Settings and the guide
+  function fromAddress() {
+    const m = String(location.hash || "").match(/^#link-calendar(?:\/(.+))?$/);
+    if (!m) return;
+    const name = m[1] ? decodeURIComponent(m[1]) : null;
+    try { history.replaceState(history.state, "", location.pathname + location.search + "#calendar"); } catch (e) {}
+    const go = () => {
+      if (!(window.familyMembers || []).length) { setTimeout(go, 500); return; }
+      if (typeof window.openSettingsModal === "function") window.openSettingsModal("calendars");
+      const who = (window.familyMembers || []).find(n => n.toLowerCase() === String(name || "").toLowerCase());
+      if (who) setTimeout(() => openGuide(who), 700);
+    };
+    setTimeout(go, 1200);
+  }
+  if (document.readyState === "complete") fromAddress(); else window.addEventListener("load", fromAddress);
+
+  window.GoogleCalendar = { fromAddress, start, refresh, saveLink, removeLink, checkLink, openGuide, renderSettings, paintRefresh, connected, lastChecked, people: () => people, keyOf };
 })();
