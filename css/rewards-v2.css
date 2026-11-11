@@ -442,7 +442,10 @@ body.theme-dark .rw-fam-add strong { color: #fde68a; }
 .rw-card-banner-title { font-family: Georgia, 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; line-height: 1.2; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rw-card-banner-sub { font-size: 0.85rem; font-weight: 700; opacity: 0.95; }
 .rw-card-banner .rw-goal-bar { height: 10px; background: rgba(255, 255, 255, 0.35); }
-.rw-card-banner .rw-goal-bar-fill { background: #fff; min-width: 10px; }
+/* In their colour, like their stars bar (from Steven, 11 Nov: it was white). On the
+   no-photo card, which is already their colour, it stays white so it shows. */
+.rw-card-banner .rw-goal-bar-fill { background: linear-gradient(90deg, var(--member-border, #7dd3fc), var(--member-primary, #0284c7)); min-width: 10px; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7); }
+.rw-card-banner.is-none .rw-goal-bar-fill { background: #fff; box-shadow: none; }
 .rw-card-banner .rw-goal-bar-fill > span { font-size: 0.9rem; right: -6px; }
 .rw-card-banner .rw-redeem { position: absolute; right: 12px; top: 12px; background: #fff; color: var(--member-text, #0f172a); }
 .rw-card-banner.is-ready .rw-goal-bar-fill { background: #fde047; }
