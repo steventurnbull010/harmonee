@@ -1463,8 +1463,13 @@ const PAGES = [
     // Settings → Calendars
     await p.evaluate(() => window.openSettingsModal("calendars"));
     await p.waitForTimeout(800);
-    const row = await p.evaluate(() => (document.getElementById("gcal-settings") || {}).textContent || "");
-    if (!/Link Sam's calendar/.test(row)) throw new Error(`Settings → Calendars has no "Link Sam's calendar": ${row.slice(0, 120)}`);
+    const row = await p.evaluate(() => {
+      const b = document.querySelector('#gcal-settings [data-gcal-connect="Sam"]');
+      const r = b && b.closest(".gcal-row");
+      return { label: b ? b.getAttribute("aria-label") : "", height: r ? Math.round(r.getBoundingClientRect().height) : 0 };
+    });
+    if (row.label !== "Link Sam's calendar") throw new Error(`Settings → Calendars has no "Link Sam's calendar": ${JSON.stringify(row)}`);
+    if (row.height > 72) throw new Error(`each person's row is too tall (${row.height}px) for what it says`);
     await p.evaluate(() => document.getElementById("settings-sec-calendars").scrollIntoView());
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings.png`) });
@@ -1550,6 +1555,9 @@ const PAGES = [
     await p.waitForTimeout(400);
     const status = await p.evaluate(() => (document.getElementById("gcal-settings") || {}).textContent || "");
     if (!/Linked · 2 events/.test(status)) throw new Error(`Settings doesn't show Sam as linked: ${status.slice(0, 160)}`);
+    await p.evaluate(() => document.getElementById("settings-sec-calendars").scrollIntoView());
+    await p.waitForTimeout(250);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings-linked.png`) });
     await p.evaluate(() => document.getElementById("settings-modal").close());
     await p.waitForTimeout(500);
 

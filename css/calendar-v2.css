@@ -350,16 +350,30 @@ body.theme-dark .cal-refresh { background: #1e293b; border-color: #334155; color
   .cal-refresh.is-busy .cal-refresh-when, .cal-refresh.has-problem .cal-refresh-when { display: inline; }
 }
 
-/* Settings → Calendars: one row per person */
-.gcal-settings { display: flex; flex-direction: column; gap: 8px; }
-.gcal-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--card-border, #e2e8f0); background: var(--card-bg, #fff); flex-wrap: wrap; }
-.gcal-face { flex: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; }
-.gcal-words { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 2px; }
-.gcal-words strong { font-size: 1rem; color: var(--text-primary, #0f172a); }
-.gcal-status { font-size: 0.85rem; color: var(--text-secondary, #64748b); }
-.gcal-status.is-ok { color: #047857; }
+/* Settings → Calendars: a slim list, one line per person (like Profiles) */
+.gcal-settings.settings-section-box { padding: 4px 16px; gap: 0; }
+.gcal-settings { display: flex; flex-direction: column; }
+.gcal-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; }
+.gcal-row + .gcal-row { border-top: 1px solid var(--card-border, #eef2f6); }
+.gcal-face { position: relative; flex: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; font-weight: 800; }
+.gcal-face-g { position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: #fff; color: #4285f4; box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(15, 23, 42, 0.25); font: 800 0.6rem/16px system-ui, sans-serif; text-align: center; }
+.gcal-words { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.gcal-words strong { font-size: 0.95rem; font-weight: 700; color: var(--text-primary, #0f172a); }
+.gcal-status { font-size: 0.8rem; color: var(--text-secondary, #94a3b8); }
+.gcal-status.is-ok { color: #059669; }
 .gcal-status.is-problem { color: #b45309; }
-.gcal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.gcal-actions { display: flex; gap: 4px; flex: none; }
+.gcal-row-btn {
+  min-height: 36px; padding: 0 16px;
+  border: 1px solid var(--card-border, #dbe3ec); border-radius: 999px;
+  background: transparent; color: #0369a1;
+  font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+}
+.gcal-row-btn:hover { background: #f0f9ff; border-color: #bae6fd; }
+.gcal-row-btn.is-quiet { border-color: transparent; color: var(--text-secondary, #64748b); padding: 0 10px; }
+.gcal-row-btn.is-quiet:hover { background: rgba(15, 23, 42, 0.05); }
+.gcal-row-btn.is-attention { color: #b45309; border-color: #fcd34d; }
+.gcal-row-btn[data-armed="true"] { color: #b91c1c; }
 .gcal-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px; padding: 0 16px;
@@ -369,9 +383,10 @@ body.theme-dark .cal-refresh { background: #1e293b; border-color: #334155; color
 }
 .gcal-btn.is-main { background: #0284c7; border-color: #0284c7; color: #fff; }
 .gcal-btn.is-big { width: 100%; min-height: 52px; font-size: 1.05rem; margin-top: 8px; }
-.gcal-foot { margin: 8px 0 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary, #64748b); }
-body.theme-dark .gcal-row { background: #0f172a; border-color: #334155; }
+.gcal-foot { margin: 0; padding: 8px 0 8px; border-top: 1px solid var(--card-border, #eef2f6); font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary, #94a3b8); }
 body.theme-dark .gcal-words strong { color: #f8fafc; }
+body.theme-dark .gcal-row + .gcal-row, body.theme-dark .gcal-foot { border-color: #334155; }
+body.theme-dark .gcal-row-btn { border-color: #334155; color: #7dd3fc; }
 body.theme-dark .gcal-btn:not(.is-main) { background: #1e293b; border-color: #334155; color: #f8fafc; }
 
 /* The step-by-step guide: short steps with a tick each */

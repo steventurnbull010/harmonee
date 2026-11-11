@@ -171,20 +171,20 @@
       let status, actions;
       if (!p) {
         status = `<span class="gcal-status">Not linked</span>`;
-        actions = `<button type="button" class="gcal-btn is-main" data-gcal-connect="${esc(name)}">Link ${esc(name)}'s calendar</button>`;
+        actions = `<button type="button" class="gcal-row-btn" data-gcal-connect="${esc(name)}" aria-label="Link ${esc(name)}'s calendar">Link</button>`;
       } else if (!p.ok) {
-        status = `<span class="gcal-status is-problem">⚠️ ${esc(p.problem || "Something went wrong")}</span>`;
-        actions = `<button type="button" class="gcal-btn is-main" data-gcal-connect="${esc(name)}">Fix it</button><button type="button" class="gcal-btn" data-gcal-remove="${esc(name)}">Unlink</button>`;
+        status = `<span class="gcal-status is-problem">Needs a look</span>`;
+        actions = `<button type="button" class="gcal-row-btn is-attention" data-gcal-connect="${esc(name)}" aria-label="Fix ${esc(name)}'s calendar link">Fix</button><button type="button" class="gcal-row-btn is-quiet" data-gcal-remove="${esc(name)}" aria-label="Unlink ${esc(name)}'s calendar">Unlink</button>`;
       } else {
-        status = `<span class="gcal-status is-ok">✓ Linked · ${p.count} event${p.count === 1 ? "" : "s"} · checked ${esc(agoWords(p.checkedAt) || "just now")}</span>`;
-        actions = `<button type="button" class="gcal-btn" data-gcal-remove="${esc(name)}">Unlink</button>`;
+        status = `<span class="gcal-status is-ok">Linked · ${p.count} event${p.count === 1 ? "" : "s"}</span>`;
+        actions = `<button type="button" class="gcal-row-btn is-quiet" data-gcal-remove="${esc(name)}" aria-label="Unlink ${esc(name)}'s calendar">Unlink</button>`;
       }
-      return `<div class="gcal-row">
-        <span class="gcal-face" style="background:${pal.primary}" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</span>
+      return `<div class="gcal-row ${p ? (p.ok ? "is-linked" : "is-problem") : ""}"${p && !p.ok && p.problem ? ` title="${esc(p.problem)}"` : ""}>
+        <span class="gcal-face" style="background:${pal.primary}" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}${p && p.ok ? `<span class="gcal-face-g">G</span>` : ""}</span>
         <span class="gcal-words"><strong>${esc(name)}</strong>${status}</span>
         <span class="gcal-actions">${actions}</span>
       </div>`;
-    }).join("") + `<p class="gcal-foot">🔒 Private and read-only: harmonee can see linked calendars but never change them. Their events show with a small <span class="ev-g">G</span>.</p>`;
+    }).join("") + `<p class="gcal-foot">🔒 Private and read-only. harmonee can see linked calendars, never change them.</p>`;
   }
   document.addEventListener("click", async (e) => {
     const c = e.target.closest && e.target.closest("[data-gcal-connect]");
@@ -194,7 +194,7 @@
       const name = r.getAttribute("data-gcal-remove");
       if (r.getAttribute("data-armed") !== "true") {
         r.setAttribute("data-armed", "true");
-        r.textContent = "Tap again to unlink";
+        r.textContent = "Sure?";
         setTimeout(() => { r.removeAttribute("data-armed"); r.textContent = "Unlink"; }, 4000);
         return;
       }
