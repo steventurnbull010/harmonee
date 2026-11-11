@@ -438,7 +438,7 @@
             ${photoBox(g, "rp-goal-photo")}
             <span class="rp-goal-words">
               <span class="rp-goal-title">${esc(g.title)}</span>
-              <span class="rp-goal-cost">${fmt(Math.min(Math.max(0, balance), st.cost))} of ${fmt(st.cost)}${g.once ? " · one-off" : lastRedeemed(g) ? ` · 🔁 last redeemed ${esc(lastRedeemed(g))}` : " · 🔁 starts again"}</span>
+              <span class="rp-goal-cost">${fmt(Math.min(Math.max(0, balance), st.cost))} of ${fmt(st.cost)}${g.once ? " · one-off" : ` · <span class="rp-goal-again">${lastRedeemed(g) ? `🔁 last redeemed ${esc(lastRedeemed(g))}` : "🔁 starts again"}</span>`}</span>
             </span>
           </button>
           ${barHtml(g, st.pct, st.ready)}

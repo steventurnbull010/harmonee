@@ -538,3 +538,4 @@ body.theme-dark .rw-points-slider::-webkit-slider-runnable-track { background: l
   line-height: 1.4;
   color: var(--text-muted, #64748b);
 }
+.rp-goal-again { white-space: nowrap; }

@@ -1423,32 +1423,43 @@ const PAGES = [
     await p.evaluate(() => { window.rewardGoals = (window.rewardGoals || []).filter(x => !(x.member === "Alex" && /Night out/.test(x.title))); window.renderRewardGoals(); });
 
     // Redeeming (as Skylight): a one-off leaves the card, one that starts again stays
-    // with "last redeemed today", and both spend the points
-    const rd = await p.evaluate(async () => {
-      const keep = { goals: window.rewardGoals, red: window.rewardRedemptions, weeks: window.rewardWeeks };
-      window.rewardWeeks = { ...(window.rewardWeeks || {}), "2020-W01": { Alex: 10 } };
+    // with "last redeemed today", and both spend the points. Screenshots of each step.
+    await p.evaluate(async () => {
+      window.__rdKeep = { goals: window.rewardGoals, red: window.rewardRedemptions, weeks: window.rewardWeeks };
+      // Saved to the (fake) board, so the board's copy doesn't put the old ones back
+      window.rewardWeeks = { ...(window.rewardWeeks || {}), "2020-W01": { Alex: 120 } };
       window.rewardGoals = [...(window.rewardGoals || []).filter(g => g.member !== "Alex"),
-        { id: "t-once", member: "Alex", title: "Lego set", cost: 1, once: true },
-        { id: "t-again", member: "Alex", title: "Pocket money", cost: 1 }];
-      const before = window.getMemberRewardBalance("Alex");
-      window.redeemRewardGoal("t-once");
-      window.redeemRewardGoal("t-again");
-      await new Promise(res => setTimeout(res, 200));
-      const ids = window.rewardGoals.filter(g => g.member === "Alex").map(g => g.id);
-      // (the fake banked week may be replaced by the board's copy, so count what was spent)
-      const spent = (window.rewardRedemptions || []).filter(r => /^t-/.test(r.goalId)).reduce((n, r) => n + r.cost, 0);
-      void before;
-      window.RewardsPage.openPerson("Alex");
+        { id: "t-again", member: "Alex", title: "£5 pocket money", cost: 50, photo: "none" },
+        { id: "t-once", member: "Alex", title: "New Lego set", cost: 60, once: true }];
+      window.saveRewardDataToBoard({ rewardGoals: window.rewardGoals, rewardWeeks: { "2020-W01": { Alex: 120 } } });
+      window.renderRewardGoals();
       await new Promise(res => setTimeout(res, 300));
+      document.querySelector('[data-person="Alex"]').scrollIntoView({ block: "center" });
+    });
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-flow-1-ready.png`) });
+    await p.evaluate(async () => { window.RewardsPage.openPerson("Alex"); await new Promise(res => setTimeout(res, 400)); });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-flow-2-panel.png`) });
+    await p.evaluate(async () => { window.redeemRewardGoal("t-once"); window.redeemRewardGoal("t-again"); await new Promise(res => setTimeout(res, 400)); });
+    await p.waitForTimeout(1500);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-flow-3-after.png`) });
+    const rd = await p.evaluate(async () => {
+      const ids = window.rewardGoals.filter(g => g.member === "Alex").map(g => g.id);
+      const spent = (window.rewardRedemptions || []).filter(r => /^t-/.test(r.goalId)).reduce((n, r) => n + r.cost, 0);
       const panel = (document.getElementById("reward-person-body") || {}).textContent || "";
       const dlg = document.getElementById("reward-person-modal"); if (dlg && dlg.open) dlg.close();
-      window.rewardGoals = keep.goals; window.rewardRedemptions = keep.red; window.rewardWeeks = keep.weeks;
       window.renderRewardGoals();
-      return { ids, spent, panel: /Pocket money[\s\S]*last redeemed today/.test(panel), hasPanel: true };
+      await new Promise(res => setTimeout(res, 300));
+      document.querySelector('[data-person="Alex"]').scrollIntoView({ block: "center" });
+      return { ids, spent, panel: /pocket money[\s\S]*last redeemed today/.test(panel) };
     });
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-flow-4-card.png`) });
+    await p.evaluate(() => { const k = window.__rdKeep; window.rewardGoals = k.goals; window.rewardRedemptions = k.red; window.rewardWeeks = { ...k.weeks, "2020-W01": {} };
+      window.saveRewardDataToBoard({ rewardGoals: k.goals, rewardRedemptions: k.red, rewardWeeks: { "2020-W01": {} } }); window.renderRewardGoals(); });
     if (rd.ids.includes("t-once") || !rd.ids.includes("t-again")) throw new Error(`redeeming didn't remove the one-off and keep the other: ${rd.ids}`);
-    if (rd.spent !== 2) throw new Error(`redeeming didn't spend the points: ${rd.spent}`);
-    if (rd.hasPanel && !rd.panel) throw new Error("Alex's panel doesn't say when Pocket money was last redeemed");
+    if (rd.spent !== 110) throw new Error(`redeeming didn't spend the points: ${rd.spent}`);
+    if (!rd.panel) throw new Error("Alex's panel doesn't say when the pocket money was last redeemed");
 
     // The Rewards intro shows the new page (stars and a family goal, not a podium)
     const intro = await p.evaluate(async () => {
