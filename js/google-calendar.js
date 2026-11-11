@@ -28,6 +28,9 @@
 
   // ---- What we know -------------------------------------------------------------------------
   let people = {}; // key -> { member, ok, problem, count, checkedAt (ms), kind }
+  // Linked a moment ago, events not here yet: name -> when (the first read of
+  // a big calendar can take a minute or two)
+  const pending = {};
   window.googleEvents = [];
   (function fromCache() {
     try {
@@ -69,6 +72,18 @@
         });
         people = next;
         window.googleEvents = all;
+        // Someone's events have arrived: no longer waiting, and the guide says so
+        Object.keys(pending).forEach(name => {
+          const p = next[keyOf(name)];
+          if (p && (p.checkedAt || 0) >= pending[name] - 5000) {
+            delete pending[name];
+            const dlg = document.getElementById("gcal-guide");
+            if (dlg && dlg.open && guideFor === name && waitingInGuide) {
+              waitingInGuide = false;
+              paintGuide(p.ok ? { done: true, count: p.count } : { error: "Google didn't accept that address. Copy the <strong>Secret</strong> address again (step 4) and paste it." });
+            }
+          }
+        });
         try { localStorage.setItem(cacheKey(), JSON.stringify({ events: all, people })); } catch (e) {}
         redraw();
       }, (err) => console.warn("Couldn't read linked calendars:", err));
@@ -112,7 +127,8 @@
       // Asked too soon after another device: try once more in a minute
       if (out && out.tooSoon) {
         clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => refresh("retry"), TAP_GAP_MS + 2000);
+        // A new link only waits a few seconds on the server; anything else a minute
+        retryTimer = setTimeout(() => refresh(why === "added" ? "added" : "retry"), why === "added" ? 12000 : TAP_GAP_MS + 2000);
       }
       return out;
     } catch (e) {
@@ -146,10 +162,17 @@
     const problems = Object.values(people).filter(p => !p.ok).length;
     btn.classList.toggle("is-busy", refreshing);
     btn.classList.toggle("has-problem", problems > 0);
-    if (when) when.textContent = refreshing ? "Checking…" : (note || (problems ? "Needs a look" : `Google · ${agoWords(lastChecked()) || "not yet"}`));
+    const waiting = Object.keys(pending).length > 0;
+    btn.hidden = !connected() && !waiting;
+    btn.classList.toggle("is-busy", refreshing || waiting);
+    if (when) when.textContent = refreshing ? "Checking…" : waiting ? "Bringing in events…" : (note || (problems ? "Needs a look" : `Google · ${agoWords(lastChecked()) || "not yet"}`));
     btn.setAttribute("aria-label", refreshing ? "Checking the linked calendars" : `Check the linked calendars now. Last checked ${agoWords(lastChecked()) || "not yet"}`);
   }
-  setInterval(() => paintRefresh(), 30 * 1000);
+  setInterval(() => {
+    // Still nothing after 5 minutes: stop saying "bringing in" (Settings shows what happened)
+    Object.keys(pending).forEach(name => { if (Date.now() - pending[name] > 5 * 60 * 1000) delete pending[name]; });
+    paintRefresh();
+  }, 30 * 1000);
   document.addEventListener("click", (e) => {
     const btn = e.target.closest && e.target.closest("#cal-refresh");
     if (!btn) return;
@@ -169,7 +192,10 @@
       const p = people[keyOf(name)];
       const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#0284c7" };
       let status, actions;
-      if (!p) {
+      if (pending[name]) {
+        status = `<span class="gcal-status is-busy"><span class="gcal-dot" aria-hidden="true"></span>Bringing in events…</span>`;
+        actions = "";
+      } else if (!p) {
         status = `<span class="gcal-status">Not linked</span>`;
         actions = `<button type="button" class="gcal-row-btn" data-gcal-connect="${esc(name)}" aria-label="Link ${esc(name)}'s calendar">Link</button>`;
       } else if (!p.ok) {
@@ -192,13 +218,16 @@
     const r = e.target.closest && e.target.closest("[data-gcal-remove]");
     if (r) {
       const name = r.getAttribute("data-gcal-remove");
-      if (r.getAttribute("data-armed") !== "true") {
-        r.setAttribute("data-armed", "true");
-        r.textContent = "Sure?";
-        setTimeout(() => { r.removeAttribute("data-armed"); r.textContent = "Unlink"; }, 4000);
-        return;
-      }
-      await removeLink(name);
+      const ask = typeof window.showDeleteConfirmation === "function" ? window.showDeleteConfirmation : null;
+      if (!ask) { await removeLink(name); return; }
+      ask({
+        icon: "📅",
+        title: `Unlink ${name}'s calendar?`,
+        itemTitle: "",
+        warning: `${name}'s Google events will disappear from harmonee. Nothing changes in Google, and you can link it again any time.`,
+        confirmLabel: "Unlink",
+        onConfirm: () => removeLink(name)
+      });
     }
   });
   // Draw it whenever Settings opens
@@ -265,6 +294,7 @@
   let device = "phone";
   let doneSteps = new Set();
   let linking = false;
+  let waitingInGuide = false;
   function guideDialog() {
     let dlg = document.getElementById("gcal-guide");
     if (dlg) return dlg;
@@ -305,6 +335,7 @@
     device = isTouchDevice() ? "phone" : "computer";
     doneSteps = new Set();
     linking = false;
+    waitingInGuide = false;
     const dlg = guideDialog();
     dlg.querySelector("#gcal-guide-title").textContent = `Link ${name}'s calendar`;
     paintGuide();
@@ -358,6 +389,16 @@
         <p>${state.count ? `We found <strong>${state.count} event${state.count === 1 ? "" : "s"}</strong> on ${esc(guideFor)}'s calendar.` : `${esc(guideFor)}'s calendar is linked.`} They're on the family calendar now, with a small <span class="ev-g">G</span>.</p>
         <p class="gcal-small">New plans in Google show up here by themselves.</p>
         <button type="button" class="gcal-btn is-main is-big" data-gcal-finish>Done</button>
+      </div>`;
+      return;
+    }
+    if (state && state.waiting) {
+      body.innerHTML = `<div class="gcal-done">
+        <span class="gcal-spinner" aria-hidden="true"></span>
+        <h3>Bringing in ${esc(guideFor)}'s events…</h3>
+        <p>The first time can take a minute or two, especially for a busy calendar.</p>
+        <p class="gcal-small">You can close this. They'll appear on the calendar by themselves, and Settings shows when they're in.</p>
+        <button type="button" class="gcal-btn is-big" data-gcal-finish>Close</button>
       </div>`;
       return;
     }
@@ -431,15 +472,31 @@
     paintGuide({ working: true });
     try {
       await saveLink(name, url);
+      pending[name] = Date.now();
+      renderSettings();
+      // Slow first read: after a few seconds, say so (and that they can close this)
+      const slow = setTimeout(() => { if (linking || pending[name]) { waitingInGuide = true; if (guideFor === name) paintGuide({ waiting: true }); } }, 6000);
       const out = await refresh("added");
+      clearTimeout(slow);
       const mine = out && Array.isArray(out.results) ? out.results.find(x => x.member === name) : null;
       if (mine && !mine.ok) {
+        delete pending[name];
+        renderSettings();
         doneSteps.delete(3); doneSteps.delete(4);
         paintGuide({ error: "Google didn't accept that address. Copy the <strong>Secret</strong> address again (step 4) and paste it." });
         return;
       }
-      paintGuide({ done: true, count: mine ? mine.count : 0 });
+      if (mine && mine.ok) {
+        delete pending[name];
+        renderSettings();
+        paintGuide({ done: true, count: mine.count });
+        return;
+      }
+      // Not read yet (busy, or a big calendar): wait for the events to arrive
+      waitingInGuide = true;
+      paintGuide({ waiting: true });
     } catch (err) {
+      delete pending[name];
       doneSteps.delete(4);
       paintGuide({ error: "That didn't save. Check the Wi-Fi, then paste again." });
     } finally {
@@ -490,5 +547,5 @@
   }
   if (document.readyState === "complete") fromAddress(); else window.addEventListener("load", fromAddress);
 
-  window.GoogleCalendar = { fromAddress, start, refresh, saveLink, removeLink, checkLink, openGuide, renderSettings, paintRefresh, connected, lastChecked, people: () => people, keyOf };
+  window.GoogleCalendar = { pending: () => ({ ...pending }), fromAddress, start, refresh, saveLink, removeLink, checkLink, openGuide, renderSettings, paintRefresh, connected, lastChecked, people: () => people, keyOf };
 })();

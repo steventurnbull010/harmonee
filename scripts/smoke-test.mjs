@@ -1438,6 +1438,13 @@ const PAGES = [
         const today = window.getLocalDateKey(new Date());
         const t = new Date(); t.setDate(t.getDate() + 1);
         const tomorrow = window.getLocalDateKey(t);
+        // A slow first read (a big calendar): the server answers before the events are in
+        if (why === "added" && window.__SMOKE_CAL_SLOW) {
+          window.__SMOKE_CAL_SLOW = false;
+          setTimeout(() => window.__SMOKE_CAL_REFRESH(board, "slow-finish"), 1500);
+          window.__SMOKE_CAL_CALLS = (window.__SMOKE_CAL_CALLS || []).concat(why);
+          return { ok: true, tooSoon: true };
+        }
         for (const [key, link] of Object.entries(links)) {
           const events = [
             { id: `g-${key}-1`, title: "Optician", date: today, time: "15:00", duration: "30 mins", member: link.member, icon: "📅", repeat: "none", source: "google", readOnly: true },
@@ -1546,6 +1553,9 @@ const PAGES = [
     const reopened = await p.evaluate(() => ({ step4: document.querySelector('#gcal-guide [data-gcal-step="3"]').classList.contains("is-next"), kept: document.querySelector("#gcal-guide [data-gcal-paste-box]").value }));
     if (!reopened.step4 || !/public/.test(reopened.kept)) throw new Error(`the wrong address didn't take them back to step 4: ${JSON.stringify(reopened)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-wrong.png`) });
+    // A slow first read on some sizes: the guide must say it's bringing them in
+    const slow = p.__size === "phone" || p.__size === "laptop";
+    await p.evaluate((sl) => { window.__SMOKE_CAL_SLOW = sl; }, slow);
     // The right one, with 📋 Paste: it links by itself
     await p.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
     await p.evaluate(() => navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics").catch(() => {}));
@@ -1560,6 +1570,16 @@ const PAGES = [
         box.value = "Here it is: https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics";
         box.dispatchEvent(new Event("input", { bubbles: true }));
       });
+    }
+    if (slow) {
+      await p.waitForTimeout(500);
+      const waiting = await p.evaluate(() => ({
+        guide: (document.querySelector("#gcal-guide [data-gcal-body]") || {}).textContent || "",
+        bar: (document.getElementById("cal-refresh-when") || {}).textContent || ""
+      }));
+      if (!/Bringing in Sam's events/.test(waiting.guide) || !/minute or two/.test(waiting.guide)) throw new Error(`a slow first read didn't say it's bringing the events in: ${waiting.guide.slice(0, 160)}`);
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-waiting.png`) });
+      await p.waitForTimeout(1800); // the events arrive
     }
     await p.waitForTimeout(900);
     const done = await p.evaluate((B) => ({
@@ -1631,10 +1651,16 @@ const PAGES = [
     // Unlink
     await p.evaluate(() => window.openSettingsModal("calendars"));
     await p.waitForTimeout(700);
-    await p.evaluate(async () => {
-      const b = document.querySelector('#gcal-settings [data-gcal-remove="Sam"]');
-      b.click(); await new Promise(res => setTimeout(res, 100));
+    const ask = await p.evaluate(async () => {
       document.querySelector('#gcal-settings [data-gcal-remove="Sam"]').click();
+      await new Promise(res => setTimeout(res, 300));
+      const m = document.getElementById("delete-modal");
+      return { open: !!(m && (m.open || m.style.display === "flex")), title: document.getElementById("delete-modal-title").textContent, warning: document.getElementById("delete-modal-warning").textContent, button: document.getElementById("btn-confirm-delete").textContent };
+    });
+    if (!ask.open || !/Unlink Sam's calendar/.test(ask.title) || !/disappear from harmonee/.test(ask.warning) || !/Nothing changes in Google/.test(ask.warning)) throw new Error(`Unlink didn't ask properly: ${JSON.stringify(ask)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-unlink-ask.png`) });
+    await p.evaluate(async () => {
+      document.getElementById("btn-confirm-delete").click();
       await new Promise(res => setTimeout(res, 500));
       document.getElementById("settings-modal").close();
     });

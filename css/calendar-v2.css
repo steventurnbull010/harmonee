@@ -465,3 +465,6 @@ body.theme-dark .gcal-reassure strong { color: #a7f3d0; }
 .gcal-computer p { margin: 0; line-height: 1.55; color: var(--text-secondary, #475569); }
 .gcal-computer .gcal-btn.is-big { margin-top: 0; }
 body.theme-dark .gcal-computer h3 { color: #f8fafc; }
+.gcal-status.is-busy { display: inline-flex; align-items: center; gap: 6px; color: #0369a1; }
+.gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: #0284c7; animation: gcalPulse 1.2s ease-in-out infinite; }
+@keyframes gcalPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }

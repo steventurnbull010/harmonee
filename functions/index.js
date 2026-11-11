@@ -29,7 +29,8 @@ admin.initializeApp();
 const db = admin.firestore();
 setGlobalOptions({ region: "europe-west2", maxInstances: 3, memory: "256MiB", timeoutSeconds: 60 });
 
-const MIN_GAP_MS = 60 * 1000;       // a board is checked at most once a minute
+const MIN_GAP_MS = 60 * 1000;       // a board is checked at most once a minute...
+const LINK_GAP_MS = 8 * 1000;       // ...or after a few seconds when a calendar's just been linked
 const FETCH_TIMEOUT_MS = 15 * 1000;
 const MAX_BYTES = 5 * 1024 * 1024;  // a feed bigger than this is refused
 const PAST_DAYS = 31;               // events from a month ago...
@@ -136,17 +137,20 @@ exports.refreshCalendars = onCall(async (req) => {
   // Only a device that has joined the board
   const device = await db.doc(`boards/${boardId}/devices/${uid}`).get();
   if (!device.exists) throw new HttpsError("permission-denied", "This device hasn't joined that board.");
-  // At most once a minute per board
+  // At most once a minute per board; a calendar just linked or unlinked only
+  // waits a few seconds (linking straight after unlinking used to wait a minute)
+  const why = String((req.data && req.data.why) || "app");
+  const gap = why === "added" || why === "removed" ? LINK_GAP_MS : MIN_GAP_MS;
   const syncRef = db.doc(`boards/${boardId}/private/calendarSync`);
   const ok = await db.runTransaction(async (tx) => {
     const s = await tx.get(syncRef);
     const last = (s.exists && s.data().lastRun) || 0;
-    if (Date.now() - last < MIN_GAP_MS) return false;
+    if (Date.now() - last < gap) return false;
     tx.set(syncRef, { lastRun: Date.now() }, { merge: true });
     return true;
   });
   if (!ok) return { ok: true, tooSoon: true };
-  const results = await refreshBoard(boardId, (req.data && req.data.why) || "app");
+  const results = await refreshBoard(boardId, why);
   return { ok: true, results };
 });
 
