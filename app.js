@@ -735,37 +735,14 @@ let firestoreBoardUnsubscribe = null;
 let currentTasks = [];
 window.currentTasks = currentTasks;
 let currentActiveView = "calendar";
-let currentCalendarView = window.currentCalendarView || "schedule";
-try {
-  const savedView = localStorage.getItem("chore_calendar_view");
-  if (savedView && ["day", "schedule", "week", "month"].includes(savedView)) {
-    currentCalendarView = savedView;
-  }
-} catch (e) {}
-window.currentCalendarView = currentCalendarView;
-
-// Calendar displays events only. Chores live on dedicated Chores board page.
-let currentCalendarContentFilter = window.currentCalendarContentFilter || "events";
-window.currentCalendarContentFilter = currentCalendarContentFilter;
-
-// Hourly timeline zoom level for Schedule (3-Day) view
-// 64px = default (~4-5 hours visible on screen), 40px = zoomed out (~7-8 hours visible on screen)
-let scheduleHourHeight = window.scheduleHourHeight || 64;
-try {
-  const savedHeight = localStorage.getItem("chore_schedule_hour_height");
-  if (savedHeight) {
-    const parsedH = parseInt(savedHeight, 10);
-    if (parsedH >= 38 && parsedH <= 110) scheduleHourHeight = parsedH;
-  }
-} catch (e) {}
-window.scheduleHourHeight = scheduleHourHeight;
-
-let calendarAnchorDate = window.calendarAnchorDate || new Date();
-calendarAnchorDate.setHours(0, 0, 0, 0);
-window.calendarAnchorDate = calendarAnchorDate;
-
-let currentCalendarWeekOffset = window.currentCalendarWeekOffset || 0;
-window.currentCalendarWeekOffset = currentCalendarWeekOffset;
+// Shared with the classic scripts: app.js is a module, so a "let" here would
+// be a private copy that js/calendar.js, js/sticky-note.js, js/lists.js and
+// js/sleep.js never see (the Calendar's Today and Filter buttons and the
+// sticky note's live updates were silently changing copies). These are
+// declared once, in those scripts, and used here by name.
+// From js/calendar.js: currentCalendarView, currentCalendarContentFilter,
+// scheduleHourHeight, calendarAnchorDate, currentCalendarWeekOffset,
+// activeCalendarMemberFilter(s) and isMemberSelected.
 let activeCategoryFilter = "ALL";
 let activeAssigneeFilter = "ALL";
 const WEEK_DAYS_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -905,16 +882,11 @@ function initChoreEmojiPalette() {
 
 let weeklyMeals = null;
 let dateMealsStore = null;
-let familyStickyNote = null;
-let selectedStickyColor = "yellow";
-let familyLists = window.familyLists || null;
-window.familyLists = familyLists;
+// familyStickyNote, selectedStickyColor: js/sticky-note.js. familyLists: js/lists.js.
 let activeListId = "groceries";
 let familyGroceryList = null;
 
-let isSleepScreenActive = false;
-let sleepScreenTemporaryWakeUntil = 0;
-let localWeatherForecast = null;
+// isSleepScreenActive, sleepScreenTemporaryWakeUntil: js/sleep.js. localWeatherForecast: js/weather.js.
 
 function getLocalDateKey(date) {
   if (!date) date = new Date();
@@ -1110,30 +1082,7 @@ function saveWeeklyMeals(meals) {
 const DEFAULT_FAMILY_EVENTS = window.DEFAULT_FAMILY_EVENTS || [];
 
 var skylightNavInitialized = false;
-let activeCalendarMemberFilter = window.activeCalendarMemberFilter || null;
-let activeCalendarMemberFilters = window.activeCalendarMemberFilters || null;
-window.activeCalendarMemberFilter = activeCalendarMemberFilter;
-window.activeCalendarMemberFilters = activeCalendarMemberFilters;
-
-function isMemberSelected(memberStr) {
-  // If activeCalendarMemberFilters is null, "Select All" is active -> show everyone!
-  if (activeCalendarMemberFilters === null) return true;
-  // If activeCalendarMemberFilters is an empty array [], literally nobody is active -> hide all member events!
-  if (activeCalendarMemberFilters.length === 0) return false;
-  if (!memberStr) return true;
-
-  if (Array.isArray(memberStr)) {
-    return memberStr.some(m => isMemberSelected(m));
-  }
-
-  const str = String(memberStr).trim();
-  const lower = str.toLowerCase();
-  if (lower.includes("family") || lower.includes("everyone") || lower.includes("anyone") || lower.includes("whole family") || lower.includes("up for grabs")) {
-    return true;
-  }
-  return activeCalendarMemberFilters.some(m => lower.includes(m.toLowerCase()));
-}
-window.isMemberSelected = isMemberSelected;
+// activeCalendarMemberFilter(s) and isMemberSelected: js/calendar.js
 let familyEvents = null;
 window.familyEvents = familyEvents;
 
@@ -4306,8 +4255,9 @@ async function handleConfirmClaim() {
     };
 
     const isCurrentWeek = (targetWeekKey === currentWeekKey);
+    // Only this week's entry, so another device's tick for another week isn't overwritten
     const updatePayload = {
-      completedWeeks: currentCompletedWeeks
+      [`completedWeeks.${targetWeekKey}`]: currentCompletedWeeks[targetWeekKey]
     };
     if (isCurrentWeek) {
       updatePayload.done = true;
@@ -4460,8 +4410,9 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
     delete currentCompletedWeeks[targetWeekKey];
     const isCurrentWeek = (targetWeekKey === getIsoWeekKey());
 
+    // Only this week's entry comes off
     const updatePayload = {
-      completedWeeks: currentCompletedWeeks
+      [`completedWeeks.${targetWeekKey}`]: deleteField()
     };
     if (isCurrentWeek) {
       updatePayload.done = false;
@@ -4496,6 +4447,7 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
   }
 
   // Non-daily undo: optimistically update locally first
+  const storedBefore = task ? task.completedBy : null; // as the board has it, before the change below
   const assignedList = getAssignedMembersList(task ? task.assignedTo : null);
   const isMultiAssign = assignedList.length > 1;
   const idx = currentTasks.findIndex(t => t.id === taskId);
@@ -4518,11 +4470,19 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
   if (db) {
     try {
       const docRef = getTaskDocRef(taskId);
-      await updateDoc(docRef, {
-        done: false,
-        completedBy: null,
-        completedAt: null
-      });
+      // One person's tick on a shared job: take just theirs off (it used to
+      // clear everyone's on the board, so the others' ticks vanished on the
+      // next update)
+      const stored = storedBefore;
+      let payload = { done: false, completedBy: null, completedAt: null };
+      if (memberToUndo && isMultiAssign && idx !== -1) {
+        const left = currentTasks[idx].completedBy;
+        const mine = Array.isArray(stored) ? stored.find(m => String(m).toLowerCase() === memberToUndo.toLowerCase()) : null;
+        payload = (mine && Array.isArray(left) && left.length)
+          ? { done: false, completedBy: arrayRemove(mine) }
+          : { done: false, completedBy: left || null, ...(left ? {} : { completedAt: null }) };
+      }
+      await updateDoc(docRef, payload);
     } catch (err) {
       console.warn("Failed to undo in Firestore, saving locally:", err);
     }

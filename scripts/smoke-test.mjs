@@ -1209,6 +1209,37 @@ const PAGES = [
       window.boardSettings.memberBuddies = {};
     }, r.wasTicked);
   }],
+  // Calendar: Today comes back to today, and Filter turns a person off (both
+  // used to change private copies in app.js the calendar never read)
+  ["calendar-today-filter", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      const label = () => (document.querySelector(".skylight-days-header-track") || document.body).textContent.replace(/\s+/g, " ");
+      const before = label();
+      document.getElementById("btn-calendar-next-week").click(); await wait(150);
+      document.getElementById("btn-calendar-next-week").click(); await wait(150);
+      const moved = label();
+      document.getElementById("btn-calendar-today").click(); await wait(250);
+      const back = label();
+      // Filter: Jo off
+      document.getElementById("btn-filter-dropdown").click(); await wait(150);
+      const row = document.querySelector('#filter-dropdown-menu [data-member-filter="Jo"]');
+      if (row) row.click();
+      await wait(250);
+      const rowAfter = document.querySelector('#filter-dropdown-menu [data-member-filter="Jo"]');
+      const off = rowAfter && !rowAfter.classList.contains("is-active");
+      const btnText = document.getElementById("btn-filter-dropdown").textContent.replace(/\s+/g, " ").trim();
+      // Put it back
+      const reset = document.getElementById("btn-filter-reset"); if (reset) reset.click();
+      document.body.click(); await wait(150);
+      return { before, moved, back, row: !!row, off, btnText };
+    });
+    if (r.moved === r.before) throw new Error("the calendar's next button didn't move on");
+    if (r.back !== r.before) throw new Error(`Today didn't come back to today: ${r.back.slice(0, 80)} vs ${r.before.slice(0, 80)}`);
+    if (!r.row || !r.off) throw new Error(`turning Jo off in the calendar filter didn't show as off: ${JSON.stringify(r)}`);
+  }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {
     await p.evaluate(() => { window.closePlanMealDrawer && window.closePlanMealDrawer(); const c = document.getElementById("cooking-recipe-modal"); if (c && c.open) c.close(); });

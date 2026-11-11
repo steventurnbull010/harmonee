@@ -134,31 +134,6 @@ function rewardsConfettiFrom(el, colours) {
 }
 window.rewardsConfettiFrom = rewardsConfettiFrom;
 
-// Replay the entrance (pillars grow, avatars pop, bars fill) each time the
-// Rewards page is opened, not on every live update while it's open.
-let rewardsEntranceObserver = null;
-let rewardsEntranceTimer = null;
-function playRewardsEntrance(container) {
-  if (!container || rewardsReduceMotion()) return;
-  container.classList.remove("rw-enter");
-  void container.offsetWidth;
-  container.classList.add("rw-enter");
-  clearTimeout(rewardsEntranceTimer);
-  rewardsEntranceTimer = setTimeout(() => container.classList.remove("rw-enter"), 1600);
-}
-function watchRewardsEntrance() {
-  const container = document.querySelector("#view-rewards .rewards-view-container");
-  if (!container || rewardsEntranceObserver || typeof IntersectionObserver !== "function") return;
-  let shown = false;
-  rewardsEntranceObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && !shown) { shown = true; playRewardsEntrance(container); }
-      else if (!entry.isIntersecting) shown = false;
-    });
-  });
-  rewardsEntranceObserver.observe(container);
-}
-
 // Taps anywhere on the page: avatars and podium columns boing
 function wireRewardsPageTaps() {
   const view = document.getElementById("view-rewards");
@@ -200,7 +175,6 @@ function renderPodiumRewards() {
   }
 
   wireRewardsPageTaps();
-  watchRewardsEntrance();
   if (window.RewardsPage) window.RewardsPage.render();
 }
 window.renderPodiumRewards = renderPodiumRewards;
