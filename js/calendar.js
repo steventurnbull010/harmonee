@@ -1938,7 +1938,7 @@ function renderWeekCalendar() {
     }
 
     const rewardVal = taskReward(task, isMoney);
-    const rewardText = isMoney ? `${currency}${rewardVal.toFixed(2)}` : `+${rewardVal} pt${rewardVal > 1 ? "s" : ""}`;
+    const rewardText = !rewardVal ? "" : isMoney ? `${currency}${rewardVal.toFixed(2)}` : `+${rewardVal} pt${rewardVal > 1 ? "s" : ""}`;
 
     const isFutureLocked = (isDaily || isWeekly) && isColFutureDate;
 
@@ -1946,7 +1946,7 @@ function renderWeekCalendar() {
       ? `Completed by ${escapeHtml(completerName || 'Family')} (Click to undo)`
       : (isFutureLocked
           ? `⏰ Chores can only be completed on their scheduled day (${dayName})`
-          : `Click to complete and claim ${rewardText}`);
+          : (rewardText ? `Click to complete and claim ${rewardText}` : "Click to complete"));
 
     const isPriority = task.isPriority && !isCompleted;
     const priorityBadgeHtml = isPriority ? `<span style="color: #ef4444; font-weight: 800; font-size: 0.72rem; margin-right: 2px;" title="High Priority">🚨</span>` : "";
@@ -1962,8 +1962,8 @@ function renderWeekCalendar() {
 
     const routineInfo = getTaskRoutineInfo(task);
     const choreSubText = isCompleted
-      ? `✓ ${escapeHtml(completerName || assigned)} • ${rewardText}`
-      : `${routineInfo.label ? routineInfo.label + ' • ' : ''}${rewardText}`;
+      ? `✓ ${escapeHtml(completerName || assigned)}${rewardText ? ` • ${rewardText}` : ""}`
+      : [routineInfo.label, rewardText].filter(Boolean).join(" • ");
 
     // Avatars on right
     let choreAvatarsHtml = "";

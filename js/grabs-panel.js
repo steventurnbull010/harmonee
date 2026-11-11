@@ -110,11 +110,11 @@
     list.innerHTML = shown.map(t => {
       const given = justGiven.get(t.id);
       const icon = t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
-      const value = isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
+      const value = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
       const open = !given && openWho === t.id;
       const meta = [
         t.isPriority ? `<span class="grabs-tag is-important">Important</span>` : "",
-        `<span>${esc(value)}</span>`
+        value ? `<span>${esc(value)}</span>` : ""
       ].filter(Boolean).join("");
       const pills = people.map(p => memberPillHtml(p, {
         active: given === p,

@@ -73,6 +73,7 @@
 
   function pointsText(task) {
     const s = window.boardSettings || {};
+    if (!taskPoints(task)) return "";
     if (s.gameMode === "money") return `+${s.currency || "£"}${taskReward(task, true).toFixed(2)}`;
     return `+${taskPoints(task)}`;
   }
@@ -81,10 +82,10 @@
     const icon = task.icon || (typeof detectEmojiForChore === "function" ? detectEmojiForChore(task.title) : "") || "⚡";
     const dateKey = getLocalDateKey(date);
     return `<button type="button" class="quick-grab-pill" data-quick-grab="${esc(task.id)}" data-task-id="${esc(task.id)}" data-day="${DAYS[date.getDay()]}" data-date="${dateKey}" data-member="${POOL}"
-        aria-label="${esc(task.title)}, ${esc(pointsText(task).replace("+", ""))} ${(window.boardSettings || {}).gameMode === "money" ? "" : "points"}. Drag to someone, or tap to choose who's grabbing it">
+        aria-label="${esc(task.title)}${pointsText(task) ? `, ${esc(pointsText(task).replace("+", ""))} ${(window.boardSettings || {}).gameMode === "money" ? "" : "points"}` : ""}. Drag to someone, or tap to choose who's grabbing it">
       <span class="quick-grab-icon" aria-hidden="true">${esc(icon)}</span>
       <span class="quick-grab-title">${esc(task.title)}</span>
-      <span class="quick-grab-pts" aria-hidden="true">${esc(pointsText(task))}</span>
+      ${pointsText(task) ? `<span class="quick-grab-pts" aria-hidden="true">${esc(pointsText(task))}</span>` : ""}
     </button>`;
   }
 

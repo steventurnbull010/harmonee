@@ -2506,7 +2506,7 @@ function openEditTaskModal(taskId, targetDay = null, targetDate = null) {
       doneBtn.className = "btn-modal-mark-done";
       doneBtn.disabled = false;
       if (doneBtnIcon) doneBtnIcon.textContent = "⚡";
-      if (doneBtnText) doneBtnText.textContent = `Mark Done (${rewardText})`;
+      if (doneBtnText) doneBtnText.textContent = curReward ? `Mark Done (${rewardText})` : "Mark Done";
       doneBtn.title = `Mark this chore done on ${dayForStatus}`;
       doneBtn.onclick = (e) => {
         e.preventDefault();
@@ -2682,7 +2682,7 @@ async function handleSaveTaskForm(e) {
   const rawReward = rewardInput ? parseFloat(rewardInput.value) : NaN;
   const rewardValue = (!isNaN(rawReward) && rawReward >= 0) ? rawReward : (boardSettings.gameMode === "money" ? 1.00 : 1);
   // The points that count (js/utils.js taskPoints): pounds on a pocket-money board are tenths of 10
-  const value = Math.max(1, Math.min(10, Math.round(boardSettings.gameMode === "money" ? rewardValue * 10 : rewardValue)));
+  const value = Math.max(0, Math.min(10, Math.round(boardSettings.gameMode === "money" ? rewardValue * 10 : rewardValue)));
 
   if (!title) return;
 
@@ -3037,7 +3037,7 @@ function renderClaimModalMembers() {
   const hintEl = document.getElementById("claim-modal-hint");
   if (hintEl) {
     const eachSuffix = isMoney ? `+${currency}${rewardVal.toFixed(2)} each` : `+${rewardVal} ${rewardVal === 1 ? 'pt' : 'pts'} each`;
-    hintEl.textContent = `Select one, multiple people, or Team Effort (${eachSuffix})`;
+    hintEl.textContent = rewardVal ? `Select one, multiple people, or Team Effort (${eachSuffix})` : "Select one, multiple people, or Team Effort";
   }
 
   // The same person picker as events and chores (js/utils.js memberPillHtml),
@@ -3146,15 +3146,15 @@ function updateConfirmButton() {
     textSpan.textContent = "Select Member(s)";
   } else if (selectedClaimMembers.has("Team Effort")) {
     confirmBtn.disabled = false;
-    textSpan.textContent = `Confirm Team Effort (+${rewardLabel} to everyone)`;
+    textSpan.textContent = rewardVal ? `Confirm Team Effort (+${rewardLabel} to everyone)` : "Confirm Team Effort";
   } else if (count === 1) {
     const [name] = selectedClaimMembers;
     confirmBtn.disabled = false;
-    textSpan.textContent = `Done by ${name} (+${rewardLabel})`;
+    textSpan.textContent = rewardVal ? `Done by ${name} (+${rewardLabel})` : `Done by ${name}`;
   } else {
     const names = Array.from(selectedClaimMembers).join(" & ");
     confirmBtn.disabled = false;
-    textSpan.textContent = `Done by ${names} (+${rewardLabel} each)`;
+    textSpan.textContent = rewardVal ? `Done by ${names} (+${rewardLabel} each)` : `Done by ${names}`;
   }
 }
 

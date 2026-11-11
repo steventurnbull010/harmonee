@@ -468,7 +468,8 @@ function renderSkylightTasksPage() {
       const tIcon = t.icon || detectEmojiForChore(t.title) || "🪆";
       const isMoney = (window.boardSettings || {}).gameMode === "money";
       const curr = (window.boardSettings || {}).currency || "£";
-      const valText = isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
+      // A job worth nothing shows no points at all
+      const valText = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
       const timeSubtitle = t.time || (isDaily ? "Daily" : (isAnyDayWeekly(t) ? "This week" : "Today"));
       const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
       const important = !!t.isPriority && !isDone;
@@ -507,7 +508,7 @@ function renderSkylightTasksPage() {
             <span class="skylight-task-card-icon">${escapeHtml(tIcon)}</span>
             <div class="skylight-task-card-text">
               <span class="skylight-task-card-title">${escapeHtml(t.title)}</span>
-              <span class="skylight-task-card-sub">${importantTag}${grabbedTag}${subHtml} • ${valText}</span>
+              <span class="skylight-task-card-sub">${importantTag}${grabbedTag}${subHtml}${valText ? ` • ${valText}` : ""}</span>
             </div>
           </div>
           ${actionHtml}
@@ -976,11 +977,11 @@ function moveTaskBetween(taskId, dateStr, fromMember, toMember) {
   const quick = !!(window.QuickGrabs && window.QuickGrabs.isQuickGrab(task));
   // "⚡ Ava grabbed Litter trays · +1 point when it's ticked"
   const isMoney = (window.boardSettings || {}).gameMode === "money";
-  const worth = isMoney
+  const worth = !taskPoints(task) ? "" : isMoney
     ? `+${(window.boardSettings || {}).currency || "£"}${taskReward(task, true).toFixed(2)}`
     : `+${taskPoints(task)} point${taskPoints(task) === 1 ? "" : "s"}`;
   const text = fromMember === "Up for grabs" && toMember !== "Up for grabs"
-    ? `⚡ ${where} grabbed ${task.title}${anyDay ? " for this week" : ""} · ${worth} when it's ticked`
+    ? `⚡ ${where} grabbed ${task.title}${anyDay ? " for this week" : ""}${worth ? ` · ${worth} when it's ticked` : ""}`
     : (toMember === "Up for grabs" ? `${task.title} is back in ${quick ? "Quick grabs" : BIG_JOBS_LABEL}` : `${task.title} moved to ${where}`);
   showTaskMoveToast(text, () => {
     Object.assign(task, before);
@@ -1296,7 +1297,7 @@ function openSkylightTaskQuickModal(taskId, targetDay, colMember = null, dateStr
   const isMoney = (window.boardSettings || {}).gameMode === "money";
   const curr = (window.boardSettings || {}).currency || "£";
   const pts = taskPoints(task);
-  document.getElementById("quick-card-reward").textContent = isMoney ? `${curr}${(pts / 10).toFixed(2)}` : `${pts} point${pts === 1 ? "" : "s"}`;
+  document.getElementById("quick-card-reward").textContent = !pts ? (isMoney ? "No pocket money" : "No points") : isMoney ? `${curr}${(pts / 10).toFixed(2)}` : `${pts} point${pts === 1 ? "" : "s"}`;
 
   // Done by
   const doneRow = document.getElementById("quick-card-done-row");
@@ -1529,7 +1530,7 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
     const timeInput = document.getElementById("drawer-chore-time-input");
     if (timeToggle) timeToggle.checked = !isDaily && !!task.time && /^\d{1,2}:\d{2}/.test(task.time);
     if (timeInput && timeToggle && timeToggle.checked) timeInput.value = task.time.slice(0, 5);
-    drawerRewardValue = Math.min(10, taskPoints(task));
+    drawerRewardValue = Math.max(0, Math.min(10, taskPoints(task)));
     { const imp = document.getElementById("drawer-toggle-important"); if (imp) imp.checked = !!task.isPriority; }
     { const big = document.getElementById("drawer-toggle-big-job"); if (big) { big.checked = task.grabSize === "big"; big.onchange = updateDrawerWhoSummary; } }
     // Same rule as the board: no time of day set (or in the title) = Anytime
@@ -1788,7 +1789,10 @@ function syncDrawerRewardUI() {
   const isMoney = (window.boardSettings || {}).gameMode === "money";
   const curr = (window.boardSettings || {}).currency || "£";
   document.getElementById("drawer-reward-mode-text").textContent = isMoney ? `Pocket Money (${curr})` : `Reward Points`;
-  document.getElementById("drawer-reward-display").textContent = isMoney ? `${curr}${(drawerRewardValue / 10).toFixed(2)}` : `${drawerRewardValue} pts`;
+  document.getElementById("drawer-reward-display").textContent = !drawerRewardValue ? (isMoney ? "Nothing" : "No points")
+    : isMoney ? `${curr}${(drawerRewardValue / 10).toFixed(2)}` : `${drawerRewardValue} pts`;
+  const minus = document.getElementById("btn-drawer-reward-minus");
+  if (minus) minus.disabled = drawerRewardValue <= 0;
 }
 
 // Wire drawer interactions (steppers, accordion, date picker trigger, submit)
@@ -1904,12 +1908,12 @@ function initSkylightTaskDrawerEvents() {
     }
   });
 
-  // Reward points stepper (1 to 10 points)
+  // Reward points stepper (0 to 10 points: 0 for jobs like Make your bed)
   const btnMinus = document.getElementById("btn-drawer-reward-minus");
   const btnPlus = document.getElementById("btn-drawer-reward-plus");
   if (btnMinus && btnPlus) {
     btnMinus.onclick = () => {
-      drawerRewardValue = Math.max(1, drawerRewardValue - 1);
+      drawerRewardValue = Math.max(0, drawerRewardValue - 1);
       syncDrawerRewardUI();
     };
     btnPlus.onclick = () => {

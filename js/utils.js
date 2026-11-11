@@ -228,13 +228,15 @@ function displayMemberName(name) {
 window.displayMemberName = displayMemberName;
 
 // What a job is worth: the points its card shows and its panel sets
-// (task.value, 1 to 10). Older jobs may only have rewardValue; failing both,
+// (task.value, 0 to 10; 0 is a job worth no points, like Make your bed,
+// from Steven 11 Nov). Older jobs may only have rewardValue; failing both,
 // 1. On a pocket-money board 10 points are £1.00, as the cards show. Used
 // for the cards, scores, the podium, rewards and the tick pop-up, so they
 // all agree.
 function taskPoints(task) {
-  const v = Number(task && task.value);
-  if (v > 0) return v;
+  const has = task && task.value !== undefined && task.value !== null && task.value !== "";
+  const v = Number(has ? task.value : NaN);
+  if (v >= 0) return v;
   const r = Number(task && task.rewardValue);
   if (r > 0) return r;
   return 1;

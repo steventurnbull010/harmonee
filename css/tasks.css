@@ -3191,3 +3191,6 @@ body.theme-dark .grabs-icon-btn.is-who { background: rgba(239, 68, 68, 0.14); co
 .grabs-dialog .grabs-job-meta .grabs-given { margin: 0; font-size: 0.85rem; }
 @keyframes grabs-fold { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .grabs-dialog .grabs-people { animation: none; } }
+
+/* Points stepper at 0 ("No points"): nothing lower to go */
+.drawer-reward-btn:disabled { opacity: 0.35; cursor: default; }

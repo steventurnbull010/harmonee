@@ -2050,6 +2050,30 @@ const PAGES = [
     if (!/quick grab/i.test(iron.afterAnyone.hint)) throw new Error(`Anyone + Every week + Any day doesn't say quick grab: ${iron.afterAnyone.hint}`);
     if (!/nobody can grab/i.test(iron.routineHint)) throw new Error(`Routine + Anyone doesn't explain itself: ${iron.routineHint}`);
     await p.keyboard.press("Escape");
+    // A job worth no points (Make your bed): the stepper goes down to "No points",
+    // it saves as 0, and its card shows no points
+    const bed = await p.evaluate(async () => {
+      window.openSkylightTaskDrawer();
+      await new Promise(r => setTimeout(r, 300));
+      document.getElementById("drawer-task-title").value = "Brush your teeth";
+      const pill = document.querySelector('.drawer-profile-pill[data-profile="Alex"]'); if (pill) pill.click();
+      const minus = document.getElementById("btn-drawer-reward-minus");
+      for (let i = 0; i < 12; i++) minus.click();
+      const shown = document.getElementById("drawer-reward-display").textContent;
+      const off = minus.disabled;
+      document.getElementById("skylight-task-drawer-form").requestSubmit();
+      await new Promise(r => setTimeout(r, 800));
+      const t = (window.currentTasks || []).find(x => x.title === "Brush your teeth");
+      if (typeof window.renderApp === "function") window.renderApp();
+      await new Promise(r => setTimeout(r, 400));
+      const card = [...document.querySelectorAll(".skylight-task-card")].find(c => t && c.getAttribute("data-task-id") === t.id);
+      return { shown, off, value: t ? t.value : "missing", points: t ? window.taskPoints(t) : null, card: card ? card.textContent.replace(/\s+/g, " ").trim() : null };
+    });
+    if (bed.shown !== "No points" || !bed.off) throw new Error(`the points stepper doesn't go down to No points: ${JSON.stringify(bed)}`);
+    if (bed.value !== 0 || bed.points !== 0) throw new Error(`Brush your teeth wasn't saved with no points: ${JSON.stringify(bed)}`);
+    if (!bed.card) throw new Error("Brush your teeth's card isn't on the board");
+    if (/\bpts?\b|\bpoints?\b/.test(bed.card)) throw new Error(`Brush your teeth's card still shows points: ${bed.card}`);
+    await p.keyboard.press("Escape");
   }],
   ["today", async (p) => {
     await p.evaluate(() => window.showTodayScreen({ from: "preview" }));

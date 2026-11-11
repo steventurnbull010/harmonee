@@ -49,6 +49,7 @@
       : (Array.isArray(who) ? who : String(who || "").split(",")).map(s => String(s).trim()).filter(n => everyone.includes(n));
     if (!people.length || !task) return;
     const each = typeof window.taskReward === "function" ? window.taskReward(task) : 1;
+    if (!each) return; // a job worth no points doesn't move the stars
     const before = board(Object.fromEntries(people.map(p => [p, each])));
     const now = board();
     const first = people[0];
