@@ -190,6 +190,17 @@
     const goals = goalsOf(name);
     return goals.find(g => balance >= (Number(g.cost) || 0)) || goals[0] || null;
   }
+  // When a goal that starts again was last redeemed: "Sat", or "8 Nov" after a week
+  function lastRedeemed(g) {
+    let last = "";
+    (window.rewardRedemptions || []).forEach(r => { if (r.goalId === g.id && String(r.redeemedAt) > last) last = String(r.redeemedAt); });
+    if (!last) return "";
+    const d = new Date(last);
+    if (isNaN(d)) return "";
+    const days = (Date.now() - d.getTime()) / 86400000;
+    if (days < 1 && d.toDateString() === new Date().toDateString()) return "today";
+    return days < 6 ? d.toLocaleDateString([], { weekday: "short" }) : d.toLocaleDateString([], { day: "numeric", month: "short" });
+  }
   function goalState(g, balance, ctx) {
     const cost = Number(g.cost) || 0;
     const pct = cost > 0 ? Math.min(100, Math.round((Math.max(0, balance) / cost) * 100)) : 100;
@@ -314,7 +325,7 @@
           ${more > 0 ? `<span class="rw-card-more">+${more} more</span>` : ""}
           <span class="rw-card-banner-words">
             <span class="rw-card-banner-title">${esc(g.title)}</span>
-            <span class="rw-card-banner-sub">${st.ready ? "Ready to redeem!" : `${esc(fmt(st.cost - balance))} to go`}</span>
+            <span class="rw-card-banner-sub">${st.ready ? "Ready to redeem!" : `${esc(fmt(st.cost - balance))} to go`}${!st.ready && lastRedeemed(g) ? ` · last redeemed ${esc(lastRedeemed(g))}` : ""}</span>
           </span>
           ${st.ready ? actionHtml(g, st.cost, balance, true) : ""}
           ${barHtml(g, st.pct, st.ready)}
@@ -427,7 +438,7 @@
             ${photoBox(g, "rp-goal-photo")}
             <span class="rp-goal-words">
               <span class="rp-goal-title">${esc(g.title)}</span>
-              <span class="rp-goal-cost">${fmt(Math.min(Math.max(0, balance), st.cost))} of ${fmt(st.cost)}</span>
+              <span class="rp-goal-cost">${fmt(Math.min(Math.max(0, balance), st.cost))} of ${fmt(st.cost)}${g.once ? " · one-off" : lastRedeemed(g) ? ` · 🔁 last redeemed ${esc(lastRedeemed(g))}` : " · 🔁 starts again"}</span>
             </span>
           </button>
           ${barHtml(g, st.pct, st.ready)}

@@ -5,7 +5,10 @@
 // the points.
 //
 // Everything lives on the board doc so every device agrees:
-//   rewardGoals:       [{ id, member, title, emoji, cost }]
+//   rewardGoals:       [{ id, member, title, emoji, cost, once? }]
+//                      once: true = gone after it's redeemed (a Lego set);
+//                      otherwise it starts again (pocket money), as Skylight's
+//                      "Renew after redeeming" (agreed with Steven, 11 Nov)
 //   rewardRedemptions: [{ id, goalId, member, title, emoji, cost, redeemedAt }]
 //   rewardWeeks:       { "2026-W45": { Ava: 23, Dara: 12, ... }, ... }
 //   familyGoal:        { title, target, photo? } (everyone's stars this week)
@@ -237,7 +240,14 @@ function redeemRewardGoal(goalId) {
     redeemedAt: new Date().toISOString()
   };
   window.rewardRedemptions = [...(window.rewardRedemptions || []), entry];
-  saveRewardDataToBoard({ rewardRedemptions: window.rewardRedemptions });
+  if (goal.once) {
+    // A one-off: it's had, so it leaves their card (its own photo goes too)
+    if (goal.photo === "own" && window.RecipePhotos) window.RecipePhotos.remove(`goal-${goal.id}`);
+    window.rewardGoals = (window.rewardGoals || []).filter(g => g.id !== goal.id);
+    saveRewardDataToBoard({ rewardRedemptions: window.rewardRedemptions, rewardGoals: window.rewardGoals });
+  } else {
+    saveRewardDataToBoard({ rewardRedemptions: window.rewardRedemptions });
+  }
   renderRewardGoals();
 
   try {
@@ -258,6 +268,7 @@ let rewardGoalPanelMember = null;
 // The photo chooser's state (js/reward-photos.js): choice "" (picked for you),
 // a stock key, "own" or "none"
 let rewardGoalPhoto = { choice: "", title: "", own: "", ownNew: false, open: false };
+let rewardGoalOnce = false;
 
 // Who → What's the reward → Photo → Points (a slider with shortcuts). The
 // emoji is worked out from the photo (11 Nov: the Icon row went; it was a
@@ -270,6 +281,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
 
   rewardGoalPanelMember = goal ? goal.member : (member || (window.familyMembers || [])[0] || "");
   rewardGoalPhoto = P ? P.stateFor(goal) : { choice: "", title: "" };
+  rewardGoalOnce = !!(goal && goal.once);
 
   document.getElementById("reward-goal-title").textContent = goal ? "Edit goal" : `New goal${rewardGoalPanelMember ? ` for ${rewardGoalPanelMember}` : ""}`;
   document.getElementById("reward-goal-id").value = goal ? goal.id : "";
@@ -285,6 +297,7 @@ function openRewardGoalPanel(goalId = null, member = null) {
   if (P && pts) { pts.innerHTML = P.sliderHtml(o); P.wireSlider(pts, cost, o); }
 
   renderRewardGoalPanelPickers();
+  renderRewardGoalRepeat();
   wireRewardGoalPanel();
   if (!dialog.open) dialog.showModal();
   if (!goal) focusAfterPanelOpens(document.getElementById("reward-goal-name"));
@@ -308,6 +321,19 @@ function renderRewardGoalPhotos() {
   window.RewardPhotos.wireChooser(box, () => rewardGoalPhoto, (next) => { Object.assign(rewardGoalPhoto, next); renderRewardGoalPhotos(); });
 }
 
+// Start again (pocket money, screen time) or Remove it (a one-off treat)
+function renderRewardGoalRepeat() {
+  document.querySelectorAll("#reward-goal-repeat [data-repeat]").forEach(b => {
+    const on = (b.getAttribute("data-repeat") === "once") === rewardGoalOnce;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const hint = document.getElementById("reward-goal-repeat-hint");
+  if (hint) hint.textContent = rewardGoalOnce
+    ? "For a one-off, like a new Lego set: it leaves their card once it's redeemed."
+    : "For things they earn again and again, like pocket money or screen time.";
+}
+
 function wireRewardGoalPanel() {
   const dialog = document.getElementById("reward-goal-modal");
   if (dialog.hasAttribute("data-wired")) return;
@@ -320,6 +346,12 @@ function wireRewardGoalPanel() {
     if (!pill) return;
     rewardGoalPanelMember = pill.getAttribute("data-member");
     renderRewardGoalPanelPickers();
+  });
+  document.getElementById("reward-goal-repeat").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-repeat]");
+    if (!b) return;
+    rewardGoalOnce = b.getAttribute("data-repeat") === "once";
+    renderRewardGoalRepeat();
   });
   // Typing the reward picks a photo for it
   document.getElementById("reward-goal-name").addEventListener("input", () => renderRewardGoalPhotos());
@@ -342,6 +374,7 @@ function wireRewardGoalPanel() {
     try { if (window.RewardPhotos) photoFields = await window.RewardPhotos.savePhoto(id, rewardGoalPhoto, before); }
     catch (err) { console.warn("Couldn't save the goal's photo:", err); }
     const next = { ...before, id, title, cost, member: rewardGoalPanelMember };
+    if (rewardGoalOnce) next.once = true; else delete next.once;
     if (photoFields.photo) next.photo = photoFields.photo; else delete next.photo;
     if (photoFields.photoRev) next.photoRev = photoFields.photoRev; else delete next.photoRev;
     next.emoji = window.RewardPhotos ? window.RewardPhotos.emojiFor(next) : "🎁";

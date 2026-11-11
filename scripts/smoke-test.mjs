@@ -1376,12 +1376,20 @@ const PAGES = [
       const none = !!document.querySelector("#reward-goal-photo .rw-pc-preview.is-none") && /Night out with friends/.test(document.querySelector("#reward-goal-photo .rw-pc-preview").textContent);
       document.querySelector('#reward-goal-points [data-pts-preset="100"]').click();
       const value = document.querySelector("#reward-goal-points [data-pts-value]").textContent;
-      return { picked, iconRow, none, value };
+      // New goals start again after they're redeemed, unless "Remove it" is chosen
+      const againFirst = document.querySelector('#reward-goal-repeat [data-repeat="again"]').classList.contains("active");
+      document.querySelector('#reward-goal-repeat [data-repeat="once"]').click();
+      const onceOn = document.querySelector('#reward-goal-repeat [data-repeat="once"]').classList.contains("active") && /one-off/.test(document.getElementById("reward-goal-repeat-hint").textContent);
+      return { picked, iconRow, none, value, againFirst, onceOn };
     });
     if (!/nightout\.jpg/.test(gp.picked)) throw new Error(`"Night out" didn't pick the night out photo: ${gp.picked}`);
     if (gp.iconRow) throw new Error("the goal panel still has the Icon row");
     if (!gp.none) throw new Error("No photo doesn't show the gift card with the reward's name");
     if (gp.value !== "100 pts") throw new Error(`the 100 shortcut didn't set the points: ${gp.value}`);
+    await p.evaluate(() => document.getElementById("reward-goal-repeat").scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-goal-repeat.png`) });
+    if (!gp.againFirst || !gp.onceOn) throw new Error(`"After it's redeemed" didn't start on Start again or didn't switch to Remove it: ${JSON.stringify(gp)}`);
     await p.evaluate(() => document.querySelector("#reward-goal-photo").scrollIntoView({ block: "start" }));
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-goal-panel.png`) });
     // Your own photo, chosen like a real file
@@ -1404,6 +1412,7 @@ const PAGES = [
       const banner = document.querySelector('[data-person="Alex"] .rw-card-banner');
       return { g, photoSaved: !!(photoDoc && /^data:image\/jpeg/.test(photoDoc.data || "")), banner: banner ? (banner.getAttribute("style") || "") : "", bannerText: banner ? banner.textContent : "" };
     }, B);
+    if (!savedGoal.g || savedGoal.g.once !== true) throw new Error(`Alex's goal wasn't saved as a one-off: ${JSON.stringify(savedGoal.g)}`);
     if (!savedGoal.g || savedGoal.g.cost !== 100 || savedGoal.g.photo !== "own" || !savedGoal.g.photoRev) throw new Error(`Alex's goal wasn't saved with their own photo: ${JSON.stringify(savedGoal.g)}`);
     if (!savedGoal.photoSaved) throw new Error("the goal's own photo wasn't saved on the board");
     if (!/data:image\/jpeg/.test(savedGoal.banner) || !/Night out/.test(savedGoal.bannerText)) throw new Error(`Alex's card doesn't lead with the goal's photo: ${savedGoal.bannerText}`);
@@ -1412,6 +1421,34 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-cards-new.png`) });
     // Tidy up
     await p.evaluate(() => { window.rewardGoals = (window.rewardGoals || []).filter(x => !(x.member === "Alex" && /Night out/.test(x.title))); window.renderRewardGoals(); });
+
+    // Redeeming (as Skylight): a one-off leaves the card, one that starts again stays
+    // with "last redeemed today", and both spend the points
+    const rd = await p.evaluate(async () => {
+      const keep = { goals: window.rewardGoals, red: window.rewardRedemptions, weeks: window.rewardWeeks };
+      window.rewardWeeks = { ...(window.rewardWeeks || {}), "2020-W01": { Alex: 10 } };
+      window.rewardGoals = [...(window.rewardGoals || []).filter(g => g.member !== "Alex"),
+        { id: "t-once", member: "Alex", title: "Lego set", cost: 1, once: true },
+        { id: "t-again", member: "Alex", title: "Pocket money", cost: 1 }];
+      const before = window.getMemberRewardBalance("Alex");
+      window.redeemRewardGoal("t-once");
+      window.redeemRewardGoal("t-again");
+      await new Promise(res => setTimeout(res, 200));
+      const ids = window.rewardGoals.filter(g => g.member === "Alex").map(g => g.id);
+      // (the fake banked week may be replaced by the board's copy, so count what was spent)
+      const spent = (window.rewardRedemptions || []).filter(r => /^t-/.test(r.goalId)).reduce((n, r) => n + r.cost, 0);
+      void before;
+      window.RewardsPage.openPerson("Alex");
+      await new Promise(res => setTimeout(res, 300));
+      const panel = (document.getElementById("reward-person-body") || {}).textContent || "";
+      const dlg = document.getElementById("reward-person-modal"); if (dlg && dlg.open) dlg.close();
+      window.rewardGoals = keep.goals; window.rewardRedemptions = keep.red; window.rewardWeeks = keep.weeks;
+      window.renderRewardGoals();
+      return { ids, spent, panel: /Pocket money[\s\S]*last redeemed today/.test(panel), hasPanel: true };
+    });
+    if (rd.ids.includes("t-once") || !rd.ids.includes("t-again")) throw new Error(`redeeming didn't remove the one-off and keep the other: ${rd.ids}`);
+    if (rd.spent !== 2) throw new Error(`redeeming didn't spend the points: ${rd.spent}`);
+    if (rd.hasPanel && !rd.panel) throw new Error("Alex's panel doesn't say when Pocket money was last redeemed");
 
     // The Rewards intro shows the new page (stars and a family goal, not a podium)
     const intro = await p.evaluate(async () => {

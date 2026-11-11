@@ -530,3 +530,11 @@ body.theme-dark .rw-points-slider::-webkit-slider-runnable-track { background: l
 }
 /* The slider isn't a text box: no border or padding from the form styles */
 .settings-form input.rw-points-slider, .rw-points-slider { border: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 44px; }
+
+/* Goal panel: After it's redeemed (Start again / Remove it) */
+.reward-goal-repeat-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted, #64748b);
+}
