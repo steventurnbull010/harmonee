@@ -1145,6 +1145,14 @@ const PAGES = [
     await p.evaluate(() => document.getElementById("rewards-people-grid").scrollIntoView({ block: "end" }));
     await p.waitForTimeout(200);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-cards.png`) });
+    // Dark mode (the night-time look)
+    await p.evaluate(() => document.body.classList.add("theme-dark"));
+    await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-dark.png`) });
+    await p.evaluate(() => { document.body.classList.remove("theme-dark"); document.querySelector("#view-rewards .rewards-view-container").scrollIntoView({ block: "start" }); });
+    // On the kitchen tablet the person cards start on the first screen
+    const cardsTop = await p.evaluate(() => document.getElementById("rewards-people-grid").getBoundingClientRect().top);
+    if (p.__size !== "phone" && cardsTop > p.viewportSize().height - 120) throw new Error(`the person cards start ${Math.round(cardsTop)}px down, too low to see on a ${p.viewportSize().height}px screen`);
 
     // Jo's panel: goals, six stickers (one earned), the week
     const panel = await p.evaluate(async () => {

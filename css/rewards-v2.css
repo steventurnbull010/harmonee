@@ -339,3 +339,26 @@ body.theme-dark .rp-sticker.is-on strong { color: #fde68a; }
   .rw-person:hover { transform: none; }
   .rp-stickers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Dark: each person's light colour for their words (their dark one disappears) */
+body.theme-dark .rw-lb-row.is-leader .rw-lb-name,
+body.theme-dark .rw-card-setgoal,
+body.theme-dark .rp-balance,
+body.theme-dark .rp-add,
+body.theme-dark .rp-goal-cost { color: var(--member-border); }
+body.theme-dark .rw-card-setgoal:hover { background: rgba(255, 255, 255, 0.05); }
+body.theme-dark .rw-family-add:hover { background: rgba(245, 158, 11, 0.1); }
+body.theme-dark .rw-sticker-mini { background: #0f172a; }
+
+/* Short screens (the kitchen tablet, 690px tall): a tighter stars card so
+   the person cards start on the first screen */
+@media (min-width: 601px) and (max-height: 820px) {
+  .rw-stars-card { gap: 8px; padding-bottom: 16px; }
+  .rw-lb-list { gap: 4px; }
+  .rw-lb-row { min-height: 40px; grid-template-columns: 40px minmax(72px, 140px) 1fr auto; }
+  .rw-lb-face, .rw-lb-face .rw-face { width: 40px; height: 40px; font-size: 1.1rem; }
+  .rw-lb-track { height: 16px; }
+  .rw-family { padding: 8px 16px; margin-top: 8px; }
+  .rw-family-photo { width: 72px; height: 48px; }
+  .rw-family-words { gap: 4px; }
+}
