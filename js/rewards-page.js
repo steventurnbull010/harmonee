@@ -226,7 +226,7 @@
       shownLb.set(m.name, pct);
       const leader = top > 0 && m.score === top;
       return `
-        <li class="rw-lb-row ${leader ? "is-leader" : ""}" style="${palStyle(m.name)}" data-rw-bounce>
+        <li class="rw-lb-row ${leader ? "is-leader" : ""}" style="${palStyle(m.name)}" data-rw-bounce data-lb-person="${esc(m.name)}">
           <span class="rw-lb-face">${face(m.name)}${leader ? `<span class="rw-lb-crown" aria-hidden="true">👑</span>` : ""}</span>
           <span class="rw-lb-name">${esc(m.name)}</span>
           <span class="rw-lb-track" aria-hidden="true"><span class="rw-lb-fill" data-rw-fill="${pct}" style="width: ${from}%;"></span></span>
@@ -327,6 +327,18 @@
       t.classList.toggle("is-active", on);
       t.setAttribute("aria-selected", on ? "true" : "false");
     });
+    // Phones: the stars row stands in for the tabs, so it shows whose card is open too
+    document.querySelectorAll("#rewards-leaderboard [data-lb-person]").forEach(r => r.classList.toggle("is-shown", isPhone() && r.getAttribute("data-lb-person") === name));
+  }
+  // Phones: tap a face in the stars row to swipe to that person's card
+  function showCard(name) {
+    const grid = document.getElementById("rewards-people-grid");
+    const card = grid && grid.querySelector(`[data-person="${CSS.escape(name)}"]`);
+    if (!card) return;
+    phoneShown = name;
+    tabScrollUntil = Date.now() + 700;
+    grid.scrollTo({ left: card.offsetLeft - grid.offsetLeft, behavior: reduceMotion() ? "auto" : "smooth" });
+    markTab(name);
   }
   function renderTabs(grid) {
     const bar = document.getElementById("rewards-people-tabs");
@@ -559,6 +571,8 @@
       if (await parentOk("the family goal")) openFamilyGoal();
       return;
     }
+    const lb = e.target.closest("[data-lb-person]");
+    if (lb && isPhone()) { showCard(lb.getAttribute("data-lb-person")); return; }
     const card = e.target.closest("[data-person]");
     if (card && !e.target.closest("button, a")) openPerson(card.getAttribute("data-person"));
   }

@@ -307,3 +307,25 @@
     padding-bottom: 8px;
   }
 }
+
+/* Phones, Tasks (11 Nov): one header row, so the first job starts higher.
+   The family name and weather are on every other page (and the bottom bar
+   says where you are); Filter becomes 👥 ▾ and Big jobs its icon and count */
+@media (max-width: 600px) {
+  #view-chores .calendar-header.skylight-single-header {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas: "filter nav grab" !important;
+    column-gap: 8px !important;
+    row-gap: 0 !important;
+    align-items: center !important;
+  }
+  #view-chores .skylight-single-header .calendar-header-left { display: none !important; }
+  #view-chores #tasks-filter-dropdown-wrap { justify-self: start; }
+  #view-chores #btn-tasks-filter-dropdown > span { display: none; }
+  #view-chores #btn-tasks-filter-dropdown::before { content: "👥"; font-size: 1.1rem; }
+  #view-chores #btn-tasks-filter-dropdown { gap: 2px; padding-left: 8px; padding-right: 8px; }
+  #view-chores .skylight-single-header .calendar-nav-buttons { justify-self: center; min-width: 0; }
+  #view-chores #btn-tasks-today { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
+  #view-chores .tasks-grab-btn .tasks-grab-btn-label { display: none; }
+  #view-chores .tasks-grab-btn { padding-left: 12px; padding-right: 8px; gap: 6px; }
+}

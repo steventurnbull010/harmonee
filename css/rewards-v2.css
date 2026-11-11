@@ -362,3 +362,26 @@ body.theme-dark .rw-sticker-mini { background: #0f172a; }
   .rw-family-photo { width: 72px; height: 48px; }
   .rw-family-words { gap: 4px; }
 }
+
+/* Phones (11 Nov): the stars as one compact row of faces with points under
+   each, and the row doubles as the tabs for the cards below (tap a face to
+   swipe to their card; the one on screen is ringed) */
+@media (max-width: 600px) {
+  .rw-stars-card { gap: 12px; }
+  .rw-lb-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 4px; }
+  .rw-lb-row {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-height: 0; padding: 12px 4px 8px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+  }
+  .rw-lb-row.is-shown { border-color: var(--member-border, #7dd3fc); background: var(--member-light, #f0f9ff); }
+  .rw-lb-face, .rw-lb-face .rw-face { width: 48px; height: 48px; font-size: 1.3rem; }
+  .rw-lb-crown { top: -14px; }
+  .rw-lb-name { font-size: 0.85rem; max-width: 100%; }
+  .rw-lb-track { display: none; }
+  .rw-lb-score { min-width: 0; text-align: center; font-size: 0.85rem; }
+  .rw-lb-note { text-align: center; }
+  .rewards-people-tabs { display: none !important; }
+  body.theme-dark .rw-lb-row.is-shown { background: rgba(255, 255, 255, 0.06); }
+}
