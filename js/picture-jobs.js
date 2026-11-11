@@ -63,8 +63,8 @@
     { key: "laundry",   emoji: "🧺", words: /\b(wash basket|laundry|washing basket|dirty clothes)\b/i },
     { key: "hair",      emoji: "💇", words: /\b(hair|brush your hair|comb)\b/i },
     { key: "vitamins",  emoji: "💊", words: /\b(vitamins?|medicine)\b/i },
-    { key: "homework",  emoji: "✏️", words: /\b(homework|spellings|practise|practice)\b/i },
-    { key: "music",     emoji: "🎹", words: /\b(piano|violin|guitar|music)\b/i }
+    { key: "music",     emoji: "🎹", words: /\b(piano|violin|guitar|music|recorder|keyboard)\b/i },
+    { key: "homework",  emoji: "✏️", words: /\b(homework|spellings|practise|practice)\b/i }
   ];
   const pictureKey = (task) => {
     const t = String((task && task.title) || "");

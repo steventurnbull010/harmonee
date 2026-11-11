@@ -1377,7 +1377,12 @@ const PAGES = [
       if (window.Buddies) window.Buddies.close(true);
       for (const x of (window.currentTasks || []).filter(t => /^pic-max-/.test(t.id))) await window.deleteTaskById(x.id);
       await window.PictureJobs.setOn("Max", false);
+      // Switching pictures on saved Max's test buddy too: take both off the fake board
+      await new Promise(r => setTimeout(r, 600));
+      const board = window.__SMOKE_STORE["boards/sidepanel-test-x7q2"];
+      if (board && board.settings) { delete board.settings.memberBuddies; delete board.settings.memberPictures; }
       window.boardSettings.memberBuddies = {};
+      delete window.boardSettings.memberPictures;
     });
   }],
   ["rewards-page", async (p) => {
