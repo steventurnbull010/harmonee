@@ -61,6 +61,7 @@
   <link rel="stylesheet" href="css/tick-cheer.css?v=aa68a5d0">
   <link rel="stylesheet" href="css/meals.css?v=9c3654be">
   <link rel="stylesheet" href="css/calendar.css?v=0110488d">
+  <link rel="stylesheet" href="css/calendar-v2.css?v=27671831">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=a012cf40">
   <link rel="stylesheet" href="css/rewards-v2.css?v=7b230a7f">
@@ -299,15 +300,21 @@
               </div>
             </div>
 
-            <div class="calendar-header-nav">
-              <!-- Date Navigation (< Today >) -->
-              <div class="calendar-nav-buttons">
-                <button type="button" class="calendar-btn-nav" id="btn-calendar-prev-week" title="Previous" aria-label="Previous"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                <button type="button" class="calendar-btn-today" id="btn-calendar-today">Today</button>
-                <button type="button" class="calendar-btn-nav" id="btn-calendar-next-week" title="Next" aria-label="Next"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-              </div>
-            </div>
           </header>
+
+          <!-- The calendar's own bar (js/calendar-views.js): the month with
+               ‹ Today ›, the views as buttons, a face per person to hide or
+               show their events -->
+          <div class="cal-toolbar" id="calendar-toolbar">
+            <div class="cal-toolbar-date">
+              <button type="button" class="calendar-btn-nav" id="btn-calendar-prev-week" title="Previous" aria-label="Previous"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+              <button type="button" class="cal-toolbar-title" id="cal-toolbar-title" aria-live="polite"></button>
+              <button type="button" class="calendar-btn-nav" id="btn-calendar-next-week" title="Next" aria-label="Next"><svg class="icon-chevron-wide" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              <button type="button" class="calendar-btn-today" id="btn-calendar-today">Today</button>
+            </div>
+            <div class="cal-view-switch" id="cal-view-switch" role="group" aria-label="Calendar view"></div>
+            <div class="cal-people" id="cal-people" role="group" aria-label="Whose events"></div>
+          </div>
 
           <!-- Family Sticky Note / Message of the Day Widget -->
           <div class="family-sticky-container" id="family-sticky-container">
@@ -2581,7 +2588,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=1f223c6f"></script>
+  <script src="js/build-info.js?v=c80fd371"></script>
   <script src="js/utils.js?v=c243e9da"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=55f9380e"></script>
@@ -2607,7 +2614,8 @@
   <script src="js/rewards-page.js?v=3f314374"></script>
   <script src="js/page-intro.js?v=4c22746c"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
-  <script src="js/calendar.js?v=391fed77"></script>
+  <script src="js/calendar-views.js?v=f86d3eb7"></script>
+  <script src="js/calendar.js?v=201c685d"></script>
   <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
   <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
   <script src="js/event-chime.js?v=b9ba3896"></script>

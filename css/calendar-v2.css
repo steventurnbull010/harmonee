@@ -1,0 +1,316 @@
+/* ==========================================================================
+   CALENDAR, REDESIGNED (js/calendar-views.js) · 11 Nov
+   The calendar's bar (month, ‹ Today ›, view buttons, faces), the week
+   strip, phone Day / Week / Month lists and the tablet seven-column week.
+   Loaded after css/calendar.css. 8px grid.
+   ========================================================================== */
+
+/* The old View and Filter menus: replaced by the bar's buttons and faces */
+#view-calendar #view-dropdown-wrap,
+#view-calendar #filter-dropdown-wrap { display: none !important; }
+
+/* --- The bar ------------------------------------------------------------- */
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  min-width: 0;
+}
+.cal-toolbar-date { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.cal-toolbar-title {
+  min-width: 0;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+.cal-toolbar .calendar-btn-nav {
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 50%;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a);
+  cursor: pointer;
+}
+.cal-toolbar .calendar-btn-today {
+  height: 40px; padding: 0 16px; margin-left: 8px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.cal-view-switch {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+}
+.cal-view-btn {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #475569);
+  font: inherit; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cal-view-btn.is-on { background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12); }
+.cal-people { display: inline-flex; gap: 4px; flex: none; }
+.cal-face {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--face);
+  background: var(--face);
+  color: #fff;
+  font: inherit; font-size: 0.9rem; font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.cal-face:not(.is-on) { background: transparent; color: var(--face); opacity: 0.55; }
+body.theme-dark .cal-toolbar-title { color: #f8fafc; }
+body.theme-dark .cal-toolbar .calendar-btn-nav,
+body.theme-dark .cal-toolbar .calendar-btn-today { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .cal-view-switch { background: rgba(255, 255, 255, 0.08); }
+body.theme-dark .cal-view-btn { color: #94a3b8; }
+body.theme-dark .cal-view-btn.is-on { background: #334155; color: #f8fafc; }
+
+/* --- Cards (time first, then the title) ------------------------------------ */
+.cv-card {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px 8px 16px !important;
+  margin: 0 0 8px !important;
+  border: 1px solid;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+.cv-card::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 4px; border-radius: 4px; background: var(--cv-edge); }
+.cv-card-time { font-size: 0.8rem; font-weight: 800; color: var(--text-secondary, #475569); white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 48px; }
+.cv-card-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cv-card-title { font-weight: 700; font-size: 0.95rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-card-sub { display: none; font-size: 0.78rem; color: var(--text-secondary, #64748b); }
+.cv-repeat { font-size: 0.8em; }
+.cv-meal { margin: 0 0 8px !important; }
+.cv-meal .box-meal-title small { display: block; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
+.cv-weather { font-size: 0.85rem; color: var(--text-secondary, #64748b); white-space: nowrap; }
+.cv-add {
+  min-height: 36px; padding: 0 12px;
+  border: 1px dashed var(--card-border, #cbd5e1) !important;
+  border-radius: 999px;
+  background: transparent !important;
+  color: var(--text-secondary, #64748b) !important;
+  font: inherit; font-size: 0.85rem !important; font-weight: 700;
+  cursor: pointer;
+}
+.cv-empty { margin: 0; color: var(--text-secondary, #64748b); font-size: 0.95rem; }
+
+/* --- The week strip ---------------------------------------------------------- */
+.cv-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 16px; }
+.cv-strip-day {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 6px;
+  border: 0; border-radius: 14px;
+  background: transparent;
+  color: var(--text-primary, #0f172a);
+  font: inherit; cursor: pointer;
+}
+.cv-strip-name { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary, #64748b); text-transform: uppercase; letter-spacing: 0.04em; }
+.cv-strip-num { font-size: 1.15rem; font-weight: 800; line-height: 1.2; }
+.cv-strip-dot { width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.cv-strip-dot.is-on { background: #94a3b8; }
+.cv-strip-day.is-past { opacity: 0.5; }
+.cv-strip-day.is-today .cv-strip-num { color: #e11d48; }
+.cv-strip-day.is-on { background: #0f172a; }
+.cv-strip-day.is-on .cv-strip-name, .cv-strip-day.is-on .cv-strip-num { color: #fff; }
+.cv-strip-day.is-on .cv-strip-dot.is-on { background: #fff; }
+body.theme-dark .cv-strip-day { color: #f8fafc; }
+body.theme-dark .cv-strip-day.is-on { background: #f8fafc; }
+body.theme-dark .cv-strip-day.is-on .cv-strip-name, body.theme-dark .cv-strip-day.is-on .cv-strip-num { color: #0f172a; }
+
+/* --- A day's list (phone Day, under the phone Month) -------------------------- */
+.cv-day { display: flex; flex-direction: column; gap: 8px; }
+.cv-day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.cv-day-title { margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: 1.6rem; color: var(--text-primary, #0f172a); }
+.cv-day-title small { display: block; margin-top: 2px; font-family: inherit; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary, #64748b); font-family: system-ui, sans-serif; }
+.cv-day-list { display: flex; flex-direction: column; }
+.cv-day > .cv-add { align-self: flex-start; margin-top: 8px; }
+body.theme-dark .cv-day-title { color: #f8fafc; }
+
+/* --- Phone Week: one list ---------------------------------------------------- */
+.cv-week-list { display: flex; flex-direction: column; gap: 8px; }
+.cv-week-day { padding: 12px 16px 4px; border-radius: 16px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e2e8f0); scroll-margin-top: 16px; }
+.cv-week-day.is-today { border-color: #fda4af; box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.12); }
+.cv-week-day-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cv-week-day-name { flex: 1; font-weight: 800; font-size: 1.05rem; color: var(--text-primary, #0f172a); }
+.cv-week-day-name small { font-weight: 600; color: var(--text-secondary, #64748b); }
+.cv-week-day.is-empty { display: flex; align-items: center; gap: 16px; padding: 8px 16px; background: transparent; border-style: dashed; }
+.cv-week-day.is-empty .cv-week-day-name { flex: none; min-width: 64px; font-size: 0.95rem; }
+.cv-empty-line { flex: 1; color: var(--text-secondary, #94a3b8); font-size: 0.9rem; }
+.cv-week-day.is-past { opacity: 0.6; }
+.cv-past-toggle { align-self: flex-start; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(15, 23, 42, 0.05); color: var(--text-secondary, #64748b); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+body.theme-dark .cv-week-day { background: #1e293b; border-color: #334155; }
+body.theme-dark .cv-week-day.is-empty { background: transparent; }
+body.theme-dark .cv-week-day-name { color: #f8fafc; }
+
+/* --- Phone Month: dots ------------------------------------------------------- */
+.cv-month { margin-bottom: 16px; padding: 8px; border-radius: 16px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e2e8f0); }
+.cv-month-names, .cv-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cv-month-names span { text-align: center; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary, #94a3b8); padding: 4px 0 8px; }
+.cv-month-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 48px; padding: 6px 0;
+  border: 0; border-radius: 12px; background: transparent;
+  color: var(--text-primary, #0f172a); font: inherit; cursor: pointer;
+}
+.cv-month-num { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 0.95rem; }
+.cv-month-dots { display: flex; gap: 2px; height: 6px; }
+.cv-month-dots i { width: 6px; height: 6px; border-radius: 50%; }
+.cv-month-cell.is-other { opacity: 0.35; }
+.cv-month-cell.is-today .cv-month-num { color: #e11d48; font-weight: 900; }
+.cv-month-cell.is-on .cv-month-num { background: #0f172a; color: #fff; }
+body.theme-dark .cv-month { background: #1e293b; border-color: #334155; }
+body.theme-dark .cv-month-cell { color: #f8fafc; }
+body.theme-dark .cv-month-cell.is-on .cv-month-num { background: #f8fafc; color: #0f172a; }
+
+/* --- Tablets and computers: Week in seven columns ------------------------------ */
+.calendar-week-grid.cv-tablet-week { display: block; }
+.cv-week-cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: stretch; height: 100%; min-height: 0; }
+.cv-col {
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  border-radius: 16px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  overflow: hidden;
+}
+.cv-col-head { display: flex; align-items: baseline; gap: 6px; padding: 12px 12px 8px; }
+.cv-col-name { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary, #64748b); }
+.cv-col-num { font-size: 1.35rem; font-weight: 800; color: var(--text-primary, #0f172a); }
+.cv-col-head .cv-weather { margin-left: auto; }
+.cv-col-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; display: flex; flex-direction: column; scrollbar-width: thin; }
+.cv-col .cv-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "time faces" "main main"; gap: 2px 8px; padding: 8px 8px 8px 14px !important; }
+.cv-col .cv-card-time { grid-area: time; min-width: 0; font-size: 0.75rem; }
+.cv-col .cv-card-main { grid-area: main; }
+.cv-col .cv-card .skylight-card-avatar-wrap { grid-area: faces; }
+.cv-col .cv-card-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 0.88rem; }
+.cv-col .cv-add { margin-top: auto; align-self: stretch; opacity: 0; transition: opacity 0.15s ease; }
+.cv-col:hover .cv-add, .cv-col .cv-add:focus-visible { opacity: 1; }
+@media (hover: none) { .cv-col .cv-add { opacity: 0.8; } }
+.cv-col.is-today { border-color: #fda4af; box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.15); }
+.cv-col.is-today .cv-col-num { color: #e11d48; }
+.cv-col.is-past { opacity: 0.55; }
+body.theme-dark .cv-col { background: #1e293b; border-color: #334155; }
+body.theme-dark .cv-col-num { color: #f8fafc; }
+
+/* The week should fill the screen under the bar on tablets and computers */
+#view-calendar .calendar-week-grid.cv-tablet-week { height: calc(100vh - 200px); height: calc(100dvh - 200px); min-height: 360px; }
+
+/* Portrait tablets: the columns get too narrow, so they scroll sideways */
+@media (max-width: 1100px) and (min-width: 601px) {
+  .cv-week-cols { grid-template-columns: repeat(7, minmax(150px, 1fr)); overflow-x: auto; scroll-snap-type: x proximity; }
+  .cv-col { scroll-snap-align: start; }
+  .cal-view-btn { padding: 0 12px; }
+}
+
+/* Tablets' Day view: the week strip above the one-day timeline */
+.skylight-trad-calendar-grid.cv-has-strip { display: flex; flex-direction: column; }
+.skylight-trad-calendar-grid.cv-has-strip > .cv-strip { flex: none; max-width: 720px; width: 100%; margin: 0 auto 8px; }
+
+/* --- Laptops: Month shows times ----------------------------------------------- */
+
+/* --- Phones ----------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .cal-toolbar { flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+  .cal-toolbar-date { width: 100%; }
+  .cal-toolbar-title { flex: 1; text-align: left; font-size: 1.25rem; cursor: pointer; }
+  .cal-toolbar .calendar-btn-nav { width: 36px; height: 36px; }
+  .cal-toolbar .calendar-btn-today { height: 36px; margin-left: 4px; }
+  .cal-toolbar-date #btn-calendar-prev-week { order: 2; }
+  .cal-toolbar-date #btn-calendar-next-week { order: 3; }
+  .cal-toolbar-date #btn-calendar-today { order: 4; }
+  .cal-toolbar-date .cal-toolbar-title { order: 1; padding: 0; }
+  .cal-view-switch { margin-left: 0; flex: 1; }
+  .cal-view-btn { flex: 1; padding: 0 8px; }
+  .cal-face { width: 32px; height: 32px; font-size: 0.8rem; }
+  .cal-people { overflow-x: auto; max-width: 50%; scrollbar-width: none; }
+  .calendar-week-grid.cv-phone { display: block; padding-bottom: 96px; }
+  .cv-card { min-height: 56px; }
+  .cv-card-title { white-space: normal; }
+}
+
+/* --- Fixes after the first screenshots --------------------------------------- */
+/* The coloured edge sits in its own space, clear of the time */
+#calendar-week-grid .skylight-card.cv-card { padding-left: 20px !important; }
+/* Dinner in a week column: the whole name, on two lines if need be */
+.cv-col .cv-meal { white-space: normal; align-items: flex-start; }
+.cv-col .cv-meal .box-meal-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* Month (tablets and computers): the weeks share the screen's height, so
+   every row shows without scrolling; today in the same red as elsewhere */
+@media (min-width: 601px) {
+  #view-calendar .calendar-week-grid.view-month { height: calc(100vh - 200px); height: calc(100dvh - 200px); min-height: 420px; }
+  #view-calendar .calendar-month-container { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; padding: 12px; }
+  #view-calendar .calendar-month-grid { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+  #view-calendar .calendar-month-cell { min-height: 0; }
+}
+.calendar-month-cell.is-today { border-color: #fda4af; box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.15); }
+.calendar-month-cell.is-today .month-cell-date { background: #e11d48 !important; color: #fff !important; }
+/* Laptops: each event shows its time */
+.month-mini-event .mini-time { display: none; font-weight: 800; opacity: 0.75; margin-right: 2px; }
+@media (min-width: 1400px) { .month-mini-event .mini-time { display: inline; } }
+
+/* --- Busy days (checked with three or four people at the same time) --------- */
+/* Timeline: when three or more things share a slot, the card gives its room
+   to the title (the time is on the hour line beside it, and in its pop-up) */
+.ev-block.is-narrow .ev-block-inline-time,
+.ev-block.is-narrow .ev-block-time,
+.ev-block.is-narrow .ev-block-icon { display: none !important; }
+.ev-block.is-narrow .ev-block-title { font-size: 0.76rem; letter-spacing: -0.01em; }
+/* Week columns: a busy day scrolls instead of squashing its cards, with a
+   soft fade at the bottom when there's more below */
+.cv-col-body > * { flex-shrink: 0; }
+.cv-col-body { mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent); -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent); }
+/* Month: the events take what room there is; "+N more" keeps its own line */
+.calendar-month-cell .month-cell-events { flex: 1; min-height: 0; overflow: hidden; }
+.month-more-badge { flex: none; font-size: 0.72rem; font-weight: 800; color: var(--text-secondary, #475569); padding: 0 4px; }
+.calendar-month-cell .month-mini-event[hidden], .month-more-badge[hidden] { display: none !important; }
+.calendar-month-cell .month-mini-event { flex-shrink: 0; }
+.calendar-month-cell .month-cell-events { overflow: visible; }
+.calendar-month-cell .month-cell-dinner { flex-shrink: 0; }
+.calendar-month-cell .month-cell-events[hidden] { display: none !important; }
+/* Short month boxes: tighter, and dinner as just its emoji beside the date */
+.calendar-month-cell { position: relative; }
+.calendar-month-cell.is-compact { gap: 2px; padding-top: 4px; padding-bottom: 4px; }
+.calendar-month-cell.is-compact .month-cell-dinner { position: absolute; top: 4px; right: 6px; padding: 0 !important; margin: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; }
+.calendar-month-cell.is-compact .month-dinner-title { display: none; }
+.calendar-month-cell.is-compact .month-more-badge { font-size: 0.68rem; line-height: 1.2; }
+/* Fit fixes: the event list keeps its natural height (so the fit check sees
+   an overflow), dinner's emoji sits top right, dots for the tiniest boxes */
+.calendar-month-cell .month-cell-events { flex: none !important; min-height: auto !important; }
+.calendar-month-cell.is-compact .month-cell-dinner { left: auto !important; width: auto !important; }
+.month-more-row { display: flex; align-items: center; gap: 4px; flex: none; min-height: 0; }
+.month-more-row .month-more-badge[hidden] { display: none !important; }
+.month-cell-dots { display: none; gap: 3px; }
+.month-cell-dots i { width: 8px; height: 8px; border-radius: 50%; }
+.calendar-month-cell.is-dots .month-cell-dots { display: inline-flex; }
+.calendar-month-cell.is-dots .month-more-badge { padding: 0; font-size: 0.72rem; }
+/* Event cards stay pale in dark mode, so their time stays dark too */
+.cv-card .cv-card-time { color: rgba(15, 23, 42, 0.62); }

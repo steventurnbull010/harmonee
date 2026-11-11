@@ -1212,33 +1212,168 @@ const PAGES = [
   // Calendar: Today comes back to today, and Filter turns a person off (both
   // used to change private copies in app.js the calendar never read)
   ["calendar-today-filter", async (p) => {
-    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); });
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); window.setCalendarView("week", new Date()); });
     await p.waitForTimeout(300);
     const r = await p.evaluate(async () => {
       const wait = (ms) => new Promise(res => setTimeout(res, ms));
-      const label = () => (document.querySelector(".skylight-days-header-track") || document.body).textContent.replace(/\s+/g, " ");
-      const before = label();
+      const anchorKey = () => window.getLocalDateKey(window.calendarAnchorDate);
+      const today = window.getLocalDateKey(new Date());
       document.getElementById("btn-calendar-next-week").click(); await wait(150);
       document.getElementById("btn-calendar-next-week").click(); await wait(150);
-      const moved = label();
+      const moved = anchorKey();
       document.getElementById("btn-calendar-today").click(); await wait(250);
-      const back = label();
-      // Filter: Jo off
-      document.getElementById("btn-filter-dropdown").click(); await wait(150);
-      const row = document.querySelector('#filter-dropdown-menu [data-member-filter="Jo"]');
-      if (row) row.click();
+      const back = anchorKey();
+      // Jo's face off: Jo's Swimming (today) leaves the calendar, then back on
+      const grid = () => document.getElementById("calendar-week-grid").textContent;
+      const hadSwim = /Swimming/.test(grid());
+      const face = document.querySelector('#cal-people [data-cal-face="Jo"]');
+      if (face) face.click();
       await wait(250);
-      const rowAfter = document.querySelector('#filter-dropdown-menu [data-member-filter="Jo"]');
-      const off = rowAfter && !rowAfter.classList.contains("is-active");
-      const btnText = document.getElementById("btn-filter-dropdown").textContent.replace(/\s+/g, " ").trim();
-      // Put it back
-      const reset = document.getElementById("btn-filter-reset"); if (reset) reset.click();
-      document.body.click(); await wait(150);
-      return { before, moved, back, row: !!row, off, btnText };
+      const faceAfter = document.querySelector('#cal-people [data-cal-face="Jo"]');
+      const off = faceAfter && !faceAfter.classList.contains("is-on");
+      const swimGone = !/Swimming/.test(grid());
+      if (faceAfter) faceAfter.click();
+      await wait(250);
+      const backOn = !!document.querySelector('#cal-people [data-cal-face="Jo"].is-on') && /Swimming/.test(grid());
+      return { today, moved, back, face: !!face, off, hadSwim, swimGone, backOn };
     });
-    if (r.moved === r.before) throw new Error("the calendar's next button didn't move on");
-    if (r.back !== r.before) throw new Error(`Today didn't come back to today: ${r.back.slice(0, 80)} vs ${r.before.slice(0, 80)}`);
-    if (!r.row || !r.off) throw new Error(`turning Jo off in the calendar filter didn't show as off: ${JSON.stringify(r)}`);
+    if (r.moved === r.today) throw new Error("the calendar's next button didn't move on");
+    if (r.back !== r.today) throw new Error(`Today didn't come back to today: ${JSON.stringify(r)}`);
+    if (!r.face || !r.off || !r.hadSwim || !r.swimGone || !r.backOn) throw new Error(`Jo's face didn't hide and show Jo's events: ${JSON.stringify(r)}`);
+  }],
+  // A busy day: three people with things at the same time, overlaps,
+  // back-to-back events, two all-day events and a shared event. Every view
+  // must show all of it, and timeline cards must not sit on top of each other.
+  ["calendar-busy", async (p) => {
+    const added = await p.evaluate(() => {
+      const t = window.getLocalDateKey(new Date());
+      const tm = new Date(); tm.setDate(tm.getDate() + 1);
+      const tomorrow = window.getLocalDateKey(tm);
+      const extra = [
+        { id: "bz1", title: "Football training", date: t, time: "16:30", duration: "1 hour", repeat: "none", member: "Max", icon: "⚽" },
+        { id: "bz2", title: "Orthodontist", date: t, time: "16:30", duration: "30 mins", repeat: "none", member: "Sam", icon: "🦷" },
+        { id: "bz3", title: "Work call", date: t, time: "16:00", duration: "1 hour", repeat: "none", member: "Alex", icon: "💻" },
+        { id: "bz4", title: "Pick up from swimming", date: t, time: "17:30", duration: "15 mins", repeat: "none", member: "Sam, Alex", icon: "🚗" },
+        { id: "bz5", title: "Bin day", date: t, time: "", duration: "All day", repeat: "none", member: "Family", icon: "🗑️" },
+        { id: "bz6", title: "Jo's school play", date: t, time: "", duration: "All day", repeat: "none", member: "Jo", icon: "🎭" },
+        { id: "bz7", title: "Breakfast club", date: t, time: "07:45", duration: "45 mins", repeat: "none", member: "Jo", icon: "🥣" },
+        { id: "bz8", title: "Gym", date: t, time: "07:30", duration: "1 hour", repeat: "none", member: "Alex", icon: "🏋️" },
+        { id: "bz9", title: "Parents' WhatsApp call", date: t, time: "20:00", duration: "30 mins", repeat: "none", member: "Sam", icon: "📞" },
+        { id: "bz10", title: "Brownies", date: tomorrow, time: "18:00", duration: "1 hour", repeat: "none", member: "Jo", icon: "🎒" },
+        { id: "bz11", title: "Cubs", date: tomorrow, time: "18:00", duration: "1 hour", repeat: "none", member: "Max", icon: "🏕️" },
+        { id: "bz12", title: "Book club", date: tomorrow, time: "18:00", duration: "2 hours", repeat: "none", member: "Alex", icon: "📚" }
+      ];
+      (window.familyEvents || []).push(...extra);
+      return extra.map(e => e.id);
+    });
+    const problems = [];
+    for (const view of ["day", "schedule", "week", "month"]) {
+      await p.evaluate((v) => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); window.setCalendarView(v, new Date()); }, view);
+      await p.waitForTimeout(400);
+      // Scroll the timeline to the busy afternoon for the screenshot
+      await p.evaluate(() => { const b = document.getElementById("skylight-trad-body-scroll"); if (b) { const d = JSON.parse(document.getElementById("calendar-week-grid").dataset.timeline || "{}"); if (d.hourHeight) b.scrollTop = (15.5 - d.startHour) * d.hourHeight; } });
+      await p.waitForTimeout(150);
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-busy-${view}.png`) });
+      const r = await p.evaluate(() => {
+        const g = document.getElementById("calendar-week-grid");
+        const t = window.getLocalDateKey(new Date());
+        const text = g.textContent;
+        const want = ["Football training", "Orthodontist", "Work call", "Swimming", "Pick up from swimming", "Bin day", "school play", "Breakfast club", "Gym"];
+        const missing = want.filter(w => !text.includes(w));
+        // Timeline cards on the same day: do any two overlap on screen?
+        const overlaps = [];
+        document.querySelectorAll(".skylight-time-col").forEach(col => {
+          const blocks = [...col.querySelectorAll(".skylight-timed-event-block")].map(b => ({ name: (b.textContent || "").trim().slice(0, 24), r: b.getBoundingClientRect() })).filter(b => b.r.width > 0);
+          for (let i = 0; i < blocks.length; i++) for (let j = i + 1; j < blocks.length; j++) {
+            const a = blocks[i].r, b = blocks[j].r;
+            const x = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+            const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+            if (x > 2 && y > 2) overlaps.push(`${blocks[i].name} / ${blocks[j].name}`);
+          }
+        });
+        // Narrowest timeline card (too thin to read?)
+        const widths = [...document.querySelectorAll(".skylight-timed-event-block")].map(b => b.getBoundingClientRect().width).filter(w => w > 0);
+        const monthCell = document.querySelector(`.calendar-month-cell[data-date-str="${t}"]`);
+        return { missing, overlaps, narrowest: widths.length ? Math.round(Math.min(...widths)) : null, timeline: !!document.querySelector(".skylight-time-col"), more: monthCell ? (monthCell.classList.contains("is-dots") ? (monthCell.querySelector(".month-more-badge") || {}).textContent : ((monthCell.querySelector(".month-more-badge:not([hidden])") || {}).textContent || "").replace(/\D/g, "") || "0") : null };
+      });
+      // Month cells can't list everything: they say "+N more" instead
+      if (view !== "month" && r.missing.length) problems.push(`${view}: missing ${r.missing.join(", ")}`);
+      if (view === "month" && r.more !== null && Number(r.more) < 1) problems.push(`month: today's cell hides events without "+N more"`);
+      if (r.overlaps.length) problems.push(`${view}: cards on top of each other: ${r.overlaps.slice(0, 4).join("; ")}`);
+      console.log(`      [${p.__size} busy ${view}] narrowest timeline card ${r.narrowest ?? "-"}px${r.missing.length ? `, not shown: ${r.missing.length}` : ""}${r.more !== null ? `, month "+${r.more} more"` : ""}`);
+    }
+    await p.evaluate((ids) => {
+      const list = window.familyEvents || [];
+      for (let i = list.length - 1; i >= 0; i--) if (ids.includes(list[i].id)) list.splice(i, 1);
+      window.setCalendarView("schedule", new Date());
+    }, added);
+    if (problems.length) throw new Error(problems.join("; "));
+  }],
+  // Every Calendar view at this size, for design review (screenshots only)
+  ["calendar-views", async (p) => {
+    // A realistic day for the review: a few more events, taken out again after
+    const added = await p.evaluate(() => {
+      const k = (d) => window.getLocalDateKey(d);
+      const t = new Date(); const plus = (n) => { const d = new Date(t); d.setDate(t.getDate() + n); return k(d); };
+      const extra = [
+        { id: "rv1", title: "School run", date: plus(0), time: "08:15", duration: "30 mins", repeat: "none", member: "Sam", icon: "🚗" },
+        { id: "rv2", title: "Team meeting", date: plus(0), time: "10:00", duration: "1 hour", repeat: "none", member: "Alex", icon: "💼" },
+        { id: "rv3", title: "Piano lesson", date: plus(1), time: "17:00", duration: "45 mins", repeat: "none", member: "Jo", icon: "🎹" },
+        { id: "rv4", title: "Parents' evening", date: plus(2), time: "18:30", duration: "1 hour", repeat: "none", member: "Sam, Alex", icon: "🏫" },
+        { id: "rv5", title: "Gran visiting", date: plus(5), time: "", duration: "All day", repeat: "none", member: "Family", icon: "👵" },
+        { id: "rv6", title: "Birthday party", date: plus(9), time: "14:00", duration: "2 hours", repeat: "none", member: "Max", icon: "🎈" }
+      ];
+      (window.familyEvents || []).push(...extra);
+      return extra.map(e => e.id);
+    });
+    const problems = [];
+    for (const view of ["day", "schedule", "week", "month"]) {
+      await p.evaluate((v) => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); window.setCalendarView(v, new Date()); }, view);
+      await p.waitForTimeout(400);
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-calview-${view}.png`) });
+      if (view === "week" || (view === "day" && p.__size === "phone")) {
+        await p.evaluate(() => document.body.classList.add("theme-dark"));
+        await p.waitForTimeout(150);
+        await p.screenshot({ path: path.join(SHOTS, `${p.__size}-calview-${view}-dark.png`) });
+        await p.evaluate(() => document.body.classList.remove("theme-dark"));
+      }
+      // The redesign (11 Nov): what each view must have at this size
+      const r = await p.evaluate((v) => {
+        const g = document.getElementById("calendar-week-grid");
+        const order = (sel) => [...g.querySelectorAll(sel)].map(el => el.textContent).join(" | ");
+        const inOrder = (text) => { const a = text.indexOf("School run"), b = text.indexOf("Team meeting"), c = text.indexOf("Swimming"); return a > -1 && b > a && c > b; };
+        return {
+          phone: window.matchMedia("(max-width: 600px)").matches,
+          strip: g.querySelectorAll(".cv-strip .cv-strip-day").length,
+          miniMonth: g.querySelectorAll(".mini-calendar-cell").length,
+          cols: g.querySelectorAll(".cv-col").length,
+          switchOn: (document.querySelector("#cal-view-switch .is-on") || {}).getAttribute?.("data-cal-view"),
+          faces: document.querySelectorAll("#cal-people .cal-face").length,
+          todayOrder: inOrder(order(`[data-date="${window.getLocalDateKey(new Date())}"] .skylight-card, [data-date="${window.getLocalDateKey(new Date())}"] .cv-card`)),
+          monthOrder: inOrder(order(`.calendar-month-cell[data-date-str="${window.getLocalDateKey(new Date())}"] .month-mini-event`) || ""),
+          title: (document.getElementById("cal-toolbar-title") || {}).textContent || ""
+        };
+      }, view);
+      const tag = `${view}:`;
+      if (r.faces !== 4) problems.push(`${tag} ${r.faces} faces in the bar`);
+      if (!r.title) problems.push(`${tag} no month in the bar`);
+      if (r.phone) {
+        if (r.miniMonth) problems.push(`${tag} a month calendar on the phone`);
+        if (view !== "month" && r.strip !== 7) problems.push(`${tag} no week strip`);
+        if (view !== "month" && !r.todayOrder) problems.push(`${tag} today's events not in time order`);
+      } else {
+        if (view === "week" && r.cols !== 7) problems.push(`${tag} ${r.cols} week columns, not 7`);
+        if (view === "week" && !r.todayOrder) problems.push(`${tag} today's column not in time order`);
+        if (view === "day" && r.strip !== 7) problems.push(`${tag} no week strip above the day`);
+        if (view === "month" && r.switchOn !== "month") problems.push(`${tag} Month not marked in the bar`);
+      }
+    }
+    await p.evaluate((ids) => {
+      const list = window.familyEvents || [];
+      for (let i = list.length - 1; i >= 0; i--) if (ids.includes(list[i].id)) list.splice(i, 1);
+      window.setCalendarView("schedule", new Date());
+    }, added);
+    if (problems.length) throw new Error(problems.join("; "));
   }],
   // Meals > Recipes tab: photos, your own recipes, collections, search, Snap
   ["recipes-tab", async (p) => {

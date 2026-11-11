@@ -1351,6 +1351,8 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     if (activeCalendarMemberFilters !== null) {
       dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
     }
+    // In time order, all-day first (they used to come in the order they were added)
+    if (window.CalendarViews) dayEvents.sort(window.CalendarViews.byTime);
 
     const activeWeekKey = getIsoWeekKey(new Date());
     const todayDateStr = getLocalDateKey(new Date());
@@ -1433,11 +1435,14 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
         icon: evt.icon || "📅",
         title: evt.title,
         sub: evt.time || "All Day",
+        time: window.CalendarViews && !/all\s*day/i.test(evt.time || "all day") ? window.CalendarViews.timeLabel(evt) : "",
         pal: pal
       });
     });
 
-    const maxItems = 2;
+    // As many as fit: all are drawn, then fitMonthCells() hides what doesn't
+    // fit this screen and counts it in "+N more"
+    const maxItems = 8;
     const visibleItems = cellItems.slice(0, maxItems);
     const extraCount = cellItems.length - maxItems;
 
@@ -1447,10 +1452,13 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
              style="background: ${item.pal.lightBg}; color: ${item.pal.text}; border-left-color: ${item.pal.primary};" 
              title="${escapeHtml(item.title)} (${escapeHtml(item.sub)})">
           <span class="mini-icon">${escapeHtml(item.icon)}</span>
+          ${item.time ? `<span class="mini-time">${escapeHtml(item.time)}</span>` : ""}
           <span class="mini-title">${escapeHtml(item.title)}</span>
         </div>
       `;
-    }).join("") + (extraCount > 0 ? `<div class="month-mini-event month-more-badge" style="color: var(--text-muted); font-size: 0.65rem;">+${extraCount} more</div>` : "");
+    }).join("");
+    // Its own line at the foot of the box, so a busy day's "+8 more" is never cut off
+    const moreBadge = `<div class="month-more-row"><span class="month-cell-dots" aria-hidden="true">${[...new Set(cellItems.map(i => i.pal.primary))].slice(0, 4).map(c => `<i style="background:${c}"></i>`).join("")}</span><span class="month-more-badge" data-extra="${Math.max(0, extraCount)}"${extraCount > 0 ? "" : " hidden"}>+${Math.max(0, extraCount)} more</span></div>`;
 
     const choresBadge = totalChores > 0
       ? `<div class="month-cell-chores ${completedChores === totalChores ? 'all-done' : ''}">${completedChores === totalChores ? '✓' : '🧹'} ${completedChores}/${totalChores}</div>`
@@ -1458,11 +1466,11 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
 
     let monthContentHtml = "";
     if (currentCalendarContentFilter === "events") {
-      monthContentHtml = `<div class="month-cell-events">${itemChipsHtml}</div>`;
+      monthContentHtml = `<div class="month-cell-events">${itemChipsHtml}</div>${moreBadge}`;
     } else if (currentCalendarContentFilter === "chores") {
       monthContentHtml = choresBadge ? `<div class="month-cell-events is-chores-only">${choresBadge}</div>` : "";
     } else {
-      monthContentHtml = `<div class="month-cell-events">${itemChipsHtml}</div>${choresBadge}`;
+      monthContentHtml = `<div class="month-cell-events">${itemChipsHtml}</div>${moreBadge}${choresBadge}`;
     }
 
     cellsHtml += `
@@ -1485,6 +1493,12 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
       <div class="calendar-month-grid">${cellsHtml}</div>
     </div>
   `;
+
+  fitMonthCells(gridContainer);
+  if (!window.__monthFitWired) {
+    window.__monthFitWired = true;
+    window.addEventListener("resize", () => { const g = document.getElementById("calendar-week-grid"); if (g && g.classList.contains("view-month")) fitMonthCells(g); });
+  }
 
   gridContainer.querySelectorAll(".month-cell-dinner").forEach(din => {
     din.onclick = (e) => {
@@ -1509,9 +1523,48 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
   });
 }
 
+// Month boxes: show the events that fit the box's height on this screen
+// and count the rest in "+N more" (a fixed two left busy days half cut off
+// on the kitchen tablet, and wasted room on a laptop)
+function fitMonthCells(grid) {
+  const cells = grid.querySelectorAll(".calendar-month-cell");
+  cells.forEach(cell => {
+    const chips = [...cell.querySelectorAll(".month-mini-event")];
+    const badge = cell.querySelector(".month-more-badge");
+    if (!badge) return;
+    const base = Number(badge.getAttribute("data-extra")) || 0;
+    const list = cell.querySelector(".month-cell-events");
+    chips.forEach(c => { c.hidden = false; });
+    if (list) list.hidden = false;
+    cell.classList.remove("is-compact");
+    let hidden = 0;
+    badge.hidden = base === 0;
+    badge.textContent = `+${base} more`;
+    const tooTall = () => cell.scrollHeight > cell.clientHeight + 4; // a few pixels' slack for borders and rings
+    // A short box (kitchen tablet): dinner becomes its emoji beside the date,
+    // so the events get its line
+    if (tooTall()) cell.classList.add("is-compact");
+    for (let i = chips.length - 1; i >= 0 && tooTall(); i--) {
+      chips[i].hidden = true;
+      hidden++;
+      badge.hidden = false;
+      badge.textContent = `+${base + hidden} more`;
+    }
+    // Nothing left to show in the list: take it out, so its spacing goes too,
+    // and show whose things they are as coloured dots with the count
+    const none = !!(list && chips.length && hidden === chips.length);
+    if (list) list.hidden = none;
+    cell.classList.toggle("is-dots", none);
+    if (none) badge.textContent = `${base + hidden}`;
+  });
+}
+
 function renderWeekCalendar() {
   const gridContainer = document.getElementById("calendar-week-grid");
   if (!gridContainer) return;
+  // Keep the shared copies in step (setCalendarView and Today swap in a new date)
+  window.calendarAnchorDate = calendarAnchorDate;
+  window.currentCalendarView = currentCalendarView;
 
   const viewContainer = document.querySelector(".calendar-view-container");
   if (viewContainer) {
@@ -1709,6 +1762,11 @@ function renderWeekCalendar() {
       nextBtn.title = "Next Week";
     }
   }
+
+  // The calendar's bar, and the redesigned views (js/calendar-views.js):
+  // every view on a phone, and Week on tablets and computers
+  if (!window.familyEvents) window.familyEvents = loadFamilyEvents();
+  if (window.CalendarViews && window.CalendarViews.render(currentCalendarView, gridContainer)) return;
 
   // Handle Month View
   if (currentCalendarView === "month") {
@@ -1939,404 +1997,35 @@ function renderWeekCalendar() {
     `;
   };
 
-  // =========================================================================
-  // VIEW MODE: WEEK (Skylight 8-Container 4x2 Grid)
-  // Starts on Monday of current anchor week, 8th container is clean "Next Week" card
-  // =========================================================================
-  if (currentCalendarView === "week") {
-    let boxesHtml = "";
-    const anchor = new Date(calendarAnchorDate);
-    anchor.setHours(0, 0, 0, 0);
+  // Week: js/calendar-views.js (seven columns; a list on phones)
 
-    // Monday of the anchor's week
-    const weekStart = new Date(anchor);
-    const dayOfWeek = weekStart.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
-    const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
-    weekStart.setDate(weekStart.getDate() + diffToMonday);
-
-    // Containers 0 to 6 (Monday through Sunday)
-    for (let i = 0; i < 7; i++) {
-      const colDate = new Date(weekStart);
-      colDate.setDate(weekStart.getDate() + i);
-      const colDayIdx = colDate.getDay() === 0 ? 6 : colDate.getDay() - 1;
-      const dayName = weekDays[colDayIdx];
-      const shortName = weekShort[colDayIdx];
-      const dayDateNum = colDate.getDate();
-      const isToday = today.toDateString() === colDate.toDateString();
-      const colDateStr = getLocalDateKey(colDate);
-      const activeWeekKey = getIsoWeekKey(new Date());
-      const todayDateStr = getLocalDateKey(new Date());
-      const colWeekKey = getIsoWeekKey(colDate);
-      const isColCurrentWeek = (colWeekKey === activeWeekKey);
-      const isColFutureDate = (colDateStr > todayDateStr);
-
-      // Day tasks
-      let dayTasks = (window.currentTasks || []).filter(task => {
-        if (!task || typeof task !== "object") return false;
-        const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-        if (isDaily) return true;
-        if (task.repeat === "weekly") return task.day === dayName;
-        if (task.done) {
-          if (task.completedAt) return getLocalDateKey(task.completedAt) === colDateStr;
-          return isColCurrentWeek && task.completedDay === dayName;
-        }
-        if (task.date) return task.date === colDateStr;
-        return isColCurrentWeek && task.day === dayName;
-      });
-
-      // Day events
-      let dayEvents = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, colDateStr, dayName, colDate)).map(e => eventForDay(e, colDate));
-
-      // Active member filter (supports multi-member e.g. Steven / Dara / Ava)
-      if (activeCalendarMemberFilters !== null) {
-        dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
-
-        dayTasks = dayTasks.filter(task => {
-          const isDaily = task.repeat === "daily" || task.day === "Daily" || task.taskType === "Daily Task";
-          const { isCompleted, completerName } = getTaskCompletionOnDay(task, colDate, colDateStr, dayName, isColCurrentWeek, isColFutureDate);
-          if (isCompleted && completerName && isMemberSelected(completerName)) return true;
-          let dayAssigned = task.assignedTo || "Anyone";
-          if (isDaily && task.assignedDays && task.assignedDays[dayName] !== undefined) {
-            dayAssigned = task.assignedDays[dayName] || "Anyone";
-          }
-          return isMemberSelected(dayAssigned);
-        });
-      }
-
-      // Sort events chronologically
-      dayEvents.sort((a, b) => getEventMinutes(a) - getEventMinutes(b));
-
-      // Sort chores: pending first, completed last
-      dayTasks.sort((a, b) => {
-        const doneA = getTaskCompletionOnDay(a, colDate, colDateStr, dayName, isColCurrentWeek, isColFutureDate).isCompleted ? 1 : 0;
-        const doneB = getTaskCompletionOnDay(b, colDate, colDateStr, dayName, isColCurrentWeek, isColFutureDate).isCompleted ? 1 : 0;
-        if (doneA !== doneB) return doneA - doneB;
-        return getTaskRoutineInfo(a).order - getTaskRoutineInfo(b).order;
-      });
-
-      // Cards HTML (Events only on Calendar; Chores on dedicated Chores board)
-      let dayCards = [];
-      dayEvents.forEach(evt => dayCards.push(renderSkylightEventCard(evt)));
-
-      // Subtitle count
-      const evtCount = dayEvents.length;
-      let countSubtitle = evtCount === 1 ? "1 event" : (evtCount > 1 ? `${evtCount} events` : "No events");
-
-      const colMeal = getMealForDate(colDate);
-      const holidayHtml = window.BankHolidays ? window.BankHolidays.chipHtml(colDateStr, "box") : "";
-      const mealHtml = holidayHtml + ((colMeal && colMeal.title)
-        ? `<div class="skylight-box-meal is-planned" data-date="${colDateStr}" data-day="${dayName}" title="Dinner: ${escapeHtml(colMeal.title)} — Tap to view recipe">
-            <span class="box-meal-icon">${escapeHtml(colMeal.emoji || '🍽️')}</span>
-            <span class="box-meal-title">${escapeHtml(colMeal.title)}</span>
-          </div>`
-        : "");
-
-      // Real-time day weather forecast from Open-Meteo
-      const dayWeather = getForecastForDate(colDateStr);
-      const weatherIconHtml = dayWeather
-        ? `<span class="day-weather-icon" title="${escapeHtml(dayWeather.condition)}${dayWeather.maxTemp !== null ? ` • High ${dayWeather.maxTemp}° / Low ${dayWeather.minTemp}°` : ''}${dayWeather.rainProb ? ` • ${dayWeather.rainProb}% rain` : ''}" style="cursor: pointer;" onclick="openWeatherForecastModal()">${dayWeather.icon}</span>`
-        : "";
-
-      boxesHtml += `
-        <div class="skylight-day-box ${isToday ? 'is-today-box' : ''}" data-date="${colDateStr}" data-day="${dayName}">
-          <div class="skylight-day-box-header">
-            <div class="day-box-header-row">
-              <div class="day-box-title-wrap">
-                <span class="day-name-label">${shortName}</span>
-                <span class="day-num-label ${isToday ? 'today-badge-circle' : ''}">${dayDateNum}</span>
-              </div>
-              <div class="day-box-header-actions">
-                ${weatherIconHtml}
-                <button type="button" class="btn-discreet-add-event" data-date="${colDateStr}" data-day="${dayName}">+ Add Event</button>
-              </div>
-            </div>
-            <div class="day-count-subtitle">${countSubtitle}</div>
-          </div>
-          <div class="skylight-day-box-body">
-            ${mealHtml}
-            ${dayCards.join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    // Container 7: Next Week Panel (Matching Skylight with clean Date Range header, no cramped cards)
-    const nextWeekStart = new Date(weekStart);
-    nextWeekStart.setDate(weekStart.getDate() + 7);
-    const nextWeekEnd = new Date(weekStart);
-    nextWeekEnd.setDate(weekStart.getDate() + 13);
-
-    const nwStartDayIdx = nextWeekStart.getDay() === 0 ? 6 : nextWeekStart.getDay() - 1;
-    const nwStartDayName = weekDays[nwStartDayIdx];
-    const nwStartDateStr = getLocalDateKey(nextWeekStart);
-
-    const nwMonthStart = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][nextWeekStart.getMonth()];
-    const nwMonthEnd = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][nextWeekEnd.getMonth()];
-    const nextWeekRangeLabel = (nextWeekStart.getMonth() === nextWeekEnd.getMonth())
-      ? `${nwMonthStart} ${nextWeekStart.getDate()} - ${nextWeekEnd.getDate()}`
-      : `${nwMonthStart} ${nextWeekStart.getDate()} - ${nwMonthEnd} ${nextWeekEnd.getDate()}`;
-
-    // Count how many events are scheduled for next week
-    let nwEventsCount = 0;
-    for (let d = 0; d < 7; d++) {
-      const nwDate = new Date(nextWeekStart);
-      nwDate.setDate(nextWeekStart.getDate() + d);
-      const nwDayIdx = nwDate.getDay() === 0 ? 6 : nwDate.getDay() - 1;
-      const nwDayName = weekDays[nwDayIdx];
-      const nwDateStr = getLocalDateKey(nwDate);
-      let dayEvts = ((window.familyEvents || []) || []).filter(e => e && typeof e === "object" && isEventOnDate(e, nwDateStr, nwDayName, nwDate)).map(e => eventForDay(e, nwDate));
-      if (activeCalendarMemberFilters !== null) {
-        dayEvts = dayEvts.filter(e => isMemberSelected(e.member));
-      }
-      nwEventsCount += dayEvts.length;
-    }
-
-    boxesHtml += `
-      <div class="skylight-day-box skylight-next-week-box" data-date="${nwStartDateStr}" data-day="${nwStartDayName}">
-        <div class="skylight-day-box-header">
-          <div class="day-box-header-row">
-            <span class="day-name-label" style="font-family: inherit; font-size: 1.15rem; font-weight: 500;">Next Week</span>
-          </div>
-          <div class="day-count-subtitle" style="font-size: 0.82rem; color: var(--text-secondary);">${nextWeekRangeLabel}</div>
-        </div>
-        <div class="skylight-day-box-body next-week-skylight-body" style="cursor: pointer;" title="Tap to view next week" onclick="navigateCalendar(1)">
-          ${nwEventsCount > 0 ? `<div class="next-week-summary-pill">${nwEventsCount} ${nwEventsCount === 1 ? 'event' : 'events'} scheduled &rsaquo;</div>` : ''}
-        </div>
-      </div>
-    `;
-
-    gridContainer.className = "calendar-week-grid view-week";
-    gridContainer.innerHTML = boxesHtml;
-    return;
-  }
-
-  // =========================================================================
-  // VIEW MODE: DAY (Skylight Split-Screen View: Mini Month on Left, Events on Right)
-  // =========================================================================
-  if (currentCalendarView === "day") {
-    const currentDayDate = new Date(calendarAnchorDate);
-    currentDayDate.setHours(0, 0, 0, 0);
-    const dayDowIdx = currentDayDate.getDay() === 0 ? 6 : currentDayDate.getDay() - 1;
-    const dayName = weekDays[dayDowIdx];
-    const colDateStr = getLocalDateKey(currentDayDate);
-
-    const isToday = today.toDateString() === currentDayDate.toDateString();
-    const isYesterday = (new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)).toDateString() === currentDayDate.toDateString();
-    const isTomorrow = (new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)).toDateString() === currentDayDate.toDateString();
-
-    let dayTitleHeading = dayName;
-    if (isToday) dayTitleHeading = "Today";
-    else if (isYesterday) dayTitleHeading = "Yesterday";
-    else if (isTomorrow) dayTitleHeading = "Tomorrow";
-
-    // 1. Build Left Side: Interactive Mini Month Calendar
-    const year = currentDayDate.getFullYear();
-    const month = currentDayDate.getMonth();
-    const monthNamesFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const monthYearTitle = `${monthNamesFull[month]} ${year}`;
-
-    const monthFirstDay = new Date(year, month, 1);
-    const monthLastDay = new Date(year, month + 1, 0);
-    const totalDaysInMonth = monthLastDay.getDate();
-
-    // Sunday-first order to match Skylight hardware exactly: Sun, Mon, Tue, Wed, Thu, Fri, Sat
-    const miniWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const firstDowSun0 = monthFirstDay.getDay(); // 0 is Sunday
-    const prevMonthLastDayNum = new Date(year, month, 0).getDate();
-
-    let miniCellsHtml = "";
-    const totalMiniCells = (firstDowSun0 + totalDaysInMonth) > 35 ? 42 : 35;
-    let dayCountNum = 1;
-    let nextMonthDayNum = 1;
-
-    for (let cIdx = 0; cIdx < totalMiniCells; cIdx++) {
-      let cellDate;
-      let isOtherMonth = false;
-      let dNum;
-
-      if (cIdx < firstDowSun0) {
-        dNum = prevMonthLastDayNum - firstDowSun0 + cIdx + 1;
-        cellDate = new Date(year, month - 1, dNum);
-        isOtherMonth = true;
-      } else if (dayCountNum <= totalDaysInMonth) {
-        dNum = dayCountNum++;
-        cellDate = new Date(year, month, dNum);
-      } else {
-        dNum = nextMonthDayNum++;
-        cellDate = new Date(year, month + 1, dNum);
-        isOtherMonth = true;
-      }
-
-      const isSelectedDay = currentDayDate.toDateString() === cellDate.toDateString();
-      const isActualToday = today.toDateString() === cellDate.toDateString();
-      const cDateStr = getLocalDateKey(cellDate);
-
-      // Check if this date has events
-      const hasEvents = ((window.familyEvents || []) || []).some(e => isEventOnDate(e, cDateStr, weekDays[cellDate.getDay() === 0 ? 6 : cellDate.getDay() - 1], cellDate));
-
-      miniCellsHtml += `
-        <button type="button" class="mini-calendar-cell ${isOtherMonth ? 'is-other-month' : ''} ${isSelectedDay ? 'is-selected-day' : ''} ${isActualToday ? 'is-actual-today' : ''} ${hasEvents ? 'has-events' : ''}" 
-                data-date-str="${cDateStr}" title="${cellDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}">
-          <span class="mini-day-number">${dNum}</span>
-          ${hasEvents ? '<span class="mini-event-dot"></span>' : ''}
-        </button>
-      `;
-    }
-
-    // 2. Build Right Side: Day's Full Events List (Ordered All-day first, then chronologically)
-    let dayEvents = ((window.familyEvents || []) || []).filter(e => isEventOnDate(e, colDateStr, dayName, currentDayDate)).map(e => eventForDay(e, currentDayDate));
-    if (activeCalendarMemberFilters !== null) {
-      dayEvents = dayEvents.filter(e => isMemberSelected(e.member));
-    }
-
-    // Sort: All Day first, then by time
-    dayEvents.sort((a, b) => {
-      const aIsAllDay = !a.time || a.time.trim().toLowerCase() === "all day";
-      const bIsAllDay = !b.time || b.time.trim().toLowerCase() === "all day";
-      if (aIsAllDay && !bIsAllDay) return -1;
-      if (!aIsAllDay && bIsAllDay) return 1;
-      return getEventMinutes(a) - getEventMinutes(b);
-    });
-
-    let eventRowsHtml = "";
-    if (dayEvents.length === 0) {
-      eventRowsHtml = `
-        <div class="skylight-day-empty-state">
-          <div class="empty-icon">📅</div>
-          <div class="empty-title">No events scheduled for ${dayTitleHeading}</div>
-          <div class="empty-sub">Tap the ＋ button at bottom-right to add an event.</div>
-        </div>
-      `;
-    } else {
-      dayEvents.forEach(evt => {
-        const membersList = (evt.member || "Family").split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
-        let styleAttr = "";
-        let borderAccent = "";
-
-        if (membersList.length >= 2) {
-          const pal1 = getMemberPalette(membersList[0]);
-          const pal2 = getMemberPalette(membersList[1]);
-          styleAttr = `style="background: linear-gradient(135deg, ${pal1.lightBg} 0%, ${pal1.lightBg} 48%, ${pal2.lightBg} 52%, ${pal2.lightBg} 100%); border-color: ${pal1.border}; color: ${pal1.text};"`;
-          borderAccent = pal1.primary;
-        } else {
-          const pal = getMemberPalette(membersList[0] || "Family");
-          styleAttr = `style="background: ${pal.lightBg}; border-color: ${pal.border}; color: ${pal.text};"`;
-          borderAccent = pal.primary;
-        }
-
-        const memberAvatarsHtml = membersList.map(m => {
-          const pal = getMemberPalette(m);
-          return `<span class="skylight-day-avatar" style="background: ${pal.primary}; color: #ffffff;" title="${escapeHtml(m)}">${escapeHtml(m.charAt(0).toUpperCase())}</span>`;
-        }).join("");
-
-        const durationText = evt.duration ? ` (${escapeHtml(evt.duration)})` : "";
-        const timeSubtitle = (!evt.time || /all\s*day/i.test(evt.time) || /all\s*day/i.test(evt.duration || "")) ? "All day" : `${escapeHtml(evt.time)}${durationText}`;
-
-        let repeatBadge = "";
-        if (evt.repeat && evt.repeat !== "none") {
-          repeatBadge = ` <span title="Repeats: ${escapeHtml(evt.repeat)}">🔁</span>`;
-        }
-
-        eventRowsHtml += `
-          <div class="skylight-day-event-banner" ${styleAttr} data-event-id="${evt.id}" role="button" tabindex="0" title="Tap to view/edit ${escapeHtml(evt.title)}">
-            <div class="day-event-left-info">
-              <span class="day-event-banner-title">${escapeHtml(evt.icon || "📅")} ${escapeHtml(evt.title)}${repeatBadge}</span>
-              <span class="day-event-banner-time">${timeSubtitle}</span>
-            </div>
-            <div class="day-event-right-avatars">
-              ${memberAvatarsHtml}
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    // Optional Dinner banner for the day
-    const dayMeal = getMealForDate(currentDayDate);
-    let mealBannerHtml = window.BankHolidays ? window.BankHolidays.chipHtml(colDateStr, "banner") : "";
-    if (dayMeal && dayMeal.title) {
-      mealBannerHtml += `
-        <div class="skylight-day-dinner-banner" data-date="${colDateStr}" data-day="${dayName}" title="Dinner: ${escapeHtml(dayMeal.title)} — Tap to view recipe">
-          <span class="day-dinner-icon">${escapeHtml(dayMeal.emoji || '🍽️')}</span>
-          <div class="day-dinner-text">
-            <span class="day-dinner-label">Tonight's Dinner</span>
-            <span class="day-dinner-title">${escapeHtml(dayMeal.title)}</span>
-          </div>
-        </div>
-      `;
-    }
-
-    gridContainer.className = "calendar-week-grid view-skylight-day";
-    gridContainer.innerHTML = `
-      <div class="skylight-split-day-container">
-        <!-- Left Column: Mini Month Calendar Grid -->
-        <div class="skylight-split-day-left">
-          <div class="mini-month-header">
-            <h3 class="mini-month-title">${monthYearTitle}</h3>
-          </div>
-          <div class="mini-month-weekdays-row">
-            ${miniWeekdays.map(d => `<span class="mini-weekday-col">${d}</span>`).join("")}
-          </div>
-          <div class="mini-month-days-grid">
-            ${miniCellsHtml}
-          </div>
-        </div>
-
-        <!-- Right Column: Heading and Full Event Bars -->
-        <div class="skylight-split-day-right">
-          <div class="skylight-day-heading-row">
-            <h2 class="skylight-day-heading">${dayTitleHeading}</h2>
-            <div class="skylight-day-date-sub">${dayName}, ${currentDayDate.getDate()} ${monthNamesFull[month]}</div>
-          </div>
-          ${mealBannerHtml}
-          <div class="skylight-day-events-scroll-list">
-            ${eventRowsHtml}
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Wire clicks on mini-calendar dates to jump to that date instantly
-    gridContainer.querySelectorAll(".mini-calendar-cell").forEach(cell => {
-      cell.onclick = (e) => {
-        e.stopPropagation();
-        const dStr = cell.getAttribute("data-date-str");
-        if (dStr) {
-          const [y, m, d] = dStr.split("-").map(Number);
-          const targetD = new Date(y, m - 1, d);
-          targetD.setHours(0, 0, 0, 0);
-          setCalendarView("day", targetD);
-        }
-      };
-    });
-
-    // Wire dinner click
-    const dinBanner = gridContainer.querySelector(".skylight-day-dinner-banner");
-    if (dinBanner) {
-      dinBanner.onclick = (e) => {
-        e.stopPropagation();
-        const dStr = dinBanner.getAttribute("data-date");
-        if (typeof openPlanMealModalForDate === "function") {
-          openPlanMealModalForDate(dStr);
-        }
-      };
-    }
-
-    return;
-  }
+  // Day: on phones js/calendar-views.js; here, the timeline below for one day
+  // with the week strip above it (the month calendar beside it is gone)
 
   // =========================================================================
   // VIEW MODES: SCHEDULE (3-Day) (Continuous Skylight Time-Grid Layout)
   // =========================================================================
   let startDate = new Date(calendarAnchorDate);
   startDate.setHours(0, 0, 0, 0);
-  let dayCount = 3;
+  let dayCount = currentCalendarView === "day" ? 1 : 3;
 
   // Hourly timeline: 6 AM to 11 PM (6:00 to 23:00) covering early morning drop-offs & late activities
   const startHour = 6;
   const endHour = 23;
   const totalHours = endHour - startHour; // 17 hours
-  const hourHeight = scheduleHourHeight; // dynamic pixels per hour (pinch/zoom controllable)
+  // Pixels per hour: what someone pinched or zoomed to, if they have;
+  // otherwise fitted so as much of the waking day (7am–9pm) as possible shows
+  // without scrolling (the kitchen tablet used to stop at 2pm)
+  let zoomedByHand = false;
+  try { zoomedByHand = !!localStorage.getItem("chore_schedule_hour_height"); } catch (e) {}
+  let hourHeight = scheduleHourHeight;
+  let fitted = false;
+  if (!zoomedByHand && typeof window.innerHeight === "number" && gridContainer.getBoundingClientRect) {
+    const top = Math.max(0, gridContainer.getBoundingClientRect().top || 0);
+    const avail = window.innerHeight - top - 46 - 64 - 16; // day names, all-day row, a little room
+    if (avail > 200) { hourHeight = Math.max(38, Math.min(64, Math.floor(avail / 14))); fitted = true; }
+  }
+  if (fitted) scheduleHourHeight = hourHeight; // a pinch starts from what's shown (not saved until someone zooms)
   const topPadding = 14; // padding so 6 AM text label is never cut off
   const totalGridHeight = (totalHours * hourHeight) + topPadding + 14; // full comfortable height
 
@@ -2648,8 +2337,13 @@ function renderWeekCalendar() {
     if (window.__calScroll && window.__calScroll.key === scrollKey && window.__calScroll.wasVisible && visible) {
       bodyScroll.scrollTop = prevScrollTop !== null ? prevScrollTop : window.__calScroll.top; // same days: keep where you were
     } else {
-      const fromHour = Math.max(startHour, currentHourDecimal - 1);
-      bodyScroll.scrollTop = showNowLine ? Math.max(0, topPadding + (fromHour - startHour) * hourHeight) : 0;
+      // An hour before now at the top, but never so late that the evening
+      // (up to 9pm) is pushed off the bottom when it would fit; 7am at the
+      // earliest
+      const visibleHours = (bodyScroll.clientHeight || 0) / hourHeight;
+      let fromHour = Math.max(startHour, currentHourDecimal - 1);
+      if (fitted && visibleHours > 0) fromHour = Math.max(7, Math.min(fromHour, 21 - visibleHours));
+      bodyScroll.scrollTop = (showNowLine || fitted) ? Math.max(0, topPadding + (fromHour - startHour) * hourHeight) : 0;
     }
     window.__calScroll = { key: scrollKey, top: bodyScroll.scrollTop, wasVisible: visible };
     bodyScroll.addEventListener("scroll", () => {
@@ -2657,6 +2351,7 @@ function renderWeekCalendar() {
     }, { passive: true });
   }
 
+  if (currentCalendarView === "day" && window.CalendarViews) window.CalendarViews.stripAbove(gridContainer);
   wireTimeGridCreate(gridContainer, { startHour, endHour, hourHeight, topPadding });
   // For dragging an event to a new time (js/calendar-drag.js)
   gridContainer.dataset.timeline = JSON.stringify({ startHour, endHour, hourHeight, topPadding });
@@ -3080,5 +2775,6 @@ window.setCalendarContentFilter = setCalendarContentFilter;
 window.syncCalendarContentFilterUI = syncCalendarContentFilterUI;
 window.navigateCalendar = navigateCalendar;
 window.renderCalendarMonthView = renderCalendarMonthView;
+window.fitMonthCells = fitMonthCells;
 window.renderWeekCalendar = renderWeekCalendar;
 window.getEventMinutes = getEventMinutes;
