@@ -6,7 +6,7 @@
 //   2. Under it, the family goal: everyone's stars this week add up to one
 //      treat together ("Together: 124 of 200 towards Pizza and film night").
 //   3. A card for each person, grown-ups too: today's jobs as a ring, points
-//      to spend, the goal they're saving for (with a photo), their best
+//      saved up, the goal they're saving for (with a photo), their best
 //      streak and their stickers. A person with no goal gets a quiet
 //      "＋ Set a goal for Ava". Tap a card for everything else.
 //   On phones the cards are one person per swipe, with tabs above.
@@ -346,7 +346,7 @@
           ${face(name, "rw-person-face")}
           <span class="rw-person-names">
             <span class="rw-person-name">${esc(name)}</span>
-            <span class="rw-person-balance"><strong>${fmt(balance)}</strong> to spend</span>
+            <span class="rw-person-balance"><strong>${fmt(balance)}</strong> saved up</span>
           </span>
           ${ring(t.done, t.total)}
         </div>
@@ -450,10 +450,10 @@
       <div class="rp-hero" style="${palStyle(name)}">
         ${face(name, "rp-face")}
         <div class="rp-hero-words">
-          <span class="rp-balance"><strong>${fmt(balance)}</strong> to spend</span>
+          <span class="rp-balance"><strong>${fmt(balance)}</strong> saved up</span>
           <span class="rp-chips">
             <span class="rw-chip">⭐ This week ${fmt(live)}</span>
-            ${saved > 0 ? `<span class="rw-chip">🏦 Saved ${fmt(saved)}</span>` : ""}
+            ${saved > 0 ? `<span class="rw-chip">🏦 Earlier weeks ${fmt(saved)}</span>` : ""}
           </span>
         </div>
       </div>

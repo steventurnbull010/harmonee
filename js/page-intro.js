@@ -135,7 +135,7 @@ const INTRO_PREVIEWS = {
     const have = stepIndex === 2 ? 50 : 32;
     const goal = `
       <div class="intro-goal ${stepIndex >= 1 ? "page-intro-highlight-soft" : ""}" style="--goal:${kid.pal.primary};background:${kid.pal.lightBg};border-color:${kid.pal.border}">
-        <div class="intro-goal-top"><span class="intro-avatar" style="background:${kid.pal.primary}">${escapeHtml(kid.name.charAt(0))}</span><strong>${escapeHtml(kid.name)}</strong><span class="intro-goal-spend">${have} pts to spend</span></div>
+        <div class="intro-goal-top"><span class="intro-avatar" style="background:${kid.pal.primary}">${escapeHtml(kid.name.charAt(0))}</span><strong>${escapeHtml(kid.name)}</strong><span class="intro-goal-spend">${have} pts saved up</span></div>
         <div class="intro-goal-row"><span>🎬</span><div><strong>Cinema trip</strong><span>${Math.min(have, 50)} of 50 pts</span></div></div>
         <div class="intro-goal-bar"><div style="width:${Math.min(100, have * 2)}%"></div></div>
         ${stepIndex === 2 ? `<span class="intro-redeem page-intro-highlight">Redeem</span>` : `<span class="intro-goal-togo">${50 - have} pts to go</span>`}
@@ -216,7 +216,7 @@ const PAGE_INTROS = {
         rows: [["👑", "Whoever's ahead this week wears the crown."],
                ["🤝", "Set a family goal: everyone's stars add up to one treat together."],
                ["💷", "Prefer pocket money? Switch to £ in Settings."]] },
-      { title: "Everyone's card", lead: "Each person has a card: today's jobs, points to spend and what they're saving up for.",
+      { title: "Everyone's card", lead: "Each person has a card: today's jobs, points saved up and what they're saving up for.",
         rows: [["🎯", "Tap ＋ Set a goal, then pick how many points it costs."],
                ["🔥", "Daily jobs done day after day build a streak."],
                ["⭐", "Stickers are earned for real things: a first job, 7 days in a row, a Big job."]] },

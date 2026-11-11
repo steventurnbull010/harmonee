@@ -14,7 +14,7 @@
 // Also here, used by both goal panels (a person's goal and the family goal):
 //   chooser  - one big preview, "Change photo" opens a row of choices
 //   slider   - points needed: drag a big slider (a tick per step, a
-//              ka-ching when you let go), with shortcuts underneath
+//              no sound when you let go: Steven found a ding annoying), with shortcuts underneath
 // ============================================================================
 (function () {
   const DIR = "images/rewards/";
@@ -156,7 +156,7 @@
 
   // ---- The points slider ----------------------------------------------------------------------
   // A big number, a slider you drag (a tick at each step, rising with the
-  // number; a ka-ching when you let go) and shortcuts underneath
+  // number; nothing when you let go) and shortcuts underneath
   function sliderHtml(o) {
     const fmt = (v) => (o.money ? `${o.currency}${Number(v).toFixed(v % 1 ? 2 : 0)}` : `${v} pts`);
     return `
@@ -187,8 +187,6 @@
       if (v !== last && window.sfx && typeof window.sfx.playTick === "function") window.sfx.playTick((v - o.min) / (o.max - o.min));
       last = v;
     });
-    // Let go: ka-ching
-    slider.addEventListener("change", () => { if (window.sfx && typeof window.sfx.playCoinChime === "function") window.sfx.playCoinChime(); });
     box.addEventListener("click", (e) => {
       const b = e.target.closest("[data-pts-preset]");
       if (!b) return;
@@ -197,7 +195,7 @@
       input.value = String(v);
       last = v;
       paint(v);
-      if (window.sfx && typeof window.sfx.playCoinChime === "function") window.sfx.playCoinChime();
+      if (window.sfx && typeof window.sfx.playTick === "function") window.sfx.playTick((v - o.min) / (o.max - o.min));
     });
     paint(Number(slider.value));
   }
