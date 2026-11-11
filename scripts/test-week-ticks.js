@@ -20,7 +20,7 @@ function extract(file, name) {
 }
 
 global.window = global;
-eval(extract("app.js", "getIsoWeekKey") + "\nglobal.getIsoWeekKey = getIsoWeekKey;");
+eval(extract("js/utils.js", "getIsoWeekKey") + "\nglobal.getIsoWeekKey = getIsoWeekKey;");
 eval(extract("app.js", "keepThisWeeksDays") + "\nglobal.keepThisWeeksDays = keepThisWeeksDays;");
 global.normalizeFamilyMemberName = (n) => n;
 eval(extract("js/utils.js", "taskPoints") + "\nglobal.taskPoints = taskPoints;");

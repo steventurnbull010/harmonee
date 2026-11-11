@@ -99,14 +99,6 @@ let boardSettings = window.boardSettings = {
 const STORAGE_KEY_SETTINGS = isDefaultTurnbullBoard ? "harmonee_settings" : `harmonee_settings_${currentBoardId}`;
 const STORAGE_KEY_LEDGER = isDefaultTurnbullBoard ? "harmonee_weekly_ledger" : `harmonee_weekly_ledger_${currentBoardId}`;
 
-function getIsoWeekKey(d = new Date()) {
-  const date = new Date(d.getTime());
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-  const week1 = new Date(date.getFullYear(), 0, 4);
-  const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-  return `${date.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
-}
 
 function getWeekCommencingString(d = new Date()) {
   const date = new Date(d);
@@ -156,10 +148,6 @@ function getDayNameFromDate(d) {
   }
 }
 
-function getTodayDayName() {
-  const map = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  return map[new Date().getDay()];
-}
 
 function getDayOrderIndex(dayName) {
   return WEEK_DAYS_ORDER.indexOf(dayName);
@@ -192,22 +180,6 @@ function isFutureDayForDaily(dayName, dateStr = null) {
 }
 window.isFutureDayForDaily = isFutureDayForDaily;
 
-function showCalendarToast(message) {
-  let toast = document.getElementById("calendar-drag-toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "calendar-drag-toast";
-    toast.className = "calendar-drag-toast";
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.classList.add("is-visible");
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove("is-visible");
-  }, 2500);
-}
-window.showCalendarToast = showCalendarToast;
 
 function getDailyTaskStatus(task, dayName) {
   if (task.completedDays && task.completedDays[dayName]) {
@@ -260,15 +232,24 @@ function saveWeeklyLedger(ledger) {
 }
 
 // Legacy one-time archival migration (safely disabled to protect active tasks)
-async function archivePreviousWeekendCompletedTasks() {
-  return;
-}
 
 // Automatically wipe points and archive weekly totals on Sunday at midnight (start of new week)
 // Runs once per device per week (the week is recorded first, so an error can't make it
 // re-run on every snapshot), and only clears ticks from earlier weeks: a device that's
 // opened late in the week must not wipe what was ticked this week on another device.
 let weeklyResetRunning = false;
+// An always-on tablet nobody touches still starts the new week: every 10
+// minutes, check whether Monday has come (the jobs listener only checks
+// when a job changes)
+let weeklyResetClock = null;
+function startWeeklyResetClock() {
+  if (weeklyResetClock) return;
+  weeklyResetClock = setInterval(() => {
+    const last = localStorage.getItem(`last_active_week_${currentBoardId}`);
+    if (last && last !== getIsoWeekKey()) checkWeeklySundayReset().then(() => { renderApp(); }).catch(() => {});
+  }, 10 * 60 * 1000);
+}
+
 async function checkWeeklySundayReset() {
   const currentWeek = getIsoWeekKey();
   const lastActiveWeek = localStorage.getItem(`last_active_week_${currentBoardId}`);
@@ -343,7 +324,7 @@ async function checkWeeklySundayReset() {
     // and reset daily routine chores for the clean new week
     if (db) {
       try {
-        const batch = writeBatch(db);
+        const writes = []; // [docRef, changes] for each job that needs resetting
         currentTasks.forEach(t => {
           const isRecurringDaily = t.day === "Daily" || t.taskType === "Daily Task" || t.repeat === "daily";
           const isWeekly = t.repeat === "weekly";
@@ -357,24 +338,34 @@ async function checkWeeklySundayReset() {
             Object.keys(t.completedDays || {}).forEach(day => { if (!kept[day]) changes[`completedDays.${day}`] = deleteField(); });
             if (!rootIsOld && !Object.keys(changes).length) return;
             if (rootIsOld) Object.assign(changes, { done: false, completedBy: null, completedAt: null, completedWeek: null });
-            batch.update(docRef, changes);
+            writes.push([docRef, changes]);
           } else if (isWeekly) {
             if (t.completedWeek === currentWeek) return; // ticked this week: leave it
-            batch.update(docRef, {
+            writes.push([docRef, {
               done: false,
               completedBy: null,
               completedAt: null,
               completedWeek: null
-            });
+            }]);
           } else if (t.done && t.completedWeek !== currentWeek) {
-            batch.update(docRef, {
+            writes.push([docRef, {
               archived: true,
               archivedAt: new Date().toISOString(),
               archivedWeek: lastActiveWeek
-            });
+            }]);
           }
         });
-        await batch.commit();
+        // All in one go; if that fails (a job deleted on another device a
+        // moment ago fails the whole batch), each job on its own, so the
+        // rest still reset
+        try {
+          const batch = writeBatch(db);
+          writes.forEach(([ref, changes]) => batch.update(ref, changes));
+          if (writes.length) await batch.commit();
+        } catch (batchErr) {
+          console.warn("Weekly reset: one go failed, doing each job on its own:", batchErr);
+          await Promise.all(writes.map(([ref, changes]) => updateDoc(ref, changes).catch(e => console.warn("Weekly reset skipped a job:", e))));
+        }
       } catch (err) {
         console.warn("Failed to reset/archive tasks on Firestore:", err);
       }
@@ -401,7 +392,6 @@ async function checkWeeklySundayReset() {
 
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
     } catch (err) {
       console.error("Weekly reset failed:", err);
     } finally {
@@ -528,14 +518,6 @@ let familyMembers = isDefaultTurnbullBoard
   : ["Mom", "Dad", "Kid 1", "Kid 2"];
 window.familyMembers = familyMembers;
 
-function normalizeFamilyMemberName(name) {
-  if (!name) return "";
-  const s = String(name).trim();
-  if (s.toLowerCase() === "steve") return "Steven";
-  const match = familyMembers.find(m => m.toLowerCase() === s.toLowerCase());
-  return match || s;
-}
-window.normalizeFamilyMemberName = normalizeFamilyMemberName;
 
 const STORAGE_KEY_TASKS = isDefaultTurnbullBoard ? "harmonee_tasks" : `harmonee_tasks_${currentBoardId}`;
 const STORAGE_KEY_ROSTER = isDefaultTurnbullBoard ? "harmonee_roster" : `harmonee_roster_${currentBoardId}`;
@@ -677,18 +659,6 @@ function getMemberPalette(name) {
 }
 window.getMemberPalette = getMemberPalette;
 
-function getMemberColor(idx) {
-  const memberName = (familyMembers && familyMembers[idx]) ? familyMembers[idx] : null;
-  const pal = getMemberPalette(memberName || idx);
-  return {
-    bg: pal.primary,
-    border: pal.border,
-    solid: pal.primary,
-    pastel: pal.lightBg,
-    text: pal.text
-  };
-}
-window.getMemberColor = getMemberColor;
 
 // ============================================================================
 // 2. FIREBASE CONFIGURATION & INITIALIZATION
@@ -775,30 +745,6 @@ const CHORE_EMOJI_LIST = [
   "🏠", "🛒", "🚗", "🚲", "⭐", "✨", "⏰", "📋"
 ];
 
-function detectEmojiForChore(text) {
-  if (!text) return null;
-  const t = text.toLowerCase();
-  if (t.includes("plant") || t.includes("water") || t.includes("flower") || t.includes("garden") || t.includes("lawn") || t.includes("mow") || t.includes("weed")) return "🪴";
-  if (t.includes("dish") || t.includes("plate") || t.includes("cutlery") || t.includes("sink")) return "🍽️";
-  if (t.includes("cat") || t.includes("litter") || t.includes("kitten") || t.includes("feline")) return "🐱";
-  if (t.includes("dog") || t.includes("puppy") || t.includes("walk") || t.includes("pooch")) return "🐕";
-  if (t.includes("bin") || t.includes("rubbish") || t.includes("trash") || t.includes("dump") || t.includes("refuse")) return "🗑️";
-  if (t.includes("recyc")) return "♻️";
-  if (t.includes("laundry") || t.includes("wash") || t.includes("clothes") || t.includes("uniform") || t.includes("iron") || t.includes("fold") || t.includes("dry")) return "🧺";
-  if (t.includes("hoover") || t.includes("vacuum") || t.includes("sweep") || t.includes("mop") || t.includes("brush") || t.includes("floor") || t.includes("rug") || t.includes("carpet")) return "🧹";
-  if (t.includes("sponge") || t.includes("wipe") || t.includes("scrub") || t.includes("surface") || t.includes("bleach") || t.includes("clean") || t.includes("wash up")) return "🧽";
-  if (t.includes("dust")) return "🪶";
-  if (t.includes("window") || t.includes("glass") || t.includes("mirror")) return "🪟";
-  if (t.includes("bed") || t.includes("sheet") || t.includes("linen") || t.includes("duvet") || t.includes("pillow") || t.includes("airing cupboard")) return "🛏️";
-  if (t.includes("bath") || t.includes("toilet") || t.includes("shower") || t.includes("loo")) return "🛁";
-  if (t.includes("cook") || t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("bake")) return "🍳";
-  if (t.includes("shop") || t.includes("grocer") || t.includes("market") || t.includes("store")) return "🛒";
-  if (t.includes("diy") || t.includes("fix") || t.includes("repair") || t.includes("screw") || t.includes("build") || t.includes("shelf") || t.includes("paint") || t.includes("drill")) return "🔨";
-  if (t.includes("tidy") || t.includes("sort") || t.includes("organis") || t.includes("purge") || t.includes("box") || t.includes("cupboard")) return "📦";
-  if (t.includes("car") || t.includes("van") || t.includes("garage")) return "🚗";
-  return null;
-}
-window.detectEmojiForChore = detectEmojiForChore;
 
 let isManualChoreEmoji = false;
 
@@ -888,17 +834,6 @@ let familyGroceryList = null;
 
 // isSleepScreenActive, sleepScreenTemporaryWakeUntil: js/sleep.js. localWeatherForecast: js/weather.js.
 
-function getLocalDateKey(date) {
-  if (!date) date = new Date();
-  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
-  const d = (date instanceof Date) ? date : new Date(date);
-  if (isNaN(d.getTime())) return "";
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-window.getLocalDateKey = getLocalDateKey;
 
 function getCurrentWeekDates(anchor = new Date()) {
   const d = new Date(anchor);
@@ -1063,17 +998,6 @@ function loadWeeklyMeals() {
   return res;
 }
 
-function saveWeeklyMeals(meals) {
-  weeklyMeals = meals;
-  if (!meals) return;
-  const currentWeekDates = getCurrentWeekDates();
-  Object.keys(meals).forEach(day => {
-    const d = currentWeekDates[day];
-    if (d) {
-      setMealForDate(d, meals[day]);
-    }
-  });
-}
 
 // ============================================================================
 // FAMILY CALENDAR EVENTS (Tutors, Driving Lessons, Family Gatherings)
@@ -1121,70 +1045,6 @@ function saveFamilyEvents(events) {
 }
 
 // Determines if an event should be rendered on a specific calendar date/day
-function isEventOnDate(e, targetDateStr, dayName, targetDate) {
-  if (!e) return false;
-  const repeat = (e.repeat || "none").toLowerCase();
-  const eDateStr = e.date ? getLocalDateKey(e.date) : null;
-  // One date of a repeating event moved somewhere else (js/calendar-drag.js)
-  if (Array.isArray(e.skipDates) && targetDateStr && e.skipDates.includes(targetDateStr)) return false;
-
-  // 1. One-off (Does not repeat) - strictly matches the specific date
-  if (repeat === "none" || repeat === "one-off") {
-    if (eDateStr) {
-      return eDateStr === targetDateStr;
-    }
-    // Fallback for legacy events created before explicit date picker
-    return e.day === dayName;
-  }
-
-  // 2. Daily
-  if (repeat === "daily") {
-    if (eDateStr && targetDateStr < eDateStr) return false;
-    return true;
-  }
-
-  // 3. Weekdays
-  if (repeat === "weekdays") {
-    if (eDateStr && targetDateStr < eDateStr) return false;
-    return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].includes(dayName);
-  }
-
-  // 4. Weekly or Custom
-  if (repeat === "weekly" || repeat === "custom") {
-    if (eDateStr && targetDateStr < eDateStr) return false;
-    return e.day === dayName;
-  }
-
-  // 5. Monthly
-  if (repeat === "monthly") {
-    if (eDateStr) {
-      if (targetDateStr < eDateStr) return false;
-      const parts = eDateStr.split("-").map(Number);
-      if (!targetDate) return true;
-      // The 29th–31st fall on the last day of shorter months
-      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
-      return targetDate.getDate() === Math.min(parts[2], monthLen);
-    }
-    return e.day === dayName;
-  }
-
-  // 6. Annually
-  if (repeat === "annually") {
-    if (eDateStr) {
-      if (targetDateStr < eDateStr) return false;
-      const parts = eDateStr.split("-").map(Number);
-      if (!targetDate) return true;
-      if (targetDate.getMonth() !== parts[1] - 1) return false;
-      // 29 February shows on the 28th in years without one
-      const monthLen = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
-      return targetDate.getDate() === Math.min(parts[2], monthLen);
-    }
-    return e.day === dayName;
-  }
-
-  return e.day === dayName;
-}
-window.isEventOnDate = isEventOnDate;
 
 // Global Theme Switcher
 function applyTheme(theme) {
@@ -1681,6 +1541,15 @@ function listenToFirestoreTasks() {
       }
     }
     if (snapshot.empty) {
+      // Starter jobs go in once per board. Before 11 Nov an empty board got
+      // them again every time (delete the last job and they all came back)
+      const alreadySeeded = await boardJobsSeeded();
+      if (alreadySeeded) {
+        currentTasks = [];
+        saveLocalCache([]);
+        renderApp();
+        return;
+      }
       if (isDefaultTurnbullBoard) {
         console.log("Turnbull collection empty on first load. Seeding...");
         await seedFirestoreData();
@@ -1692,18 +1561,19 @@ function listenToFirestoreTasks() {
         if (template === "starter" || (template === "setup" && getNewBoardSeedTasks().length)) {
           console.log("Seeding custom board with starter tasks...");
           await seedFirestoreData();
+          dropTemplateFromAddress();
           return;
         } else {
           // Clean/empty canvas
           currentTasks = [];
           saveLocalCache([]);
           renderApp();
-    renderSkylightTasksPage();
           return;
         }
       }
     }
 
+    dropTemplateFromAddress(); // the board has its jobs: a refresh mustn't seed again
     const tasks = [];
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
@@ -1714,10 +1584,9 @@ function listenToFirestoreTasks() {
 
     currentTasks = tasks;
     saveLocalCache(tasks);
-    await archivePreviousWeekendCompletedTasks();
     await checkWeeklySundayReset();
+    startWeeklyResetClock();
     renderApp();
-    renderSkylightTasksPage();
     noteLiveSyncWorking();
   }, (err) => {
     console.error("Firestore listener error:", err);
@@ -1874,7 +1743,6 @@ function listenToFirestoreBoard() {
       notifyBoardChanged();
       if (shouldRender) {
         renderApp();
-    renderSkylightTasksPage();
       }
     } else {
       // First time initialization for this board doc in Firestore
@@ -1903,6 +1771,32 @@ function listenToFirestoreBoard() {
     console.warn("Board doc listener error:", err);
     liveSyncFailed(err);
   });
+}
+
+// ?template=... is only for a new board's first load: take it out of the
+// address so a refresh, a bookmark or Back can't ask for starter jobs again
+function dropTemplateFromAddress() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("template")) return;
+    url.searchParams.delete("template");
+    history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+  } catch (e) {}
+}
+
+// Has this board had its starter jobs already? A board that's had them
+// (marked jobsSeeded) stays empty when its last job is deleted. The Turnbull
+// board was seeded long before the mark existed, so its board document
+// existing counts. Unsure (offline): treat as seeded, never re-add.
+async function boardJobsSeeded() {
+  try {
+    const snap = await getDoc(getBoardDocRef());
+    if (!snap.exists()) return false;
+    const data = snap.data() || {};
+    return !!data.jobsSeeded || isDefaultTurnbullBoard;
+  } catch (e) {
+    return true;
+  }
 }
 
 // A new board's first jobs: the ones picked in the guided setup
@@ -1939,6 +1833,7 @@ async function seedFirestoreData() {
         boardId: currentBoardId,
         members: familyMembers,
         settings: boardSettings,
+        jobsSeeded: true, // so they're never added again (boardJobsSeeded)
         updatedAt: serverTimestamp()
       }, { merge: true });
     }
@@ -2079,33 +1974,15 @@ function saveLocalCache(tasks) {
 }
 window.saveLocalCache = saveLocalCache;
 
-// ============================================================================
-// 8. CARD ORDERING RULES & RENDERING
-// Rule:
-// - Incomplete tasks sit at the top.
-// - Priority items (fire alarm) have a distinct red border/badge and remain at the very top of incomplete items.
-// - Completed tasks sink to the bottom with strikethrough and reduced opacity.
-// ============================================================================
-function sortTasks(tasks) {
-  return [...tasks].sort((a, b) => {
-    // 1. Incomplete first, Completed second
-    if (a.done !== b.done) {
-      return a.done ? 1 : -1;
-    }
-    // 2. Among incomplete: Priority items at very top
-    if (!a.done) {
-      if (a.isPriority && !b.isPriority) return -1;
-      if (!a.isPriority && b.isPriority) return 1;
-    }
-    // 3. Original order
-    return (a.order || 0) - (b.order || 0);
-  });
-}
+// Shared helpers (escapeHtml, getIsoWeekKey, getLocalDateKey, getTodayDayName,
+// isEventOnDate, showCalendarToast, detectEmojiForChore, getMemberColor,
+// normalizeFamilyMemberName) come from js/utils.js; app.js used to keep its
+// own copies, and its escapeHtml showed nothing for 0.
 
+// Redraws every page from the latest data. The Tasks page is drawn here, so
+// callers don't need to draw it again afterwards.
 function renderApp() {
-  updateLeaderboard();
-  updateProgressAndTabs();
-  renderTaskLists();
+  if (typeof renderSkylightTasksPage === "function") renderSkylightTasksPage();
   renderWeekCalendar();
   if (currentActiveView === "rewards" && typeof renderPodiumRewards === "function") {
     renderPodiumRewards();
@@ -2117,136 +1994,6 @@ function renderApp() {
   if (typeof window.maybeShowPageIntro === "function") {
     setTimeout(() => window.maybeShowPageIntro(currentActiveView || "calendar"), 0);
   }
-}
-
-// Dynamic Leaderboard calculation and DOM rendering
-// Supports single person, comma-separated multiple people (or array), or Team Effort (awards 1 pt to everyone).
-
-// Universal Member Score Calculator (Used across Chores, Calendar, and Podium)
-function calculateMemberScores() {
-  const isMoney = boardSettings.gameMode === "money";
-  const activeWeekKey = getIsoWeekKey();
-  const scores = {};
-  familyMembers.forEach(m => scores[m] = 0);
-
-  function awardScore(completer, rewardVal) {
-    if (!completer) return;
-    if (completer === "Team Effort") {
-      familyMembers.forEach(m => {
-        if (scores[m] !== undefined) scores[m] += rewardVal;
-      });
-    } else if (Array.isArray(completer)) {
-      completer.forEach(raw => {
-        const m = normalizeFamilyMemberName(raw);
-        if (scores[m] !== undefined) scores[m] += rewardVal;
-      });
-    } else if (typeof completer === "string") {
-      completer.split(",").map(s => normalizeFamilyMemberName(s.trim())).forEach(m => {
-        if (scores[m] !== undefined) scores[m] += rewardVal;
-      });
-    }
-  }
-
-  currentTasks.forEach(task => {
-    const rewardVal = window.taskReward(task, isMoney);
-
-    const isDaily = task.day === "Daily" || task.taskType === "Daily Task";
-    if (isDaily && task.completedDays && Object.keys(task.completedDays).length > 0) {
-      Object.entries(task.completedDays).forEach(([dayName, dayRecord]) => {
-        if (!dayRecord) return;
-        const completer = typeof dayRecord === "object" ? dayRecord.completedBy : dayRecord;
-        const compWeek = typeof dayRecord === "object" ? dayRecord.completedWeek : null;
-        if (completer && (!compWeek || compWeek === activeWeekKey)) {
-          awardScore(completer, rewardVal);
-        }
-      });
-    } else if (task.done && task.completedBy && (!task.completedWeek || task.completedWeek === activeWeekKey)) {
-      awardScore(task.completedBy, rewardVal);
-    }
-  });
-
-  return scores;
-}
-
-function updateLeaderboard() {
-  const container = document.getElementById("leaderboard-container");
-  if (!container) return;
-
-  // Update header Game Mode pill label & menu chip
-  const modeLabel = document.getElementById("game-mode-label");
-  const modeIcon = document.getElementById("game-mode-icon");
-  const menuModeLabel = document.getElementById("menu-game-mode-label");
-  const menuModeIcon = document.getElementById("menu-game-mode-icon");
-
-  const modeText = boardSettings.gameMode === "money" ? `Pocket Money (${boardSettings.currency})` : "Points Mode";
-  const modeEmoji = boardSettings.gameMode === "money" ? "💰" : "🏆";
-
-  if (modeLabel) modeLabel.textContent = modeText;
-  if (modeIcon) modeIcon.textContent = modeEmoji;
-  if (menuModeLabel) menuModeLabel.textContent = modeText;
-  if (menuModeIcon) menuModeIcon.textContent = modeEmoji;
-
-  const isMoney = boardSettings.gameMode === "money";
-  const currency = boardSettings.currency || "£";
-  const scores = calculateMemberScores();
-
-  // Find leader(s)
-  let maxScore = -1;
-  familyMembers.forEach(m => {
-    if (scores[m] > maxScore) {
-      maxScore = scores[m];
-    }
-  });
-
-  // Rebuild chips dynamically
-  container.innerHTML = "";
-  container.style.gridTemplateColumns = `repeat(${Math.max(2, familyMembers.length)}, 1fr)`;
-
-  familyMembers.forEach((name, idx) => {
-    const chip = document.createElement("div");
-    chip.className = "member-chip";
-    chip.setAttribute("data-member", name);
-    if (activeAssigneeFilter === name) {
-      chip.classList.add("active-member-filter");
-    }
-    if (maxScore > 0 && scores[name] === maxScore) {
-      chip.classList.add("leader");
-    }
-
-    const color = getMemberColor(idx);
-    const initial = name.charAt(0).toUpperCase();
-
-    const scoreFormatted = isMoney 
-      ? `${currency}${scores[name].toFixed(2)}` 
-      : `${scores[name]} pts`;
-
-    chip.innerHTML = `
-      <div class="avatar-ring" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
-      <div class="member-meta">
-        <span class="name-with-crown">
-          <span class="member-name">${escapeHtml(name)}</span>
-          <span class="member-crown">${isMoney ? '💰' : '👑'}</span>
-        </span>
-        <span class="member-score"><span class="score-num" id="score-${escapeHtml(name)}">${scoreFormatted}</span></span>
-      </div>
-    `;
-
-    chip.addEventListener("click", () => {
-      if (activeAssigneeFilter === name) {
-        activeAssigneeFilter = "ALL";
-        chip.classList.remove("active-member-filter");
-      } else {
-        activeAssigneeFilter = name;
-        document.querySelectorAll(".member-chip").forEach(c => c.classList.remove("active-member-filter"));
-        chip.classList.add("active-member-filter");
-      }
-      renderTaskLists();
-    });
-
-    container.appendChild(chip);
-  });
-
-  updateTaskFormAssigneeOptions();
 }
 
 function updateTaskFormAssigneeOptions() {
@@ -2326,335 +2073,6 @@ function updateTaskFormRoomOptions() {
   }
 }
 
-function updateProgressAndTabs() {
-  const total = currentTasks.length;
-  const completed = currentTasks.filter(t => {
-    const isDaily = t.day === "Daily" || t.taskType === "Daily Task";
-    if (isDaily) {
-      return (t.completedDays && Object.keys(t.completedDays).length > 0) || t.done;
-    }
-    return t.done;
-  }).length;
-  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-  // Week Commencing Label
-  const weekCommencingEl = document.getElementById("progress-week-commencing");
-  if (weekCommencingEl) {
-    weekCommencingEl.textContent = `Week: ${getWeekCommencingString()}`;
-  }
-
-  // Progress Bar
-  const summaryText = document.getElementById("progress-summary-text");
-  const percentText = document.getElementById("progress-percent-text");
-  const fillBar = document.getElementById("progress-fill-bar");
-
-  if (summaryText) summaryText.textContent = `${completed} of ${total} tasks cleared`;
-  if (percentText) percentText.textContent = `${percent}% Done`;
-  if (fillBar) fillBar.style.width = `${percent}%`;
-
-  // Granular Foldout: Individual Member Completed Tasks Breakdown
-  const breakdownGrid = document.getElementById("progress-breakdown-grid");
-  if (breakdownGrid) {
-    const activeWeekKey = getIsoWeekKey();
-    const memberCounts = {};
-    familyMembers.forEach(m => { memberCounts[m] = 0; });
-
-    function tallyMember(completer) {
-      if (!completer) return;
-      if (completer === "Team Effort") {
-        familyMembers.forEach(m => memberCounts[m]++);
-      } else if (Array.isArray(completer)) {
-        completer.forEach(m => {
-          if (memberCounts[m] !== undefined) memberCounts[m]++;
-        });
-      } else if (typeof completer === "string") {
-        completer.split(",").map(s => s.trim()).forEach(m => {
-          if (memberCounts[m] !== undefined) memberCounts[m]++;
-        });
-      }
-    }
-
-    currentTasks.forEach(task => {
-      const isDaily = task.day === "Daily" || task.taskType === "Daily Task";
-      if (isDaily && task.completedDays && Object.keys(task.completedDays).length > 0) {
-        Object.entries(task.completedDays).forEach(([dayName, dayRecord]) => {
-          if (!dayRecord) return;
-          const completer = typeof dayRecord === "object" ? dayRecord.completedBy : dayRecord;
-          const compWeek = typeof dayRecord === "object" ? dayRecord.completedWeek : null;
-          if (completer && (!compWeek || compWeek === activeWeekKey)) {
-            tallyMember(completer);
-          }
-        });
-      } else if (task.done && task.completedBy && (!task.completedWeek || task.completedWeek === activeWeekKey)) {
-        tallyMember(task.completedBy);
-      }
-    });
-
-    const totalMemberCompleted = Object.values(memberCounts).reduce((a, b) => a + b, 0);
-
-    breakdownGrid.innerHTML = familyMembers.map((name, idx) => {
-      const count = memberCounts[name] || 0;
-      const color = getMemberColor(idx);
-      const initial = escapeHtml(name.charAt(0).toUpperCase());
-      const memberPct = totalMemberCompleted > 0 ? Math.min(100, Math.round((count / totalMemberCompleted) * 100)) : 0;
-
-      return `
-        <div class="breakdown-member-card">
-          <div class="breakdown-member-top">
-            <div class="breakdown-member-name">
-              <span class="avatar-ring-xs" style="background: ${color.bg}; border: 1.5px solid ${color.border};">${initial}</span>
-              <span>${escapeHtml(name)}</span>
-            </div>
-            <span class="breakdown-member-count">${count} ${count === 1 ? 'task' : 'tasks'}</span>
-          </div>
-          <div class="breakdown-mini-track">
-            <div class="breakdown-mini-fill" style="width: ${memberPct}%; background: ${color.border};"></div>
-          </div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // Filter Tab Counts (7-Day Week + All + Daily)
-  const countAll = currentTasks.length;
-  const countDaily = currentTasks.filter(t => t.day === "Daily" || t.taskType === "Daily Task").length;
-
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const dayCounts = {};
-  days.forEach((d, idx) => {
-    // Each day includes tasks scheduled explicitly for that day, all everyday Daily tasks,
-    // PLUS any incomplete tasks from earlier days that rollover into this day!
-    dayCounts[d] = currentTasks.filter(t => {
-      if (t.day === d) return true;
-      if (t.day === "Daily" || t.taskType === "Daily Task") return true;
-      if (!t.done) {
-        const taskDayIdx = days.indexOf(t.day);
-        if (taskDayIdx !== -1 && taskDayIdx < idx) return true;
-      }
-      return false;
-    }).length;
-  });
-
-  const countAllEl = document.getElementById("count-all");
-  const countDailyEl = document.getElementById("count-daily");
-  if (countAllEl) countAllEl.textContent = countAll;
-  if (countDailyEl) countDailyEl.textContent = countDaily;
-
-  days.forEach(d => {
-    const el = document.getElementById(`count-${d.toLowerCase()}`);
-    if (el) el.textContent = dayCounts[d];
-  });
-
-  // Mark today's tab with indicator
-  const todayIdx = new Date().getDay(); // 0 is Sunday, 1 is Monday...
-  document.querySelectorAll(".day-tab").forEach(tab => {
-    if (parseInt(tab.getAttribute("data-day"), 10) === todayIdx) {
-      tab.classList.add("today");
-      tab.title = "Today";
-    } else {
-      tab.classList.remove("today");
-    }
-  });
-}
-
-// const WEEK_DAYS_ORDER moved to top of file
-
-function renderTaskLists() {
-  const activeListEl = document.getElementById("active-cards-list");
-  const completedListEl = document.getElementById("completed-cards-list");
-  const emptyStateEl = document.getElementById("empty-state-view");
-  const activeSection = document.getElementById("active-tasks-section");
-  const completedSection = document.getElementById("completed-tasks-section");
-
-  // If in Skylight Tasks mode, delegate to renderSkylightTasksPage
-  if (typeof renderSkylightTasksPage === "function") {
-    renderSkylightTasksPage();
-  }
-
-  if (!activeListEl || !completedListEl) return;
-
-  const selectedDayIdx = WEEK_DAYS_ORDER.indexOf(activeCategoryFilter);
-  const targetDay = selectedDayIdx !== -1 ? activeCategoryFilter : getTodayDayName();
-
-  // Map each task with day-specific completion and overdue/rollover metadata
-  let preparedTasks = currentTasks.map(t => {
-    const isDaily = t.day === "Daily" || t.taskType === "Daily Task";
-    let isTaskDone = t.done;
-    let completer = t.completedBy;
-
-    if (isDaily) {
-      const dailyStatus = getDailyTaskStatus(t, targetDay);
-      isTaskDone = dailyStatus.isDone;
-      completer = dailyStatus.completedBy;
-    }
-
-    let effectiveAssigned = t.assignedTo;
-    if (isDaily && t.assignedDays && t.assignedDays[targetDay] !== undefined) {
-      effectiveAssigned = t.assignedDays[targetDay] || null;
-    }
-
-    // Only non-daily tasks rollover as overdue from previous days
-    const taskDayIdx = WEEK_DAYS_ORDER.indexOf(t.day);
-    const isOverdue = !isDaily && !isTaskDone && selectedDayIdx !== -1 && taskDayIdx !== -1 && taskDayIdx < selectedDayIdx;
-
-    return {
-      ...t,
-      assignedTo: effectiveAssigned,
-      effectiveDone: isTaskDone,
-      effectiveCompletedBy: completer,
-      isOverdue,
-      overdueFromDay: isOverdue ? t.day : null
-    };
-  });
-
-  // Filter tasks based on active category / day / type filter
-  let filtered = preparedTasks;
-  if (activeCategoryFilter !== "ALL") {
-    if (activeCategoryFilter === "Daily") {
-      filtered = filtered.filter(t => t.day === "Daily" || t.taskType === "Daily Task");
-    } else {
-      // Matches specific day (Monday-Sunday) OR includes Daily routines OR Rolled-over overdue tasks from earlier days
-      filtered = filtered.filter(t => t.day === activeCategoryFilter || t.day === "Daily" || t.isOverdue);
-    }
-  }
-
-  // Filter tasks based on active assignee
-  if (activeAssigneeFilter !== "ALL") {
-    if (activeAssigneeFilter === "UNASSIGNED") {
-      filtered = filtered.filter(t => !t.assignedTo);
-    } else {
-      const filterLower = activeAssigneeFilter.toLowerCase();
-      filtered = filtered.filter(t => {
-        if (getAssigneeNames(t.assignedTo).some(n => n.toLowerCase() === filterLower)) return true;
-        if (t.effectiveCompletedBy) {
-          if (Array.isArray(t.effectiveCompletedBy)) {
-            if (t.effectiveCompletedBy.some(m => String(m).toLowerCase() === filterLower)) return true;
-          } else if (typeof t.effectiveCompletedBy === "string") {
-            const parts = t.effectiveCompletedBy.split(",").map(p => p.trim().toLowerCase());
-            if (parts.includes(filterLower) || t.effectiveCompletedBy.toLowerCase() === "team effort") return true;
-          }
-        }
-        if (!t.assignedTo && !t.effectiveDone) return true;
-        return false;
-      });
-    }
-  }
-
-  const sorted = sortTasks(filtered);
-
-  // Overdue tasks float right to the top of the active list
-  const activeTasks = sorted.filter(t => !t.effectiveDone).sort((a, b) => {
-    if (a.isOverdue && !b.isOverdue) return -1;
-    if (!a.isOverdue && b.isOverdue) return 1;
-    return 0;
-  });
-
-  const completedTasks = sorted.filter(t => t.effectiveDone);
-
-  // Update Section Badges
-  document.getElementById("active-tasks-count").textContent = activeTasks.length;
-  document.getElementById("completed-tasks-count").textContent = completedTasks.length;
-
-  activeListEl.innerHTML = "";
-  completedListEl.innerHTML = "";
-
-  if (activeTasks.length === 0 && completedTasks.length === 0) {
-    if (emptyStateEl) emptyStateEl.style.display = "block";
-    if (activeSection) activeSection.style.display = "none";
-    if (completedSection) completedSection.style.display = "none";
-    return;
-  } else {
-    if (emptyStateEl) emptyStateEl.style.display = "none";
-  }
-
-  if (activeSection) activeSection.style.display = activeTasks.length > 0 ? "block" : "none";
-  if (completedSection) completedSection.style.display = completedTasks.length > 0 ? "block" : "none";
-
-  // When a specific family member is active (e.g. Ava), partition active tasks into:
-  // 1. "Assigned to [Name]" (highlighted with their color accent)
-  // 2. "Up for Grabs" (communal tasks anyone can grab)
-  const isMemberFiltered = activeAssigneeFilter !== "ALL" && activeAssigneeFilter !== "UNASSIGNED";
-  
-  if (isMemberFiltered) {
-    const filterLower = activeAssigneeFilter.toLowerCase();
-    const assignedToMember = [];
-    const upForGrabs = [];
-
-    activeTasks.forEach(t => {
-      if (getAssigneeNames(t.assignedTo).some(n => n.toLowerCase() === filterLower)) {
-        assignedToMember.push(t);
-      } else {
-        upForGrabs.push(t);
-      }
-    });
-
-    // 1. Render Assigned to Member Sub-group (if any)
-    if (assignedToMember.length > 0) {
-      const assignedHeader = document.createElement("div");
-      assignedHeader.className = "assigned-subgroup-header";
-      assignedHeader.innerHTML = `
-        <span class="assigned-subgroup-title">
-          <span>👤</span>
-          <span>${escapeHtml(activeAssigneeFilter)}'s Chores</span>
-        </span>
-        <span class="assigned-subgroup-badge">${assignedToMember.length}</span>
-      `;
-      activeListEl.appendChild(assignedHeader);
-
-      assignedToMember.forEach(task => {
-        try {
-          const el = createTaskCardElement(task, activeAssigneeFilter, targetDay);
-          if (el) activeListEl.appendChild(el);
-        } catch (e) {
-          console.error("Error creating assigned card:", task, e);
-        }
-      });
-    }
-
-    // 2. Render Up For Grabs Sub-group (if any)
-    if (upForGrabs.length > 0) {
-      const grabsHeader = document.createElement("div");
-      grabsHeader.className = "assigned-subgroup-header up-for-grabs-header";
-      grabsHeader.innerHTML = `
-        <span class="assigned-subgroup-title">
-          <span>⚡</span>
-          <span>Anyone — bonus tasks</span>
-        </span>
-        <span class="assigned-subgroup-badge">${upForGrabs.length} available</span>
-      `;
-      activeListEl.appendChild(grabsHeader);
-
-      upForGrabs.forEach(task => {
-        try {
-          const el = createTaskCardElement(task, null, targetDay);
-          if (el) activeListEl.appendChild(el);
-        } catch (e) {
-          console.error("Error creating up-for-grabs card:", task, e);
-        }
-      });
-    }
-  } else {
-    // Normal feed for ALL
-    activeTasks.forEach(task => {
-      try {
-        const el = createTaskCardElement(task, null, targetDay);
-        if (el) activeListEl.appendChild(el);
-      } catch (e) {
-        console.error("Error creating active card:", task, e);
-      }
-    });
-  }
-
-  completedTasks.forEach(task => {
-    try {
-      const el = createTaskCardElement(task, null, targetDay);
-      if (el) completedListEl.appendChild(el);
-    } catch (e) {
-      console.error("Error creating completed card:", task, e);
-    }
-  });
-}
-
 function getRewardTierClass(val) {
   const num = Number(val) || 1;
   if (num <= 1) return "tier-1"; // Mint Green (1 pt / £1.00)
@@ -2664,269 +2082,6 @@ function getRewardTierClass(val) {
   return "tier-5";               // Vivid Coral Rose (5+ pts / > £4.00)
 }
 
-function createTaskCardElement(task, highlightMember = null, targetDay = null) {
-  const isDaily = task.day === "Daily" || task.taskType === "Daily Task";
-  const viewDay = targetDay || (WEEK_DAYS_ORDER.includes(activeCategoryFilter) ? activeCategoryFilter : getTodayDayName());
-
-  let isDone = task.effectiveDone !== undefined ? task.effectiveDone : task.done;
-  let completer = task.effectiveCompletedBy !== undefined ? task.effectiveCompletedBy : task.completedBy;
-
-  if (isDaily && task.effectiveDone === undefined) {
-    const dailyStatus = getDailyTaskStatus(task, viewDay);
-    isDone = dailyStatus.isDone;
-    completer = dailyStatus.completedBy;
-  }
-
-  const card = document.createElement("article");
-  let assignedAccentClass = "";
-  if (!isDone && (highlightMember || (task.assignedTo && activeAssigneeFilter === task.assignedTo))) {
-    const memberName = String(highlightMember || getAssigneeNames(task.assignedTo)[0] || "").toLowerCase();
-    assignedAccentClass = `assigned-accent assigned-${memberName}`;
-  }
-
-  card.className = `task-card ${task.isPriority && !isDone ? "priority-card" : ""} ${isDone ? "task-completed" : ""} ${task.isOverdue ? "is-overdue" : ""} ${assignedAccentClass}`;
-  card.id = `card-${task.id}`;
-
-  // Badges
-  let badgesHtml = "";
-
-  if (task.isOverdue) {
-    badgesHtml += `<span class="badge badge-overdue">⚠️ ${escapeHtml(task.overdueFromDay)} — Overdue</span>`;
-  }
-
-  badgesHtml += `
-    <span class="badge badge-room">📍 ${escapeHtml(task.room || 'House')}</span>
-    <span class="badge badge-time">⏱️ ${escapeHtml(task.estimatedTime || '15 mins')}</span>
-  `;
-
-  // Day Badge
-  if (task.day && task.day !== "Anyday") {
-    badgesHtml += `<span class="badge badge-day">📅 ${escapeHtml(task.day)}</span>`;
-  }
-
-  // Weekly Repeat Badge
-  if (task.repeat === "weekly") {
-    badgesHtml += `<span class="badge badge-weekly">🔁 Weekly</span>`;
-  }
-
-  // Task Type Badge (e.g. DIY Project, Daily Task, Deep Clean)
-  if (task.taskType === "DIY Project" || task.category === "DIY Backlog") {
-    badgesHtml += `<span class="badge badge-diy">🔨 DIY Project</span>`;
-  } else if (task.taskType === "Daily Task" || task.day === "Daily" || task.repeat === "daily") {
-    badgesHtml += `<span class="badge badge-daily">🔄 Daily Routine</span>`;
-    const streakDays = window.Streaks ? window.Streaks.streakOf(task) : (task.streak || 0);
-    if (streakDays >= 2) {
-      badgesHtml += `<span class="chore-streak-badge ${streakDays >= 7 ? 'milestone' : ''}">🔥 ${streakDays}d streak</span>`;
-    }
-  } else if (task.taskType && task.taskType !== "Standard") {
-    badgesHtml += `<span class="badge badge-type">🏷️ ${escapeHtml(task.taskType)}</span>`;
-  }
-
-  // Up for Grabs Badge for unassigned tasks
-  if (!isDone && getAssigneeNames(task.assignedTo).every(n => n.toLowerCase() === "anyone")) {
-    badgesHtml += `<span class="badge badge-up-for-grabs">⚡ Anyone</span>`;
-  }
-
-  // Reward Badge (Gamified Points / Money Pill positioned next to Avatar)
-  const isMoney = boardSettings.gameMode === "money";
-  const currency = boardSettings.currency || "£";
-  const rewardVal = window.taskReward(task, isMoney);
-
-  const tierClass = getRewardTierClass(rewardVal);
-  let rewardLabel = "";
-  if (isMoney) {
-    rewardLabel = `${currency}${rewardVal.toFixed(2)}`;
-  } else {
-    rewardLabel = `${rewardVal} ${rewardVal === 1 ? 'pt' : 'pts'}`;
-  }
-
-  const rewardBadgeHtml = `
-    <span class="card-reward-badge ${tierClass}" title="Reward: ${rewardLabel}">
-      ${escapeHtml(rewardLabel)}
-    </span>
-  `;
-
-  // Top-Right Assignee / Completer Avatar Circle (or Unassigned Button)
-  let avatarRightHtml = "";
-  if (isDone) {
-    // When completed, show the avatar of who actually completed the task!
-    const displayCompleter = completer || task.assignedTo;
-    if (displayCompleter === "Team Effort") {
-      avatarRightHtml = `
-        <div class="card-assignee-avatar-btn completed-avatar" title="Completed by Team Effort" aria-label="Completed by Team Effort">
-          <div class="avatar-ring" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: 2px solid #fbbf24; font-size: 0.9rem;">👥</div>
-        </div>
-      `;
-    } else if (displayCompleter) {
-      const members = Array.isArray(displayCompleter)
-        ? displayCompleter
-        : displayCompleter.split(",").map(s => s.trim()).filter(Boolean);
-
-      if (members.length === 1) {
-        const memberName = members[0];
-        const memberIdx = familyMembers.indexOf(memberName);
-        const color = getMemberColor(memberIdx !== -1 ? memberIdx : 0);
-        const initial = memberName.charAt(0).toUpperCase();
-        avatarRightHtml = `
-          <div class="card-assignee-avatar-btn completed-avatar" title="Completed by ${escapeHtml(memberName)}" aria-label="Completed by ${escapeHtml(memberName)}">
-            <div class="avatar-ring" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
-          </div>
-        `;
-      } else if (members.length > 1) {
-        const avatarsStack = members.slice(0, 2).map(memberName => {
-          const mIdx = familyMembers.indexOf(memberName);
-          const col = getMemberColor(mIdx !== -1 ? mIdx : 0);
-          return `<div class="avatar-ring" style="background: ${col.bg}; border: 2px solid ${col.border};">${escapeHtml(memberName.charAt(0).toUpperCase())}</div>`;
-        }).join("");
-        avatarRightHtml = `
-          <div class="card-assignee-avatar-btn completed-avatar avatar-stack" title="Completed by ${escapeHtml(members.join(', '))}" aria-label="Completed by ${escapeHtml(members.join(', '))}">
-            ${avatarsStack}
-          </div>
-        `;
-      } else {
-        avatarRightHtml = `
-          <div class="card-assignee-avatar-btn completed-avatar" title="Completed" aria-label="Completed">
-            <div class="avatar-ring" style="background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; color: #10b981;">✓</div>
-          </div>
-        `;
-      }
-    } else {
-      avatarRightHtml = `
-        <div class="card-assignee-avatar-btn completed-avatar" title="Completed" aria-label="Completed">
-          <div class="avatar-ring" style="background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; color: #10b981;">✓</div>
-        </div>
-      `;
-    }
-  } else if (getAssigneeNames(task.assignedTo).length) {
-    const firstAssignee = getAssigneeNames(task.assignedTo)[0];
-    const memberIdx = familyMembers.indexOf(firstAssignee);
-    const color = getMemberColor(memberIdx !== -1 ? memberIdx : 0);
-    const initial = firstAssignee.charAt(0).toUpperCase();
-    avatarRightHtml = `
-      <button type="button" class="card-assignee-avatar-btn btn-open-assign" data-task-id="${task.id}" title="Assigned to ${escapeHtml(formatAssigneeNames(task.assignedTo))} — Tap to change" aria-label="Assigned to ${escapeHtml(formatAssigneeNames(task.assignedTo))}">
-        <div class="avatar-ring" style="background: ${color.bg}; border: 2px solid ${color.border};">${escapeHtml(initial)}</div>
-      </button>
-    `;
-  } else {
-    avatarRightHtml = `
-      <button type="button" class="card-assignee-avatar-btn unassigned btn-open-assign" data-task-id="${task.id}" title="Anyone — tap to assign" aria-label="Anyone — tap to assign">
-        <div class="avatar-ring-unassigned">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="8.5" cy="7" r="4"></circle>
-            <line x1="20" y1="8" x2="20" y2="14"></line>
-            <line x1="23" y1="11" x2="17" y2="11"></line>
-          </svg>
-        </div>
-      </button>
-    `;
-  }
-
-  if (task.isPriority && !isDone) {
-    badgesHtml = `<span class="badge badge-priority">🚨 HIGH PRIORITY</span>` + badgesHtml;
-  }
-
-  // Action Buttons
-  let rightActionHtml = "";
-  if (!isDone) {
-    if (isDaily) {
-      const targetIdx = getDayOrderIndex(viewDay);
-      const todayIdx = getTodayOrderIndex();
-
-      if (targetIdx > todayIdx) {
-        // Future day: locked
-        rightActionHtml = `
-          <button class="btn-mark-done is-locked" disabled title="Daily routines can only be completed on ${viewDay}">
-            <span class="btn-lock-icon">🔒</span>
-            <span>Available ${viewDay.slice(0, 3)}</span>
-          </button>
-        `;
-      } else if (targetIdx < todayIdx) {
-        // Past day this week: catch-up
-        rightActionHtml = `
-          <button class="btn-mark-done btn-catchup" data-task-id="${task.id}" data-day="${viewDay}" id="btn-done-${task.id}" title="Catch up on missed daily task for ${viewDay}">
-            <span>Mark Done (${viewDay.slice(0, 3)})</span>
-            <span class="btn-icon">⚡</span>
-          </button>
-        `;
-      } else {
-        // Today
-        rightActionHtml = `
-          <button class="btn-mark-done" data-task-id="${task.id}" data-day="${viewDay}" id="btn-done-${task.id}">
-            <span>Mark Done</span>
-            <span class="btn-icon">⚡</span>
-          </button>
-        `;
-      }
-    } else {
-      // Non-daily regular task
-      rightActionHtml = `
-        <button class="btn-mark-done" data-task-id="${task.id}" data-day="${viewDay}" id="btn-done-${task.id}">
-          <span>Mark Done</span>
-          <span class="btn-icon">⚡</span>
-        </button>
-      `;
-    }
-  } else {
-    const claimer = escapeHtml(completer || "Family");
-    rightActionHtml = `
-      <span class="completed-badge-pill">✓ Done by ${claimer}</span>
-      <button class="btn-undo" data-task-id="${task.id}" data-day="${viewDay}" id="btn-undo-${task.id}" title="Float back to active">
-        <span>↩ Undo</span>
-      </button>
-    `;
-  }
-
-  const editDeleteHtml = `
-    <div class="card-actions-left">
-      <button class="btn-card-action btn-edit-task" data-task-id="${task.id}" id="btn-edit-${task.id}" title="Edit Task" aria-label="Edit Task">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      </button>
-      <button class="btn-card-action btn-delete-task" data-task-id="${task.id}" id="btn-delete-${task.id}" title="Delete Task" aria-label="Delete Task">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  card.innerHTML = `
-    <div class="card-badges-row">
-      <div class="card-badges-left">
-        ${badgesHtml}
-      </div>
-      <div class="card-header-right">
-        ${rewardBadgeHtml}
-        ${avatarRightHtml}
-      </div>
-    </div>
-    <div class="card-content">
-      <h3 class="card-title">${(task.icon || detectEmojiForChore(task.title)) ? `<span class="chore-title-emoji">${escapeHtml(task.icon || detectEmojiForChore(task.title))}</span> ` : ""}${escapeHtml(task.title)}</h3>
-      <p class="card-note">${escapeHtml(task.actionNote)}</p>
-    </div>
-    <div class="card-actions-row">
-      ${editDeleteHtml}
-      <div class="card-actions-right">
-        ${rightActionHtml}
-      </div>
-    </div>
-  `;
-
-  return card;
-}
-
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 // ============================================================================
 // 9. TASK CLAIMING, CELEBRATION & UNDO FLOW (MULTI-SELECT SUPPORT)
@@ -3620,7 +2775,6 @@ async function handleSaveTaskForm(e) {
     currentTasks[taskIndex] = updatedTask;
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
   } else {
     // CREATE NEW TASK
     const newId = "task-" + Date.now();
@@ -3665,7 +2819,6 @@ async function handleSaveTaskForm(e) {
     currentTasks.push(newTask);
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
   }
 }
 
@@ -3730,7 +2883,6 @@ function openDeleteTaskModal(taskId) {
       currentTasks = currentTasks.filter(t => t.id !== taskId);
       saveLocalCache(currentTasks);
       renderApp();
-    renderSkylightTasksPage();
       if (typeof sfx !== "undefined" && sfx && sfx.playTrash) sfx.playTrash();
     }
   });
@@ -3767,7 +2919,6 @@ window.deleteTaskById = async (taskId) => {
   currentTasks = currentTasks.filter(t => t.id !== taskId);
   saveLocalCache(currentTasks);
   renderApp();
-  renderSkylightTasksPage();
   return copy;
 };
 window.restoreTask = async (task) => {
@@ -3778,7 +2929,6 @@ window.restoreTask = async (task) => {
   if (!currentTasks.some(t => t.id === task.id)) currentTasks.push(task);
   saveLocalCache(currentTasks);
   renderApp();
-  renderSkylightTasksPage();
 };
 
 function closeDeleteModal() {
@@ -3865,7 +3015,6 @@ async function handleSetAssignee(memberName) {
     currentTasks[idx].assignedTo = newAssignee;
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
   }
 }
 
@@ -4022,6 +3171,10 @@ function closeClaimModal() {
 function showGamifiedCelebration({ claimValue, rewardVal, isMoney, currency, taskTitle }) {
   const container = document.getElementById("celebration-toast-anchor");
   if (!container) return;
+  // A new celebration replaces the last one: the old one's timers mustn't
+  // then clear this one early (two ticks within 8 seconds used to)
+  clearTimeout(celebrationTimers.dismiss);
+  clearTimeout(celebrationTimers.clear);
 
   container.innerHTML = "";
 
@@ -4095,13 +3248,16 @@ function showGamifiedCelebration({ claimValue, rewardVal, isMoney, currency, tas
     </div>
   `;
 
-  let dismissTimer = null;
   function dismiss() {
-    if (dismissTimer) clearTimeout(dismissTimer);
+    clearTimeout(celebrationTimers.dismiss);
+    if (!card.isConnected) return; // already replaced by a newer one
     card.classList.add("is-dismissing");
     backdrop.classList.add("is-dismissing");
-    setTimeout(() => {
-      container.innerHTML = "";
+    clearTimeout(celebrationTimers.clear);
+    celebrationTimers.clear = setTimeout(() => {
+      // Only this celebration's own elements, not a newer one's
+      card.remove();
+      backdrop.remove();
     }, 320);
   }
 
@@ -4123,8 +3279,9 @@ function showGamifiedCelebration({ claimValue, rewardVal, isMoney, currency, tas
   container.appendChild(card);
 
   // Stays on screen for 8 seconds before auto-dismissing
-  dismissTimer = setTimeout(dismiss, 8000);
+  celebrationTimers.dismiss = setTimeout(dismiss, 8000);
 }
+const celebrationTimers = { dismiss: null, clear: null };
 
 async function handleConfirmClaim() {
   if (!taskToClaim || selectedClaimMembers.size === 0) return;
@@ -4231,7 +3388,6 @@ async function handleConfirmClaim() {
       }
       saveLocalCache(currentTasks);
       renderApp();
-    renderSkylightTasksPage();
     }
 
     if (db) {
@@ -4279,7 +3435,6 @@ async function handleConfirmClaim() {
       }
       saveLocalCache(currentTasks);
       renderApp();
-    renderSkylightTasksPage();
     }
 
     if (db) {
@@ -4305,7 +3460,6 @@ async function handleConfirmClaim() {
     currentTasks[idx].day = completedDay; // Move to the day it was completed!
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
   }
 
   if (db) {
@@ -4390,7 +3544,6 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
       }
       saveLocalCache(currentTasks);
       renderApp();
-    renderSkylightTasksPage();
     }
 
     if (db) {
@@ -4432,7 +3585,6 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
       }
       saveLocalCache(currentTasks);
       renderApp();
-    renderSkylightTasksPage();
     }
 
     if (db) {
@@ -4464,7 +3616,6 @@ async function handleUndoTask(taskId, targetDay = null, targetDate = null, membe
     }
     saveLocalCache(currentTasks);
     renderApp();
-    renderSkylightTasksPage();
   }
 
   if (db) {
@@ -4565,7 +3716,7 @@ function setupEventListeners() {
       filterTabs.forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
       activeCategoryFilter = tab.getAttribute("data-filter") || tab.getAttribute("data-category") || "ALL";
-      renderTaskLists();
+      renderApp();
     });
   });
 
@@ -4998,7 +4149,6 @@ function setupEventListeners() {
         currentTasks = JSON.parse(JSON.stringify(isDefaultTurnbullBoard ? INITIAL_SEED_TASKS : STARTER_GENERIC_TASKS));
         saveLocalCache(currentTasks);
         renderApp();
-    renderSkylightTasksPage();
       }
     });
   }
@@ -5132,7 +4282,6 @@ function setupEventListeners() {
     saveRosterAndSync();
     renderRosterModalList();
     renderApp();
-    renderSkylightTasksPage();
   };
 
   function renderRosterModalList() {
@@ -5194,7 +4343,6 @@ function setupEventListeners() {
             saveRosterAndSync();
             renderRosterModalList();
             renderApp();
-    renderSkylightTasksPage();
             if (typeof sfx !== "undefined" && sfx && sfx.playTrash) sfx.playTrash();
           }
         });
@@ -5377,7 +4525,6 @@ function setupEventListeners() {
       saveRosterAndSync();
       renderRosterModalList();
       renderApp();
-    renderSkylightTasksPage();
     });
   }
 
@@ -5883,7 +5030,6 @@ function setupEventListeners() {
 
       checkScheduledSleepWindow();
       renderApp();
-    renderSkylightTasksPage();
     });
   }
 

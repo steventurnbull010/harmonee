@@ -25,7 +25,7 @@ const check = (name, got, want) => {
   else { fail++; console.log(`✗ ${name}\n    wanted ${JSON.stringify(want)}\n    got    ${JSON.stringify(got)}`); }
 };
 
-for (const file of ["js/utils.js", "app.js"]) {
+for (const file of ["js/utils.js"]) { // app.js uses this one (its copy was removed 11 Nov)
   const isEventOnDate = new Function(extract("js/utils.js", "getLocalDateKey") + "\n" + extract(file, "isEventOnDate") + "\nreturn isEventOnDate;")();
   // Every day in a year that the event shows on, as "M-D"
   const daysShown = (e, year) => {
