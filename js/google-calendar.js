@@ -90,7 +90,9 @@
     } catch (e) { console.warn("Linked calendars unavailable:", e); }
     setInterval(maybeAutoRefresh, 60 * 1000);
     document.addEventListener("visibilitychange", maybeAutoRefresh);
-    setTimeout(maybeAutoRefresh, 3000);
+    // Opening harmonee (or pulling down to reload on a phone) checks Google
+    // if the last check was over 2 minutes ago
+    setTimeout(() => { if (connected() && !refreshing && Date.now() - lastChecked() > 2 * 60 * 1000) refresh("open"); }, 3000);
   }
   function redraw() {
     if (window.currentActiveView === "calendar" && typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
@@ -154,6 +156,7 @@
   let note = "";
   let noteTimer = null;
   function paintRefresh(flash) {
+    paintCheckLine(flash);
     const btn = document.getElementById("cal-refresh");
     if (!btn) return;
     btn.hidden = !connected();
@@ -174,13 +177,24 @@
     paintRefresh();
   }, 30 * 1000);
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest && e.target.closest("#cal-refresh");
+    const btn = e.target.closest && e.target.closest("[data-gcal-check-now], #cal-refresh");
     if (!btn) return;
-    if (Object.values(people).some(p => !p.ok) && !refreshing && Date.now() - lastAsked < TAP_GAP_MS) { openSettingsAtCalendars(); return; }
     refresh("tap");
   });
   function openSettingsAtCalendars() {
     if (typeof window.openSettingsModal === "function") window.openSettingsModal("calendars");
+  }
+
+  // Settings → Calendars: when Google was last checked, and Check now
+  function paintCheckLine(flash) {
+    const line = document.getElementById("gcal-check-line");
+    if (!line) return;
+    const waiting = Object.keys(pending).length > 0;
+    line.hidden = !connected() && !waiting;
+    const words = line.querySelector("[data-gcal-when]");
+    const btn = line.querySelector("[data-gcal-check-now]");
+    if (words) words.textContent = refreshing ? "Checking Google…" : waiting ? "Bringing in events…" : (flash || `Checked ${agoWords(lastChecked()) || "not yet"}`);
+    if (btn) btn.disabled = refreshing || waiting;
   }
 
   // ---- Settings → Calendars ------------------------------------------------------------------------------
@@ -188,7 +202,7 @@
     const box = document.getElementById("gcal-settings");
     if (!box) return;
     const members = window.familyMembers || [];
-    box.innerHTML = members.map(name => {
+    box.innerHTML = `<div class="gcal-check-line" id="gcal-check-line" hidden><span data-gcal-when></span><button type="button" class="gcal-row-btn" data-gcal-check-now>↻ Check now</button></div>` + members.map(name => {
       const p = people[keyOf(name)];
       const pal = typeof window.getMemberPalette === "function" ? window.getMemberPalette(name) : { primary: "#0284c7" };
       let status, actions;
@@ -210,7 +224,8 @@
         <span class="gcal-words"><strong>${esc(name)}</strong>${status}</span>
         <span class="gcal-actions">${actions}</span>
       </div>`;
-    }).join("") + `<p class="gcal-foot">🔒 Private and read-only. harmonee can see linked calendars, never change them.</p>`;
+    }).join("") + `<p class="gcal-foot">🔒 Private and read-only. harmonee can see linked calendars, never change them. New plans in Google show up by themselves; opening harmonee checks again.</p>`;
+    paintCheckLine();
   }
   document.addEventListener("click", async (e) => {
     const c = e.target.closest && e.target.closest("[data-gcal-connect]");

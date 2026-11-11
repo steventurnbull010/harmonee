@@ -1466,8 +1466,8 @@ const PAGES = [
       if (window.GoogleCalendar) window.GoogleCalendar.start();
     });
     await p.waitForTimeout(400);
-    const before = await p.evaluate((B) => ({ refreshShown: !document.getElementById("cal-refresh").hidden, boardEvents: ((window.__SMOKE_STORE[B] || {}).events || []).length }), B);
-    if (before.refreshShown) throw new Error("↻ shows before any calendar is linked");
+    const before = await p.evaluate((B) => ({ barRefresh: !!document.getElementById("cal-refresh"), boardEvents: ((window.__SMOKE_STORE[B] || {}).events || []).length }), B);
+    if (before.barRefresh) throw new Error("the calendar bar still has a ↻ button (it moved to Settings → Calendars)");
 
     // Settings → Calendars
     await p.evaluate(() => window.openSettingsModal("calendars"));
@@ -1577,7 +1577,7 @@ const PAGES = [
       await p.waitForTimeout(500);
       const waiting = await p.evaluate(() => ({
         guide: (document.querySelector("#gcal-guide [data-gcal-body]") || {}).textContent || "",
-        bar: (document.getElementById("cal-refresh-when") || {}).textContent || ""
+        bar: (document.querySelector("#gcal-check-line [data-gcal-when]") || {}).textContent || ""
       }));
       if (!/Bringing in Sam's events/.test(waiting.guide) || !/minute or two/.test(waiting.guide)) throw new Error(`a slow first read didn't say it's bringing the events in: ${waiting.guide.slice(0, 160)}`);
       await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-waiting.png`) });
@@ -1597,6 +1597,16 @@ const PAGES = [
     await p.waitForTimeout(400);
     const status = await p.evaluate(() => (document.getElementById("gcal-settings") || {}).textContent || "");
     if (!/Linked · 2 events/.test(status)) throw new Error(`Settings doesn't show Sam as linked: ${status.slice(0, 160)}`);
+    const check = await p.evaluate(async () => {
+      const line = document.getElementById("gcal-check-line");
+      const words = line.querySelector("[data-gcal-when]").textContent;
+      window.__SMOKE_CAL_CALLS = [];
+      // Check now (a minute's wait between checks is skipped here for the test)
+      line.querySelector("[data-gcal-check-now]").click();
+      await new Promise(res => setTimeout(res, 300));
+      return { shown: !line.hidden, words, calls: window.__SMOKE_CAL_CALLS.length };
+    });
+    if (!check.shown || !/Checked/.test(check.words)) throw new Error(`Settings doesn't say when Google was last checked: ${JSON.stringify(check)}`);
     await p.evaluate(() => document.getElementById("settings-sec-calendars").scrollIntoView());
     await p.waitForTimeout(250);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings-linked.png`) });
@@ -1627,17 +1637,14 @@ const PAGES = [
     const cal = await p.evaluate((B) => {
       const g = document.getElementById("calendar-week-grid");
       const card = [...g.querySelectorAll("[data-event-id]")].find(c => /Optician/.test(c.textContent));
-      const refresh = document.getElementById("cal-refresh");
       return {
         shown: !!card, hasG: !!(card && card.querySelector(".ev-g")),
-        refresh: !refresh.hidden, refreshText: refresh.textContent.replace(/\s+/g, " ").trim(),
         familyHasGoogle: (window.familyEvents || []).some(e => e.source === "google"),
         boardEvents: ((window.__SMOKE_STORE[B] || {}).events || []).length
       };
     }, B);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-calendar.png`) });
     if (!cal.shown || !cal.hasG) throw new Error(`Sam's Google event isn't on the calendar with a G: ${JSON.stringify(cal)}`);
-    if (!cal.refresh) throw new Error("↻ isn't in the calendar bar once a calendar is linked");
     if (cal.familyHasGoogle || cal.boardEvents !== before.boardEvents) throw new Error(`Google events got into the board's own events: ${JSON.stringify(cal)}`);
     const pop = await p.evaluate(async () => {
       const card = [...document.querySelectorAll("#calendar-week-grid [data-event-id]")].find(c => /Optician/.test(c.textContent));
@@ -1669,10 +1676,10 @@ const PAGES = [
     await p.waitForTimeout(500);
     const after = await p.evaluate(() => ({
       events: (window.googleEvents || []).length,
-      refresh: !document.getElementById("cal-refresh").hidden,
+      checkLine: !document.getElementById("gcal-check-line").hidden,
       link: ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2/private/calendarLinks"] || {}).links || {}).sam || null
     }));
-    if (after.events || after.refresh || after.link) throw new Error(`unlinking left things behind: ${JSON.stringify(after)}`);
+    if (after.events || after.checkLine || after.link) throw new Error(`unlinking left things behind: ${JSON.stringify(after)}`);
     await p.evaluate(() => { delete window.__SMOKE_CAL_REFRESH; window.setCalendarView("schedule", new Date()); });
     void calls;
   }],

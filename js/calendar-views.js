@@ -262,6 +262,17 @@
     if (!bar) return;
     const title = document.getElementById("cal-toolbar-title");
     if (title) title.textContent = titleFor(view, anchor());
+    // "Today" only when today isn't already on screen (like most calendar apps)
+    const todayBtn = document.getElementById("btn-calendar-today");
+    if (todayBtn) {
+      const t = startOfDay(new Date()), a = anchor();
+      let showing;
+      if (view === "month") showing = a.getMonth() === t.getMonth() && a.getFullYear() === t.getFullYear();
+      else if (view === "week") showing = mondayOf(a).getTime() === mondayOf(t).getTime();
+      else if (view === "schedule" && !isPhone()) showing = t >= a && t <= addDays(a, 2);
+      else showing = a.getTime() === t.getTime();
+      todayBtn.hidden = showing;
+    }
     const views = isPhone() ? [["day", "Day"], ["week", "Week"], ["month", "Month"]] : [["day", "Day"], ["schedule", "3 days"], ["week", "Week"], ["month", "Month"]];
     const sw = document.getElementById("cal-view-switch");
     if (sw) sw.innerHTML = views.map(([v, label]) => `<button type="button" class="cal-view-btn ${v === view || (isPhone() && view === "schedule" && v === "day") ? "is-on" : ""}" data-cal-view="${v}" aria-pressed="${v === view}">${label}</button>`).join("");

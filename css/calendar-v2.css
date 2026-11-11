@@ -468,3 +468,37 @@ body.theme-dark .gcal-computer h3 { color: #f8fafc; }
 .gcal-status.is-busy { display: inline-flex; align-items: center; gap: 6px; color: #0369a1; }
 .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: #0284c7; animation: gcalPulse 1.2s ease-in-out infinite; }
 @keyframes gcalPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* --- 11 Nov, more room for events ------------------------------------------- */
+/* "Today" only shows when today isn't on screen */
+.cal-toolbar .calendar-btn-today[hidden] { display: none; }
+/* Settings → Calendars: when Google was last checked, and Check now */
+.gcal-check-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 4px 0; border-bottom: 1px solid var(--card-border, #eef2f6); font-size: 0.85rem; color: var(--text-secondary, #64748b); }
+.gcal-check-line[hidden] { display: none; }
+.gcal-check-line .gcal-row-btn:disabled { opacity: 0.5; cursor: default; }
+body.theme-dark .gcal-check-line { border-color: #334155; }
+
+/* Tablets and computers: a slimmer bar */
+@media (min-width: 601px) {
+  .cal-toolbar { padding: 4px 0 8px; }
+  .cal-toolbar .calendar-btn-nav { width: 36px; height: 36px; }
+  .cal-toolbar .calendar-btn-today { height: 36px; }
+  .cal-view-btn { min-height: 32px; }
+  .cal-face { width: 32px; height: 32px; font-size: 0.82rem; }
+}
+/* Day view on tablets: the week strip already says the day, so the
+   timeline's own day header goes; and the strip itself is slimmer */
+.skylight-trad-calendar-grid.cv-has-strip .skylight-trad-header-row { display: none; }
+.skylight-trad-calendar-grid.cv-has-strip > .cv-strip { margin-bottom: 4px; }
+@media (min-width: 601px) {
+  .skylight-trad-calendar-grid.cv-has-strip .cv-strip-day { flex-direction: row; justify-content: center; gap: 6px; padding: 6px 0; }
+  .skylight-trad-calendar-grid.cv-has-strip .cv-strip-num { font-size: 1rem; }
+  .skylight-trad-calendar-grid.cv-has-strip .cv-strip-dot { width: 5px; height: 5px; }
+}
+/* Phones: the month gets the room; tap it for the month view */
+@media (max-width: 600px) {
+  .cal-toolbar-date .cal-toolbar-title { font-size: 1.3rem; }
+}
+/* The week's columns use the screen down to the bottom (a little room for the ＋) */
+#view-calendar .calendar-week-grid.cv-tablet-week { height: calc(100vh - 160px); height: calc(100dvh - 160px); }
+#view-calendar .calendar-week-grid.view-month { height: calc(100vh - 160px); height: calc(100dvh - 160px); }
