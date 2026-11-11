@@ -22,7 +22,9 @@
   const keyOf = (d) => (typeof window.getLocalDateKey === "function" ? window.getLocalDateKey(d) : d.toISOString().slice(0, 10));
   const dateOf = (key) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d); };
   const mealAt = (key, slot) => { const m = typeof window.getMealForDate === "function" ? window.getMealForDate(key, slot) : null; return m && m.title && String(m.title).trim() ? m : null; };
-  const cooks = (meal) => String((meal && meal.cook) || "").split(/\s*(?:,|&|\band\b)\s*/).filter(Boolean).join(" & ");
+  // Who's cooking, for "Dinner · Ava cooking". "Not sure yet" isn't a name,
+  // so it's left out (just "Dinner" until someone's chosen)
+  const cooks = (meal) => String((meal && meal.cook) || "").split(/\s*(?:,|&|\band\b)\s*/).filter(n => n && !/^not sure( yet)?$/i.test(n)).map(n => (/^family$/i.test(n) ? "Everyone" : n)).join(" & ");
   let lastAll = [];
 
   function dayLabel(key, first) {

@@ -1097,6 +1097,26 @@ const PAGES = [
     const moved = await p.evaluate(({ d, t }) => ({ from: (window.getMealForDate(d, "dinner") || {}).title || null, to: (window.getMealForDate(t, "dinner") || {}).recipeId }), { d: date, t: target });
     if (moved.from || String(moved.to) !== String(pickId)) throw new Error(`Move didn't move it: ${JSON.stringify(moved)}`);
     await p.evaluate((t) => { window.setMealForDate(t, null, "dinner"); window.renderMealsView(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); }, target);
+    // "Not sure yet" as the cook: just "Dinner", never "Not sure yet cooking"; Family reads "Everyone"
+    if (p.__size === "phone") {
+      const words = await p.evaluate(async () => {
+        const key = window.getLocalDateKey(new Date());
+        const read = async (cook) => {
+          window.weeklyMeals = window.weeklyMeals || {};
+          const m = (window.getMealForDate && window.getMealForDate(new Date(), "dinner")) || null;
+          if (m) m.cook = cook;
+          if (typeof window.renderMealsView === "function") window.renderMealsView();
+          await new Promise(res => setTimeout(res, 200));
+          const el = [...document.querySelectorAll("#view-meals .mp-dinner-words small")][0];
+          return el ? el.textContent : "";
+        };
+        void key;
+        return { unsure: await read("Not sure yet"), family: await read("Family"), alex: await read("Alex") };
+      });
+      if (/Not sure/.test(words.unsure) || !/^Dinner$/.test(words.unsure.trim())) throw new Error(`"Not sure yet" shows as a cook: "${words.unsure}"`);
+      if (!/Everyone cooking/.test(words.family)) throw new Error(`Family shows as "${words.family}"`);
+      if (!/Alex cooking/.test(words.alex)) throw new Error(`a named cook shows as "${words.alex}"`);
+    }
   }],
   // Back and Forward: each page has its own address; Back closes what's open
   // first (a recipe card, a list on a phone), then goes to the page before;
