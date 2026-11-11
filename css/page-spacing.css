@@ -116,7 +116,6 @@
 #view-rewards .rewards-view-container { padding: 16px 24px 48px 24px !important; }
 #view-rewards .calendar-header { padding: 8px 8px 16px 8px !important; }
 #view-rewards .calendar-header-controls { gap: 8px !important; }
-#view-rewards #btn-podium-confetti { padding: 8px 16px !important; gap: 8px !important; }
 
 /* Same header height on every page: the buttons on the right differ by a few
    pixels (Tasks 35px, Meals 37px, Lists 38px), which moved the title and the

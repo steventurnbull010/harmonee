@@ -1275,6 +1275,29 @@ const PAGES = [
     if (!/of \d+ today/.test(r.ring)) throw new Error(`Jo's ring doesn't show today's jobs: ${r.ring}`);
     if (!r.stickers || !r.stickers.jo || !r.stickers.jo.first || !r.stickers.sam || !r.stickers.sam.first) throw new Error(`first-job stickers weren't saved to the board: ${JSON.stringify(r.stickers)}`);
     if (r.stickers.alex) throw new Error("Alex got a sticker for nothing");
+    // No Celebrate button; opening Rewards sets off confetti when anyone has points (not when all are zero)
+    const cheer = await p.evaluate(async () => {
+      const opened = async () => {
+        window.switchSkylightView("calendar");
+        await new Promise(res => setTimeout(res, 100));
+        const before = window.__rewardsCelebrated || 0;
+        window.switchSkylightView("rewards");
+        await new Promise(res => setTimeout(res, 150));
+        return (window.__rewardsCelebrated || 0) - before;
+      };
+      const anyone = Object.values(window.computeMemberScores()).some(m => m.score > 0);
+      const withPoints = await opened();
+      // Everyone on zero: borrow an empty week for a moment
+      const real = window.computeMemberScores;
+      window.computeMemberScores = () => Object.fromEntries((window.familyMembers || []).map(m => [m, { score: 0, tasks: [] }]));
+      let atZero;
+      try { atZero = await opened(); } finally { window.computeMemberScores = real; }
+      window.renderPodiumRewards();
+      return { button: !!document.getElementById("btn-podium-confetti"), anyone, withPoints, atZero };
+    });
+    if (cheer.button) throw new Error("the Celebrate button is still on Rewards");
+    if (cheer.anyone && cheer.withPoints !== 1) throw new Error(`opening Rewards with points didn't set off the confetti: ${JSON.stringify(cheer)}`);
+    if (cheer.atZero !== 0) throw new Error(`opening Rewards with everyone on zero set off confetti: ${JSON.stringify(cheer)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards.png`) });
     await p.evaluate(() => document.getElementById("rewards-people-grid").scrollIntoView({ block: "end" }));
     await p.waitForTimeout(200);

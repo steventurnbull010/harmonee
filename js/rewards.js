@@ -159,22 +159,28 @@ function renderPodiumRewards() {
   // the countdown fits on the same line, like the other pages)
   if (weekLabel) weekLabel.innerHTML = `<span class="rw-week-long">Week Commencing</span><span class="rw-week-short">Week of</span> ${escapeHtml(getWeekCommencingDateStr())}`;
 
-  const confettiBtn = document.getElementById("btn-podium-confetti");
-  if (confettiBtn && !confettiBtn.hasAttribute("data-wired")) {
-    confettiBtn.setAttribute("data-wired", "true");
-    confettiBtn.addEventListener("click", () => {
-      if (!rewardsReduceMotion() && typeof triggerConfettiBurst === "function") triggerConfettiBurst();
-      if (typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
-      if (rewardsReduceMotion()) return;
-      document.querySelectorAll("#rewards-leaderboard .rw-lb-row").forEach(r => {
-        r.classList.remove("rw-boing");
-        void r.offsetWidth;
-        r.classList.add("rw-boing");
-      });
-    });
-  }
-
   wireRewardsPageTaps();
   if (window.RewardsPage) window.RewardsPage.render();
 }
 window.renderPodiumRewards = renderPodiumRewards;
+
+// Opening Rewards: confetti, as long as someone has at least one point this
+// week (nothing to cheer when everyone's on zero). Replaces the Celebrate
+// button. Calm when the device asks for less motion.
+function celebrateRewardsOpened() {
+  if (rewardsReduceMotion() || typeof triggerConfettiBurst !== "function") return;
+  const scores = computeMemberScores();
+  const anyone = Object.values(scores).some(m => (m && m.score) > 0);
+  if (!anyone) return;
+  setTimeout(() => {
+    if (window.currentActiveView !== "rewards") return; // already moved on
+    triggerConfettiBurst();
+    document.querySelectorAll("#rewards-leaderboard .rw-lb-row").forEach(r => {
+      r.classList.remove("rw-boing");
+      void r.offsetWidth;
+      r.classList.add("rw-boing");
+    });
+  }, 350);
+  window.__rewardsCelebrated = (window.__rewardsCelebrated || 0) + 1; // for the smoke test
+}
+window.celebrateRewardsOpened = celebrateRewardsOpened;

@@ -5199,6 +5199,8 @@ function switchSkylightView(viewName) {
     window.scrollTo({ top: 0, behavior: "instant" });
     { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else if (viewName === "rewards") {
+    // Confetti each time Rewards is opened (js/rewards.js), unless everyone's on zero
+    if (typeof window.celebrateRewardsOpened === "function") window.celebrateRewardsOpened();
     if (viewChores) viewChores.style.setProperty("display", "none", "important");
     if (viewCalendar) viewCalendar.style.setProperty("display", "none", "important");
     if (viewMeals) viewMeals.style.setProperty("display", "none", "important");
