@@ -1469,33 +1469,82 @@ const PAGES = [
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-settings.png`) });
 
-    // The guide
+    // The guide, walked through as someone would on this device
     await p.click('#gcal-settings [data-gcal-connect="Sam"]');
     await p.waitForTimeout(600);
+    // Nothing spills sideways, buttons are big enough to tap, nothing cut off
+    const layout = async () => p.evaluate(() => {
+      const dlg = document.getElementById("gcal-guide");
+      const panel = dlg.querySelector(".modal-content");
+      const wide = panel.scrollWidth > panel.clientWidth + 1;
+      const small = [...dlg.querySelectorAll("button, a.gcal-btn")].filter(b => b.offsetParent && !b.classList.contains("side-panel-hidden-close") && b.getBoundingClientRect().height < 36).map(b => b.textContent.trim().slice(0, 20));
+      const clipped = [...dlg.querySelectorAll(".gcal-step-words > strong, .gcal-step-words p, .gcal-safe span, .gcal-intro")].filter(el => el.offsetParent && el.scrollWidth > el.clientWidth + 1).map(el => el.textContent.trim().slice(0, 30));
+      return { wide, small, clipped };
+    });
+    const l1 = await layout();
+    if (l1.wide || l1.small.length || l1.clipped.length) throw new Error(`the guide doesn't fit this screen: ${JSON.stringify(l1)}`);
+    const first = await p.evaluate(() => ({
+      steps: document.querySelectorAll("#gcal-guide .gcal-step").length,
+      next: (document.querySelector("#gcal-guide .gcal-step.is-next") || {}).getAttribute?.("data-gcal-step"),
+      safe: /Safe and private/.test(document.querySelector("#gcal-guide .gcal-safe").textContent),
+      words: document.querySelector("#gcal-guide [data-gcal-body]").innerText.split(/\s+/).length,
+      phoneTip: !!document.querySelector("#gcal-guide .gcal-tip")
+    }));
+    if (first.steps !== 5 || first.next !== "0" || !first.safe) throw new Error(`the guide didn't open on step 1 with the safety note: ${JSON.stringify(first)}`);
+    if (first.words > 170) throw new Error(`the guide is too wordy: ${first.words} words`);
+    if ((p.__size === "phone") !== first.phoneTip) throw new Error(`the phone tip should show only on a phone: ${JSON.stringify(first)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide.png`) });
+    // Step 1: "Open Google Calendar" opens a new tab and ticks itself
+    const [popup] = await Promise.all([
+      p.context().waitForEvent("page", { timeout: 5000 }).catch(() => null),
+      p.click("#gcal-guide [data-gcal-open]")
+    ]);
+    if (popup) await popup.close().catch(() => {});
+    await p.waitForTimeout(500);
+    const afterOpen = await p.evaluate(() => ({ done0: document.querySelector('#gcal-guide [data-gcal-step="0"]').classList.contains("is-done"), next: (document.querySelector("#gcal-guide .gcal-step.is-next") || {}).getAttribute?.("data-gcal-step") }));
+    if (!afterOpen.done0 || afterOpen.next !== "1") throw new Error(`opening Google didn't tick step 1: ${JSON.stringify(afterOpen)}`);
+    // Ticking steps 2–4 by hand
+    for (const i of [1, 2, 3]) { await p.click(`#gcal-guide [data-gcal-tick="${i}"]`); await p.waitForTimeout(120); }
+    const ticks = await p.evaluate(() => [...document.querySelectorAll("#gcal-guide .gcal-step")].map(s => s.classList.contains("is-done")));
+    if (JSON.stringify(ticks) !== JSON.stringify([true, true, true, true, false])) throw new Error(`ticking steps went wrong: ${JSON.stringify(ticks)}`);
+    await p.evaluate(() => document.querySelector('#gcal-guide [data-gcal-step="4"]').scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-paste.png`) });
+    // The wrong address, pasted by hand: explained, nothing saved
     const wrong = await p.evaluate(() => {
       const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
       box.value = "https://calendar.google.com/calendar/ical/sam%40gmail.com/public/basic.ics";
       box.dispatchEvent(new Event("input", { bubbles: true }));
       return document.querySelector("#gcal-guide [data-gcal-check]").textContent;
     });
-    if (!/Public/.test(wrong)) throw new Error(`pasting the public address didn't explain it: ${wrong}`);
-    await p.evaluate(() => {
-      const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
-      box.value = "Here it is: https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics";
-      box.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    const right = await p.evaluate(() => document.querySelector("#gcal-guide [data-gcal-check]").textContent);
-    if (!/right kind/.test(right)) throw new Error(`the secret address wasn't accepted: ${right}`);
-    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-pasted.png`) });
-    await p.click("#gcal-guide [data-gcal-link]");
+    if (!/Public/.test(wrong) || !/Secret/.test(wrong)) throw new Error(`pasting the public address didn't explain it: ${wrong}`);
+    const reopened = await p.evaluate(() => ({ step4: document.querySelector('#gcal-guide [data-gcal-step="3"]').classList.contains("is-next"), kept: document.querySelector("#gcal-guide [data-gcal-paste-box]").value }));
+    if (!reopened.step4 || !/public/.test(reopened.kept)) throw new Error(`the wrong address didn't take them back to step 4: ${JSON.stringify(reopened)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-wrong.png`) });
+    // The right one, with 📋 Paste: it links by itself
+    await p.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+    await p.evaluate(() => navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics").catch(() => {}));
+    await p.click("#gcal-guide [data-gcal-paste]");
+    await p.waitForTimeout(300);
+    // If this browser won't hand over the clipboard, paste by hand as the guide says
+    const viaButton = await p.evaluate(() => !!document.querySelector("#gcal-guide .gcal-done, #gcal-guide .gcal-spinner"));
+    console.log(`      [${p.__size} google guide] pasted with ${viaButton ? "the 📋 Paste button" : "press-and-hold (the browser kept the clipboard)"}`);
+    if (!viaButton) {
+      await p.evaluate(() => {
+        const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+        box.value = "Here it is: https://calendar.google.com/calendar/ical/sam%40gmail.com/private-0123456789abcdef/basic.ics";
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
     await p.waitForTimeout(900);
     const done = await p.evaluate((B) => ({
       text: (document.querySelector("#gcal-guide [data-gcal-body]") || {}).textContent || "",
       saved: ((window.__SMOKE_STORE[`${B}/private/calendarLinks`] || {}).links || {}).sam || null
     }), B);
-    if (!/linked/.test(done.text) || !/2 events/.test(done.text)) throw new Error(`the guide didn't finish with what it found: ${done.text.slice(0, 160)}`);
+    if (!/All set/.test(done.text) || !/2 events/.test(done.text)) throw new Error(`pasting the right address didn't link it: ${done.text.slice(0, 160)}`);
     if (!done.saved || !/private-0123456789abcdef/.test(done.saved.url) || /Here it is/.test(done.saved.url)) throw new Error(`the link wasn't saved cleanly: ${JSON.stringify(done.saved)}`);
+    const l2 = await layout();
+    if (l2.wide || l2.small.length) throw new Error(`the finished screen doesn't fit: ${JSON.stringify(l2)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-gcal-guide-done.png`) });
     await p.evaluate(() => { document.querySelector("#gcal-guide [data-gcal-finish]").click(); });
     await p.waitForTimeout(400);

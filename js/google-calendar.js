@@ -184,7 +184,7 @@
         <span class="gcal-words"><strong>${esc(name)}</strong>${status}</span>
         <span class="gcal-actions">${actions}</span>
       </div>`;
-    }).join("") + `<p class="gcal-foot">Their events show in their colour with a small <span class="ev-g">G</span>. They're read-only here: to change one, change it in Google. Changes usually show within a few minutes; tap ↻ on the calendar to check now.</p>`;
+    }).join("") + `<p class="gcal-foot">🔒 Private and read-only: harmonee can see linked calendars but never change them. Their events show with a small <span class="ev-g">G</span>.</p>`;
   }
   document.addEventListener("click", async (e) => {
     const c = e.target.closest && e.target.closest("[data-gcal-connect]");
@@ -249,15 +249,22 @@
     return { ok: false, problem: "not-calendar" };
   }
   const PROBLEMS = {
-    empty: "Paste the link in the box first.",
-    "not-a-link": "That isn't a link. Go back to step 4 and use the copy button next to <strong>Secret address in iCal format</strong>.",
-    public: "That's the <strong>Public</strong> address, which won't work. Scroll a little further down to <strong>Secret address in iCal format</strong> and copy that one instead.",
-    "google-page": "That's a link to a Google Calendar page, not the address. Go back to step 4 and copy the <strong>Secret address in iCal format</strong>.",
-    "not-calendar": "That doesn't look like a calendar address. It should start with <strong>https://calendar.google.com/calendar/ical/</strong> and end with <strong>basic.ics</strong>."
+    empty: "Tap Paste, or paste the address in the box.",
+    "not-a-link": "That's not the address. Go back to step 4 and tap the copy button.",
+    public: "That's the <strong>Public</strong> address. Copy the <strong>Secret</strong> one, just below it.",
+    "google-page": "That's a page link. Copy the <strong>Secret address in iCal format</strong> instead (step 4).",
+    "not-calendar": "That's not a calendar address. Copy the <strong>Secret address in iCal format</strong> (step 4)."
   };
 
   // ---- The guide ---------------------------------------------------------------------------------------------
+  // Written for someone who'd rather not be doing this: one short instruction
+  // per step, a tick on each one, and everything we can do for them done for
+  // them (which device they're on, step 1 ticks when they open Google, the
+  // address is checked and linked the moment it's pasted).
   let guideFor = null;
+  let device = "phone";
+  let doneSteps = new Set();
+  let linking = false;
   function guideDialog() {
     let dlg = document.getElementById("gcal-guide");
     if (dlg) return dlg;
@@ -275,57 +282,42 @@
     if (typeof window.upgradeToSidePanel === "function") window.upgradeToSidePanel(dlg);
     dlg.querySelector("[data-gcal-close]").addEventListener("click", () => dlg.close());
     dlg.addEventListener("click", onGuideClick);
-    dlg.addEventListener("input", (e) => { if (e.target.matches("[data-gcal-paste-box]")) liveCheck(); });
+    dlg.addEventListener("input", (e) => { if (e.target.matches("[data-gcal-paste-box]")) onPasted(); });
+    dlg.addEventListener("paste", (e) => { if (e.target.matches && e.target.matches("[data-gcal-paste-box]")) setTimeout(onPasted, 0); });
     return dlg;
   }
-  let device = "phone";
+  // Back from Google (step 1 done): bring "Paste it here" into view
+  window.addEventListener("focus", () => {
+    const dlg = document.getElementById("gcal-guide");
+    if (!dlg || !dlg.open || linking || !doneSteps.has(0)) return;
+    const paste = dlg.querySelector('[data-gcal-step="4"]');
+    if (paste) paste.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
   function openGuide(name) {
     guideFor = name;
-    device = isPhone() ? "phone" : "computer";
+    device = isPhone() || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse) and (max-width: 900px)").matches) ? "phone" : "computer";
+    doneSteps = new Set();
+    linking = false;
     const dlg = guideDialog();
     dlg.querySelector("#gcal-guide-title").textContent = `Link ${name}'s calendar`;
     paintGuide();
     if (!dlg.open) dlg.showModal();
   }
-  function stepsHtml() {
+  // The steps, as short as they can be
+  function steps() {
     const tap = device === "phone" ? "Tap" : "Click";
-    const phoneFirst = device === "phone" ? `
-      <li class="gcal-step"><span class="gcal-num">1</span><div>
-        <strong>Open Google Calendar in the web browser</strong>
-        <p>The Google Calendar app doesn't show what we need, so we'll use the website for a minute.</p>
-        <a class="gcal-btn is-main gcal-open" href="https://calendar.google.com/calendar/r/settings" target="_blank" rel="noopener">Open Google Calendar ↗</a>
-        <p class="gcal-small">Sign in as ${esc(guideFor)} if it asks. If you see the phone version, switch to the full website: in Safari tap <strong>aA</strong> (or the page icon) in the address bar, then <strong>Request Desktop Website</strong>. In Chrome tap <strong>⋮</strong>, then <strong>Desktop site</strong>. You can pinch to zoom in.</p>
-      </div></li>` : `
-      <li class="gcal-step"><span class="gcal-num">1</span><div>
-        <strong>Open Google Calendar's settings</strong>
-        <a class="gcal-btn is-main gcal-open" href="https://calendar.google.com/calendar/r/settings" target="_blank" rel="noopener">Open Google Calendar ↗</a>
-        <p class="gcal-small">It opens in a new tab. Sign in as ${esc(guideFor)} if it asks.</p>
-      </div></li>`;
-    return `<ol class="gcal-steps">
-      ${phoneFirst}
-      <li class="gcal-step"><span class="gcal-num">2</span><div>
-        <strong>${tap} ${esc(guideFor)}'s calendar on the left</strong>
-        <p>Under <strong>Settings for my calendars</strong>, ${tap.toLowerCase()} the calendar with ${esc(guideFor)}'s name (it might be their email address).</p>
-      </div></li>
-      <li class="gcal-step"><span class="gcal-num">3</span><div>
-        <strong>Scroll down to Integrate calendar</strong>
-        <p>It's near the bottom of that page.</p>
-      </div></li>
-      <li class="gcal-step"><span class="gcal-num">4</span><div>
-        <strong>Copy the Secret address in iCal format</strong>
-        <p>${tap} the copy button (two little squares) next to <strong>Secret address in iCal format</strong>. If Google shows a warning, that's fine: ${tap.toLowerCase()} OK.</p>
-        <p class="gcal-warn">Not the <em>Public address</em> one just above it. That won't work.</p>
-      </div></li>
-      <li class="gcal-step"><span class="gcal-num">5</span><div>
-        <strong>Come back here and paste it</strong>
-        <div class="gcal-paste">
-          <textarea class="gcal-paste-box" data-gcal-paste-box rows="3" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" aria-label="${esc(guideFor)}'s secret address" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
-          <button type="button" class="gcal-btn" data-gcal-paste>📋 Paste</button>
-        </div>
-        <p class="gcal-check" data-gcal-check role="status"></p>
-        <button type="button" class="gcal-btn is-main is-big" data-gcal-link>Link ${esc(guideFor)}'s calendar</button>
-      </div></li>
-    </ol>`;
+    return [
+      { title: "Open Google Calendar", body: `<a class="gcal-btn is-main gcal-open" data-gcal-open href="https://calendar.google.com/calendar/r/settings" target="_blank" rel="noopener">Open Google Calendar ↗</a>
+          <p class="gcal-small">Sign in as ${esc(guideFor)} if asked.</p>
+          ${device === "phone" ? `<p class="gcal-tip">Small phone page? Tap <strong>aA</strong> in the address bar, then <strong>Request Desktop Website</strong>.</p>` : ""}` },
+      { title: `${tap} ${esc(guideFor)}'s name`, body: `<p>It's on the left, under <strong>Settings for my calendars</strong>.</p>` },
+      { title: "Scroll down to Integrate calendar", body: "" },
+      { title: "Copy the secret address", body: `<div class="gcal-mock" aria-hidden="true"><span>Secret address in iCal format</span><span class="gcal-mock-copy">⧉</span></div>
+          <p>${tap} the copy button next to <strong>Secret address in iCal format</strong>. If a warning pops up, ${tap.toLowerCase()} <strong>OK</strong>.</p>` },
+      { title: "Paste it here", body: `<button type="button" class="gcal-btn is-main is-big" data-gcal-paste>📋 Paste</button>
+          <textarea class="gcal-paste-box" data-gcal-paste-box rows="2" placeholder="Or press and hold here, then Paste" aria-label="${esc(guideFor)}'s secret address" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+          <p class="gcal-check" data-gcal-check role="status"></p>` }
+    ];
   }
   function paintGuide(state) {
     const body = document.querySelector("#gcal-guide [data-gcal-body]");
@@ -333,85 +325,114 @@
     if (state && state.done) {
       body.innerHTML = `<div class="gcal-done">
         <span class="gcal-done-tick" aria-hidden="true">✓</span>
-        <h3>${esc(guideFor)}'s calendar is linked</h3>
-        <p>${state.count ? `We found <strong>${state.count} event${state.count === 1 ? "" : "s"}</strong>.` : "It's linked. If there's nothing on it yet, that's fine."} They'll show on the calendar in ${esc(guideFor)}'s colour with a small <span class="ev-g">G</span>.</p>
-        <p class="gcal-small">Changes in Google usually show here within a few minutes. To check straight away, tap ↻ on the calendar.</p>
+        <h3>All set!</h3>
+        <p>${state.count ? `We found <strong>${state.count} event${state.count === 1 ? "" : "s"}</strong> on ${esc(guideFor)}'s calendar.` : `${esc(guideFor)}'s calendar is linked.`} They're on the family calendar now, with a small <span class="ev-g">G</span>.</p>
+        <p class="gcal-small">New plans in Google show up here by themselves.</p>
         <button type="button" class="gcal-btn is-main is-big" data-gcal-finish>Done</button>
       </div>`;
       return;
     }
     if (state && state.working) {
-      body.innerHTML = `<div class="gcal-done"><span class="gcal-spinner" aria-hidden="true"></span><h3>Checking ${esc(guideFor)}'s calendar…</h3><p>This takes a few seconds.</p></div>`;
+      body.innerHTML = `<div class="gcal-done"><span class="gcal-spinner" aria-hidden="true"></span><h3>Linking ${esc(guideFor)}'s calendar…</h3><p class="gcal-small">Just a few seconds.</p></div>`;
       return;
     }
+    const list = steps();
+    const next = list.findIndex((_, i) => !doneSteps.has(i));
     body.innerHTML = `
-      <p class="gcal-intro">This brings ${esc(guideFor)}'s Google Calendar into harmonee, so everything ${esc(guideFor)} has on shows here too. It takes about two minutes, and you only do it once.</p>
-      <div class="drawer-segmented-pills gcal-device" role="radiogroup" aria-label="What are you using?">
-        <button type="button" class="drawer-pill-segment ${device === "phone" ? "active" : ""}" data-gcal-device="phone" role="radio" aria-checked="${device === "phone"}">📱 A phone</button>
-        <button type="button" class="drawer-pill-segment ${device === "computer" ? "active" : ""}" data-gcal-device="computer" role="radio" aria-checked="${device === "computer"}">💻 A computer or iPad</button>
+      <p class="gcal-intro">See all of ${esc(guideFor)}'s plans on the family calendar.</p>
+      <div class="gcal-safe" role="note">
+        <span class="gcal-safe-lock" aria-hidden="true">🔒</span>
+        <div><strong>Safe and private</strong>
+          <span>harmonee can only <em>see</em> ${esc(guideFor)}'s calendar. It can never change anything, and the link is locked away on our secure server.</span></div>
       </div>
-      ${stepsHtml()}
+      <ol class="gcal-steps">
+        ${list.map((st, i) => `
+          <li class="gcal-step ${doneSteps.has(i) ? "is-done" : ""} ${i === next ? "is-next" : ""}" data-gcal-step="${i}">
+            <button type="button" class="gcal-tick" data-gcal-tick="${i}" aria-pressed="${doneSteps.has(i)}" aria-label="Step ${i + 1}${doneSteps.has(i) ? ", done" : ", mark as done"}">${doneSteps.has(i) ? "✓" : i + 1}</button>
+            <div class="gcal-step-words">
+              <strong>${st.title}</strong>
+              ${st.body}
+            </div>
+          </li>`).join("")}
+      </ol>
       ${state && state.error ? `<p class="gcal-check is-bad">${state.error}</p>` : ""}
-      <details class="gcal-private">
-        <summary>🔒 Is this private?</summary>
-        <p>The secret address lets harmonee <strong>see</strong> ${esc(guideFor)}'s calendar, never change it. It's kept privately on harmonee's server and never shown again, even here. To stop it any time, tap <strong>Unlink</strong> in Settings, or <strong>Reset</strong> next to the secret address in Google.</p>
-        <p>Using Outlook or an iPhone's calendar instead? Paste its calendar address (it ends in <strong>.ics</strong>) in step 5 the same way.</p>
-      </details>`;
+      <button type="button" class="gcal-switch" data-gcal-device="${device === "phone" ? "computer" : "phone"}">${device === "phone" ? "On a computer instead?" : "On a phone instead?"}</button>`;
   }
-  function liveCheck() {
+  function tick(i, on = true) {
+    if (on) doneSteps.add(i); else doneSteps.delete(i);
+    const typed = (document.querySelector("#gcal-guide [data-gcal-paste-box]") || {}).value || "";
+    paintGuide();
     const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+    if (box && typed) box.value = typed;
+  }
+  function showCheck(r) {
     const out = document.querySelector("#gcal-guide [data-gcal-check]");
-    if (!box || !out) return null;
-    const v = box.value.trim();
-    if (!v) { out.innerHTML = ""; out.className = "gcal-check"; return null; }
-    const r = checkLink(v);
+    if (!out) return;
     out.className = `gcal-check ${r.ok ? "is-good" : "is-bad"}`;
-    out.innerHTML = r.ok ? `✓ That's the right kind of address (${r.kind}).` : PROBLEMS[r.problem];
-    return r;
+    out.innerHTML = r.ok ? "✓ That's the one. Linking…" : PROBLEMS[r.problem];
+  }
+  // Pasted (or typed): check it, and if it's right, link straight away
+  function onPasted() {
+    const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+    if (!box) return;
+    const v = box.value.trim();
+    const out = document.querySelector("#gcal-guide [data-gcal-check]");
+    if (!v) { if (out) { out.innerHTML = ""; out.className = "gcal-check"; } return; }
+    const r = checkLink(v);
+    // The wrong address: open step 4 again so its instructions are right there
+    if (!r.ok && r.problem !== "empty" && doneSteps.has(3)) {
+      doneSteps.delete(3);
+      paintGuide();
+      const again = document.querySelector("#gcal-guide [data-gcal-paste-box]");
+      if (again) again.value = box.value;
+      showCheck(r);
+      const msg = document.querySelector("#gcal-guide [data-gcal-check]");
+      if (msg) msg.scrollIntoView({ block: "center" });
+      return;
+    }
+    showCheck(r);
+    if (r.ok) link(r.url);
+  }
+  async function link(url) {
+    if (linking) return;
+    linking = true;
+    const name = guideFor;
+    [0, 1, 2, 3, 4].forEach(i => doneSteps.add(i));
+    paintGuide({ working: true });
+    try {
+      await saveLink(name, url);
+      const out = await refresh("added");
+      const mine = out && Array.isArray(out.results) ? out.results.find(x => x.member === name) : null;
+      if (mine && !mine.ok) {
+        doneSteps.delete(3); doneSteps.delete(4);
+        paintGuide({ error: "Google didn't accept that address. Copy the <strong>Secret</strong> address again (step 4) and paste it." });
+        return;
+      }
+      paintGuide({ done: true, count: mine ? mine.count : 0 });
+    } catch (err) {
+      doneSteps.delete(4);
+      paintGuide({ error: "That didn't save. Check the Wi-Fi, then paste again." });
+    } finally {
+      linking = false;
+    }
   }
   async function onGuideClick(e) {
     const dev = e.target.closest("[data-gcal-device]");
-    if (dev) {
-      const typed = (document.querySelector("#gcal-guide [data-gcal-paste-box]") || {}).value || "";
-      device = dev.getAttribute("data-gcal-device");
-      paintGuide();
-      const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
-      if (box && typed) { box.value = typed; liveCheck(); }
-      return;
-    }
+    if (dev) { device = dev.getAttribute("data-gcal-device"); tick(-1, false); return; }
+    const t = e.target.closest("[data-gcal-tick]");
+    if (t) { const i = +t.getAttribute("data-gcal-tick"); tick(i, !doneSteps.has(i)); return; }
+    // Opening Google ticks step 1 (the link still opens in a new tab)
+    if (e.target.closest("[data-gcal-open]")) { setTimeout(() => tick(0), 300); return; }
     if (e.target.closest("[data-gcal-paste]")) {
       const box = document.querySelector("#gcal-guide [data-gcal-paste-box]");
       try {
         const text = await navigator.clipboard.readText();
-        if (box) { box.value = text; liveCheck(); }
+        if (box) { box.value = text; onPasted(); }
       } catch (err) {
-        // The browser said no: show how to paste by hand
+        // The browser wouldn't let us read the clipboard: paste by hand
         const out = document.querySelector("#gcal-guide [data-gcal-check]");
-        if (out) { out.className = "gcal-check"; out.innerHTML = "Press and hold in the box above, then tap <strong>Paste</strong>."; }
+        if (out) { out.className = "gcal-check"; out.innerHTML = "Press and hold in the box, then tap <strong>Paste</strong>."; }
         if (box) box.focus();
-      }
-      return;
-    }
-    if (e.target.closest("[data-gcal-link]")) {
-      const r = liveCheck() || checkLink("");
-      if (!r.ok) {
-        const out = document.querySelector("#gcal-guide [data-gcal-check]");
-        if (out && !out.innerHTML) { out.className = "gcal-check is-bad"; out.innerHTML = PROBLEMS[r.problem]; }
-        return;
-      }
-      const name = guideFor;
-      paintGuide({ working: true });
-      try {
-        await saveLink(name, r.url);
-        const out = await refresh("added");
-        const mine = out && Array.isArray(out.results) ? out.results.find(x => x.member === name) : null;
-        if (mine && !mine.ok) {
-          paintGuide({ error: "Google wouldn't let us read that address. Check it's the <strong>Secret</strong> address and copy it again (step 4). If it still doesn't work, tap Reset next to it in Google, then copy the new one." });
-          return;
-        }
-        paintGuide({ done: true, count: mine ? mine.count : 0 });
-      } catch (err) {
-        paintGuide({ error: "We couldn't save that just now. Check the Wi-Fi and try again." });
       }
       return;
     }
