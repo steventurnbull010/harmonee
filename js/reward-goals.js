@@ -366,7 +366,7 @@ function renderRewardGoalIdeas(show) {
   box.innerHTML = list.map(i => {
     const on = typed === i.title.toLowerCase();
     return `<button type="button" class="reward-goal-idea${on ? " is-on" : ""}" data-idea="${escapeHtml(i.title)}" aria-pressed="${on}"><span aria-hidden="true">${i.emoji}</span>${escapeHtml(i.title)}</button>`;
-  }).join("") + `<button type="button" class="reward-goal-idea is-more" data-ideas-more aria-expanded="${rewardGoalMoreIdeas}">${rewardGoalMoreIdeas ? "Fewer ideas" : "＋ More ideas"}</button>`;
+  }).join("") + `<button type="button" class="reward-goal-idea is-more" data-ideas-more aria-expanded="${rewardGoalMoreIdeas}">${rewardGoalMoreIdeas ? "Fewer ideas" : "More ideas"}</button>`;
 }
 
 // Start again (pocket money, screen time) or Remove it (a one-off treat)

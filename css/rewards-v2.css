@@ -571,8 +571,11 @@ body.theme-dark .rw-points-slider::-webkit-slider-runnable-track { background: l
 }
 .reward-goal-idea:hover { border-color: #fdba74; }
 .reward-goal-idea.is-on { border-color: #f97316; background: #fff7ed; color: #c2410c; }
-.reward-goal-idea.is-more { border-style: dashed; color: var(--text-muted, #64748b); }
+/* More ideas: a blue link beside the ideas, not another pill (Steven, 11 Nov) */
+.reward-goal-idea.is-more { min-height: 32px; padding: 0 4px; border: 0; border-radius: 8px; background: none; color: #0284c7; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.reward-goal-idea.is-more:hover { color: #0369a1; }
 body.theme-dark .reward-goal-idea { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .reward-goal-idea.is-more { background: none; color: #7dd3fc; }
 body.theme-dark .reward-goal-idea.is-on { background: #431407; border-color: #f97316; color: #fed7aa; }
 
 /* Person picker with buddies (the robot, the cat): the drawing fills the circle */
