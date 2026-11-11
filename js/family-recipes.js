@@ -108,10 +108,16 @@
             <label class="ev-field"><span class="ev-field-label">Prep (mins)</span><input class="ev-native-input" data-fr="prep" type="number" min="0" max="600" inputmode="numeric" aria-label="Prep minutes"></label>
             <label class="ev-field"><span class="ev-field-label">Cook (mins)</span><input class="ev-native-input" data-fr="cook" type="number" min="0" max="1440" inputmode="numeric" aria-label="Cook minutes"></label>
           </div>
-          <label class="ev-field"><span class="ev-field-label">Ingredients <small>one on each line</small></span>
-            <textarea class="ev-native-input family-recipe-text" data-fr="ingredients" rows="7" placeholder="500g beef mince&#10;1 onion, chopped&#10;2 carrots" aria-label="Ingredients"></textarea></label>
-          <label class="ev-field"><span class="ev-field-label">Method <small>one step on each line</small></span>
-            <textarea class="ev-native-input family-recipe-text" data-fr="method" rows="7" placeholder="Brown the mince in a large pan.&#10;Add the onion and carrots…" aria-label="Method"></textarea></label>
+          <div class="ev-field"><span class="ev-field-label">Ingredients <small data-fr-count="ingredients"></small></span>
+            <textarea data-fr="ingredients" hidden aria-hidden="true" tabindex="-1"></textarea>
+            <ul class="fr-lines is-ingredients" data-fr-lines="ingredients" aria-label="Ingredients"></ul>
+            <button type="button" class="fr-add-line" data-fr-add="ingredients">＋ Add an ingredient</button>
+          </div>
+          <div class="ev-field"><span class="ev-field-label">Method <small data-fr-count="method"></small></span>
+            <textarea data-fr="method" hidden aria-hidden="true" tabindex="-1"></textarea>
+            <ol class="fr-lines is-method" data-fr-lines="method" aria-label="Method"></ol>
+            <button type="button" class="fr-add-line" data-fr-add="method">＋ Add a step</button>
+          </div>
           <p class="family-recipe-error" data-fr-error role="alert"></p>
           <div class="family-recipe-actions">
             <button type="button" class="settings-outline-btn is-quiet" data-fr-delete hidden>Delete</button>
@@ -129,8 +135,13 @@
       if (e.target.closest("[data-fr-photo]")) { pickPhotos(); return; }
       if (e.target.closest("[data-fr-dish-pick]")) { pickDish(); return; }
       if (e.target.closest("[data-fr-dish-remove]")) { dish = { ...dish, data: null, removed: true }; showDish(); return; }
-      if (e.target.closest("[data-fr-delete]")) { askDelete(); }
+      if (e.target.closest("[data-fr-delete]")) { askDelete(); return; }
+      const add = e.target.closest("[data-fr-add]");
+      if (add) { addLine(add.getAttribute("data-fr-add")); return; }
+      const rm = e.target.closest("[data-fr-remove]");
+      if (rm) { removeLine(rm.closest(".fr-line")); }
     });
+    wireLines(dlg);
     dlg.querySelector("#family-recipe-form").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
     return dlg;
   }
@@ -186,6 +197,124 @@
     input.click();
   }
 
+  // ---- Ingredients and method as lists ---------------------------------------------
+  // One row per ingredient, numbered steps with room between them, each
+  // growing to fit its words (a photo of a cookbook page used to land as one
+  // long block in a small box you had to scroll inside). Enter starts the
+  // next row; Backspace in an empty row removes it; pasting several lines
+  // makes several rows. The hidden boxes above hold the text, one per line,
+  // which is what saving reads.
+  const PLACEHOLDER = { ingredients: ["500g beef mince", "1 onion, chopped", "2 carrots"], method: ["Brown the mince in a large pan.", "Add the onion and carrots…"] };
+  const linesBox = (kind) => document.querySelector(`#family-recipe-modal [data-fr-lines="${kind}"]`);
+  function lineHtml(kind, text, n) {
+    const ph = PLACEHOLDER[kind][Math.min(n, PLACEHOLDER[kind].length - 1)];
+    const label = kind === "method" ? `Step ${n + 1}` : `Ingredient ${n + 1}`;
+    return `<li class="fr-line"><textarea class="fr-line-text" rows="1" data-fr-line="${kind}" aria-label="${label}" placeholder="${esc(n < PLACEHOLDER[kind].length ? ph : "")}">${esc(text)}</textarea><button type="button" class="fr-line-remove" data-fr-remove aria-label="Remove ${label.toLowerCase()}">×</button></li>`;
+  }
+  function autosize(t) {
+    if (!t) return;
+    t.style.height = "auto";
+    if (t.scrollHeight) t.style.height = `${t.scrollHeight}px`;
+  }
+  const autosizeAll = () => document.querySelectorAll("#family-recipe-modal .fr-line-text").forEach(autosize);
+  function syncKind(kind) {
+    const box = linesBox(kind);
+    if (!box) return;
+    const texts = [...box.querySelectorAll(".fr-line-text")].map(t => t.value.trim()).filter(Boolean);
+    field(kind).value = texts.join("\n");
+    const count = document.querySelector(`#family-recipe-modal [data-fr-count="${kind}"]`);
+    if (count) count.textContent = texts.length ? (kind === "method" ? `${texts.length} step${texts.length === 1 ? "" : "s"}` : `${texts.length}`) : "";
+    // Renumber the labels (the numbers you see come from the list itself)
+    box.querySelectorAll(".fr-line-text").forEach((t, n) => t.setAttribute("aria-label", `${kind === "method" ? "Step" : "Ingredient"} ${n + 1}`));
+  }
+  function renderLines(kind) {
+    const box = linesBox(kind);
+    if (!box) return;
+    const texts = String(field(kind).value || "").split("\n").map(x => x.trim()).filter(Boolean);
+    box.innerHTML = (texts.length ? texts : [""]).map((t, n) => lineHtml(kind, t, n)).join("");
+    syncKind(kind);
+    requestAnimationFrame(autosizeAll);
+  }
+  function insertAfter(li, kind, text = "") {
+    const n = [...li.parentNode.children].indexOf(li) + 1;
+    li.insertAdjacentHTML("afterend", lineHtml(kind, text, n));
+    const t = li.nextElementSibling.querySelector(".fr-line-text");
+    autosize(t);
+    return t;
+  }
+  function addLine(kind) {
+    const box = linesBox(kind);
+    if (!box) return;
+    const last = box.lastElementChild;
+    const lastText = last && last.querySelector(".fr-line-text");
+    // An empty last row is reused rather than adding another
+    const t = lastText && !lastText.value.trim() ? lastText : (last ? insertAfter(last, kind) : null);
+    if (t) { t.focus(); t.scrollIntoView({ block: "nearest" }); }
+    syncKind(kind);
+  }
+  function removeLine(li) {
+    if (!li) return;
+    const box = li.parentNode;
+    const kind = box.getAttribute("data-fr-lines");
+    const prev = li.previousElementSibling;
+    if (box.children.length === 1) { li.querySelector(".fr-line-text").value = ""; autosize(li.querySelector(".fr-line-text")); }
+    else li.remove();
+    syncKind(kind);
+    const focusOn = prev ? prev.querySelector(".fr-line-text") : box.querySelector(".fr-line-text");
+    if (focusOn) { focusOn.focus(); const v = focusOn.value.length; focusOn.setSelectionRange(v, v); }
+  }
+  function wireLines(dlg) {
+    dlg.addEventListener("input", (e) => {
+      const t = e.target.closest && e.target.closest(".fr-line-text");
+      if (!t) return;
+      // A line break typed or dropped in: split into rows
+      if (t.value.includes("\n")) {
+        const parts = t.value.split("\n").map(x => x.trim());
+        t.value = parts.shift();
+        let li = t.closest(".fr-line");
+        parts.filter(Boolean).forEach(part => { const nt = insertAfter(li, t.getAttribute("data-fr-line"), part); li = nt.closest(".fr-line"); });
+      }
+      autosize(t);
+      syncKind(t.getAttribute("data-fr-line"));
+    });
+    dlg.addEventListener("keydown", (e) => {
+      const t = e.target.closest && e.target.closest(".fr-line-text");
+      if (!t) return;
+      const kind = t.getAttribute("data-fr-line");
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        // Split where the cursor is: the rest goes on a new row below
+        const at = t.selectionStart;
+        const rest = t.value.slice(at).trim();
+        t.value = t.value.slice(0, at).trim();
+        autosize(t);
+        const nt = insertAfter(t.closest(".fr-line"), kind, rest);
+        nt.focus();
+        nt.setSelectionRange(0, 0);
+        syncKind(kind);
+        return;
+      }
+      if (e.key === "Backspace" && t.selectionStart === 0 && t.selectionEnd === 0) {
+        const li = t.closest(".fr-line");
+        const prev = li.previousElementSibling;
+        if (!prev) return;
+        e.preventDefault();
+        // Join this row onto the end of the one above
+        const pt = prev.querySelector(".fr-line-text");
+        const join = pt.value.length;
+        pt.value = pt.value + (t.value ? (pt.value ? " " : "") + t.value : "");
+        li.remove();
+        autosize(pt);
+        pt.focus();
+        pt.setSelectionRange(join, join);
+        syncKind(kind);
+      }
+    });
+    // Sizes are only known once the panel is on screen
+    dlg.addEventListener("transitionend", autosizeAll);
+    window.addEventListener("resize", () => { if (dlg.open) autosizeAll(); });
+  }
+
   function fill(r, fromPhoto) {
     field("title").value = r.title || "";
     field("emoji").value = r.emoji || "";
@@ -194,6 +323,8 @@
     field("cook").value = parseInt(r.cookTime, 10) || "";
     field("ingredients").value = (r.ingredients || []).join("\n");
     field("method").value = (r.instructions || []).join("\n");
+    renderLines("ingredients");
+    renderLines("method");
     setMeal(r.mealType || r.category || "dinner");
     const note = document.querySelector("#family-recipe-modal [data-fr-note]");
     if (note) note.hidden = !fromPhoto;
@@ -217,6 +348,8 @@
     const r = id ? list().find(x => x.id === id) : null;
     const dlg = prepare(r, opts);
     if (!dlg.open) dlg.showModal();
+    requestAnimationFrame(autosizeAll);
+    setTimeout(autosizeAll, 350); // after the panel has slid in
     if (typeof window.syncModalScrollLock === "function") window.syncModalScrollLock();
     // Straight into the name with a keyboard and mouse. Not on a phone or
     // tablet: the keyboard would pop up over "From a photo".

@@ -4502,3 +4502,101 @@ body.theme-dark .mqp-search, body.theme-dark .mqp-link { border-color: #334155; 
 .mqp-head-words { flex: 1; min-width: 0; }
 .mqp-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(1.05rem, 5.4vw, 1.3rem); }
 .mqp-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ==========================================================================
+   Family recipe form: ingredients and method as lists (11 Nov, from friends'
+   feedback on recipes from a photo). One row per ingredient with a dot,
+   numbered steps with room between them, every row growing to fit.
+   ========================================================================== */
+.fr-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; counter-reset: fr-step; }
+.fr-lines.is-ingredients { gap: 4px; }
+.fr-lines.is-method { gap: 12px; }
+.fr-line {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 4px 4px 32px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  background: var(--card-bg, #fff);
+}
+.fr-line:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+.fr-lines.is-ingredients .fr-line::before {
+  content: "";
+  position: absolute; left: 14px; top: 19px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #f59e0b;
+}
+.fr-lines.is-method .fr-line { padding-left: 44px; }
+.fr-lines.is-method .fr-line::before {
+  counter-increment: fr-step;
+  content: counter(fr-step);
+  position: absolute; left: 10px; top: 10px;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #0f172a; color: #fff;
+  font-size: 0.8rem; font-weight: 800;
+}
+.fr-line-text {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 4px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary, #0f172a);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  overflow: hidden;
+  field-sizing: content; /* grows to fit where supported; js/family-recipes.js does it elsewhere */
+}
+.fr-lines.is-method .fr-line-text { line-height: 1.6; }
+.fr-line-remove {
+  flex: none;
+  width: 36px; height: 36px;
+  margin-top: 2px;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.fr-line-remove:hover { background: rgba(15, 23, 42, 0.06); color: #b91c1c; }
+.fr-add-line {
+  align-self: flex-start;
+  min-height: 40px;
+  margin-top: 8px;
+  padding: 0 16px;
+  border: 1.5px dashed var(--card-border, #cbd5e1);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #475569);
+  font: inherit; font-weight: 700;
+  cursor: pointer;
+}
+body.theme-dark .fr-line { background: #0f172a; border-color: #334155; }
+body.theme-dark .fr-line-text { color: #f8fafc; }
+body.theme-dark .fr-lines.is-method .fr-line::before { background: #f8fafc; color: #0f172a; }
+
+/* ==========================================================================
+   Recipe card on phones and portrait tablets (11 Nov): the whole card
+   scrolls as one, so the photo scrolls away, the ingredients and method get
+   their full length, and "plan it" (date, meal, who's cooking, Add) follows
+   them instead of being pinned and squeezing the recipe to one line
+   ========================================================================== */
+@media (max-width: 860px) {
+  #cooking-recipe-modal .cooking-modal-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  #cooking-recipe-modal .cooking-modal-hero { flex: none; }
+  #cooking-recipe-modal .cooking-modal-body { flex: none; overflow: visible; min-height: 0; max-height: none; }
+  #cooking-recipe-modal .cooking-checklist,
+  #cooking-recipe-modal .cooking-steps-list { max-height: none !important; overflow: visible !important; }
+  #cooking-recipe-modal .cooking-modal-footer { flex: none; }
+}

@@ -563,8 +563,22 @@ const PAGES = [
     await p.fill('#family-recipe-modal [data-fr="title"]', "Nana's flapjacks");
     await p.click('#family-recipe-modal [data-fr-meal="snack"]');
     await p.fill('#family-recipe-modal [data-fr="servings"]', "12");
-    await p.fill('#family-recipe-modal [data-fr="ingredients"]', "250g oats\n125g butter\n4 tbsp golden syrup");
-    await p.fill('#family-recipe-modal [data-fr="method"]', "1. Melt the butter and syrup.\n2. Stir in the oats and bake for 20 minutes.");
+    // Ingredients and method are lists now: type, Enter for the next one
+    await p.click('#family-recipe-modal [data-fr-line="ingredients"]');
+    await p.keyboard.type("250g oats"); await p.keyboard.press("Enter");
+    await p.keyboard.type("125g butter"); await p.keyboard.press("Enter");
+    await p.keyboard.type("4 tbsp golden syrup");
+    await p.click('#family-recipe-modal [data-fr-line="method"]');
+    await p.keyboard.type("1. Melt the butter and syrup."); await p.keyboard.press("Enter");
+    await p.keyboard.type("2. Stir in the oats and bake for 20 minutes.");
+    const rows = await p.evaluate(() => ({
+      ing: document.querySelectorAll('#family-recipe-modal [data-fr-line="ingredients"]').length,
+      steps: document.querySelectorAll('#family-recipe-modal [data-fr-line="method"]').length,
+      hidden: document.querySelector('#family-recipe-modal [data-fr="ingredients"]').value,
+      scrolling: [...document.querySelectorAll("#family-recipe-modal .fr-line-text")].filter(t => t.scrollHeight > t.clientHeight + 2).length
+    }));
+    if (rows.ing !== 3 || rows.steps !== 2 || rows.hidden !== "250g oats\n125g butter\n4 tbsp golden syrup") throw new Error(`typing ingredients and steps as rows went wrong: ${JSON.stringify(rows)}`);
+    if (rows.scrolling) throw new Error(`${rows.scrolling} recipe rows scroll inside themselves`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-family-recipe-form.png`) });
     await p.click('#family-recipe-modal button[type="submit"]');
     await p.waitForTimeout(800);
@@ -617,6 +631,58 @@ const PAGES = [
     const left = await p.evaluate(() => ((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).customRecipes || []).filter(x => x.title === "Nana's flapjacks").length);
     if (left) throw new Error("deleting the recipe didn't reach the board");
     await p.evaluate(() => { const d = document.getElementById("plan-meal-drawer") || document.querySelector("dialog[open]"); if (d && d.open) d.close(); });
+  }],
+  // A long recipe from a photo (like a harira: 13 ingredients, long steps):
+  // the form shows every row in full, and on the card nothing is squeezed and
+  // "Add to meal plan" can be reached by scrolling, at every size
+  ["long-recipe", async (p) => {
+    await goTo("meals")(p);
+    const recipe = {
+      id: "family-smoke-harira", title: "Chunky Moroccan Harira Soup", emoji: "🍲", mealType: "dinner", category: "dinner", source: "family", servings: 7, cookTime: "45",
+      ingredients: ["2 tablespoons olive oil", "1 large onion, finely chopped", "2 sticks of celery, chopped", "2 carrots, chopped into small cubes", "3 garlic cloves, crushed", "400g tin chopped tomatoes", "200g Puy lentils, or other green or brown lentils", "100g long-grain rice", "1/2 teaspoon ground turmeric", "1/4 teaspoon chilli powder", "1 tablespoon ground cumin", "2 teaspoons ground coriander", "a good bunch of fresh curly or flat-leaf parsley"],
+      instructions: ["Heat the oil in a large pan and fry the onion, celery and carrot gently for 10 minutes until soft but not coloured.", "Add the garlic and cook for a minute more, then tip in the tomatoes, lentils and rice.", "Stir in all the spices, including the black pepper. Pour in the stock, turn the heat to high, bring to the boil, stirring a few times, then reduce the heat to a simmer for 25–30 minutes.", "Taste to make sure the lentils and rice are properly cooked. If they are not, let the soup simmer for a bit longer, until they are done.", "Stir through the chopped parsley and serve with crusty bread."]
+    };
+    // The form, as it looks after a photo has filled it
+    await p.evaluate((r) => { window.FamilyRecipes.openEditor(); window.FamilyRecipes._fill(r, true); }, recipe);
+    await p.waitForTimeout(700);
+    const form = await p.evaluate(() => ({
+      ing: document.querySelectorAll('#family-recipe-modal [data-fr-line="ingredients"]').length,
+      steps: document.querySelectorAll('#family-recipe-modal [data-fr-line="method"]').length,
+      scrolling: [...document.querySelectorAll("#family-recipe-modal .fr-line-text")].filter(t => t.scrollHeight > t.clientHeight + 2).map(t => t.value.slice(0, 30))
+    }));
+    await p.evaluate(() => { const m = document.querySelector("#family-recipe-modal [data-fr-lines='method']"); if (m) m.scrollIntoView({ block: "start" }); });
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-long-recipe-form.png`) });
+    await p.evaluate(() => document.getElementById("family-recipe-modal").close());
+    await p.waitForTimeout(500);
+    if (form.ing !== 13 || form.steps !== 5) throw new Error(`the form didn't make a row for each ingredient and step: ${JSON.stringify(form)}`);
+    if (form.scrolling.length) throw new Error(`rows still scroll inside themselves: ${form.scrolling.join(" | ")}`);
+    // The card
+    const card = await p.evaluate(async (r) => {
+      window.openCookingRecipeModal({ ...r, subtitle: "Family recipe" });
+      await new Promise(res => setTimeout(res, 600));
+      const content = document.querySelector("#cooking-recipe-modal .cooking-modal-content");
+      const list = document.getElementById("cooking-checklist");
+      const items = list ? list.children.length : 0;
+      const listBox = list ? list.getBoundingClientRect().height : 0;
+      const body = document.querySelector("#cooking-recipe-modal .cooking-modal-body");
+      const bodyScrolls = body ? body.scrollHeight > body.clientHeight + 2 && getComputedStyle(body).overflowY !== "visible" : false;
+      // Scroll the card to the end: can "Add to meal plan" be seen?
+      content.scrollTop = content.scrollHeight;
+      await new Promise(res => setTimeout(res, 200));
+      const btn = document.getElementById("btn-cooking-add-to-plan");
+      const b = btn.getBoundingClientRect();
+      const c = content.getBoundingClientRect();
+      return { items, listBox: Math.round(listBox), bodyScrolls, addVisible: b.height > 0 && b.top >= c.top - 1 && b.bottom <= c.bottom + 1 && b.bottom <= window.innerHeight + 1 };
+    }, recipe);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-long-recipe-card-end.png`) });
+    await p.evaluate(() => { const c = document.querySelector("#cooking-recipe-modal .cooking-modal-content"); if (c) c.scrollTop = 0; });
+    await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-long-recipe-card.png`) });
+    await p.evaluate(() => { const d = document.getElementById("cooking-recipe-modal"); if (d && d.open) d.close(); });
+    if (card.items !== 13) throw new Error(`the card lists ${card.items} ingredients, not 13`);
+    if (p.__size === "phone" && (card.listBox < 13 * 24 || card.bodyScrolls)) throw new Error(`the ingredients are squeezed into a small scrolling box on the phone: ${JSON.stringify(card)}`);
+    if (!card.addVisible) throw new Error(`"Add to meal plan" can't be reached by scrolling: ${JSON.stringify(card)}`);
   }],
   // REVIEW=1: screenshots of the phone flow for adding a recipe from a photo
   ["recipe-review", async (p) => {
