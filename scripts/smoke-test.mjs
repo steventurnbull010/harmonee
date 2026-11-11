@@ -1282,6 +1282,104 @@ const PAGES = [
     if (where.mealtimeMax !== "M") throw new Error(`Magic Mealtime faces: ${where.mealtimeMax}`);
     await p.evaluate(() => { window.boardSettings.memberBuddies = {}; });
   }],
+  // Picture jobs for children who aren't reading yet (js/picture-jobs.js): Max is
+  // switched to pictures on his profile, gets the ready-made routine, his column
+  // shows picture cards that read aloud, and "My jobs" opens his full-screen view
+  ["picture-jobs", async (p) => {
+    const shot = async (name) => { await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOTS, `${p.__size}-pictures-${name}.png`) }); };
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      window.__pjMute = true; // the test machine stays quiet
+      window.boardSettings.memberBuddies = { max: "robot" };
+      window.switchSkylightView("tasks");
+      window.openProfilePanel("Max");
+    });
+    await p.waitForTimeout(300);
+    // Not yet: pictures. Max has jobs already, so the routine isn't offered by itself; open it
+    await p.evaluate(() => document.querySelector('#profile-modal [data-reading="no"]').click());
+    await p.waitForTimeout(300);
+    const prof = await p.evaluate(() => ({
+      on: window.PictureJobs.isOn("Max"),
+      pressed: document.querySelector('#profile-modal [data-reading="no"]').getAttribute("aria-pressed"),
+      starterBtn: !!document.querySelector("#profile-modal [data-open-starter]")
+    }));
+    await shot("profile");
+    if (!prof.on || prof.pressed !== "true" || !prof.starterBtn) throw new Error(`"Not yet" on Max's profile didn't switch pictures on: ${JSON.stringify(prof)}`);
+    await p.evaluate(() => document.querySelector("#profile-modal [data-open-starter]").click());
+    await p.waitForTimeout(300);
+    const st = await p.evaluate(() => ({
+      items: document.querySelectorAll("#pj-starter-modal [data-pj-item]").length,
+      on: document.querySelectorAll("#pj-starter-modal [data-pj-item].is-on").length,
+      prayersOff: !document.querySelector('#pj-starter-modal [data-pj-item="3-0"]').classList.contains("is-on"),
+      add: document.getElementById("pj-starter-add").textContent
+    }));
+    await shot("starter");
+    const noClip = await p.evaluate(() => window.PictureJobs.starterItems().map(i => i.title).concat(window.PictureJobs.FIXED_WORDS).filter(t => !window.PictureJobs.clipFor(t)));
+    if (noClip.length) throw new Error(`no voice clip for: ${noClip.join(", ")}`);
+    const clipOk = await p.evaluate(async () => { const r = await fetch(window.PictureJobs.clipFor("Brush teeth")); return r.ok && /audio|mp4|octet/.test(r.headers.get("content-type") || "") ? "ok" : `${r.status} ${r.headers.get("content-type")}`; });
+    if (clipOk !== "ok") throw new Error(`the Brush teeth clip didn't load: ${clipOk}`);
+    if (st.items !== 20 || st.on !== 16 || !st.prayersOff || st.add !== "Add 16 jobs") throw new Error(`the ready-made routine isn't right: ${JSON.stringify(st)}`);
+    const before = await p.evaluate(() => (window.currentTasks || []).length);
+    await p.evaluate(async () => { document.getElementById("pj-starter-add").click(); await new Promise(r => setTimeout(r, 1500)); });
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.renderSkylightTasksPage(); });
+    await p.waitForTimeout(400);
+    const col = await p.evaluate((before) => {
+      const c = document.querySelector('.skylight-tasks-col[data-col-member="Max"]');
+      const added = (window.currentTasks || []).filter(t => /^pic-max-/.test(t.id));
+      return {
+        added: added.length, grew: (window.currentTasks || []).length - before,
+        seq: added.every(t => typeof t.seq === "number" && t.assignedTo === "Max" && t.repeat === "daily"),
+        cards: c ? c.querySelectorAll(".skylight-task-card.is-picture").length : 0,
+        stars: c ? c.querySelectorAll(".skylight-task-card.is-picture .pj-stars").length : 0,
+        pts: c ? /\bpts\b/.test(c.querySelector(".tasks-col-body").textContent) : true,
+        open: !!(c && c.querySelector("[data-pj-open]")),
+        others: document.querySelectorAll('.skylight-tasks-col:not([data-col-member="Max"]) .is-picture').length
+      };
+    }, before);
+    if (col.added !== 16 || !col.seq) throw new Error(`the routine didn't add Max's 16 jobs: ${JSON.stringify(col)}`);
+    if (!col.cards || col.stars < 1 || col.pts || !col.open || col.others) throw new Error(`Max's column isn't picture cards with stars and My jobs: ${JSON.stringify(col)}`);
+    await p.evaluate(() => { const c = document.querySelector('.skylight-tasks-col[data-col-member="Max"]'); if (window.markTasksPersonTab) window.markTasksPersonTab("Max"); c.scrollIntoView({ inline: "center", block: "start" }); });
+    // On a phone, Max's tab
+    await p.evaluate(() => { const t = document.querySelector('[data-person-tab="Max"]'); if (t && getComputedStyle(t).display !== "none" && t.offsetParent) t.click(); });
+    await shot("column");
+    // Tapping a picture reads it aloud, and doesn't open the job
+    const said = await p.evaluate(async () => {
+      window.__pjLastSpoken = "";
+      const card = document.querySelector('.skylight-tasks-col[data-col-member="Max"] .skylight-task-card.is-picture');
+      card.querySelector(".pj-card-title").click();
+      await new Promise(r => setTimeout(r, 150));
+      return { said: window.__pjLastSpoken, title: card.querySelector(".pj-card-title").textContent, quick: !!document.querySelector("dialog[open]") };
+    });
+    if (said.said !== said.title || said.quick) throw new Error(`tapping a picture card didn't read it aloud (or opened a panel): ${JSON.stringify(said)}`);
+    // My jobs: next job big, the tick finishes it
+    await p.evaluate(() => document.querySelector('.skylight-tasks-col[data-col-member="Max"] [data-pj-open]').click());
+    await p.waitForTimeout(400);
+    const v = await p.evaluate(async () => {
+      const q = (s) => document.querySelector(s);
+      const out = { open: !!q("#pj-view[open]"), next: (q("#pj-view .pj-next-title") || {}).textContent, count: (q("#pj-view .pj-count") || {}).textContent };
+      q("#pj-view .pj-next-pic").click();
+      out.heard = window.__pjLastSpoken;
+      return out;
+    });
+    await shot("view");
+    if (!v.open || !v.next || v.heard !== v.next) throw new Error(`My jobs didn't open on the next job: ${JSON.stringify(v)}`);
+    const t = await p.evaluate(async () => {
+      document.querySelector("#pj-view [data-pj-tick]").click();
+      await new Promise(r => setTimeout(r, 900));
+      const q = (s) => document.querySelector(s);
+      return { count: (q("#pj-view .pj-count") || {}).textContent, done: document.querySelectorAll("#pj-view .pj-tile.is-done").length, cheer: window.__pjLastSpoken, next: (q("#pj-view .pj-next-title") || {}).textContent };
+    });
+    await shot("view-ticked");
+    if (t.done < 1 || t.count === v.count || !/^(Well done|Brilliant|Great job|You did it|Super)!$/.test(t.cheer || "")) throw new Error(`ticking in My jobs didn't count, cheer or move on: ${JSON.stringify({ v, t })}`);
+    // Tidy up: Max's jobs and pictures go
+    await p.evaluate(async () => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      if (window.Buddies) window.Buddies.close(true);
+      for (const x of (window.currentTasks || []).filter(t => /^pic-max-/.test(t.id))) await window.deleteTaskById(x.id);
+      await window.PictureJobs.setOn("Max", false);
+      window.boardSettings.memberBuddies = {};
+    });
+  }],
   ["rewards-page", async (p) => {
     await p.evaluate(() => {
       document.querySelectorAll("dialog[open]").forEach(d => d.close());

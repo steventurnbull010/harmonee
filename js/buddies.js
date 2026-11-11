@@ -86,6 +86,8 @@
     const panels = [...document.querySelectorAll("dialog[open]")];
     (panels.length ? panels[panels.length - 1] : document.body).appendChild(el);
     requestAnimationFrame(() => el.classList.add("is-in"));
+    // Children who aren't reading yet hear it (js/picture-jobs.js)
+    if (!opts.quiet && window.PictureJobs && window.PictureJobs.isOn(name)) window.PictureJobs.speak(["You did it!", line]);
     if (!opts.quiet && typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
     closeTimer = setTimeout(() => close(), SHOW_MS);
     return true;

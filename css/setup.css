@@ -654,3 +654,10 @@ body.theme-dark .setup-buddy.is-on { background: color-mix(in srgb, var(--pill, 
 .setup-name-idea.is-on { border-color: #0284c7; background: #f0f9ff; color: #0369a1; }
 body.theme-dark .setup-name-idea { background: #1e293b; border-color: #334155; color: #e2e8f0; }
 body.theme-dark .setup-name-idea.is-on { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; color: #f8fafc; }
+
+/* Is X reading yet? (step 3) and the picture routine note (step 5) · js/picture-jobs.js */
+.setup-reading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.setup-reading-q { flex: 1 1 100%; font-size: 0.9rem; font-weight: 700; color: var(--text-secondary, #475569); }
+.setup-reading button { min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1.5px solid #cbd5e1; background: #fff; color: #0f172a; font: inherit; font-weight: 700; cursor: pointer; }
+.setup-reading button.is-on { border-color: #0284c7; background: #e0f2fe; color: #0369a1; }
+.setup-pictures-note { margin: 8px 0 16px; padding: 8px 16px; border-radius: 16px; background: #fef3c7; color: #78350f; font-size: 0.9rem; line-height: 1.4; }

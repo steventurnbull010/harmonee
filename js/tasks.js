@@ -461,6 +461,8 @@ function renderSkylightTasksPage() {
 
     const filterPillsHtml = ""; // the filter bar is board-wide now (renderTasksSlotBar)
 
+    // Not reading yet: big picture cards (js/picture-jobs.js)
+    const picMode = !isGrabPool && !!window.PictureJobs && window.PictureJobs.isOn(colMember);
     // Render task cards helper
     const renderCard = (t) => {
       const isDaily = t.repeat === "daily" || t.day === "Daily" || t.taskType === "Daily Task";
@@ -500,6 +502,12 @@ function renderSkylightTasksPage() {
             ${isDone ? '✓' : ''}
           </button>`;
 
+      if (picMode) return window.PictureJobs.cardHtml({
+        task: t, done: isDone, actionHtml,
+        classes: `${isDone ? "is-completed" : ""} ${important ? "is-important" : ""}`,
+        style: `--card-color: ${pal.primary}; background: ${isDone ? "rgba(0,0,0,0.03)" : pal.lightBg}; border-color: ${pal.border};`,
+        attrs: `data-task-id="${t.id}" data-day="${dayName}" data-date="${selectedDateStr}" data-member="${escapeHtml(colMember)}"`
+      });
       return `
         <div class="skylight-task-card ${isDone ? 'is-completed' : ''} ${isGrabbable ? 'is-grabbable' : ''} ${isMovable ? 'is-movable' : ''} ${important ? 'is-important' : ''} ${justGrabbed ? 'is-just-grabbed' : ''}"
              style="--card-color: ${pal.primary}; background: ${isDone ? 'rgba(0,0,0,0.03)' : pal.lightBg}; border-color: ${pal.border};"
@@ -539,7 +547,9 @@ function renderSkylightTasksPage() {
         // To-do cards first, finished ones after, each keeping its own order
         const todo = [], done = [];
         sec.list.forEach(t => (isTaskDoneOnDate(t, tasksSelectedDate, mLower) ? done : todo).push(t));
-        const ordered = todo.concat(done);
+        const bySeq = (a, b) => (picMode ? (a.seq ?? 999) - (b.seq ?? 999) : 0);
+        const ordered = todo.sort(bySeq).concat(done.sort(bySeq));
+        const cardsHtml = (list) => picMode ? `<div class="pj-grid">${list.map(renderCard).join("")}</div>` : list.map(renderCard).join("");
         const secKey = `${selectedDateStr}|${mLower}|${sec.key}`;
         const keyAttr = escapeHtml(secKey);
         const allDone = !isFutureDay && todo.length === 0 && done.length > 0;
@@ -573,7 +583,7 @@ function renderSkylightTasksPage() {
                   <span class="toggle-note"><span class="note-word">all done </span>${countText} ✓</span>
                   <span class="toggle-chevron" aria-hidden="true">▴</span>
                 </button>
-                ${ordered.map(renderCard).join("")}
+                ${cardsHtml(ordered)}
               </div>
             `;
           }
@@ -581,7 +591,7 @@ function renderSkylightTasksPage() {
         return `
           <div class="tasks-section-group" data-section-key="${keyAttr}">
             <h4 class="tasks-section-heading">${escapeHtml(sec.title)}</h4>
-            ${ordered.map(renderCard).join("")}
+            ${cardsHtml(ordered)}
           </div>
         `;
       }).join("");
@@ -608,6 +618,7 @@ function renderSkylightTasksPage() {
             </span>
           </div>
           ${filterPillsHtml}
+          ${!isGrabPool && window.PictureJobs && window.PictureJobs.isOn(colMember) && totalCount ? window.PictureJobs.openButtonHtml(colMember) : ""}
         </div>
         <div class="tasks-col-body">
           ${bodySectionsHtml}
@@ -693,6 +704,12 @@ function renderSkylightTasksPage() {
     card.onclick = (e) => {
       if (e.target.closest(".skylight-task-check-circle")) return;
       if (grabDragJustEnded) return; // a drag, not a tap
+      // A picture card: anywhere but the pencil reads it aloud
+      if (card.classList.contains("is-picture") && !e.target.closest("[data-pj-edit]")) {
+        const say = card.querySelector("[data-pj-say]");
+        if (say && window.PictureJobs) window.PictureJobs.speak(say.getAttribute("data-pj-say"));
+        return;
+      }
       const tid = card.getAttribute("data-task-id");
       const dName = card.getAttribute("data-day");
       const colMem = card.getAttribute("data-member") || null;

@@ -72,7 +72,8 @@
     const s = state;
     const names = everyone();
     if (!s.who) {
-      const guess = names.length > 2 ? names.slice(2) : names;
+      const readers = names.filter(n => !(s.people.find(p => p.name === n) || {}).pictures);
+      const guess = (names.length > 2 ? names.slice(2) : names).filter(n => readers.includes(n));
       s.who = {};
       ROUTINES.forEach(r => { s.who[r.key] = new Set(r.on ? guess : []); });
     }
@@ -146,7 +147,7 @@
       const list = window.Buddies ? window.Buddies.available() : [];
       return `
       <h1 class="setup-title" id="setup-title">🐾 Pick a buddy</h1>
-      <p class="setup-lead">When someone ticks off their last job of the day, their buddy pops up to say well done.</p>
+      <p class="setup-lead">When someone ticks off their last job of the day, their buddy pops up to say well done. Little ones who aren't reading yet get big pictures that read themselves aloud.</p>
       <p class="setup-later">✨ Optional: skip anyone, or change it later in Settings → Profiles</p>
       ${s.people.map((p, i) => {
         const chosen = p.buddy && window.Buddies ? window.Buddies.byId(p.buddy) : null;
@@ -156,6 +157,11 @@
           <div class="setup-buddy-strip" role="group" aria-label="${esc(p.name)}'s buddy">${list.map(b => `
             <button type="button" class="setup-buddy${p.buddy === b.id ? " is-on" : ""}" style="--pill:${colourOf(p.colour)}" data-act="buddy" data-i="${i}" data-buddy="${b.id}" aria-pressed="${p.buddy === b.id}" aria-label="${esc(b.name)} for ${esc(p.name)}">
               ${window.Buddies.svgFor(b.id)}<span>${esc(b.name)}</span></button>`).join("")}</div>
+          <div class="setup-reading" role="group" aria-label="Is ${esc(p.name)} reading yet?">
+            <span class="setup-reading-q">Is ${esc(p.name)} reading yet?</span>
+            <button type="button" class="${!p.pictures ? "is-on" : ""}" data-act="reading" data-i="${i}" data-v="yes" aria-pressed="${!p.pictures}">Yes</button>
+            <button type="button" class="${p.pictures ? "is-on" : ""}" data-act="reading" data-i="${i}" data-v="no" aria-pressed="${!!p.pictures}">Not yet: pictures</button>
+          </div>
         </div>`;
       }).join("")}`;
     }
@@ -191,6 +197,12 @@
         <h1 class="setup-title" id="setup-title">✅ Starter routines</h1>
         <p class="setup-lead">A few ideas to get going. Tap who does each one, or skip it.</p>
         <p class="setup-later">✨ Add your own any time on the Tasks page</p>
+        ${(() => {
+          const kids = s.people.filter(p => p.pictures);
+          if (!kids.length || !window.PictureJobs) return "";
+          const n = window.PictureJobs.starterItems().filter(x => x.on).length;
+          return `<p class="setup-pictures-note">🖼️ ${esc(kids.map(p => p.name).join(" and "))} get${kids.length === 1 ? "s" : ""} a ready-made picture routine (${n} jobs: morning, out the door and bedtime). Change it any time from their profile.</p>`;
+        })()}
         ${["morning", "afternoon", "evening"].map(slot => `<p class="setup-slot">${SLOT_LABEL[slot]}</p><ul class="setup-routines">${group(slot).map(row).join("")}</ul>`).join("")}
         <h2 class="setup-group">🙋 Up for grabs <span>anyone can do these</span></h2>
         <div class="setup-job-chips">${JOBS.map(j => `<button type="button" class="setup-job-chip${s.picked.has(j.key) ? " is-on" : ""}" data-act="pick" data-key="${j.key}" aria-pressed="${s.picked.has(j.key)}"><span aria-hidden="true">${j.icon}</span> ${esc(j.title)}${j.day ? ` <small>${esc(j.day)}s</small>` : ""}</button>`).join("")}</div>`;
@@ -325,6 +337,13 @@
       done: false, completedBy: null, completedAt: null
     }));
 
+    // Children who aren't reading yet: their ready-made picture routine
+    const memberPictures = {};
+    if (window.PictureJobs) s.people.filter(p => p.pictures).forEach(p => {
+      memberPictures[p.name.toLowerCase()] = true;
+      const on = new Set(window.PictureJobs.starterItems().filter(x => x.on).map(x => x.id));
+      tasks.push(...window.PictureJobs.starterTasks(p.name, on, stamp));
+    });
     const memberColors = {};
     const memberBuddies = {};
     s.people.forEach(p => {
@@ -339,6 +358,7 @@
       localStorage.setItem(`harmonee_settings_${boardId}`, JSON.stringify({
         familyName: s.familyName, gameMode: s.mode, currency: s.currency, memberColors,
         ...(Object.keys(memberBuddies).length ? { memberBuddies } : {}),
+        ...(Object.keys(memberPictures).length ? { memberPictures } : {}),
         ...(s.weather ? { weatherLocation: { lat: s.weather.lat, lon: s.weather.lon, name: s.weather.name, label: s.weather.label || s.weather.name } } : {})
       }));
       localStorage.setItem(`harmonee_setup_tasks_${boardId}`, JSON.stringify(tasks));
@@ -393,6 +413,7 @@
     }
     if (act === "colour") { s.openColour = s.openColour === i ? null : i; return render(); }
     if (act === "pick-colour") { s.people[i].colour = b.getAttribute("data-colour"); s.openColour = null; return render(); }
+    if (act === "reading") { s.people[i].pictures = b.getAttribute("data-v") === "no"; s.who = null; return render(); }
     if (act === "buddy") {
       // Tap to choose, tap again to go without; keep the strip where it was
       const id = b.getAttribute("data-buddy");

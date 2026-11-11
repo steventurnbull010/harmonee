@@ -38,6 +38,7 @@
     const pal = palette(person);
     const buddyId = window.Buddies ? window.Buddies.getMemberBuddy(person) : null;
     const buddy = buddyId ? window.Buddies.byId(buddyId) : null;
+    const pictures = !!(window.PictureJobs && window.PictureJobs.isOn(person));
     dlg.style.setProperty("--profile-color", pal.primary);
     dlg.querySelector("#profile-title").textContent = `${person}'s profile`;
     const tiles = (window.Buddies ? window.Buddies.available() : []).map(b => `
@@ -53,6 +54,18 @@
         <div><p class="profile-hero-name">${escapeHtml(person)}</p>
           <p class="profile-hero-sub">${escapeHtml([pal.name, buddy ? `${buddy.name} buddy` : "No buddy yet"].filter(Boolean).join(" · "))}</p></div>
       </div>
+
+      <section class="profile-section" aria-labelledby="profile-reading-head">
+        <h3 class="profile-section-title" id="profile-reading-head">Is ${escapeHtml(person)} reading yet?</h3>
+        <div class="profile-reading" role="group" aria-label="Is ${escapeHtml(person)} reading yet?">
+          <button type="button" class="profile-reading-btn" data-reading="no" aria-pressed="${pictures}">
+            <span class="profile-reading-icon" aria-hidden="true">🖼️</span><span><strong>Not yet</strong><small>Show pictures and read jobs aloud</small></span></button>
+          <button type="button" class="profile-reading-btn" data-reading="yes" aria-pressed="${!pictures}">
+            <span class="profile-reading-icon" aria-hidden="true">📖</span><span><strong>Yes, they're reading</strong><small>Jobs show as words</small></span></button>
+        </div>
+        <p class="profile-section-desc">You can change this any time. Plenty of kids use pictures while they learn.</p>
+        ${pictures ? `<button type="button" class="profile-starter-btn" data-open-starter>✨ Add a ready-made routine</button>` : ""}
+      </section>
 
       <section class="profile-section" aria-labelledby="profile-buddy-head">
         <h3 class="profile-section-title" id="profile-buddy-head">Buddy</h3>
@@ -74,6 +87,18 @@
   }
 
   async function onClick(e) {
+    const reading = e.target.closest("[data-reading]");
+    if (reading && window.PictureJobs) {
+      const pictures = reading.getAttribute("data-reading") === "no";
+      const was = window.PictureJobs.isOn(person);
+      await window.PictureJobs.setOn(person, pictures);
+      render();
+      // Just switched on, and no jobs yet: offer the ready-made routine
+      const hasJobs = typeof window.getTasksForColumn === "function" && window.getTasksForColumn(person, new Date()).length > 0;
+      if (pictures && !was && !hasJobs) window.PictureJobs.openStarter(person);
+      return;
+    }
+    if (e.target.closest("[data-open-starter]") && window.PictureJobs) { window.PictureJobs.openStarter(person); return; }
     const pick = e.target.closest("[data-pick-buddy]");
     if (pick && window.Buddies) {
       const id = pick.getAttribute("data-pick-buddy");

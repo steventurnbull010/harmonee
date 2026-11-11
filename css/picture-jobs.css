@@ -1,0 +1,158 @@
+/* ==========================================================================
+   PICTURE JOBS (js/picture-jobs.js) · children who aren't reading yet
+   Phones first (Steven's brother's family only has phones), then tablets.
+   ========================================================================== */
+
+/* ---- Their column: big picture cards, two or three across ---------------- */
+.pj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.skylight-task-card.is-picture {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 4px; padding: 8px 8px 8px; min-height: 160px; border-width: 2px; border-radius: 20px; text-align: center;
+}
+.skylight-task-card.is-picture:hover { transform: none; }
+.pj-card-pic {
+  display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1 / 1; max-height: 104px;
+  padding: 4px; border: 0; border-radius: 16px; background: rgba(255, 255, 255, 0.75); cursor: pointer;
+}
+.pj-card-pic .job-svg, .pj-card-pic .pj-emoji { width: 100%; height: 100%; }
+.pj-emoji { display: flex; align-items: center; justify-content: center; font-size: 3rem; line-height: 1; }
+.pj-card-title { font-weight: 800; font-size: 0.95rem; line-height: 1.2; color: var(--text-primary, #0f172a); }
+.pj-card-foot { min-height: 20px; display: flex; align-items: center; justify-content: center; }
+.pj-stars { color: #f59e0b; font-size: 1.05rem; letter-spacing: 2px; line-height: 1; }
+.pj-card-done { font-weight: 800; font-size: 0.85rem; color: #15803d; }
+/* The tick: a big round button in the corner */
+.skylight-task-card.is-picture .skylight-task-check-circle {
+  position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; font-size: 1.2rem;
+  background: #fff; border: 3px solid var(--card-color, #94a3b8); color: #fff; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+}
+.skylight-task-card.is-picture.is-completed .skylight-task-check-circle { background: #22c55e; border-color: #22c55e; }
+.skylight-task-card.is-picture.is-completed .pj-card-pic { opacity: 0.55; }
+.skylight-task-card.is-picture.is-completed .pj-card-title { text-decoration: none; opacity: 0.6; }
+/* The pencil: small and quiet, for grown-ups */
+.pj-card-edit {
+  position: absolute; top: 8px; left: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0;
+  display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.85); color: #64748b; cursor: pointer;
+}
+body.theme-dark .pj-card-pic { background: rgba(255, 255, 255, 0.08); }
+body.theme-dark .pj-card-edit { background: rgba(15, 23, 42, 0.6); color: #cbd5e1; }
+
+/* "▶ My jobs" under their name */
+.pj-open-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 8px;
+  border: 0; border-radius: 999px; background: var(--card-color, #0284c7); color: #fff; font: inherit; font-weight: 800; font-size: 1.05rem; cursor: pointer;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--card-color, #0284c7) 35%, transparent);
+}
+
+/* A tap on a picture: a little bounce */
+.is-pop { animation: pj-pop 0.35s ease; }
+@keyframes pj-pop { 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+/* ---- The full-screen view ------------------------------------------------ */
+dialog.pj-view {
+  width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: color-mix(in srgb, var(--pj-light, #f1f5f9) 70%, #fff); color: #0f172a; overflow: hidden;
+}
+dialog.pj-view::backdrop { background: rgba(15, 23, 42, 0.5); }
+.pj-confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+.pj-view-inner { display: flex; flex-direction: column; height: 100%; max-width: 720px; margin: 0 auto; padding: env(safe-area-inset-top, 0) 16px env(safe-area-inset-bottom, 0); box-sizing: border-box; }
+.pj-top { display: flex; align-items: center; gap: 8px; padding: 16px 0 8px; }
+.pj-face { width: 48px; height: 48px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 1.3rem; }
+.pj-title { flex: 1; margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: 1.5rem; line-height: 1.1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-count { padding: 4px 16px; border-radius: 999px; background: #fff; font-weight: 800; color: var(--pj-colour, #0284c7); }
+.pj-close { width: 56px; height: 56px; flex: none; border-radius: 50%; border: 0; background: #fff; color: #0f172a; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12); }
+.pj-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 8px 0 16px; }
+
+.pj-next { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.pj-next-label { margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.85rem; color: var(--pj-colour, #0284c7); }
+.pj-next-pic {
+  position: relative; width: min(60vw, 240px); aspect-ratio: 1 / 1; padding: 16px; border-radius: 40px; cursor: pointer;
+  border: 4px solid var(--pj-colour, #0284c7); background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  display: flex; align-items: center; justify-content: center;
+}
+.pj-next-pic .job-svg, .pj-next-pic .pj-emoji { width: 100%; height: 100%; }
+.pj-next-pic .pj-emoji { font-size: min(32vw, 128px); }
+.pj-hear { position: absolute; right: -8px; bottom: -8px; width: 48px; height: 48px; border-radius: 50%; background: var(--pj-colour, #0284c7); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2); }
+.pj-next-title { margin: 8px 0 0; font-weight: 800; font-size: 1.75rem; line-height: 1.15; }
+.pj-next .pj-stars { font-size: 1.6rem; }
+.pj-tick {
+  width: 96px; height: 96px; margin-top: 8px; border-radius: 50%; border: 0; cursor: pointer;
+  background: #22c55e; color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 #15803d, 0 10px 24px rgba(21, 128, 61, 0.35); transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.pj-tick:active, .pj-tick.is-ticked { transform: translateY(4px); box-shadow: 0 2px 0 #15803d, 0 4px 12px rgba(21, 128, 61, 0.3); }
+
+.pj-row { display: flex; flex-direction: column; gap: 8px; }
+.pj-row-label { margin: 0; font-weight: 800; font-size: 0.9rem; color: #475569; }
+.pj-tiles { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
+.pj-tile { position: relative; flex: none; width: 80px; height: 80px; padding: 8px; border-radius: 20px; border: 2px solid rgba(15, 23, 42, 0.08); background: #fff; cursor: pointer; }
+.pj-tile-pic, .pj-tile-pic .job-svg, .pj-tile-pic .pj-emoji { display: flex; width: 100%; height: 100%; }
+.pj-tile-pic .pj-emoji { font-size: 2.2rem; }
+.pj-tile.is-done { background: #f0fdf4; border-color: #bbf7d0; }
+.pj-tile.is-done .pj-tile-pic { opacity: 0.5; }
+.pj-tile-tick { position: absolute; right: -4px; top: -4px; width: 28px; height: 28px; border-radius: 50%; background: #22c55e; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+.pj-alldone, .pj-empty { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 0; text-align: center; }
+.pj-alldone-face { width: 160px; height: 160px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 4rem; font-weight: 800; }
+.pj-alldone-words { margin: 0; font-family: Georgia, 'Playfair Display', serif; font-size: 2rem; font-weight: 700; }
+.pj-again { min-height: 48px; padding: 0 24px; border-radius: 999px; border: 0; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.pj-empty-pic { font-size: 5rem; border: 0; background: none; cursor: pointer; }
+.pj-empty p { margin: 0; font-size: 1.4rem; font-weight: 800; }
+
+.pj-foot { padding: 8px 0 16px; }
+.pj-goal { display: flex; align-items: center; gap: 16px; padding: 8px 16px 8px 8px; border-radius: 20px; background: #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
+.pj-goal-photo { width: 56px; height: 56px; flex: none; border-radius: 16px; background: #fde68a center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+.pj-goal-main { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pj-goal-words { font-size: 0.95rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-goal-words strong, .pj-goal-stars { color: #b45309; font-weight: 800; }
+.pj-goal-stars { font-size: 1.3rem; }
+.pj-goal-bar { display: block; height: 12px; border-radius: 999px; background: #fef3c7; overflow: hidden; }
+.pj-goal-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+
+/* Tablets and laptops: the next job and its tick side by side are too far apart; keep it centred but larger */
+@media (min-width: 700px) {
+  .pj-next-pic { width: 280px; }
+  .pj-tile { width: 96px; height: 96px; }
+}
+/* Short screens (the kitchen tablet sideways): smaller picture */
+@media (max-height: 720px) {
+  .pj-next-pic { width: min(40vh, 220px); }
+  .pj-next-title { font-size: 1.5rem; }
+  .pj-tick { width: 80px; height: 80px; }
+}
+
+body.theme-dark dialog.pj-view { background: color-mix(in srgb, var(--pj-colour, #0284c7) 18%, #0f172a); color: #f8fafc; }
+body.theme-dark .pj-count, body.theme-dark .pj-close, body.theme-dark .pj-goal, body.theme-dark .pj-tile, body.theme-dark .pj-again { background: #1e293b; color: #f8fafc; }
+body.theme-dark .pj-next-pic { background: #1e293b; }
+body.theme-dark .pj-row-label, body.theme-dark .pj-goal-words { color: #cbd5e1; }
+
+/* ---- Profile: Is X reading yet? and the ready-made routine ---------------- */
+.profile-reading { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.profile-reading-btn {
+  display: flex; align-items: center; gap: 8px; min-height: 64px; padding: 8px 16px; text-align: left;
+  border: 2px solid var(--card-border, #e2e8f0); border-radius: 16px; background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); font: inherit; cursor: pointer;
+}
+.profile-reading-btn span:last-child { display: flex; flex-direction: column; gap: 0; }
+.profile-reading-btn small { font-size: 0.8rem; color: var(--text-muted, #64748b); }
+.profile-reading-btn[aria-pressed="true"] { border-color: var(--profile-color, #0284c7); background: color-mix(in srgb, var(--profile-color, #0284c7) 10%, #fff); }
+.profile-reading-icon { font-size: 1.6rem; }
+.profile-starter-btn { margin-top: 8px; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 2px dashed var(--profile-color, #0284c7); background: none; color: var(--text-primary, #0f172a); font: inherit; font-weight: 700; cursor: pointer; }
+@media (max-width: 600px) { .profile-reading { grid-template-columns: 1fr; } }
+body.theme-dark .profile-reading-btn { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .profile-reading-btn[aria-pressed="true"] { border-color: var(--profile-color); background: color-mix(in srgb, var(--profile-color) 20%, #1e293b); }
+
+.pj-starter-lead { margin: 0 0 8px; color: var(--text-muted, #64748b); font-size: 0.9rem; }
+.pj-starter-group { margin: 16px 0 8px; font-size: 1rem; }
+.pj-starter-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pj-starter-item {
+  display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; padding: 4px 16px 4px 4px; text-align: left;
+  border: 2px solid var(--card-border, #e2e8f0); border-radius: 16px; background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); font: inherit; cursor: pointer;
+}
+.pj-starter-item.is-on { border-color: #0284c7; background: #f0f9ff; }
+.pj-starter-pic { width: 48px; height: 48px; flex: none; border-radius: 12px; background: #f8fafc; display: flex; }
+.pj-starter-pic .job-svg, .pj-starter-pic .pj-emoji { width: 100%; height: 100%; }
+.pj-starter-pic .pj-emoji { font-size: 1.8rem; }
+.pj-starter-name { flex: 1; font-weight: 700; }
+.pj-starter-box { width: 28px; height: 28px; flex: none; border-radius: 8px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
+.pj-starter-item.is-on .pj-starter-box { background: #0284c7; border-color: #0284c7; }
+body.theme-dark .pj-starter-item { background: #1e293b; border-color: #334155; color: #f8fafc; }
+body.theme-dark .pj-starter-item.is-on { border-color: #38bdf8; background: #0c4a6e; }
