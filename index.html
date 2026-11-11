@@ -64,11 +64,11 @@
   <link rel="stylesheet" href="css/calendar-v2.css?v=3cd87147">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=091b4ac8">
-  <link rel="stylesheet" href="css/rewards-v2.css?v=a5c4e145">
+  <link rel="stylesheet" href="css/rewards-v2.css?v=0f4ba598">
   <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
   <link rel="stylesheet" href="css/modals.css?v=655a44c5">
   <link rel="stylesheet" href="css/celebrations.css?v=eacfe3e5">
-  <link rel="stylesheet" href="css/side-panel.css?v=7e6487e3">
+  <link rel="stylesheet" href="css/side-panel.css?v=fe317c76">
   <link rel="stylesheet" href="css/page-intro.css?v=019b6c9b">
   <link rel="stylesheet" href="css/page-spacing.css?v=9de683d8">
   <link rel="stylesheet" href="css/panel-spacing.css?v=aa7186b6">
@@ -622,8 +622,10 @@
               <span class="rewards-card-badge" id="rewards-mode-badge">Points</span>
             </div>
             <div id="rewards-leaderboard"></div>
-            <div id="rewards-family" class="rw-family-slot"></div>
           </section>
+
+          <!-- The family goal: everyone's stars together (js/rewards-page.js) -->
+          <section id="rewards-family" class="rw-family-slot" aria-label="Family goal"></section>
 
           <!-- A card for each person: tap for goals, stickers and the week -->
           <section class="rw-people" aria-label="Everyone">
@@ -679,28 +681,20 @@
           <div class="reward-goal-member-row" id="reward-goal-members"></div>
         </div>
         <div class="form-group">
-          <label for="reward-goal-name">Reward</label>
-          <input type="text" id="reward-goal-name" maxlength="60" autocomplete="off" placeholder="e.g. Cinema trip, Extra screen time, New Lego set">
-        </div>
-        <div class="form-group">
-          <label>Icon</label>
-          <div class="reward-goal-emoji-row" id="reward-goal-emojis"></div>
+          <label for="reward-goal-name">What's the reward?</label>
+          <input type="text" id="reward-goal-name" maxlength="60" autocomplete="off" placeholder="e.g. Cinema trip, New Lego set, Night out">
         </div>
         <div class="form-group">
           <label>Photo</label>
-          <div class="rw-photo-picker" id="reward-goal-photos"></div>
+          <div id="reward-goal-photo"></div>
         </div>
         <div class="form-group">
-          <label for="reward-goal-cost" id="reward-goal-cost-label">Points needed</label>
-          <div class="reward-goal-cost-row">
-            <button type="button" class="reward-goal-step" id="btn-goal-cost-minus" aria-label="Less">−</button>
-            <input type="number" id="reward-goal-cost" min="0" step="1" inputmode="decimal">
-            <button type="button" class="reward-goal-step" id="btn-goal-cost-plus" aria-label="More">+</button>
-          </div>
-          <div class="reward-goal-presets" id="reward-goal-presets"></div>
+          <label id="reward-goal-cost-label">Points needed</label>
+          <div id="reward-goal-points"></div>
+          <input type="number" id="reward-goal-cost" hidden>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn-sticky-delete" id="btn-delete-reward-goal" style="display: none;">Delete Goal</button>
+          <button type="button" class="btn-sticky-delete" id="btn-delete-reward-goal" style="display: none;">Delete goal</button>
           <button type="submit" class="btn-primary-modal" id="btn-save-reward-goal">Add Goal</button>
         </div>
       </form>
@@ -728,21 +722,17 @@
       <form id="family-goal-form" class="settings-form" novalidate>
         <p class="rw-form-lead">Everyone's stars this week add up to this. It starts again every Monday.</p>
         <div class="form-group">
-          <label for="family-goal-name">Treat</label>
-          <input type="text" id="family-goal-name" maxlength="60" autocomplete="off" placeholder="e.g. Pizza and film night, Trip to the park">
+          <label for="family-goal-name">What's the treat?</label>
+          <input type="text" id="family-goal-name" maxlength="60" autocomplete="off" placeholder="e.g. Pizza and film night, Day at the beach">
         </div>
         <div class="form-group">
           <label>Photo</label>
-          <div class="rw-photo-picker" id="family-goal-photos"></div>
+          <div id="family-goal-photo"></div>
         </div>
         <div class="form-group">
-          <label for="family-goal-target" id="family-goal-target-label">Everyone's points together</label>
-          <div class="reward-goal-cost-row">
-            <button type="button" class="reward-goal-step" id="btn-family-target-minus" aria-label="Less">−</button>
-            <input type="number" id="family-goal-target" min="0" step="1" inputmode="decimal">
-            <button type="button" class="reward-goal-step" id="btn-family-target-plus" aria-label="More">+</button>
-          </div>
-          <div class="reward-goal-presets" id="family-goal-presets"></div>
+          <label id="family-goal-target-label">Everyone's points together</label>
+          <div id="family-goal-points"></div>
+          <input type="number" id="family-goal-target" hidden>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-sticky-delete" id="btn-delete-family-goal" style="display: none;">Remove goal</button>
@@ -2595,13 +2585,13 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=8bb73ca8"></script>
+  <script src="js/build-info.js?v=bb19352b"></script>
   <script src="js/utils.js?v=c243e9da"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=55f9380e"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
   <script src="js/seed-data.js?v=79d75f09"></script>
-  <script src="js/audio.js?v=005ca0f4"></script>
+  <script src="js/audio.js?v=a44b4e04"></script>
   <script src="js/firsts.js?v=e8a999ca"></script>
   <script src="js/offline.js?v=a698b4e4"></script>
   <script src="js/sheet.js?v=3b47ea6d"></script>
@@ -2616,9 +2606,9 @@
   <script src="js/aisles.js?v=171f4f8e"></script>
   <script src="js/shop-mode.js?v=7d6e082d"></script>
   <script src="js/rewards.js?v=8b5c1e0c"></script>
-  <script src="js/reward-goals.js?v=a24f6831"></script>
-  <script src="js/reward-photos.js?v=cea1264f"></script>
-  <script src="js/rewards-page.js?v=4cc21a17"></script>
+  <script src="js/reward-goals.js?v=d2845066"></script>
+  <script src="js/reward-photos.js?v=e3a6029d"></script>
+  <script src="js/rewards-page.js?v=33a67328"></script>
   <script src="js/page-intro.js?v=4c22746c"></script>
   <script src="js/sticky-note.js?v=a23ec091"></script>
   <script src="js/google-calendar.js?v=c9a4e19b"></script>

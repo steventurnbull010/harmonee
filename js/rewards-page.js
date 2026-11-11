@@ -237,40 +237,63 @@
     return `<ol class="rw-lb-list" aria-label="This week's stars">${rows}</ol>${note}`;
   }
 
-  // ---- 2. The family goal -----------------------------------------------------------------
+  // ---- 2. The family goal: a photo card, everyone's part of one bar ---------------------
+  const photoStyle = (goal, id) => {
+    const url = window.RewardPhotos ? window.RewardPhotos.photoFor({ ...goal, id: goal.id || id }) : null;
+    if (!url) return "";
+    // A full address: inside a CSS variable a relative one is read from css/
+    let full = url;
+    if (!/^data:/.test(url)) { try { full = new URL(url, document.baseURI).href; } catch (e) {} }
+    return `style="--photo: url('${full}')"`;
+  };
   function familyHtml(ctx) {
     const g = ctx.goal;
     if (!g) {
       return `
-        <button type="button" class="rw-family-add" data-family-goal>
-          <span class="rw-family-add-plus" aria-hidden="true">＋</span>
+        <button type="button" class="rw-fam-add" data-family-goal>
+          <span class="rw-fam-add-icon" aria-hidden="true">🤝</span>
           <span><strong>Set a family goal</strong><small>Everyone's stars this week add up to one treat together</small></span>
+          <span class="rw-fam-add-plus" aria-hidden="true">＋</span>
         </button>`;
     }
     const target = Number(g.target) || 0;
     const pct = Math.min(100, Math.round((ctx.total / target) * 100));
     const done = ctx.total >= target;
-    const from = shownPct.has("family") ? shownPct.get("family") : pct;
-    shownPct.set("family", pct);
     if (ctx.watching && ctx.settled && wasReady.has("family") && !wasReady.get("family") && done) ctx.familyJustDone = true;
     if (ctx.watching || !wasReady.has("family")) wasReady.set("family", done);
+    // Each person's part of the bar, in their colour
+    let used = 0;
+    const segs = members().map(name => {
+      const pts = (ctx.scores[name] && ctx.scores[name].score) || 0;
+      if (pts <= 0 || used >= 100) return "";
+      const w = Math.min(100 - used, (pts / target) * 100);
+      used += w;
+      const key = `fam-${name}`;
+      const from = shownPct.has(key) ? shownPct.get(key) : 0;
+      shownPct.set(key, w);
+      return `<span class="rw-fam-seg" data-rw-fill="${w.toFixed(2)}" style="width: ${from}%; background: ${palette(name).primary};" title="${esc(name)}: ${esc(fmt(pts))}"></span>`;
+    }).join("");
+    const who = members().map(name => {
+      const pts = (ctx.scores[name] && ctx.scores[name].score) || 0;
+      return `<span class="rw-fam-who-one ${pts > 0 ? "" : "is-zero"}" style="--c: ${palette(name).primary}"><i aria-hidden="true"></i>${esc(name)} <strong>${esc(fmt(pts).replace(/ pts?$/, ""))}</strong></span>`;
+    }).join("");
+    const hasPhoto = !!(window.RewardPhotos && window.RewardPhotos.photoFor({ ...g, id: "family" }));
     return `
-      <div class="rw-family ${done ? "is-done" : ""}">
-        ${photoBox(g, "rw-family-photo")}
-        <div class="rw-family-words">
-          <p class="rw-family-line">${done
-            ? `🎉 <strong>You did it!</strong> ${esc(g.title)} is on.`
-            : `<strong>Together: ${fmt(ctx.total)} of ${fmt(target)}</strong> towards ${esc(g.title)}`}</p>
-          <span class="rw-family-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Family goal: ${pct}%">
-            <span class="rw-family-fill" data-rw-fill="${pct}" style="width: ${from}%;"></span>
-          </span>
-          <small class="rw-family-sub">${done ? "Everyone's stars this week got there." : `${fmt(target - ctx.total)} to go this week, all of you together`}</small>
+      <div class="rw-fam ${done ? "is-done" : ""}">
+        <div class="rw-fam-hero ${hasPhoto ? "" : "is-none"}" ${photoStyle(g, "family")}>
+          <span class="rw-fam-kicker">${done ? "🎉 You did it!" : "🤝 Family goal"}</span>
+          <h3 class="rw-fam-title">${esc(g.title)}</h3>
+          <button type="button" class="rw-fam-edit" data-family-goal aria-label="Change the family goal">✎</button>
         </div>
-        <button type="button" class="rw-family-edit" data-family-goal aria-label="Change the family goal">✎</button>
+        <div class="rw-fam-body">
+          <p class="rw-fam-numbers"><strong>${esc(fmt(Math.min(ctx.total, target)).replace(/ pts?$/, ""))}</strong> of ${esc(fmt(target))}<span class="rw-fam-togo">${done ? "It's on! Enjoy it 🎉" : `${esc(fmt(target - ctx.total))} to go, together`}</span></p>
+          <span class="rw-fam-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Family goal: ${pct}%">${segs}</span>
+          <div class="rw-fam-who">${who}</div>
+        </div>
       </div>`;
   }
 
-  // ---- 3. A card for each person ---------------------------------------------------------
+  // ---- 3. A card for each person: their goal's photo first ----------------------------------
   function personCardHtml(name, ctx) {
     const balance = typeof window.getMemberRewardBalance === "function" ? window.getMemberRewardBalance(name) : 0;
     const t = today(name);
@@ -279,41 +302,43 @@
     const best = dailyJobsOf(name)[0];
     const stickers = stickersOf(name).filter(s => s.on);
 
-    let goalHtml;
+    let banner;
     if (g) {
       // Every goal's state is tracked, so any that just became ready celebrates
       goals.filter(x => x !== g).forEach(x => goalState(x, balance, ctx));
       const st = goalState(g, balance, ctx);
       const more = goals.length - 1;
-      goalHtml = `
-        <div class="rw-card-goal ${st.ready ? "is-ready" : ""}" data-goal-row="${esc(g.id)}">
-          ${photoBox(g)}
-          <div class="rw-card-goal-words">
-            <span class="rw-card-goal-title">${esc(g.title)}</span>
-            ${barHtml(g, st.pct, st.ready)}
-            <span class="rw-card-goal-foot">${actionHtml(g, st.cost, balance, st.ready)}${more > 0 ? `<span class="rw-card-more">+${more} more</span>` : ""}</span>
-          </div>
+      const hasPhoto = !!(window.RewardPhotos && window.RewardPhotos.photoFor(g));
+      banner = `
+        <div class="rw-card-banner ${st.ready ? "is-ready" : ""} ${hasPhoto ? "" : "is-none"}" data-goal-row="${esc(g.id)}" ${photoStyle(g)}>
+          ${more > 0 ? `<span class="rw-card-more">+${more} more</span>` : ""}
+          <span class="rw-card-banner-words">
+            <span class="rw-card-banner-title">${esc(g.title)}</span>
+            <span class="rw-card-banner-sub">${st.ready ? "Ready to redeem!" : `${esc(fmt(st.cost - balance))} to go`}</span>
+          </span>
+          ${st.ready ? actionHtml(g, st.cost, balance, true) : ""}
+          ${barHtml(g, st.pct, st.ready)}
         </div>`;
     } else {
-      goalHtml = `<button type="button" class="rw-card-setgoal" data-add-goal-for="${esc(name)}">＋ Set a goal for ${esc(name)}</button>`;
+      banner = `<button type="button" class="rw-card-banner is-empty" data-add-goal-for="${esc(name)}"><span class="rw-card-empty-plus" aria-hidden="true">＋</span><span>What's ${esc(name)} saving for?</span></button>`;
     }
 
     const streakHtml = best && best.n >= 1
-      ? `<span class="rw-chip is-streak" title="${esc(best.task.title)}">🔥 ${best.n} day${best.n === 1 ? "" : "s"}</span>` : "";
+      ? `<span class="rw-chip is-streak" title="${esc(best.task.title)}">🔥 ${best.n}</span>` : "";
     const stickerHtml = stickers.length
-      ? `<span class="rw-card-stickers" aria-label="${stickers.length} sticker${stickers.length === 1 ? "" : "s"}">${stickers.map(s => `<span class="rw-sticker-mini ${s.fresh ? "is-fresh" : ""}" title="${esc(stickerName(s))}">${s.emoji}</span>`).join("")}</span>` : "";
+      ? `<span class="rw-card-stickers" aria-label="${stickers.length} sticker${stickers.length === 1 ? "" : "s"}">${stickers.slice(0, 4).map(s => `<span class="rw-sticker-mini ${s.fresh ? "is-fresh" : ""}" title="${esc(stickerName(s))}">${s.emoji}</span>`).join("")}</span>` : "";
 
     return `
       <article class="rw-person" data-person="${esc(name)}" style="${palStyle(name)}" tabindex="0" aria-label="${esc(name)}: open">
-        <header class="rw-person-head">
+        ${banner}
+        <div class="rw-person-row">
           ${face(name, "rw-person-face")}
           <span class="rw-person-names">
             <span class="rw-person-name">${esc(name)}</span>
             <span class="rw-person-balance"><strong>${fmt(balance)}</strong> to spend</span>
           </span>
           ${ring(t.done, t.total)}
-        </header>
-        ${goalHtml}
+        </div>
         ${(streakHtml || stickerHtml) ? `<footer class="rw-person-foot">${streakHtml}${stickerHtml}</footer>` : ""}
       </article>`;
   }
@@ -470,22 +495,23 @@
   }
 
   // ---- The family goal panel -----------------------------------------------------------
-  let familyPhoto = "";
+  // What's the treat → Photo (picked for you, your own, stock or none) → points (slider)
+  const FAMILY_ID = "family";
+  let familyPhoto = { choice: "", title: "", own: "", ownNew: false, open: false };
   function openFamilyGoal() {
     const dlg = document.getElementById("family-goal-modal");
     if (!dlg) return;
     const g = familyGoal();
-    const { isMoney, currency } = money();
-    familyPhoto = g ? (g.photo || "") : "";
+    const P = window.RewardPhotos;
+    familyPhoto = P ? P.stateFor(g ? { ...g, id: FAMILY_ID } : null) : { choice: "" };
     document.getElementById("family-goal-title").textContent = g ? "Family goal" : "Set a family goal";
     document.getElementById("family-goal-name").value = g ? g.title : "";
     const target = document.getElementById("family-goal-target");
-    target.value = g ? g.target : (isMoney ? 20 : 200);
-    target.step = isMoney ? "0.5" : "1";
-    document.getElementById("family-goal-target-label").textContent = isMoney ? `Everyone together earns (${currency})` : "Everyone's points together";
-    const presets = isMoney ? [10, 20, 30, 50] : [100, 150, 200, 300];
-    document.getElementById("family-goal-presets").innerHTML = presets.map(p =>
-      `<button type="button" class="reward-goal-preset" data-cost="${p}">${isMoney ? `${currency}${p}` : `${p} pts`}</button>`).join("");
+    const o = P ? P.sliderOptions("family", g ? g.target : null) : null;
+    target.value = o ? String(o.value) : String(g ? g.target : 200);
+    document.getElementById("family-goal-target-label").textContent = o && o.money ? `Everyone together earns (${o.currency})` : "Everyone's points together";
+    const pts = document.getElementById("family-goal-points");
+    if (P && pts) { pts.innerHTML = P.sliderHtml(o); P.wireSlider(pts, target, o); }
     document.getElementById("btn-delete-family-goal").style.display = g ? "" : "none";
     document.getElementById("btn-save-family-goal").textContent = g ? "Save" : "Set goal";
     paintFamilyPhotos();
@@ -494,8 +520,11 @@
     if (!g && typeof window.focusAfterPanelOpens === "function") window.focusAfterPanelOpens(document.getElementById("family-goal-name"));
   }
   function paintFamilyPhotos() {
-    const row = document.getElementById("family-goal-photos");
-    if (row && window.RewardPhotos) row.innerHTML = window.RewardPhotos.pickerHtml(familyPhoto, document.getElementById("family-goal-name").value, "🎉");
+    const box = document.getElementById("family-goal-photo");
+    if (!box || !window.RewardPhotos) return;
+    familyPhoto.title = document.getElementById("family-goal-name").value;
+    box.innerHTML = window.RewardPhotos.chooserHtml(familyPhoto);
+    window.RewardPhotos.wireChooser(box, () => familyPhoto, (next) => { Object.assign(familyPhoto, next); paintFamilyPhotos(); });
   }
   function saveFamilyGoal(value) {
     window.familyRewardGoal = value;
@@ -513,35 +542,23 @@
     dlg.setAttribute("data-wired", "true");
     const target = document.getElementById("family-goal-target");
     document.getElementById("btn-close-family-goal").addEventListener("click", () => dlg.close());
-    document.getElementById("family-goal-name").addEventListener("input", () => { if (!familyPhoto) paintFamilyPhotos(); });
-    document.getElementById("family-goal-photos").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-photo-pick]");
-      if (!b) return;
-      familyPhoto = b.getAttribute("data-photo-pick");
-      paintFamilyPhotos();
-    });
-    const step = (dir) => {
-      const { isMoney } = money();
-      const s = isMoney ? 1 : 10;
-      const next = Math.max(s, (Number(target.value) || 0) + dir * s);
-      target.value = isMoney ? String(next) : String(Math.round(next));
-    };
-    document.getElementById("btn-family-target-minus").addEventListener("click", () => step(-1));
-    document.getElementById("btn-family-target-plus").addEventListener("click", () => step(1));
-    document.getElementById("family-goal-presets").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-cost]");
-      if (b) target.value = b.getAttribute("data-cost");
-    });
-    document.getElementById("family-goal-form").addEventListener("submit", (e) => {
+    document.getElementById("family-goal-name").addEventListener("input", () => paintFamilyPhotos());
+    document.getElementById("family-goal-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.getElementById("family-goal-name");
       const title = name.value.trim();
       const n = Math.round((Number(target.value) || 0) * 100) / 100;
       if (!title) { name.focus(); return; }
-      if (n <= 0) { target.focus(); return; }
+      if (n <= 0) return;
+      const before = familyGoal() || {};
+      let photoFields = { photo: familyPhoto.choice || "", photoRev: null };
+      try { if (window.RewardPhotos) photoFields = await window.RewardPhotos.savePhoto(FAMILY_ID, familyPhoto, before); }
+      catch (err) { console.warn("Couldn't save the family goal's photo:", err); }
       const value = { title, target: n };
-      if (familyPhoto) value.photo = familyPhoto;
+      if (photoFields.photo) value.photo = photoFields.photo;
+      if (photoFields.photoRev) value.photoRev = photoFields.photoRev;
       saveFamilyGoal(value);
+      if (window.sfx && typeof window.sfx.playSuccess === "function") window.sfx.playSuccess();
       dlg.close();
     });
     const del = document.getElementById("btn-delete-family-goal");
@@ -555,6 +572,8 @@
       }
       del.removeAttribute("data-armed");
       del.textContent = "Remove goal";
+      const g = familyGoal();
+      if (g && g.photo === "own" && window.RecipePhotos) window.RecipePhotos.remove(`goal-${FAMILY_ID}`);
       saveFamilyGoal(null);
       dlg.close();
     });
@@ -639,6 +658,8 @@
       try { if (window.sfx && typeof window.sfx.playCelebrationChime === "function") window.sfx.playCelebrationChime(); } catch (e) {}
     }
   }
+
+  document.addEventListener("harmonee:recipe-photo", (e) => { if (e.detail && /^goal-/.test(String(e.detail.id || ""))) render(); });
 
   window.RewardsPage = { render, openPerson, openFamilyGoal, STICKERS, earnedNow: (name) => { const s = scoresThisWeek(); const g = familyGoal(); return [...earnedNow(name, { scores: s, goal: g, total: familyTotal(s) })]; } };
 })();

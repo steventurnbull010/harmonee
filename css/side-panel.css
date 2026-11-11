@@ -169,7 +169,7 @@ dialog.side-panel .form-label {
   color: var(--text-secondary, #64748b) !important;
 }
 
-dialog.side-panel .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]),
+dialog.side-panel .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]):not([type="range"]),
 dialog.side-panel .form-group select,
 dialog.side-panel .form-group textarea,
 dialog.side-panel .form-input {
@@ -181,7 +181,7 @@ dialog.side-panel .form-input {
   background-color: var(--card-bg, #ffffff);
 }
 
-body.theme-dark dialog.side-panel .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]),
+body.theme-dark dialog.side-panel .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]):not([type="range"]),
 body.theme-dark dialog.side-panel .form-group select,
 body.theme-dark dialog.side-panel .form-group textarea,
 body.theme-dark dialog.side-panel .form-input {
@@ -189,7 +189,7 @@ body.theme-dark dialog.side-panel .form-input {
   background-color: #0f172a;
 }
 
-dialog.side-panel .form-group input:focus,
+dialog.side-panel .form-group input:not([type="range"]):focus,
 dialog.side-panel .form-group select:focus,
 dialog.side-panel .form-group textarea:focus,
 dialog.side-panel .form-input:focus {

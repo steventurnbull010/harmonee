@@ -21,7 +21,6 @@
 // Spendable balance = banked past weeks + this week's live points − redeemed.
 // ============================================================================
 
-const REWARD_GOAL_EMOJIS = ["🎁", "🎬", "🍦", "🎮", "📱", "🧸", "⚽", "🍕", "🛍️", "🎨", "📚", "🏊", "🎢", "💷", "🌙", "🐶"];
 
 function rewardDataCacheKey() {
   return (typeof boardCacheKey === "function") ? boardCacheKey("harmonee_reward_goals") : "harmonee_reward_goals";
@@ -256,31 +255,34 @@ function redeemRewardGoal(goalId) {
 // Add / edit goal side panel (#reward-goal-modal, styled by js/side-panel.js)
 // ---------------------------------------------------------------------------
 let rewardGoalPanelMember = null;
-let rewardGoalPanelEmoji = "🎁";
-let rewardGoalPanelPhoto = ""; // a photo key, "none", or "" to match the name
+// The photo chooser's state (js/reward-photos.js): choice "" (picked for you),
+// a stock key, "own" or "none"
+let rewardGoalPhoto = { choice: "", title: "", own: "", ownNew: false, open: false };
 
+// Who → What's the reward → Photo → Points (a slider with shortcuts). The
+// emoji is worked out from the photo (11 Nov: the Icon row went; it was a
+// second way of choosing the same thing)
 function openRewardGoalPanel(goalId = null, member = null) {
   const dialog = document.getElementById("reward-goal-modal");
   if (!dialog) return;
   const goal = goalId ? (window.rewardGoals || []).find(g => g.id === goalId) : null;
-  const { isMoney, currency } = getRewardMoneyMode();
+  const P = window.RewardPhotos;
 
   rewardGoalPanelMember = goal ? goal.member : (member || (window.familyMembers || [])[0] || "");
-  rewardGoalPanelEmoji = goal ? (goal.emoji || "🎁") : "🎁";
-  rewardGoalPanelPhoto = goal ? (goal.photo || "") : "";
+  rewardGoalPhoto = P ? P.stateFor(goal) : { choice: "", title: "" };
 
-  document.getElementById("reward-goal-title").textContent = goal ? "Edit Reward Goal" : "Add Reward Goal";
+  document.getElementById("reward-goal-title").textContent = goal ? "Edit goal" : `New goal${rewardGoalPanelMember ? ` for ${rewardGoalPanelMember}` : ""}`;
   document.getElementById("reward-goal-id").value = goal ? goal.id : "";
   document.getElementById("reward-goal-name").value = goal ? goal.title : "";
-  document.getElementById("reward-goal-cost").value = goal ? goal.cost : (isMoney ? 5 : 50);
-  document.getElementById("reward-goal-cost").step = isMoney ? "0.5" : "1";
-  document.getElementById("reward-goal-cost-label").textContent = isMoney ? `Cost (${currency})` : "Points needed";
   document.getElementById("btn-delete-reward-goal").style.display = goal ? "" : "none";
-  document.getElementById("btn-save-reward-goal").textContent = goal ? "Save" : "Add Goal";
+  document.getElementById("btn-save-reward-goal").textContent = goal ? "Save" : "Add goal";
 
-  const presets = isMoney ? [2, 5, 10, 20] : [20, 50, 100, 200];
-  document.getElementById("reward-goal-presets").innerHTML = presets.map(p =>
-    `<button type="button" class="reward-goal-preset" data-cost="${p}">${isMoney ? `${currency}${p}` : `${p} pts`}</button>`).join("");
+  const o = P ? P.sliderOptions("person", goal ? goal.cost : null) : null;
+  const cost = document.getElementById("reward-goal-cost");
+  cost.value = o ? String(o.value) : String(goal ? goal.cost : 50);
+  document.getElementById("reward-goal-cost-label").textContent = o && o.money ? `Cost (${o.currency})` : "Points needed";
+  const pts = document.getElementById("reward-goal-points");
+  if (P && pts) { pts.innerHTML = P.sliderHtml(o); P.wireSlider(pts, cost, o); }
 
   renderRewardGoalPanelPickers();
   wireRewardGoalPanel();
@@ -295,18 +297,15 @@ function renderRewardGoalPanelPickers() {
   membersRow.classList.add("drawer-profiles-pills-row");
   membersRow.innerHTML = (window.familyMembers || []).map(m =>
     memberPillHtml(m, { active: m === rewardGoalPanelMember, attrs: `data-member="${escapeHtml(m)}"` })).join("");
-
-  const emojiRow = document.getElementById("reward-goal-emojis");
-  emojiRow.innerHTML = REWARD_GOAL_EMOJIS.map(em =>
-    `<button type="button" class="reward-goal-emoji-btn ${em === rewardGoalPanelEmoji ? "is-selected" : ""}" data-emoji="${em}" aria-label="Icon ${em}">${em}</button>`).join("");
   renderRewardGoalPhotos();
 }
 
-// The photo on the goal's card: matched from its name, one of the stock
-// photos, or none (js/reward-photos.js)
 function renderRewardGoalPhotos() {
-  const row = document.getElementById("reward-goal-photos");
-  if (row && window.RewardPhotos) row.innerHTML = window.RewardPhotos.pickerHtml(rewardGoalPanelPhoto, document.getElementById("reward-goal-name").value, rewardGoalPanelEmoji);
+  const box = document.getElementById("reward-goal-photo");
+  if (!box || !window.RewardPhotos) return;
+  rewardGoalPhoto.title = document.getElementById("reward-goal-name").value;
+  box.innerHTML = window.RewardPhotos.chooserHtml(rewardGoalPhoto);
+  window.RewardPhotos.wireChooser(box, () => rewardGoalPhoto, (next) => { Object.assign(rewardGoalPhoto, next); renderRewardGoalPhotos(); });
 }
 
 function wireRewardGoalPanel() {
@@ -322,60 +321,34 @@ function wireRewardGoalPanel() {
     rewardGoalPanelMember = pill.getAttribute("data-member");
     renderRewardGoalPanelPickers();
   });
-  document.getElementById("reward-goal-emojis").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-emoji]");
-    if (!b) return;
-    rewardGoalPanelEmoji = b.getAttribute("data-emoji");
-    renderRewardGoalPanelPickers();
-  });
-
-  document.getElementById("reward-goal-photos").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-photo-pick]");
-    if (!b) return;
-    rewardGoalPanelPhoto = b.getAttribute("data-photo-pick");
-    renderRewardGoalPhotos();
-  });
-  document.getElementById("reward-goal-name").addEventListener("input", () => { if (!rewardGoalPanelPhoto) renderRewardGoalPhotos(); });
+  // Typing the reward picks a photo for it
+  document.getElementById("reward-goal-name").addEventListener("input", () => renderRewardGoalPhotos());
 
   const costInput = document.getElementById("reward-goal-cost");
-  const stepCost = (dir) => {
-    const { isMoney } = getRewardMoneyMode();
-    const step = isMoney ? 0.5 : 5;
-    const next = Math.max(step, (Number(costInput.value) || 0) + dir * step);
-    costInput.value = isMoney ? next.toFixed(2).replace(/\.00$/, "") : Math.round(next);
-  };
-  document.getElementById("btn-goal-cost-minus").addEventListener("click", () => stepCost(-1));
-  document.getElementById("btn-goal-cost-plus").addEventListener("click", () => stepCost(1));
-  document.getElementById("reward-goal-presets").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-cost]");
-    if (b) costInput.value = b.getAttribute("data-cost");
-  });
-
-  document.getElementById("reward-goal-form").addEventListener("submit", (e) => {
+  document.getElementById("reward-goal-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const title = document.getElementById("reward-goal-name").value.trim();
     const cost = Math.round((Number(costInput.value) || 0) * 100) / 100;
     if (!title || cost <= 0 || !rewardGoalPanelMember) {
       if (!title) document.getElementById("reward-goal-name").focus();
-      else costInput.focus();
       return;
     }
-    const id = document.getElementById("reward-goal-id").value;
+    const existingId = document.getElementById("reward-goal-id").value;
+    const id = existingId || `goal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const goals = [...(window.rewardGoals || [])];
-    if (id) {
-      const idx = goals.findIndex(g => g.id === id);
-      if (idx !== -1) {
-        const next = { ...goals[idx], title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember };
-        if (rewardGoalPanelPhoto) next.photo = rewardGoalPanelPhoto; else delete next.photo;
-        goals[idx] = next;
-      }
-    } else {
-      const next = { id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title, cost, emoji: rewardGoalPanelEmoji, member: rewardGoalPanelMember };
-      if (rewardGoalPanelPhoto) next.photo = rewardGoalPanelPhoto;
-      goals.push(next);
-    }
+    const idx = goals.findIndex(g => g.id === id);
+    const before = idx !== -1 ? goals[idx] : {};
+    let photoFields = { photo: rewardGoalPhoto.choice || "", photoRev: null };
+    try { if (window.RewardPhotos) photoFields = await window.RewardPhotos.savePhoto(id, rewardGoalPhoto, before); }
+    catch (err) { console.warn("Couldn't save the goal's photo:", err); }
+    const next = { ...before, id, title, cost, member: rewardGoalPanelMember };
+    if (photoFields.photo) next.photo = photoFields.photo; else delete next.photo;
+    if (photoFields.photoRev) next.photoRev = photoFields.photoRev; else delete next.photoRev;
+    next.emoji = window.RewardPhotos ? window.RewardPhotos.emojiFor(next) : "🎁";
+    if (idx !== -1) goals[idx] = next; else goals.push(next);
     window.rewardGoals = goals;
     saveRewardDataToBoard({ rewardGoals: goals });
+    if (typeof sfx !== "undefined" && sfx && typeof sfx.playSuccess === "function") sfx.playSuccess();
     dialog.close();
     renderRewardGoals();
   });
@@ -388,11 +361,13 @@ function wireRewardGoalPanel() {
     if (btn.getAttribute("data-armed") !== "true") {
       btn.setAttribute("data-armed", "true");
       btn.textContent = "Tap again to delete";
-      setTimeout(() => { btn.removeAttribute("data-armed"); btn.textContent = "Delete Goal"; }, 4000);
+      setTimeout(() => { btn.removeAttribute("data-armed"); btn.textContent = "Delete goal"; }, 4000);
       return;
     }
     btn.removeAttribute("data-armed");
-    btn.textContent = "Delete Goal";
+    btn.textContent = "Delete goal";
+    const gone = (window.rewardGoals || []).find(g => g.id === id);
+    if (gone && gone.photo === "own" && window.RecipePhotos) window.RecipePhotos.remove(`goal-${id}`);
     window.rewardGoals = (window.rewardGoals || []).filter(g => g.id !== id);
     saveRewardDataToBoard({ rewardGoals: window.rewardGoals });
     dialog.close();

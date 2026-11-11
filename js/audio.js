@@ -159,6 +159,29 @@ class SoundEffects {
     } catch (e) {}
   }
 
+  // A tiny tick for each step of a slider (Rewards' points), rising with the
+  // value (pitch 0–1); quiet, and no more than one every 25ms
+  playTick(pitch = 0.5) {
+    try {
+      const nowMs = Date.now();
+      if (this._lastTick && nowMs - this._lastTick < 25) return;
+      this._lastTick = nowMs;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520 + Math.max(0, Math.min(1, pitch)) * 700, now);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.035);
+    } catch (e) {}
+  }
+
   // Trash / delete sound
   playTrash() {
     try {

@@ -1236,9 +1236,9 @@ const PAGES = [
       const out = {};
       out.rows = document.querySelectorAll("#rewards-leaderboard .rw-lb-row").length;
       out.cards = document.querySelectorAll("#rewards-people-grid .rw-person").length;
-      out.family = !!q("#rewards-family .rw-family") && /Pizza and film night/.test(q("#rewards-family").textContent);
-      out.setGoalAlex = /Set a goal for Alex/.test(q('[data-person="Alex"]').textContent);
-      out.joPhoto = (q('[data-person="Jo"] .rw-goal-photo') || {}).getAttribute?.("style") || "";
+      out.family = !!q("#rewards-family .rw-fam") && /Pizza and film night/.test(q("#rewards-family").textContent);
+      out.setGoalAlex = /What's Alex saving for\?/.test(q('[data-person="Alex"]').textContent);
+      out.joPhoto = (q('[data-person="Jo"] .rw-card-banner') || {}).getAttribute?.("style") || "";
       out.joBuddy = !!q('[data-person="Jo"] .rw-face.is-buddy svg');
       out.lastWords = /last/i.test(q("#rewards-leaderboard").textContent);
       // Jo does a job: Jo leads, with the crown
@@ -1266,7 +1266,7 @@ const PAGES = [
     }, B);
     if (r.rows !== 4 || r.cards !== 4) throw new Error(`expected 4 stars rows and 4 person cards: ${JSON.stringify(r)}`);
     if (!r.family) throw new Error("the family goal bar isn't under the stars");
-    if (!r.setGoalAlex) throw new Error("Alex has no goal but there's no \"Set a goal for Alex\"");
+    if (!r.setGoalAlex) throw new Error("Alex has no goal but there's no \"What's Alex saving for?\"");
     if (!/images\/rewards\/film\.jpg/.test(r.joPhoto)) throw new Error(`Jo's Cinema trip has no film photo: ${r.joPhoto}`);
     if (!r.joBuddy) throw new Error("Jo's buddy isn't on Jo's card");
     if (r.lastWords) throw new Error("the stars say \"last\"");
@@ -1327,7 +1327,7 @@ const PAGES = [
     if (!panel.open || panel.goals !== 2 || panel.stickers !== 6 || panel.earned < 1 || !panel.done) throw new Error(`Jo's panel isn't right: ${JSON.stringify(panel)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-person.png`) });
 
-    // The family goal panel: change it and it's saved
+    // The family goal panel: picked-for-you photo, change it, slider; saved
     const fam = await p.evaluate(async (B) => {
       document.getElementById("reward-person-modal").close();
       await new Promise(res => setTimeout(res, 350));
@@ -1336,18 +1336,82 @@ const PAGES = [
       const name = document.getElementById("family-goal-name");
       name.value = "Trip to the zoo";
       name.dispatchEvent(new Event("input"));
-      const tiles = document.querySelectorAll("#family-goal-photos [data-photo-pick]").length;
-      const auto = (document.querySelector('#family-goal-photos [data-photo-pick=""] .rw-photo-pick-img') || {}).getAttribute?.("style") || "";
-      document.getElementById("family-goal-target").value = "60";
+      const preview = (document.querySelector("#family-goal-photo .rw-pc-preview") || {}).getAttribute?.("style") || "";
+      const tag = (document.querySelector("#family-goal-photo .rw-pc-tag") || {}).textContent || "";
+      document.querySelector("#family-goal-photo [data-pc-toggle]").click();
+      await new Promise(res => setTimeout(res, 100));
+      const tiles = document.querySelectorAll("#family-goal-photo [data-pc-pick]").length;
+      // Slider to 60
+      const slider = document.querySelector("#family-goal-points [data-pts-slider]");
+      slider.value = "60"; slider.dispatchEvent(new Event("input", { bubbles: true })); slider.dispatchEvent(new Event("change", { bubbles: true }));
+      const shownValue = document.querySelector("#family-goal-points [data-pts-value]").textContent;
       document.getElementById("btn-save-family-goal").click();
       await new Promise(res => setTimeout(res, 450));
       const doc = window.__SMOKE_STORE[B] || {};
-      return { tiles, auto, saved: doc.familyGoal || null, shown: document.getElementById("rewards-family").textContent };
+      const card = document.querySelector("#rewards-family .rw-fam");
+      return { preview, tag, tiles, shownValue, saved: doc.familyGoal || null, shown: document.getElementById("rewards-family").textContent, segs: card ? card.querySelectorAll(".rw-fam-seg").length : -1, hero: card ? (card.querySelector(".rw-fam-hero").getAttribute("style") || "") : "" };
     }, B);
-    if (fam.tiles !== 14) throw new Error(`the family goal photo picker should have 14 tiles: ${fam.tiles}`);
-    if (!/dayout\.jpg/.test(fam.auto)) throw new Error(`"Trip to the zoo" didn't match the day out photo: ${fam.auto}`);
+    if (!/dayout\.jpg/.test(fam.preview) || !/Picked for/.test(fam.tag)) throw new Error(`"Trip to the zoo" didn't pick the day out photo: ${JSON.stringify(fam)}`);
+    if (fam.tiles < 20) throw new Error(`the photo choices should include your own photo, no photo and the stock photos: ${fam.tiles}`);
+    if (fam.shownValue !== "60 pts") throw new Error(`the slider didn't show 60 pts: ${fam.shownValue}`);
     if (!fam.saved || fam.saved.title !== "Trip to the zoo" || fam.saved.target !== 60) throw new Error(`the family goal wasn't saved: ${JSON.stringify(fam.saved)}`);
-    if (!/Trip to the zoo/.test(fam.shown)) throw new Error("the new family goal isn't shown");
+    if (!/Trip to the zoo/.test(fam.shown) || !/dayout\.jpg/.test(fam.hero)) throw new Error(`the family goal card doesn't show the new goal with its photo: ${JSON.stringify(fam)}`);
+    if (fam.segs < 1) throw new Error("the family goal bar has no one's colour in it");
+    await p.evaluate(() => document.getElementById("rewards-family").scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(250);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-family.png`) });
+
+    // A person's goal panel: Night out, then no photo, then their own photo; the slider; saved
+    await p.evaluate(async () => { window.openRewardGoalPanel(null, "Alex"); await new Promise(res => setTimeout(res, 400)); });
+    const gp = await p.evaluate(async () => {
+      const name = document.getElementById("reward-goal-name");
+      name.value = "Night out with friends";
+      name.dispatchEvent(new Event("input"));
+      const picked = (document.querySelector("#reward-goal-photo .rw-pc-preview") || {}).getAttribute?.("style") || "";
+      const iconRow = !!document.getElementById("reward-goal-emojis");
+      document.querySelector("#reward-goal-photo [data-pc-toggle]").click();
+      await new Promise(res => setTimeout(res, 100));
+      document.querySelector('#reward-goal-photo [data-pc-pick="none"]').click();
+      await new Promise(res => setTimeout(res, 100));
+      const none = !!document.querySelector("#reward-goal-photo .rw-pc-preview.is-none") && /Night out with friends/.test(document.querySelector("#reward-goal-photo .rw-pc-preview").textContent);
+      document.querySelector('#reward-goal-points [data-pts-preset="100"]').click();
+      const value = document.querySelector("#reward-goal-points [data-pts-value]").textContent;
+      return { picked, iconRow, none, value };
+    });
+    if (!/nightout\.jpg/.test(gp.picked)) throw new Error(`"Night out" didn't pick the night out photo: ${gp.picked}`);
+    if (gp.iconRow) throw new Error("the goal panel still has the Icon row");
+    if (!gp.none) throw new Error("No photo doesn't show the gift card with the reward's name");
+    if (gp.value !== "100 pts") throw new Error(`the 100 shortcut didn't set the points: ${gp.value}`);
+    await p.evaluate(() => document.querySelector("#reward-goal-photo").scrollIntoView({ block: "start" }));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-goal-panel.png`) });
+    // Your own photo, chosen like a real file
+    await p.evaluate(() => { document.querySelector("#reward-goal-photo [data-pc-toggle]").click(); });
+    await p.waitForTimeout(150);
+    await p.evaluate(() => document.querySelector("#reward-goal-photo .rw-pc-row").scrollIntoView({ block: "center" }));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-photo-choices.png`) });
+    const jpeg = Buffer.from("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", "base64");
+    const pngOwn = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    void jpeg;
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click('#reward-goal-photo [data-pc-pick="own"]')]);
+    await chooser.setFiles({ name: "night-out.png", mimeType: "image/png", buffer: pngOwn });
+    await p.waitForTimeout(700);
+    const own = await p.evaluate(() => (document.querySelector("#reward-goal-photo .rw-pc-preview") || {}).getAttribute?.("style") || "");
+    if (!/data:image\/jpeg/.test(own)) throw new Error(`your own photo didn't show in the preview: ${own.slice(0, 80)}`);
+    await p.evaluate(async () => { document.getElementById("btn-save-reward-goal").click(); await new Promise(res => setTimeout(res, 600)); });
+    const savedGoal = await p.evaluate((B) => {
+      const g = (window.rewardGoals || []).find(x => x.member === "Alex" && /Night out/.test(x.title));
+      const photoDoc = g ? window.__SMOKE_STORE[`${B}/recipePhotos/goal-${g.id}`] : null;
+      const banner = document.querySelector('[data-person="Alex"] .rw-card-banner');
+      return { g, photoSaved: !!(photoDoc && /^data:image\/jpeg/.test(photoDoc.data || "")), banner: banner ? (banner.getAttribute("style") || "") : "", bannerText: banner ? banner.textContent : "" };
+    }, B);
+    if (!savedGoal.g || savedGoal.g.cost !== 100 || savedGoal.g.photo !== "own" || !savedGoal.g.photoRev) throw new Error(`Alex's goal wasn't saved with their own photo: ${JSON.stringify(savedGoal.g)}`);
+    if (!savedGoal.photoSaved) throw new Error("the goal's own photo wasn't saved on the board");
+    if (!/data:image\/jpeg/.test(savedGoal.banner) || !/Night out/.test(savedGoal.bannerText)) throw new Error(`Alex's card doesn't lead with the goal's photo: ${savedGoal.bannerText}`);
+    await p.evaluate(() => document.querySelector('[data-person="Alex"]').scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-rewards-cards-new.png`) });
+    // Tidy up
+    await p.evaluate(() => { window.rewardGoals = (window.rewardGoals || []).filter(x => !(x.member === "Alex" && /Night out/.test(x.title))); window.renderRewardGoals(); });
 
     // The Rewards intro shows the new page (stars and a family goal, not a podium)
     const intro = await p.evaluate(async () => {

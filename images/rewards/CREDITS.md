@@ -18,3 +18,10 @@ the Unsplash License (free to use, no attribution required), cropped to 480×320
 | treat.jpg | https://images.unsplash.com/photo-1506184341422-6cc152ae474b |
 | money.jpg | https://images.unsplash.com/photo-1607863680198-23d4b2565df0 |
 | boardgame.jpg | https://images.unsplash.com/photo-1629760946220-5693ee4c46ac |
+| nightout.jpg | https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b |
+| mealout.jpg | https://images.unsplash.com/photo-1414235077428-338989a2e8c0 |
+| sleepover.jpg | https://images.unsplash.com/photo-1787095634936-acc46612e5ab |
+| shopping.jpg | https://images.unsplash.com/photo-1760565030346-4b947220fe3a |
+| beach.jpg | https://images.unsplash.com/photo-1424581342241-2b1aba4d3462 |
+| pamper.jpg | https://images.unsplash.com/photo-1540555700478-4be289fbecef |
+| bike.jpg | https://images.unsplash.com/photo-1717753045265-fa6ab160384a |
