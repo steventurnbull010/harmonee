@@ -57,7 +57,7 @@
         const small = ["breakfast", "lunch"].map(slot => {
           const m = mealAt(key, slot);
           return m
-            ? `<button type="button" class="mp-small is-planned" data-mp-meal data-date="${key}" data-slot="${slot}"><span aria-hidden="true">${esc(m.emoji || SLOT_EMOJI[slot])}</span><span class="mp-small-words"><small>${SLOT_NAMES[slot]}</small>${esc(m.title)}</span></button>`
+            ? `<button type="button" class="mp-small is-planned" data-mp-meal data-date="${key}" data-slot="${slot}"><span aria-hidden="true">${esc(m.emoji || SLOT_EMOJI[slot])}</span><span class="mp-small-words"><small>${SLOT_NAMES[slot]}</small>${esc(window.MealDishes ? window.MealDishes.summary(m) : m.title)}</span></button>`
             : `<button type="button" class="mp-small" data-mp-plan data-date="${key}" data-slot="${slot}">＋ ${SLOT_NAMES[slot]}</button>`;
         }).join("");
         return `<section class="mp-day${key === keyOf(new Date()) ? " is-today" : ""}" data-date="${key}">
@@ -65,7 +65,7 @@
           ${dinner
             ? `<button type="button" class="mp-dinner${dPhoto ? " has-photo" : ""}" data-mp-meal data-date="${key}" data-slot="dinner"${dPhoto ? ` style="--mp-photo: url('${esc(dPhoto)}')"` : ""}>
                 ${dPhoto ? "" : `<span class="mp-dinner-emoji" aria-hidden="true">${esc(dinner.emoji || "🍽️")}</span>`}
-                <span class="mp-dinner-words"><small>Dinner${cooks(dinner) ? ` · ${esc(cooks(dinner))} cooking` : ""}</small><strong>${esc(dinner.title)}</strong></span>
+                <span class="mp-dinner-words"><small>Dinner${cooks(dinner) ? ` · ${esc(cooks(dinner))} cooking` : ""}</small><strong>${esc(dinner.title)}</strong>${typeof window.mealMoreDishesHtml === "function" ? window.mealMoreDishesHtml(dinner, "mp-dinner-more") : ""}</span>
               </button>`
             : `<button type="button" class="mp-plan-dinner" data-mp-plan data-date="${key}" data-slot="dinner"><span aria-hidden="true">＋</span> Plan dinner</button>`}
           <div class="mp-small-row">${small}</div>
@@ -93,12 +93,35 @@
   }
 
   // ---- "Plan dinner · Wed 11": tap a photo and it's planned ------------------------
-  let sheet = { date: "", slot: "dinner", picks: [], shown: new Set() };
+  // add: adding another dish to the meal already planned (from its meal screen)
+  let sheet = { date: "", slot: "dinner", picks: [], shown: new Set(), add: false };
   const isMeal = (r, slot) => String(r.mealType || r.category || "dinner").toLowerCase() === slot;
   const hasPhoto = (r) => !!(r && (r.image || r.imageUrl));
   const isOwn = (r) => !String(r.id || "").startsWith("mealdb-");
   function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+  // Adding a dish: the family's own recipes first (photo or not, puddings
+  // too), then ideas with photos for that meal or for pudding
+  function inMeal() {
+    const m = mealAt(sheet.date, sheet.slot);
+    return window.MealDishes ? window.MealDishes.dishesOf(m) : [];
+  }
+  function pickAddIdeas() {
+    const there = inMeal();
+    const notThere = (r) => !there.some(d => (d.recipeId != null && String(d.recipeId) === String(r.id)) || d.title === r.title);
+    const all = (window.RecipeRows ? window.RecipeRows.all() : lastAll).filter(r => notThere(r) && !sheet.shown.has(r.id));
+    const own = all.filter(isOwn).slice(0, 8);
+    const pud = (r) => window.MealDishes && window.MealDishes.isPudding(r);
+    const stock = shuffle(all.filter(r => !isOwn(r) && hasPhoto(r) && (isMeal(r, sheet.slot) || pud(r))));
+    // A pudding among the ideas when there isn't one yet
+    const wantPud = !there.some(d => d.course === "pudding") && !own.some(pud);
+    const fill = wantPud ? [...stock.filter(pud).slice(0, 1), ...stock.filter(r => !pud(r))] : stock;
+    let picks = [...own, ...fill].slice(0, Math.max(IDEAS, own.length + (own.length % 2)));
+    if (picks.length < IDEAS) sheet.shown = new Set();
+    picks.forEach(r => sheet.shown.add(r.id));
+    return picks;
+  }
   function pickIdeas() {
+    if (sheet.add) return pickAddIdeas();
     const all = (window.RecipeRows ? window.RecipeRows.all() : lastAll).filter(r => hasPhoto(r) && isMeal(r, sheet.slot) && !sheet.shown.has(r.id));
     const fits = (r) => !window.MealGenie || !window.MealGenie.fitsEveryone || window.MealGenie.fitsEveryone(r);
     const own = shuffle(all.filter(isOwn)).slice(0, 1);
@@ -112,7 +135,7 @@
   const tileImg = (r) => { const src = String(r.image || r.imageUrl || ""); return /^https:\/\/www\.themealdb\.com\/images\/[\w\/.-]+\.(jpg|png)$/i.test(src) ? `${src}/small` : src; };
   function tiles(list) {
     return list.map(r => `<button type="button" class="mp-idea" data-mp-pick="${esc(r.id)}">
-        <span class="mp-idea-photo" style="background-image: url('${esc(tileImg(r))}')" aria-hidden="true"></span>
+        ${hasPhoto(r) ? `<span class="mp-idea-photo" style="background-image: url('${esc(tileImg(r))}')" aria-hidden="true"></span>` : `<span class="mp-idea-photo is-emoji" aria-hidden="true">${esc(r.emoji || (window.MealDishes && window.MealDishes.isPudding(r) ? "🍮" : "🍽️"))}</span>`}
         <span class="mp-idea-name">${esc(r.title)}</span>
       </button>`).join("");
   }
@@ -129,7 +152,7 @@
       const pick = e.target.closest("[data-mp-pick]");
       if (pick) {
         const r = (window.RecipeRows ? window.RecipeRows.find(pick.getAttribute("data-mp-pick")) : null);
-        if (r && typeof window.planRecipeOn === "function") { d.close(); window.planRecipeOn(r, sheet.date, sheet.slot); }
+        if (r && typeof window.planRecipeOn === "function") { d.close(); window.planRecipeOn(r, sheet.date, sheet.slot, { add: sheet.add }); }
         return;
       }
       if (e.target.closest("[data-mqp-others]")) { d.querySelector("[data-mqp-grid]").innerHTML = tiles(pickIdeas()); return; }
@@ -148,16 +171,17 @@
       const q = e.target.value.trim().toLowerCase();
       const grid = d.querySelector("[data-mqp-grid]");
       const head = d.querySelector("[data-mqp-grid-head]");
-      if (!q) { grid.innerHTML = tiles(sheet.picks); head.textContent = "A few ideas"; return; }
-      const hits = (window.RecipeRows ? window.RecipeRows.all() : lastAll).filter(r => hasPhoto(r) && (String(r.title || "").toLowerCase().includes(q) || (r.ingredients || []).some(i => String(i).toLowerCase().includes(q))));
+      if (!q) { grid.innerHTML = tiles(sheet.picks); head.textContent = sheet.add ? ideasHead() : "A few ideas"; return; }
+      const hits = (window.RecipeRows ? window.RecipeRows.all() : lastAll).filter(r => (hasPhoto(r) || sheet.add) && (String(r.title || "").toLowerCase().includes(q) || (r.ingredients || []).some(i => String(i).toLowerCase().includes(q))));
       hits.sort((a, b) => Number(isOwn(b)) - Number(isOwn(a)));
       head.textContent = hits.length ? `${hits.length} found` : `Nothing called "${e.target.value.trim()}"`;
       grid.innerHTML = tiles(hits.slice(0, 12));
     });
     return d;
   }
-  function openPlanSheet(date, slot = "dinner") {
-    sheet = { date, slot, picks: [], shown: new Set() };
+  const ideasHead = () => (sheet.picks.some(isOwn) ? "Your recipes first" : "A few ideas");
+  function openPlanSheet(date, slot = "dinner", opts = {}) {
+    sheet = { date, slot, picks: [], shown: new Set(), add: !!opts.add };
     sheet.picks = pickIdeas();
     const d = sheetBox();
     // One line each: "Plan dinner · Wed 11", then "Tomorrow · tap one…"
@@ -166,15 +190,15 @@
     const day = full.replace(/^(Today|Tomorrow) · /, "");
     d.innerHTML = `<div class="mqp-card">
         <div class="mqp-head">
-          <div class="mqp-head-words"><h2 class="mqp-title" id="mqp-title">Plan ${SLOT_NAMES[slot].toLowerCase()} · ${esc(day)}</h2><p class="mqp-sub">${when ? `${when} · tap` : "Tap"} one and it's planned</p></div>
+          <div class="mqp-head-words"><h2 class="mqp-title" id="mqp-title">${sheet.add ? "Add to" : "Plan"} ${SLOT_NAMES[slot].toLowerCase()} · ${esc(day)}</h2><p class="mqp-sub">${when ? `${when} · tap` : "Tap"} one and it's ${sheet.add ? "added" : "planned"}</p></div>
           <button type="button" class="mqp-close" data-mqp-close aria-label="Close">✕</button>
         </div>
         <label class="mqp-search"><span aria-hidden="true">🔍</span><input type="search" data-mqp-search placeholder="Search recipes or ingredients" autocomplete="off" aria-label="Search recipes"></label>
-        <p class="mqp-grid-head" data-mqp-grid-head>A few ideas</p>
+        <p class="mqp-grid-head" data-mqp-grid-head>${sheet.add ? ideasHead() : "A few ideas"}</p>
         <div class="mqp-grid" data-mqp-grid>${tiles(sheet.picks)}</div>
         <div class="mqp-actions">
           <button type="button" class="mqp-link" data-mqp-others>↻ Show me others</button>
-          <button type="button" class="mqp-link" data-mqp-more="type">✏️ Type it</button>
+          ${sheet.add ? "" : `<button type="button" class="mqp-link" data-mqp-more="type">✏️ Type it</button>`}
           <button type="button" class="mqp-link" data-mqp-more="all">More choices</button>
         </div>
       </div>`;

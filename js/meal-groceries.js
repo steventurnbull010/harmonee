@@ -5,7 +5,7 @@
 // "Take its ingredients off the shopping list?" for the ones not yet bought.
 // Ingredients another meal also needs stay on; just this meal's share comes off.
 //
-//   MealGroceries.afterPlan({ dateStr, slot, before, meal })  // meal just saved (before: what it replaced)
+//   MealGroceries.afterPlan({ dateStr, slot, before, meal, added })  // meal just saved (before: what it replaced; added: one dish added to it)
 //   MealGroceries.afterRemove({ dateStr, slot, meal })        // meal just removed
 //   MealGroceries.onList(meal, dateStr, slot)                 // its ingredients still on the list
 //   MealGroceries.askRemove(meal, dateStr, slot)
@@ -127,15 +127,29 @@
   }
 
   // ---- Remove: after a meal comes off the plan (or is replaced) --------------------
+  // A meal with several dishes asks once, for all of them (each dish's
+  // ingredients are tagged with its own title)
+  const dishesOf = (meal) => (window.MealDishes ? window.MealDishes.dishesOf(meal) : [meal]).filter(d => d && d.title);
   async function askRemove(meal, dateStr, slot) {
-    const items = onList(meal, dateStr, slot);
-    if (!items.length || typeof window.mutateFamilyLists !== "function") return;
-    const rows = items.map(i => ({ key: i.key, text: i.text, on: true, note: i.others.length ? `Also for ${i.others.join(", ")}: only ${meal.title}'s share comes off` : i.byHand ? `You added this yourself too: only ${meal.title}'s share comes off` : "" }));
-    const picked = await ask({ title: "Take its ingredients off the shopping list?", sub: `${meal.title} · ${whenText(dateStr, slot)}`, rows, verb: "Take off", skip: "Keep them" });
+    if (typeof window.mutateFamilyLists !== "function") return;
+    const dishes = dishesOf(meal);
+    const several = dishes.length > 1;
+    const rows = [];
+    dishes.forEach((dish, di) => onList(dish, dateStr, slot).forEach(i => rows.push({
+      key: `${di}::${i.key}`, dish, itemKey: i.key, text: i.text, on: true,
+      note: [several ? `For ${dish.title}` : "", i.others.length ? `Also for ${i.others.join(", ")}: only ${dish.title}'s share comes off` : i.byHand ? `You added this yourself too: only ${dish.title}'s share comes off` : ""].filter(Boolean).join(" · ")
+    })));
+    if (!rows.length) return;
+    const picked = await ask({ title: "Take its ingredients off the shopping list?", sub: `${several ? dishes.map(d => d.title).join(", ") : meal.title} · ${whenText(dateStr, slot)}`, rows, verb: "Take off", skip: "Keep them" });
     if (!picked || !picked.length) return;
-    const res = window.mutateFamilyLists({ type: "groceryRemoveMeal", sourceKey: keyFor(meal, dateStr, slot), title: meal.title, lines: ingredientsOf(meal), keys: picked }) || { removed: [], reduced: 0 };
-    const n = (res.removed || []).length + (res.reduced || 0);
-    if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🛒 ${n} item${n === 1 ? "" : "s"} for ${meal.title} taken off the list`);
+    let n = 0;
+    dishes.forEach((dish, di) => {
+      const keys = rows.filter(r => r.dish === dish && picked.includes(r.key)).map(r => r.itemKey);
+      if (!keys.length) return;
+      const res = window.mutateFamilyLists({ type: "groceryRemoveMeal", sourceKey: keyFor(dish, dateStr, slot), title: dish.title, lines: ingredientsOf(dish), keys }) || { removed: [], reduced: 0 };
+      n += (res.removed || []).length + (res.reduced || 0);
+    });
+    if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🛒 ${n} item${n === 1 ? "" : "s"} for ${several ? "this " + (slot || "meal") : meal.title} taken off the list`);
     refresh();
   }
 
@@ -145,7 +159,9 @@
     document.dispatchEvent(new CustomEvent("harmonee:voice-change"));
   }
 
-  async function afterPlan({ dateStr, slot, before, meal }) {
+  // added: just one dish added to a meal already planned (ask about that one only)
+  async function afterPlan({ dateStr, slot, before, meal, added }) {
+    if (added) { await askAdd(added, dateStr, slot); return; }
     if (before && before.title && (!meal || before.title.trim().toLowerCase() !== String(meal.title || "").trim().toLowerCase())) await askRemove(before, dateStr, slot);
     if (meal && meal.title) await askAdd(meal, dateStr, slot);
   }

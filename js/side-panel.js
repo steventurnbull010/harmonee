@@ -23,7 +23,6 @@ const SIDE_PANEL_DIALOGS = [
   "family-goal-modal",  // Rewards: the family goal
   "grocery-list-modal", // Meals: the shared Groceries list
   "list-item-modal",    // Lists: add items to a list
-  "meal-details-modal", // Meals: tap a planned meal
 ];
 
 const SIDE_PANEL_SLIDE_MS = 300; // keep in step with css/side-panel.css

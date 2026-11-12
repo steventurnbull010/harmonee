@@ -107,6 +107,8 @@ function renderMealCardCooksHtml(cookStr) {
   return { names, avatars: `<span class="ev-block-avatars">${avatars}</span>` };
 }
 
+window.mealCooksHtml = renderMealCardCooksHtml;
+
 function renderChefAvatarsHtml(cookStr) {
   if (!cookStr) return "";
   const chefs = cookStr.split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
@@ -436,6 +438,14 @@ function mealPhotoUrl(meal, all, size = "medium") {
 }
 window.mealPhotoUrl = mealPhotoUrl;
 
+// "+ Colcannon · 🍮 Apple crumble": a meal's other dishes, under its name
+function mealMoreDishesHtml(meal, className) {
+  const more = window.MealDishes ? window.MealDishes.dishesOf(meal).slice(1) : [];
+  if (!more.length) return "";
+  return `<span class="${className}">${more.map(d => d.course === "pudding" ? `<span class="meal-more-pud">🍮 ${escapeHtml(d.title)}</span>` : `<span>+ ${escapeHtml(d.title)}</span>`).join(`<span aria-hidden="true"> · </span>`)}</span>`;
+}
+window.mealMoreDishesHtml = mealMoreDishesHtml;
+
 function renderMealsView() {
   const matrixContainer = document.getElementById("skylight-meals-matrix");
   if (!matrixContainer) return;
@@ -515,6 +525,7 @@ function renderMealsView() {
           <div class="matrix-meal-cell" data-date="${dateStr}" data-slot="${cat.key}">
             <div class="meal-block-card meal-cat-${cat.key} meal-card-v2${photo ? " has-photo" : ""}" role="button" tabindex="0" title="${escapeHtml(meal.title)}"${photo ? ` style="--meal-photo: url('${escapeHtml(photo)}')"` : ""}>
               <span class="ev-block-title meal-card-title"><span class="ev-block-icon" aria-hidden="true">${escapeHtml(emoji)}</span>${escapeHtml(meal.title)}</span>
+              ${mealMoreDishesHtml(meal, "meal-card-more")}
               ${(() => { const c = renderMealCardCooksHtml(meal.cook); return c.names ? `<span class="ev-block-time meal-card-cooks">${escapeHtml(c.names)}</span><div class="ev-block-people">${c.avatars}</div>` : ""; })()}
             </div>
           </div>
@@ -1128,136 +1139,9 @@ function recipeRowHtml(recipe) {
 }
 
 // Open Meal Details Popover (Matching Photo 1)
+// Tap a planned meal: its own screen, photo first (js/meal-screen.js)
 function openMealDetailsPopover(meal, dateStr, slot = "dinner") {
-  const popover = document.getElementById("meal-details-modal");
-  if (!popover) return;
-
-  const titleEl = document.getElementById("meal-popover-title");
-  const dateTextEl = document.getElementById("popover-meal-date-text");
-  const catCircleEl = document.getElementById("popover-cat-circle");
-  const catNameEl = document.getElementById("popover-cat-name");
-  const ingredientsListEl = document.getElementById("popover-ingredients-list");
-  const instructionsEl = document.getElementById("popover-instructions-content");
-  const btnAddGrocery = document.getElementById("btn-popover-add-to-grocery");
-  const btnOpenRecipe = document.getElementById("btn-popover-open-recipe");
-  const btnEditMeal = document.getElementById("btn-popover-edit-meal");
-  const btnDeleteMeal = document.getElementById("btn-popover-delete-meal");
-  // Move it to another day (js/meals-phone.js): what phones have instead of dragging
-  const btnMoveMeal = document.getElementById("btn-popover-move-meal");
-  if (btnMoveMeal) btnMoveMeal.onclick = () => {
-    if (popover.open) popover.close();
-    if (window.MealsPhone) window.MealsPhone.moveMeal(dateStr, slot);
-  };
-  const btnClose = document.getElementById("btn-popover-close");
-
-  const recipe = findRecipeByIdOrTitle(meal.recipeId || meal.title);
-  // Only real recipe details: a meal typed in by hand has no made-up
-  // ingredients or method (its notes are shown instead)
-  const fullIngredients = ((recipe && recipe.ingredients) || meal.ingredients || []).filter(Boolean);
-  const fullInstructions = ((recipe && recipe.instructions) || meal.instructions || []).filter(Boolean);
-  const mealNotes = (meal.notes || "").trim();
-
-  if (titleEl) titleEl.textContent = meal.title;
-
-  // Format Date: e.g. Thursday, November 5
-  if (dateTextEl && dateStr) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    dateTextEl.textContent = `${dayNames[dateObj.getDay()]}, ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}`;
-  }
-
-  // Format Category Pill: Item 6 clean category badge without letter circle
-  const slotName = slot.charAt(0).toUpperCase() + slot.slice(1);
-  if (catCircleEl) {
-    catCircleEl.style.display = "none";
-  }
-  if (catNameEl) {
-    catNameEl.textContent = slotName;
-    catNameEl.className = `popover-cat-name cat-theme-pill cat-theme-${slot.toLowerCase()}`;
-  }
-
-  // Ingredients (with dashes), or the meal's own notes, or nothing at all
-  const ingredientsSection = document.getElementById("popover-ingredients-section");
-  const ingredientsHeading = ingredientsSection ? ingredientsSection.querySelector(".popover-ingredients-heading") : null;
-  if (ingredientsListEl) {
-    if (fullIngredients.length) {
-      ingredientsListEl.innerHTML = fullIngredients.map(ing => {
-        const text = ing.startsWith("-") ? ing : `- ${ing}`;
-        return `<li>${escapeHtml(text)}</li>`;
-      }).join("");
-      if (ingredientsHeading) ingredientsHeading.textContent = "Ingredients:";
-    } else if (mealNotes) {
-      ingredientsListEl.innerHTML = mealNotes.split("\n").filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join("");
-      if (ingredientsHeading) ingredientsHeading.textContent = "Notes:";
-    }
-  }
-  if (ingredientsSection) ingredientsSection.style.display = (fullIngredients.length || mealNotes) ? "" : "none";
-
-  // Method: only for meals with a real recipe
-  const instructionsSection = document.getElementById("popover-instructions-section");
-  if (instructionsEl) {
-    instructionsEl.innerHTML = fullInstructions.map((step, idx) => {
-      return `<p style="margin: 0 0 8px 0;"><strong>Step ${idx + 1}:</strong> ${escapeHtml(step)}</p>`;
-    }).join("");
-  }
-  if (instructionsSection) instructionsSection.style.display = fullInstructions.length ? "" : "none";
-
-  // Add to List needs real ingredients; Open Recipe needs a real recipe
-  if (btnAddGrocery) btnAddGrocery.style.display = fullIngredients.length ? "" : "none";
-  if (btnOpenRecipe) btnOpenRecipe.style.display = recipe ? "" : "none";
-  const pillsRow = btnAddGrocery ? btnAddGrocery.parentElement : null;
-  if (pillsRow) pillsRow.style.display = (fullIngredients.length || recipe) ? "" : "none";
-
-  // Reset Add to List button state
-  if (btnAddGrocery) {
-    btnAddGrocery.classList.remove("is-added");
-    btnAddGrocery.innerHTML = `<span class="btn-pill-icon">🛒</span> <span class="btn-pill-label">Add to List</span>`;
-    btnAddGrocery.onclick = () => {
-      const res = addIngredientsToGroceryList(fullIngredients, meal.title, `${meal.title}|${dateStr}|${slot}`);
-      btnAddGrocery.classList.add("is-added");
-      btnAddGrocery.innerHTML = `<span class="btn-pill-icon">✓</span> <span class="btn-pill-label">On the list</span>`;
-      if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
-      showGroceryAddToast(res, meal.title);
-    };
-  }
-
-  // Open Full Recipe Cooking Mode
-  if (btnOpenRecipe) {
-    btnOpenRecipe.onclick = () => {
-      closeMealDetailsPopover();
-      openCookingRecipeModal(recipe || meal, dateStr, slot);
-    };
-  }
-
-  // Edit action
-  if (btnEditMeal) {
-    btnEditMeal.onclick = () => {
-      closeMealDetailsPopover();
-      openPlanMealDrawer(dateStr, slot);
-    };
-  }
-
-  // Delete action
-  if (btnDeleteMeal) {
-    btnDeleteMeal.onclick = () => {
-      (window.setMealForDate || setMealForDate)(dateStr, null, slot);
-      closeMealDetailsPopover();
-      if (window.MealGroceries) window.MealGroceries.afterRemove({ dateStr, slot, meal });
-      renderMealsView();
-      (window.renderWeekCalendar || renderWeekCalendar)();
-      if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
-      if (typeof showCalendarToast === "function") {
-        (window.showCalendarToast || showCalendarToast)(`Removed ${meal.title} from schedule`);
-      }
-    };
-  }
-
-  if (btnClose) btnClose.onclick = closeMealDetailsPopover;
-
-  if (typeof popover.showModal === "function") popover.showModal();
-  else popover.setAttribute("open", "true");
+  if (window.MealScreen) window.MealScreen.open(meal, dateStr, slot, 0);
 }
 window.openMealDetailsPopover = openMealDetailsPopover;
 
@@ -1272,11 +1156,7 @@ function openPlanMealModalForDate(dateStr, slot = "dinner") {
 window.openPlanMealModalForDate = openPlanMealModalForDate;
 
 function closeMealDetailsPopover() {
-  const popover = document.getElementById("meal-details-modal");
-  if (popover && popover.open) {
-    if (typeof popover.close === "function") popover.close();
-    else popover.removeAttribute("open");
-  }
+  if (window.MealScreen) window.MealScreen.close();
 }
 window.closeMealDetailsPopover = closeMealDetailsPopover;
 
@@ -1374,15 +1254,35 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       // Confirmation dialog if overwriting an existing planned meal
       const existing = (window.getMealForDate || getMealForDate)(selectedDate, selectedSlot);
       if (existing && existing.title && existing.title.trim().length > 0) {
-        if (existing.title.trim().toLowerCase() !== currentCookingRecipe.title.trim().toLowerCase()) {
+        const dishes = window.MealDishes ? window.MealDishes.dishesOf(existing) : [existing];
+        const already = dishes.some(d => (d.recipeId != null && String(d.recipeId) === String(currentCookingRecipe.id)) || d.title.trim().toLowerCase() === currentCookingRecipe.title.trim().toLowerCase());
+        if (!already) {
           const slotCap = selectedSlot.charAt(0).toUpperCase() + selectedSlot.slice(1);
           const [y, m, d] = selectedDate.split("-").map(Number);
           const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
           const dayName = !isNaN(y) ? dayNames[new Date(y, m - 1, d).getDay()] : selectedDate;
-          const ok = window.Sheet
-            ? await window.Sheet.confirm({ icon: "🍽️", title: `Replace ${dayName}'s ${selectedSlot}?`, text: `“${existing.title}” is planned. Swap it for “${currentCookingRecipe.title}”?`, yes: "Replace it", no: "Keep it" })
-            : confirm(`There is already a meal planned for ${dayName} ${slotCap}:\n"${existing.title}"\n\nDo you want to replace it with "${currentCookingRecipe.title}"?`);
-          if (!ok) return;
+          const planned = window.MealDishes ? window.MealDishes.summary(existing) : existing.title;
+          // Another dish for that meal (a side, a pudding), or instead of it
+          const canAdd = !!window.MealDishes && dishes.length < window.MealDishes.MAX_DISHES;
+          const choice = window.Sheet && window.Sheet.choose
+            ? await window.Sheet.choose({ icon: "🍽️", title: `${dayName}'s ${selectedSlot}`, text: `“${planned}” is planned.`, options: [
+                ...(canAdd ? [{ key: "add", icon: "➕", label: `Add to ${selectedSlot}`, sub: `${currentCookingRecipe.title} as well` }] : []),
+                { key: "replace", icon: "🔁", label: "Replace it", sub: `Just ${currentCookingRecipe.title}` }
+              ], cancel: "Keep it as it is" })
+            : (confirm(`There is already a meal planned for ${dayName} ${slotCap}:\n"${existing.title}"\n\nDo you want to replace it with "${currentCookingRecipe.title}"?`) ? "replace" : null);
+          if (!choice) return;
+          if (choice === "add") {
+            addDishToMeal(currentCookingRecipe, selectedDate, selectedSlot);
+            closeCookingRecipeModal();
+            closePlanMealDrawer();
+            return;
+          }
+        } else if (dishes.length > 1) {
+          // Already one of its dishes: nothing to change
+          closeCookingRecipeModal();
+          closePlanMealDrawer();
+          if (typeof showCalendarToast === "function") (window.showCalendarToast || showCalendarToast)(`${currentCookingRecipe.title} is already planned`);
+          return;
         }
       }
 
@@ -1395,6 +1295,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
         notes: currentCookingRecipe.subtitle || "",
         tags: (currentCookingRecipe.tags || []).join(" • "),
         category: selectedSlot,
+        course: window.MealDishes && window.MealDishes.isPudding(currentCookingRecipe) ? "pudding" : "main",
         hasRecipe: true,
         ingredients: currentCookingRecipe.ingredients || [],
         instructions: currentCookingRecipe.instructions || []
@@ -1578,12 +1479,42 @@ window.RecipeRows = {
   }
 };
 
+// Another dish for a meal already planned (a side, a pudding): it joins the
+// meal (js/meal-dishes.js), then the ingredients question for just that dish
+function addDishToMeal(recipe, dateStr, slot = "dinner") {
+  const get = window.getMealForDate || getMealForDate;
+  const before = get(dateStr, slot);
+  if (!before || !window.MealDishes) return;
+  const next = window.MealDishes.withDish(before, recipe);
+  if (next === before) {
+    if (typeof showCalendarToast === "function") (window.showCalendarToast || showCalendarToast)(window.MealDishes.dishesOf(before).length >= window.MealDishes.MAX_DISHES ? "That's as many dishes as one meal can hold" : `${recipe.title} is already planned`);
+    return;
+  }
+  (window.setMealForDate || setMealForDate)(dateStr, next, slot);
+  if (typeof sfx !== "undefined" && sfx && sfx.playSuccess) sfx.playSuccess();
+  if (typeof showCalendarToast === "function") (window.showCalendarToast || showCalendarToast)(`➕ ${recipe.title} added to ${slot}`);
+  showMealsWeekFor(dateStr);
+  renderMealsView();
+  if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
+  const after = get(dateStr, slot);
+  const added = window.MealDishes.dishesOf(after).find(d => (d.recipeId != null && String(d.recipeId) === String(recipe.id)) || d.title === recipe.title);
+  // The meal screen, if it's open, shows the new dish
+  if (window.MealScreen && window.MealScreen.isOpenFor(dateStr, slot)) window.MealScreen.open(after, dateStr, slot, added ? added.index : 0);
+  if (window.MealGroceries && added) window.MealGroceries.afterPlan({ dateStr, slot, before, meal: after, added });
+}
+window.addDishToMeal = addDishToMeal;
+
 // Plan a recipe straight onto a day (Meal Genie): the same meal the recipe
 // card's "Add to plan" saves, then the ingredients question slides up
 window.getAllFamilyRecipes = getAllFamilyRecipes;
-window.planRecipeOn = function (recipe, dateStr, slot = "dinner") {
+// { add: true }: add it to the meal already planned there, as another dish
+window.planRecipeOn = function (recipe, dateStr, slot = "dinner", opts = {}) {
   if (!recipe || !dateStr) return;
   const before = (window.getMealForDate || getMealForDate)(dateStr, slot);
+  if (opts.add && before && before.title && window.MealDishes) {
+    addDishToMeal(recipe, dateStr, slot);
+    return;
+  }
   (window.setMealForDate || setMealForDate)(dateStr, {
     title: recipe.title,
     recipeId: recipe.id,
@@ -1592,6 +1523,7 @@ window.planRecipeOn = function (recipe, dateStr, slot = "dinner") {
     notes: recipe.subtitle || "",
     tags: (recipe.tags || []).join(" • "),
     category: slot,
+    course: window.MealDishes && window.MealDishes.isPudding(recipe) ? "pudding" : "main",
     hasRecipe: true,
     ingredients: recipe.ingredients || [],
     instructions: recipe.instructions || []

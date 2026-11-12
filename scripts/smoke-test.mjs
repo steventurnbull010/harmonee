@@ -1121,6 +1121,109 @@ const PAGES = [
   // Back and Forward: each page has its own address; Back closes what's open
   // first (a recipe card, a list on a phone), then goes to the page before;
   // a refresh stays on the page
+  // A dinner of three dishes (two recipes and a pudding), and the meal screen:
+  // photo at the top, a tab per dish, open ingredients, blue numbered steps
+  ["meal-dishes", async (p) => {
+    const closeAll = () => p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    const skipGroceries = () => p.evaluate(() => { const b = document.querySelector("#meal-groc-dialog[open] [data-mg-skip]"); if (b) b.click(); });
+    await closeAll();
+    await p.evaluate(() => { window.RecipeBrowse && window.RecipeBrowse.setTab("week"); window.setMealsWeek(0); });
+    await goTo("meals")(p);
+    await p.waitForTimeout(300);
+    const pick = await p.evaluate(() => {
+      const all = window.RecipeRows.all().filter(r => (r.image || r.imageUrl) && (r.instructions || []).length > 2 && (r.ingredients || []).length > 3);
+      // Puddings are the family's own (the stock recipes have none): one with no photo
+      const pud = { id: "smoke-pudding", title: "Apple crumble", mealType: "snack", emoji: "🍏", ingredients: ["6 apples", "200g flour", "100g butter", "100g sugar"], instructions: ["Slice the apples into a dish.", "Rub the butter into the flour and sugar.", "Scatter over the apples and bake for 40 minutes."] };
+      window.__smokePudding = pud;
+      const dinners = all.filter(r => String(r.mealType || "").toLowerCase() === "dinner" && !window.MealDishes.isPudding(r));
+      const t = new Date(); t.setDate(t.getDate() + 1);
+      return { main: dinners[0] && dinners[0].id, side: dinners[1] && dinners[1].id, pud: pud.id, date: window.getLocalDateKey(t) };
+    });
+    if (!pick.main || !pick.side || !pick.pud) throw new Error(`no recipes to plan: ${JSON.stringify(pick)}`);
+    const { date } = pick;
+    await p.evaluate(({ main, date }) => { window.setMealForDate(date, null, "dinner"); window.planRecipeOn(window.RecipeRows.find(main), date, "dinner"); }, pick);
+    await p.waitForTimeout(400);
+    await skipGroceries();
+    await p.waitForTimeout(300);
+    // Tap tomorrow's dinner
+    const card = p.__size === "phone" ? `#meals-phone-week .mp-dinner[data-date="${date}"]` : `#skylight-meals-matrix .matrix-meal-cell[data-date="${date}"][data-slot="dinner"]`;
+    await p.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: "center" }), card);
+    await p.click(card);
+    await p.waitForTimeout(400);
+    if (!(await p.evaluate(() => document.getElementById("meal-view").open))) throw new Error("tapping a planned dinner didn't open its screen");
+    // Add a dish: the sheet says "Add to dinner"
+    await p.click("#meal-view [data-mv-add]");
+    await p.waitForTimeout(400);
+    const sheetTitle = await p.evaluate(() => document.getElementById("mqp-title").textContent);
+    if (!/^Add to dinner/.test(sheetTitle)) throw new Error(`Add a dish opened "${sheetTitle}"`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-add-dish-sheet.png`) });
+    await p.evaluate(() => document.querySelector("#meal-quick-plan [data-mqp-close]").click());
+    for (const id of [pick.side, pick.pud]) {
+      await p.evaluate(({ id, date }) => window.planRecipeOn(id === "smoke-pudding" ? window.__smokePudding : window.RecipeRows.find(id), date, "dinner", { add: true }), { id, date });
+      await p.waitForTimeout(400);
+      await skipGroceries();
+      await p.waitForTimeout(300);
+    }
+    // It shows the dish just added; the first tab goes back to the main dish
+    const shownAfterAdd = await p.evaluate(() => document.querySelector("#mv-title").textContent);
+    if (shownAfterAdd !== "Apple crumble") throw new Error(`after adding the pudding the screen shows "${shownAfterAdd}"`);
+    await p.click("#meal-view .mv-dish:nth-child(1)");
+    await p.waitForTimeout(200);
+    const screen = await p.evaluate(() => {
+      const d = document.getElementById("meal-view");
+      const card = d.querySelector(".mv-card");
+      return {
+        open: d.open, tabs: [...d.querySelectorAll(".mv-dish")].map(t => t.textContent.trim().replace(/\s+/g, " ")), on: d.querySelector(".mv-dish.is-on .mv-dish-name").textContent,
+        title: d.querySelector("#mv-title").textContent, steps: d.querySelectorAll(".mv-step-num").length,
+        stepBlue: getComputedStyle(d.querySelector(".mv-step-num") || d).backgroundColor, ings: d.querySelectorAll(".mv-ing-list li").length,
+        photo: !!d.querySelector(".mv-hero.has-photo"), sideways: card.scrollWidth > card.clientWidth + 1,
+        width: Math.round(d.getBoundingClientRect().width)
+      };
+    });
+    if (!screen.open || screen.tabs.length !== 3 || !/Pudding Apple crumble$/.test(screen.tabs[2])) throw new Error(`the meal screen doesn't show 3 dishes, pudding last: ${JSON.stringify(screen)}`);
+    if (!screen.steps || screen.stepBlue !== "rgb(2, 132, 199)" || !screen.ings || !screen.photo) throw new Error(`the meal screen is missing its photo, ingredients or blue steps: ${JSON.stringify(screen)}`);
+    if (screen.sideways) throw new Error("the meal screen scrolls sideways");
+    if (p.__size === "phone" && screen.width !== 390) throw new Error(`the meal screen isn't full width on a phone (${screen.width}px)`);
+    if (p.__size !== "phone" && screen.width > 960) throw new Error(`the meal screen is ${screen.width}px wide`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-screen.png`) });
+    // The method, further down
+    await p.evaluate(() => { const c = document.querySelector("#meal-view .mv-card"); c.scrollTop = document.querySelector("#meal-view .mv-body").offsetTop - 16; });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-screen-method.png`) });
+    // The pudding's tab
+    await p.click("#meal-view .mv-dish:nth-child(3)");
+    await p.waitForTimeout(200);
+    const pudTitle = await p.evaluate(() => document.querySelector("#mv-title").textContent);
+    if (pudTitle !== "Apple crumble") throw new Error(`the pudding tab shows "${pudTitle}"`);
+    await p.evaluate(() => { document.querySelector("#meal-view .mv-card").scrollTop = 0; });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-screen-pudding.png`) });
+    // The card lists the other dishes
+    await p.click("#btn-popover-close");
+    await p.waitForTimeout(300);
+    const more = await p.evaluate((sel) => { const el = document.querySelector(sel); const m = el && el.querySelector(".meal-card-more, .mp-dinner-more"); el && el.scrollIntoView({ block: "center" }); return m ? m.textContent : ""; }, card);
+    if (!more.includes("🍮")) throw new Error(`the dinner card doesn't list the pudding: "${more}"`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-dishes-card.png`) });
+    // Take the pudding off: two dishes left
+    await p.click(card);
+    await p.waitForTimeout(400);
+    await p.click("#meal-view .mv-dish:nth-child(3)");
+    await p.click("#meal-view [data-mv-remove]");
+    await p.waitForTimeout(400);
+    await skipGroceries();
+    const left = await p.evaluate((d) => window.MealDishes.dishesOf(window.getMealForDate(d, "dinner")).map(x => x.title), date);
+    if (left.length !== 2) throw new Error(`taking the pudding off left ${JSON.stringify(left)}`);
+    // A dish with no photo: a soft banner with its emoji
+    await closeAll();
+    await p.evaluate((d) => {
+      window.setMealForDate(d, { title: "Sausages with onion gravy", emoji: "🌭", cook: "Sam", ingredients: ["8 sausages", "2 onions, sliced", "1 tbsp flour", "400ml beef stock"], instructions: ["Brown the sausages in a large pan.", "Add the onions and cook slowly until soft and golden.", "Stir in the flour, then the stock, and simmer for 20 minutes."] }, "dinner");
+      window.renderMealsView();
+      window.openMealDetailsPopover(window.getMealForDate(d, "dinner"), d, "dinner");
+    }, date);
+    await p.waitForTimeout(400);
+    if (!(await p.evaluate(() => !!document.querySelector("#meal-view .mv-hero.is-plain .mv-hero-emoji")))) throw new Error("a dish with no photo has no banner");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-screen-plain.png`) });
+    await closeAll();
+    await p.evaluate((d) => { window.setMealForDate(d, null, "dinner"); window.renderMealsView(); }, date);
+  }],
   ["back-button", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
     await p.waitForTimeout(300);
