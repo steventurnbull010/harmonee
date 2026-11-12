@@ -4081,7 +4081,10 @@ body.theme-dark .family-recipe-add small { color: #86efac; }
 .family-recipe-name-row { display: flex; gap: 8px; }
 .family-recipe-name-row .family-recipe-emoji { width: 56px; flex: none; text-align: center; font-size: 1.2rem; padding-left: 0; padding-right: 0; }
 .family-recipe-name-row input:not(.family-recipe-emoji) { flex: 1; min-width: 0; }
-.family-recipe-meals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+/* Five types: Breakfast, Lunch, Dinner on one row, Snack and Pudding under them */
+#family-recipe-modal .family-recipe-meals { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+#family-recipe-modal .family-recipe-meals .drawer-pill-segment { grid-column: span 2; }
+#family-recipe-modal .family-recipe-meals .drawer-pill-segment:nth-child(n + 4) { grid-column: span 3; }
 .family-recipe-meals .drawer-pill-segment { min-height: 44px; padding: 4px; font-size: 0.85rem; }
 .family-recipe-numbers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .family-recipe-numbers .ev-native-input { width: 100%; min-width: 0; box-sizing: border-box; }

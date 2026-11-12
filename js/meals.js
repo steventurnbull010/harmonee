@@ -1099,7 +1099,7 @@ function recipeTileHtml(recipe) {
 }
 
 function recipeRowHtml(recipe) {
-  const categoryBadgeMap = { breakfast: "badge-b", lunch: "badge-l", dinner: "badge-d", snack: "badge-s" };
+  const categoryBadgeMap = { breakfast: "badge-b", lunch: "badge-l", dinner: "badge-d", snack: "badge-s", pudding: "badge-s" };
   {
     const mealType = recipe.mealType || recipe.category || "dinner";
     const badgeClass = categoryBadgeMap[mealType] || "badge-d";
@@ -1116,7 +1116,7 @@ function recipeRowHtml(recipe) {
     } else {
       timeDisplay = formatMinutesToDuration(knownMin);
     }
-    const emoji = recipe.emoji || (mealType === 'breakfast' ? '🥞' : mealType === 'lunch' ? '🥪' : mealType === 'dinner' ? '🥘' : '🍫');
+    const emoji = recipe.emoji || (mealType === 'breakfast' ? '🥞' : mealType === 'lunch' ? '🥪' : mealType === 'dinner' ? '🥘' : mealType === 'pudding' ? '🍮' : '🍫');
     const imgUrl = safeImageUrl(recipe.image || recipe.imageUrl);
     const badgeContent = imgUrl
       ? `<img src="${escapeHtml(imgUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="">`

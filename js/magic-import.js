@@ -82,7 +82,7 @@
       "Several photos are pages of the same recipe, in order.",
       "title: the recipe's name as written, at most 80 characters.",
       "servings: how many it serves or makes, if given, else 0. prepMinutes and cookMinutes: whole minutes if given (1 hr = 60), else 0.",
-      "mealType: one of breakfast, lunch, dinner, snack (your best guess; puddings, cakes and bakes are snack).",
+      "mealType: one of breakfast, lunch, dinner, snack, pudding (your best guess; puddings and desserts such as crumbles, tarts and cheesecakes are pudding; cakes, biscuits and bakes are snack).",
       "ingredients: one item per ingredient with its amount as written (\"200g plain flour\", \"2 eggs\").",
       "method: one item per step, in order, in the recipe's own words (only fix obvious spelling).",
       "Leave out page numbers, headings, adverts, nutrition panels and anything that isn't part of this recipe.",
@@ -192,7 +192,7 @@
       servings: n(a.servings, 50),
       prepTime: n(a.prepMinutes, 600) ? String(n(a.prepMinutes, 600)) : "",
       cookTime: n(a.cookMinutes, 1440) ? String(n(a.cookMinutes, 1440)) : "",
-      mealType: ["breakfast", "lunch", "dinner", "snack"].includes(meal) ? meal : "",
+      mealType: ["breakfast", "lunch", "dinner", "snack", "pudding"].includes(meal) ? meal : meal === "dessert" ? "pudding" : "",
       emoji: emoji && /\p{Extended_Pictographic}/u.test(emoji) && [...emoji].length <= 4 ? emoji : ""
     };
   }

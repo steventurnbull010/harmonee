@@ -35,7 +35,9 @@
     { id: "pork", name: "Pork", test: r => part(r, 1) === "pork" },
     { id: "lamb", name: "Lamb", test: r => part(r, 1) === "lamb" },
     { id: "pasta", name: "Pasta", test: r => part(r, 1) === "pasta" || tags(r).includes("pasta") },
-    { id: "snack", name: "Snacks and puddings", test: r => meal(r) === "snack" }
+    // Puddings: saved as Pudding, or older ones saved as Snack that are clearly puddings
+    { id: "pudding", name: "Puddings", cover: "images/recipes/stock/pudding.jpg", test: r => meal(r) === "pudding" || (meal(r) === "snack" && window.RecipeStock && window.RecipeStock.kindFor(r) === "pudding") },
+    { id: "snack", name: "Snacks", test: r => meal(r) === "snack" && !(window.RecipeStock && window.RecipeStock.kindFor(r) === "pudding") }
   ];
   const WORLD = [["British", "british"], ["Italian", "italian"], ["Spanish", "spanish"], ["Chinese", "chinese"], ["Indian", "india"], ["Thai", "thai"], ["Vietnamese", "vietnamese"], ["French", "france"], ["American", "united states"], ["Mexican", "mexican"], ["Turkish", "turkish"], ["Japanese", "japanese"], ["Greek", "greek"]]
     .map(([name, key]) => ({ id: "world-" + key.replace(/\s+/g, "-"), name, test: r => part(r, 0) === key }));

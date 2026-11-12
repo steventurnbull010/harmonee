@@ -18,7 +18,7 @@
 (function () {
   const FIELD = "customRecipes";
   const MAX = 100;
-  const MEALS = [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snack", "Snack"]];
+  const MEALS = [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snack", "Snack"], ["pudding", "Pudding"]];
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s ?? "")) : String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
   const cacheKey = () => (typeof window.boardCacheKey === "function" ? window.boardCacheKey("turnbull_custom_recipes") : "turnbull_custom_recipes");
   const clean = (s, max) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
@@ -376,7 +376,7 @@
     const emoji = clean(field("emoji").value, 4);
     const recipe = {
       id: editingId || `family-${Date.now()}`,
-      title, emoji: /\p{Extended_Pictographic}/u.test(emoji) ? emoji : "🍲",
+      title, emoji: /\p{Extended_Pictographic}/u.test(emoji) ? emoji : mealType === "pudding" ? "🍮" : "🍲",
       subtitle: "Family recipe",
       category: mealType, mealType, tags: [mealType, "family"],
       source: "family", sourceName: "Family recipe",

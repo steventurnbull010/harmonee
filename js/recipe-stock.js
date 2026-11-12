@@ -34,6 +34,7 @@
     const byIngredients = first(words((Array.isArray(r.ingredients) ? r.ingredients : []).join(" ")));
     // An ingredient alone says less than a name: "chicken stock" in a soup
     if (byIngredients && byIngredients !== "breakfast") return byIngredients;
+    if (meal === "pudding") return "pudding";
     if (meal === "snack") return "baking";
     if (meal === "lunch") return "salad";
     return "table";

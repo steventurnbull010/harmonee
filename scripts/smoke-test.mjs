@@ -1127,7 +1127,7 @@ const PAGES = [
     const closeAll = () => p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
     const skipGroceries = () => p.evaluate(() => { const b = document.querySelector("#meal-groc-dialog[open] [data-mg-skip]"); if (b) b.click(); });
     await closeAll();
-    await p.evaluate(() => { window.RecipeBrowse && window.RecipeBrowse.setTab("week"); window.setMealsWeek(0); });
+    await p.evaluate(() => { if (window.closePlanMealDrawer) window.closePlanMealDrawer(); if (window.closeCookingRecipeModal) window.closeCookingRecipeModal(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); window.setMealsWeek(0); });
     await goTo("meals")(p);
     await p.waitForTimeout(300);
     const pick = await p.evaluate(() => {
@@ -1223,6 +1223,43 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-meal-screen-plain.png`) });
     await closeAll();
     await p.evaluate((d) => { window.setMealForDate(d, null, "dinner"); window.renderMealsView(); }, date);
+  }],
+  // Pudding is a recipe type: it fits beside the others, saves as pudding,
+  // gets the pudding stand-in photo, its own shelf, and joins a dinner as 🍮
+  ["pudding-type", async (p) => {
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    await goTo("meals")(p);
+    await p.evaluate(() => window.openPlanMealDrawer(window.getLocalDateKey(new Date()), "dinner"));
+    await p.waitForTimeout(500);
+    await p.locator("#plan-meal-drawer [data-add-family-recipe]").click();
+    await p.waitForTimeout(400);
+    const pills = await p.evaluate(() => {
+      const row = document.querySelector("#family-recipe-modal .family-recipe-meals");
+      const b = [...row.querySelectorAll("[data-fr-meal]")];
+      return { names: b.map(x => x.textContent.trim()), rowFits: row.scrollWidth <= row.clientWidth + 1, cut: b.filter(x => x.scrollWidth > x.clientWidth + 1).map(x => x.textContent.trim()), rows: new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size, even: Math.abs(b[3].getBoundingClientRect().left - b[0].getBoundingClientRect().left) < 2 && Math.abs(b[4].getBoundingClientRect().right - b[2].getBoundingClientRect().right) < 2 };
+    });
+    if (pills.names.join() !== "Breakfast,Lunch,Dinner,Snack,Pudding") throw new Error(`recipe types are ${pills.names.join(", ")}`);
+    if (!pills.rowFits || pills.cut.length || pills.rows > 2 || !pills.even) throw new Error(`the five recipe types don't fit: ${JSON.stringify(pills)}`);
+    await p.fill('#family-recipe-modal [data-fr="title"]', "Grandad's apple crumble");
+    await p.click('#family-recipe-modal [data-fr-meal="pudding"]');
+    await p.click('#family-recipe-modal [data-fr-line="ingredients"]');
+    await p.keyboard.type("6 Bramley apples");
+    await p.click('#family-recipe-modal [data-fr-line="method"]');
+    await p.keyboard.type("Bake for 40 minutes.");
+    await p.locator("#family-recipe-modal .family-recipe-meals").scrollIntoViewIfNeeded();
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-pudding-form.png`) });
+    await p.click('#family-recipe-modal button[type="submit"]');
+    await p.waitForTimeout(800);
+    const r = await p.evaluate(() => {
+      const r = window.FamilyRecipes.list().find(x => x.title === "Grandad's apple crumble");
+      return r && { id: r.id, mealType: r.mealType, stock: window.RecipeStock.kindFor(r), pudding: window.MealDishes.isPudding(r) };
+    });
+    if (!r || r.mealType !== "pudding" || r.stock !== "pudding" || !r.pudding) throw new Error(`the pudding saved wrongly: ${JSON.stringify(r)}`);
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); if (window.closePlanMealDrawer) window.closePlanMealDrawer(); });
+    // On the Puddings shelf (shown once there are a few), not Snacks
+    const shelves = await p.evaluate((id) => { const r = window.FamilyRecipes.list().find(x => x.id === id); return window.RecipeBrowse.collections().filter(c => c.test(r)).map(c => c.id); }, r.id);
+    if (!shelves.includes("pudding") || shelves.includes("snack")) throw new Error(`the pudding is on the shelves ${shelves.join(", ")}`);
+    await p.evaluate((id) => window.FamilyRecipes.remove(id), r.id);
   }],
   ["back-button", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
