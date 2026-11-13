@@ -1706,6 +1706,8 @@ function listenToFirestoreBoard() {
         try { localStorage.setItem(boardCacheKey("turnbull_family_events_v3"), JSON.stringify(events)); } catch (e) {}
         shouldRender = true;
       }
+      // Cooking timers (js/cook-timers.js): the board's are the real ones
+      if (window.CookTimers && window.CookTimers.fromBoard) window.CookTimers.fromBoard(data.timers);
       if (data.meals && typeof data.meals === "object") {
         if (window.BoardSync) window.BoardSync.setBaseline("meals", data.meals);
         dateMealsStore = data.meals;

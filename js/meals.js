@@ -1406,7 +1406,7 @@ function openCookingRecipeModal(recipeOrMeal, targetDateStr = null, targetSlot =
       return `
         <div class="cooking-step-row">
           <span class="cooking-step-badge">${idx + 1}</span>
-          <div class="cooking-step-text">${escapeHtml(String(step).replace(/^\s*(?:step\s*)?\d{1,2}\s*[.):-]?\s+(?=\S)/i, ""))}</div>
+          <div class="cooking-step-text">${(() => { const text = String(step).replace(/^\s*(?:step\s*)?\d{1,2}\s*[.):-]?\s+(?=\S)/i, ""); return window.CookTimers ? window.CookTimers.stepHtml(text, { dish: recipe.title, step: idx + 1 }) : escapeHtml(text); })()}</div>
         </div>
       `;
     }).join("");
@@ -1791,7 +1791,7 @@ function wireMealsHeaderAndDrawerListeners() {
       // (it may have just closed, or redrawn the button you tapped, by the
       // time this runs: a picker day redraws the month, Select closes it)
       if (!document.contains(e.target)) return;
-      if (e.target.closest && e.target.closest("dialog, .skylight-task-quick-overlay")) return;
+      if (e.target.closest && e.target.closest("dialog, .skylight-task-quick-overlay, #cook-timers")) return;
 
       // Ignore trigger buttons that open or switch the drawer
       if (e.target.closest("#btn-meals-plan-dinner") || e.target.closest(".matrix-meal-cell") || e.target.closest("#btn-popover-edit-meal")) {

@@ -129,7 +129,7 @@
         </section>` : ""}
         ${steps.length ? `<section class="mv-section mv-method" aria-labelledby="mv-method-head">
           <h3 class="mv-head" id="mv-method-head">Method</h3>
-          <ol class="mv-steps">${steps.map((s, i) => `<li class="mv-step"><span class="mv-step-num" aria-hidden="true">${i + 1}</span><span class="mv-step-text">${esc(s)}</span></li>`).join("")}</ol>
+          <ol class="mv-steps">${steps.map((s, i) => `<li class="mv-step"><span class="mv-step-num" aria-hidden="true">${i + 1}</span><span class="mv-step-text">${window.CookTimers ? window.CookTimers.stepHtml(s, { dish: dish.title, step: i + 1 }) : esc(s)}</span></li>`).join("")}</ol>
         </section>` : ""}
         ${!ingredients.length && !steps.length ? `<section class="mv-section mv-notes">
           ${notes && state.dish === 0 ? `<h3 class="mv-head">Notes</h3><p class="mv-notes-text">${esc(notes)}</p>` : `<p class="mv-empty">No recipe saved for ${esc(dish.title)}.</p>`}

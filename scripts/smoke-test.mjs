@@ -1261,6 +1261,80 @@ const PAGES = [
     if (!shelves.includes("pudding") || shelves.includes("snack")) throw new Error(`the pudding is on the shelves ${shelves.join(", ")}`);
     await p.evaluate((id) => window.FamilyRecipes.remove(id), r.id);
   }],
+  // Cooking timers: a small Start after each time in a step; the timers stay
+  // pinned (over the meal screen too, and tappable), soonest at the top, ring
+  // when done, and go on the board so other devices show them
+  ["cook-timers", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); if (window.closePlanMealDrawer) window.closePlanMealDrawer(); (window.CookTimers.list() || []).forEach(t => window.CookTimers.remove(t.id)); });
+    await goTo("meals")(p);
+    const date = await p.evaluate(() => {
+      const t = new Date(); t.setDate(t.getDate() + 2);
+      const d = window.getLocalDateKey(t);
+      window.setMealForDate(d, { title: "Sausage and mash", emoji: "🌭", cook: "Sam", ingredients: ["8 sausages", "1kg potatoes"], instructions: ["Boil the spuds for 10 mins.", "Meanwhile, bake the sausages for 20-25 minutes until golden.", "Rest for 1 minute, then serve."] }, "dinner");
+      window.renderMealsView();
+      window.openMealDetailsPopover(window.getMealForDate(d, "dinner"), d, "dinner");
+      return d;
+    });
+    await p.waitForTimeout(400);
+    const btns = await p.evaluate(() => [...document.querySelectorAll("#meal-view .ct-start")].map(b => ({ label: b.getAttribute("data-ct-label"), min: b.getAttribute("data-ct-min"), h: Math.round(b.getBoundingClientRect().height) })));
+    if (btns.length !== 3 || btns[0].label !== "Boil the spuds" || btns[1].label !== "Bake the sausages" || btns[2].label !== "Rest") throw new Error(`the Start buttons are wrong: ${JSON.stringify(btns)}`);
+    if (btns.some(b => b.h > 30)) throw new Error(`the Start buttons are too big: ${JSON.stringify(btns)}`);
+    await p.evaluate(() => document.querySelector("#meal-view .mv-method").scrollIntoView({ block: "start" }));
+    const tapStart = async (i) => { await p.evaluate((i) => document.querySelectorAll("#meal-view .ct-start")[i].scrollIntoView({ block: "center" }), i); await p.locator("#meal-view .ct-start").nth(i).click(); await p.waitForTimeout(200); };
+    for (const i of [0, 1]) await tapStart(i);
+    const first = await p.evaluate(() => {
+      const box = document.getElementById("cook-timers");
+      const t = box.querySelector(".ct-timer"), r = t.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { names: [...box.querySelectorAll(".ct-name strong")].map(x => x.textContent), inDialog: box.parentElement.id, tappable: !!(hit && box.contains(hit)), extra: box.querySelectorAll(".ct-timer")[1].querySelector("[data-ct-add]").textContent };
+    });
+    if (first.names.join() !== "Boil the spuds,Bake the sausages") throw new Error(`timers in the wrong order: ${JSON.stringify(first)}`);
+    if (first.inDialog !== "meal-view" || !first.tappable) throw new Error(`the timers can't be tapped over the meal screen: ${JSON.stringify(first)}`);
+    if (first.extra !== "+5") throw new Error(`a 20-25 minute timer offers ${first.extra}, not +5`);
+    // The 1 minute one goes off first, so it goes to the top
+    await tapStart(2);
+    await p.waitForTimeout(100);
+    const order = await p.evaluate(() => [...document.querySelectorAll("#cook-timers .ct-name strong")].map(x => x.textContent));
+    if (order.join() !== "Rest,Boil the spuds,Bake the sausages") throw new Error(`the soonest isn't on top: ${order.join(", ")}`);
+    const onBoard = await p.evaluate(() => Object.keys(((window.__SMOKE_STORE["boards/sidepanel-test-x7q2"] || {}).timers) || {}).length);
+    if (onBoard !== 3) throw new Error(`${onBoard} timers on the board, not 3`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-cook-timers-meal.png`) });
+    // Pause the top one: it drops below the running ones
+    await p.click("#cook-timers .ct-timer:first-child [data-ct-toggle]");
+    await p.waitForTimeout(200);
+    const paused = await p.evaluate(() => [...document.querySelectorAll("#cook-timers .ct-timer")].map(x => x.querySelector(".ct-name strong").textContent + (x.classList.contains("is-paused") ? " (paused)" : "")));
+    if (paused.join() !== "Boil the spuds,Bake the sausages,Rest (paused)") throw new Error(`pausing: ${paused.join(", ")}`);
+    // Done (as if another device's clock ran it out): rings at the top, Stop takes it off everywhere
+    await p.evaluate(() => {
+      const board = window.__SMOKE_STORE["boards/sidepanel-test-x7q2"].timers;
+      const id = Object.keys(board).find(k => board[k].label === "Bake the sausages");
+      window.CookTimers.fromBoard({ ...board, [id]: { ...board[id], endsAt: Date.now() - 2000 } });
+      window.CookTimers._tick();
+    });
+    await p.waitForTimeout(300);
+    const done = await p.evaluate(() => { const t = document.querySelector("#cook-timers .ct-timer"); return { name: t.querySelector(".ct-name strong").textContent, done: t.classList.contains("is-done"), ringing: t.classList.contains("is-ringing") }; });
+    if (done.name !== "Bake the sausages" || !done.done || !done.ringing) throw new Error(`a finished timer isn't ringing at the top: ${JSON.stringify(done)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-cook-timer-done.png`) });
+    await p.click("#cook-timers .ct-timer.is-done .ct-stop");
+    await p.waitForTimeout(300);
+    const left = await p.evaluate(() => ({ shown: document.querySelectorAll("#cook-timers .ct-timer").length, board: Object.keys(window.__SMOKE_STORE["boards/sidepanel-test-x7q2"].timers || {}).length }));
+    if (left.shown !== 2 || left.board !== 2) throw new Error(`Stop didn't take it off: ${JSON.stringify(left)}`);
+    // Close the meal: the timers stay, on the page, clear of the phone's tab bar
+    await p.click("#btn-popover-close");
+    await p.waitForTimeout(400);
+    const page = await p.evaluate(() => {
+      const box = document.getElementById("cook-timers"), r = box.getBoundingClientRect();
+      const bar = document.querySelector(".skylight-sidebar"), b = bar.getBoundingClientRect();
+      const t = box.querySelector(".ct-timer").getBoundingClientRect();
+      const hit = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2);
+      return { parent: box.parentElement.tagName, shown: r.height > 0, clearOfBar: b.top < innerHeight / 2 || r.bottom <= b.top, tappable: !!(hit && box.contains(hit)), wide: r.right <= innerWidth };
+    });
+    if (page.parent !== "BODY" || !page.shown || !page.clearOfBar || !page.tappable || !page.wide) throw new Error(`the timers don't stay on the page properly: ${JSON.stringify(page)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-cook-timers-page.png`) });
+    await p.evaluate((d) => { window.CookTimers.list().forEach(t => window.CookTimers.remove(t.id)); window.setMealForDate(d, null, "dinner"); window.renderMealsView(); }, date);
+    await p.waitForTimeout(200);
+    if (await p.evaluate(() => document.getElementById("cook-timers").getBoundingClientRect().height > 0)) throw new Error("the timer stack stays after the last one goes");
+  }],
   ["back-button", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
     await p.waitForTimeout(300);

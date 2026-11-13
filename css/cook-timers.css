@@ -1,0 +1,72 @@
+/* ==========================================================================
+   COOKING TIMERS (css/cook-timers.css, js/cook-timers.js)
+   The small ⏱️ Start after a time in a method step, and the timers pinned
+   to the bottom corner (soonest to go off at the top).
+   ========================================================================== */
+
+/* ---- Start, in the step ---------------------------------------------------- */
+.ct-start {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 28px; margin: 0 2px 0 8px; padding: 0 8px;
+  border: 1px solid #bae6fd; border-radius: 9999px; background: #f0f9ff; color: #0369a1;
+  font: inherit; font-size: 0.78rem; font-weight: 700; line-height: 1; vertical-align: 1px; white-space: nowrap; cursor: pointer;
+}
+.ct-start:hover { border-color: #0284c7; }
+.ct-start:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.ct-start.is-started { border-color: #86efac; background: #f0fdf4; color: #15803d; }
+body.theme-dark .ct-start { border-color: rgba(56, 189, 248, 0.35); background: rgba(2, 132, 199, 0.15); color: #7dd3fc; }
+body.theme-dark .ct-start.is-started { border-color: rgba(74, 222, 128, 0.4); background: rgba(22, 163, 74, 0.15); color: #4ade80; }
+
+/* ---- The pinned stack ----------------------------------------------------------- */
+#cook-timers {
+  position: fixed; inset: auto 16px var(--ct-bottom, 16px) auto; z-index: 9000;
+  width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 96px); margin: 0; padding: 0;
+  border: 0; background: none; overflow: visible; color: var(--text-primary, #0f172a);
+  font-family: var(--font-body);
+}
+#cook-timers[popover]:not(:popover-open), #cook-timers[hidden] { display: none; }
+#cook-timers:popover-open, #cook-timers:not([popover]):not([hidden]) { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 600px) {
+  #cook-timers { right: 8px; width: calc(100vw - 16px); gap: 8px; }
+  #cook-timers .ct-timer { min-height: 48px; padding: 4px 8px 4px 16px; border-radius: 14px; }
+  #cook-timers .ct-btn { min-width: 32px; height: 32px; }
+  #cook-timers .ct-time { font-size: 1.05rem; }
+}
+
+.ct-timer {
+  display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 8px 8px 8px 16px; box-sizing: border-box;
+  border: 1px solid var(--card-border, #cbd5e1); border-radius: 16px; background: var(--card-bg, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.ct-name {
+  display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ct-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; font-weight: 800; line-height: 1.25; }
+.ct-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #64748b); }
+.ct-rename { flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 0 8px; border: 1px solid #0284c7; border-radius: 8px; background: var(--input-bg, #fff); color: inherit; font: inherit; font-size: 0.92rem; font-weight: 700; }
+.ct-time { flex: none; min-width: 3.4em; text-align: right; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ct-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 36px; height: 36px; padding: 0 8px; box-sizing: border-box;
+  border: 1px solid var(--card-border, #cbd5e1); border-radius: 9999px; background: var(--card-bg, #fff); color: inherit;
+  font: inherit; font-size: 0.85rem; font-weight: 800; cursor: pointer;
+}
+.ct-btn:hover { border-color: #0284c7; }
+.ct-x { color: var(--text-muted, #64748b); }
+.ct-name:focus-visible, .ct-btn:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.ct-timer.is-paused .ct-time { color: var(--text-muted, #64748b); }
+
+/* Done: red until someone stops it, pulsing while it rings */
+.ct-timer.is-done { border-color: #e11d48; background: #e11d48; color: #fff; }
+.ct-timer.is-done .ct-name small { color: rgba(255, 255, 255, 0.85); }
+.ct-timer.is-done .ct-btn { border-color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.15); color: #fff; }
+.ct-timer.is-done .ct-stop { padding: 0 16px; background: #fff; color: #be123c; border-color: #fff; }
+.ct-timer.is-ringing { animation: ct-ring 1s ease-in-out infinite; }
+@keyframes ct-ring { 0%, 100% { box-shadow: 0 8px 24px rgba(225, 29, 72, 0.35); } 50% { box-shadow: 0 0 0 8px rgba(225, 29, 72, 0.25), 0 8px 24px rgba(225, 29, 72, 0.35); } }
+@media (prefers-reduced-motion: reduce) { .ct-timer.is-ringing { animation: none; } }
+
+body.theme-dark .ct-timer { background: #1e293b; border-color: #334155; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+body.theme-dark .ct-btn { background: #0f172a; border-color: #334155; }
+body.theme-dark .ct-timer.is-done { background: #be123c; border-color: #be123c; }
+
+/* Room under a recipe's method for the timers, so its last steps scroll clear */
+.mv-body, #cooking-recipe-modal .cooking-modal-body { padding-bottom: calc(40px + var(--ct-stack-h, 0px)) !important; }
