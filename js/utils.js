@@ -353,7 +353,9 @@ window.isTouchScreen = isTouchScreen;
 // Share...) if a drag starts a moment too late, interrupting the drag. The app
 // handles holds itself (drag chores, drag on the calendar), so that menu is
 // switched off everywhere except text boxes and links, where it's useful.
+// Only on touch screens: with a mouse (a laptop) right-click and Inspect work.
 document.addEventListener("contextmenu", (e) => {
+  if (!isTouchScreen()) return;
   const t = e.target;
   if (t && t.closest && t.closest("input, textarea, select, [contenteditable='true'], a[href]")) return;
   e.preventDefault();

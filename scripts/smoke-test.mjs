@@ -1335,6 +1335,18 @@ const PAGES = [
     await p.waitForTimeout(200);
     if (await p.evaluate(() => document.getElementById("cook-timers").getBoundingClientRect().height > 0)) throw new Error("the timer stack stays after the last one goes");
   }],
+  // Right-click: the page menu (and Inspect) on a laptop; switched off on a
+  // touch screen so a press-and-hold drag isn't interrupted
+  ["right-click", async (p) => {
+    const r = await p.evaluate(() => {
+      const ev = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+      document.querySelector("main, #app, body").dispatchEvent(ev);
+      return { blocked: ev.defaultPrevented, touch: window.isTouchScreen() };
+    });
+    if (r.blocked !== r.touch) throw new Error(`right-click ${r.blocked ? "blocked" : "allowed"} on a ${r.touch ? "touch screen" : "mouse"}`);
+    if (p.__size === "laptop" && r.blocked) throw new Error("right-click is blocked on the laptop");
+    if (p.__size === "phone" && !r.blocked) throw new Error("the page menu isn't switched off on the phone");
+  }],
   ["back-button", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.closePlanMealDrawer && window.closePlanMealDrawer(); window.RecipeBrowse && window.RecipeBrowse.setTab("week"); });
     await p.waitForTimeout(300);
