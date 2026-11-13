@@ -49,8 +49,6 @@ dialog.side-panel #event-repeat-select { padding: 8px 40px 8px 16px !important; 
 dialog.side-panel #event-description-input { padding: 16px !important; }
 dialog.side-panel #btn-save-event { padding: 16px 24px !important; }
 dialog.side-panel #sticky-input-text { padding: 16px !important; }
-dialog.side-panel #sticky-color-picker { margin-top: 8px !important; margin-bottom: 0 !important; }
-dialog.side-panel .sticky-color-pill { padding: 8px 16px !important; }
 dialog.side-panel #sticky-input-author { padding: 8px 40px 8px 16px !important; }
 dialog.side-panel .modal-footer.sticky-modal-footer { gap: 16px !important; }
 dialog.side-panel .sticky-footer-right { gap: 8px !important; }

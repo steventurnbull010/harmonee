@@ -260,6 +260,40 @@ function durationWords(mins) {
   return h === 1 ? "1 hour" : `${h} hours`;
 }
 
+// ---- A repeat in words ("Every week on Tuesday") ------------------------------------------------
+// The feed's rule, said the way harmonee says its own repeats. Google events
+// are read-only copies, one per date, so the words ride along on each copy.
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const ordinal = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const andList = (a) => a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`;
+function repeatWords(rule, start) {
+  if (!rule || !rule.freq) return "";
+  const n = rule.interval || 1;
+  const every = (one, many) => n === 1 ? `Every ${one}` : `Every ${n} ${many}`;
+  const startDay = start ? weekdayOf(start.y, start.m, start.d) : null;
+  switch (rule.freq) {
+    case "DAILY": return every("day", "days");
+    case "WEEKLY": {
+      const days = rule.byday && rule.byday.length ? [...new Set(rule.byday.map(b => b.wd))].sort() : (startDay === null ? [] : [startDay]);
+      if (n === 1 && days.join() === "0,1,2,3,4") return "Every weekday";
+      if (n === 1 && days.length === 7) return "Every day";
+      return `${every("week", "weeks")}${days.length ? ` on ${andList(days.map(d => DAY_NAMES[d]))}` : ""}`;
+    }
+    case "MONTHLY": {
+      if (rule.byday && rule.byday.length === 1 && rule.byday[0].n) {
+        const b = rule.byday[0];
+        return `${every("month", "months")} on the ${b.n === -1 ? "last" : ordinal(b.n)} ${DAY_NAMES[b.wd]}`;
+      }
+      const d = rule.bymonthday && rule.bymonthday.length === 1 ? rule.bymonthday[0] : (start ? start.d : null);
+      if (d === -1) return `${every("month", "months")} on the last day`;
+      return `${every("month", "months")}${d > 0 ? ` on the ${ordinal(d)}` : ""}`;
+    }
+    case "YEARLY": return `${every("year", "years")}${start ? ` on ${start.d} ${MONTH_NAMES[start.m - 1]}` : ""}`;
+    default: return "Repeats";
+  }
+}
+
 // ---- Putting it together ----------------------------------------------------------------------
 // text: the feed; opts: { member, tz (family's zone), fromKey, toKey ("YYYY-MM-DD"), max }
 // Returns { events: [...harmonee events], count, skipped }
@@ -281,7 +315,7 @@ function toHarmoneeEvents(text, opts = {}) {
 
   const out = [];
   let skipped = 0;
-  const emit = (e, start, startOverride) => {
+  const emit = (e, start, startOverride, repeatText) => {
     // Length: DTEND, or DURATION, or an hour (all-day: a day)
     let mins;
     if (e.end) {
@@ -294,6 +328,7 @@ function toHarmoneeEvents(text, opts = {}) {
     const title = e.title || "Busy";
     const base = { title, member: opts.member || "Family", icon: "📅", repeat: "none", source: "google", readOnly: true };
     if (e.location) base.location = e.location;
+    if (repeatText) base.repeatText = repeatText;
     if (start.allDay) {
       // All-day: one entry per day it covers (up to two weeks)
       const days = Math.min(14, Math.max(1, Math.round(mins / 1440)));
@@ -321,6 +356,7 @@ function toHarmoneeEvents(text, opts = {}) {
     if (!e.rrule) { emit(e, e.start); return; }
     const ex = new Set(e.exdates.filter(Boolean).map(x => keyOf(x.y, x.m, x.d)));
     const ov = overrides[e.uid] || {};
+    const words = repeatWords(e.rrule, e.start);
     repeatDates(e.start, e.rrule, toDay + 1, fromDay).forEach(dt => {
       if (out.length >= max) { skipped++; return; }
       const dk = keyOf(dt.y, dt.m, dt.d);
@@ -328,8 +364,8 @@ function toHarmoneeEvents(text, opts = {}) {
       const ok = `${dk}T${pad(e.start.h)}:${pad(e.start.mi)}`;
       const changed = ov[ok] || ov[`${dk}T00:00`];
       if (changed === "cancelled") return;
-      if (changed) { emit(changed, changed.start, dk); return; }
-      emit(e, { ...e.start, y: dt.y, m: dt.m, d: dt.d }, dk);
+      if (changed) { emit(changed, changed.start, dk, words); return; }
+      emit(e, { ...e.start, y: dt.y, m: dt.m, d: dt.d }, dk, words);
     });
   });
   // Changed repeats whose series isn't in the feed (rare): show them as they are
@@ -379,4 +415,4 @@ function checkLink(input) {
   return { ok: false, problem: "not-calendar" };
 }
 
-module.exports = { parseEvents, parseRule, repeatDates, toHarmoneeEvents, zonedToUtc, partsIn, checkLink, durationWords, isoDurationMinutes };
+module.exports = { parseEvents, parseRule, repeatDates, repeatWords, toHarmoneeEvents, zonedToUtc, partsIn, checkLink, durationWords, isoDurationMinutes };

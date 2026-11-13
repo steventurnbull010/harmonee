@@ -63,18 +63,18 @@
   <link rel="stylesheet" href="css/meals.css?v=6e427bc3">
   <link rel="stylesheet" href="css/cook-timers.css?v=613379c4">
   <link rel="stylesheet" href="css/meal-screen.css?v=3b6750bd">
-  <link rel="stylesheet" href="css/calendar.css?v=0110488d">
-  <link rel="stylesheet" href="css/calendar-v2.css?v=3cd87147">
+  <link rel="stylesheet" href="css/calendar.css?v=ba5fe150">
+  <link rel="stylesheet" href="css/calendar-v2.css?v=7e1700ec">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=091b4ac8">
   <link rel="stylesheet" href="css/rewards-v2.css?v=d3d72a35">
-  <link rel="stylesheet" href="css/widgets.css?v=ff3a8a27">
+  <link rel="stylesheet" href="css/widgets.css?v=939941de">
   <link rel="stylesheet" href="css/modals.css?v=655a44c5">
   <link rel="stylesheet" href="css/celebrations.css?v=eacfe3e5">
   <link rel="stylesheet" href="css/side-panel.css?v=fe317c76">
   <link rel="stylesheet" href="css/page-intro.css?v=019b6c9b">
-  <link rel="stylesheet" href="css/page-spacing.css?v=9de683d8">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=aa7186b6">
+  <link rel="stylesheet" href="css/page-spacing.css?v=01d8ae96">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=904320a4">
   <link rel="stylesheet" href="css/setup.css?v=c0b6ba8b">
   <link rel="stylesheet" href="css/tablet-fit.css?v=9f2c3cec">
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
@@ -319,27 +319,6 @@
             <div class="cal-people" id="cal-people" role="group" aria-label="Whose events"></div>
           </div>
 
-          <!-- Family Sticky Note / Message of the Day Widget -->
-          <div class="family-sticky-container" id="family-sticky-container">
-            <div class="family-sticky-card color-yellow" id="family-sticky-card">
-              <span class="sticky-pin-icon" aria-hidden="true">📌</span>
-              <div class="sticky-content-wrap" id="sticky-content-wrap">
-                <p class="sticky-message-text" id="sticky-message-text"></p>
-                <div class="sticky-meta-row">
-                  <span class="sticky-author-badge" id="sticky-author-badge">Family Note</span>
-                  <span class="sticky-time-badge" id="sticky-time-badge">Today</span>
-                </div>
-              </div>
-              <button type="button" class="btn-sticky-action" id="btn-edit-sticky" title="Edit Message of the Day">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-                <span>Edit Note</span>
-              </button>
-            </div>
-          </div>
-
           <!-- 7-Day Week Columns Grid (Mon - Sun) -->
           <div class="calendar-week-grid" id="calendar-week-grid">
             <!-- 7 columns injected dynamically in app.js: Mon, Tue, Wed, Thu, Fri, Sat, Sun -->
@@ -352,30 +331,25 @@
         <!-- Floating Add Speed-Dial Container (Add Event or Add Chore) -->
         <div class="calendar-fab-container" id="calendar-fab-container">
           <div class="calendar-fab-menu" id="calendar-fab-menu" role="menu" aria-label="Add options">
-            <!-- Snap a flyer (js/magic-import.js): straight to the camera, like Snap a recipe -->
+            <!-- Two ways to add: from a photo (js/magic-import.js; the phone
+                 offers the camera or the photo library), or type it in (nearest
+                 the + button, the one used most) -->
             <button type="button" class="calendar-fab-option fab-option-photo" id="fab-action-snap-flyer" role="menuitem" hidden>
               <span class="fab-option-icon">📷</span>
               <span class="fab-option-text">
-                <span class="fab-option-title">Snap a flyer</span>
-                <span class="fab-option-sub">School letters, invites, fixtures</span>
+                <span class="fab-option-title">Add from a photo</span>
+                <span class="fab-option-sub">Snap or pick a letter, invite or fixtures</span>
               </span>
             </button>
             <button type="button" class="calendar-fab-option fab-option-event" id="fab-action-add-event" role="menuitem">
-              <span class="fab-option-icon">📅</span>
+              <span class="fab-option-icon">✏️</span>
               <span class="fab-option-text">
-                <span class="fab-option-title">Add Event</span>
-                <span class="fab-option-sub">Tutors, lessons & schedule</span>
-              </span>
-            </button>
-            <button type="button" class="calendar-fab-option fab-option-note" id="fab-action-add-note" role="menuitem">
-              <span class="fab-option-icon">📌</span>
-              <span class="fab-option-text">
-                <span class="fab-option-title">Add / Edit Note</span>
-                <span class="fab-option-sub">Message of the day</span>
+                <span class="fab-option-title">Add an event</span>
+                <span class="fab-option-sub">Type in what, when and who</span>
               </span>
             </button>
           </div>
-          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-calendar" aria-label="Add Event or Chore" aria-expanded="false" title="Add Event or Chore">
+          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-calendar" aria-label="Add an event" aria-expanded="false" title="Add an event">
             <svg class="fab-plus-icon" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -2351,47 +2325,6 @@
     </div>
     </dialog>
 
-  <!-- Family Sticky Note Edit Modal -->
-  <dialog id="sticky-note-modal" class="skylight-modal sticky-modal" aria-modal="true" aria-labelledby="sticky-modal-title">
-    <div class="modal-content sticky-modal-content">
-      <div class="modal-header">
-        <div class="modal-header-left">
-          <span class="modal-header-icon">📌</span>
-          <h2 id="sticky-modal-title" class="modal-title">Message of the Day</h2>
-        </div>
-        <button type="button" class="btn-modal-close" id="btn-close-sticky-modal" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="sticky-input-text" class="form-label">Note for the Family</label>
-          <textarea id="sticky-input-text" class="form-input form-textarea" rows="3" placeholder="Write a note for the family... (e.g. Good luck with your maths test today! ❤️)"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Sticky Color</label>
-          <div class="sticky-color-pills" id="sticky-color-picker">
-            <button type="button" class="sticky-color-pill color-yellow selected" data-color="yellow">🟡 Yellow</button>
-            <button type="button" class="sticky-color-pill color-pink" data-color="pink">🌸 Pink</button>
-            <button type="button" class="sticky-color-pill color-mint" data-color="mint">🌿 Mint</button>
-            <button type="button" class="sticky-color-pill color-lavender" data-color="lavender">🫐 Lavender</button>
-            <button type="button" class="sticky-color-pill color-peach" data-color="peach">🍊 Peach</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="sticky-input-author" class="form-label">Signed by</label>
-          <select id="sticky-input-author" class="form-input form-select">
-            <option value="Family">❤️ The whole family</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer sticky-modal-footer">
-        <button type="button" class="btn-sticky-delete" id="btn-clear-sticky">Delete Note</button>
-        <div class="sticky-footer-right">
-          <button type="button" class="btn-sticky-cancel" id="btn-cancel-sticky">Cancel</button>
-          <button type="button" class="btn-sticky-save" id="btn-save-sticky">Pin Note 📌</button>
-        </div>
-      </div>
-    </div>
-    </dialog>
 
   <!-- Create New Family List Modal -->
   <dialog id="create-list-modal" class="skylight-modal create-list-dialog" aria-modal="true" aria-labelledby="create-list-title">
@@ -2448,43 +2381,31 @@
   <dialog id="weather-forecast-modal" class="skylight-modal weather-forecast-dialog" aria-modal="true" aria-labelledby="weather-modal-title">
     <div class="modal-content weather-modal-content">
       <div class="weather-modal-header">
-        <div class="weather-modal-header-left">
-          <span class="weather-header-icon" id="weather-modal-hero-icon">☀️</span>
-          <div>
-            <h2 id="weather-modal-title" class="weather-modal-title">5-Day Weather Forecast</h2>
-            <p class="weather-modal-subtitle" id="weather-modal-location">📍 Local Forecast</p>
-          </div>
+        <span class="weather-header-icon" id="weather-modal-hero-icon" aria-hidden="true">☀️</span>
+        <div class="weather-modal-heading">
+          <h2 id="weather-modal-title" class="weather-modal-title">5-day forecast</h2>
+          <p class="weather-modal-subtitle" id="weather-modal-location">📍 Local forecast</p>
         </div>
-        <button type="button" class="btn-modal-close" id="btn-close-weather-modal" aria-label="Close">✕</button>
+        <button type="button" class="btn-modal-close weather-modal-close" id="btn-close-weather-modal" aria-label="Close">✕</button>
       </div>
 
       <div class="weather-modal-body">
-        <!-- Today's Current Conditions Hero Card -->
+        <!-- Now: the temperature, today's high and low, and the chance of rain -->
         <div class="weather-hero-card" id="weather-hero-card">
-          <div class="weather-hero-main">
-            <div class="weather-hero-temp" id="weather-hero-temp">18°</div>
-            <div class="weather-hero-details">
-              <div class="weather-hero-condition" id="weather-hero-condition">Partly Cloudy</div>
-              <div class="weather-hero-range" id="weather-hero-range">High: 19° • Low: 9°</div>
-            </div>
-          </div>
-          <div class="weather-hero-meta">
-            <span class="weather-hero-pill" id="weather-hero-rain">💧 15% Rain</span>
-            <span class="weather-hero-pill" id="weather-hero-updated">Updated Just Now</span>
+          <div class="weather-hero-temp" id="weather-hero-temp">18°</div>
+          <div class="weather-hero-details">
+            <div class="weather-hero-condition" id="weather-hero-condition">Partly cloudy</div>
+            <div class="weather-hero-range" id="weather-hero-range">High 19° · Low 9°</div>
+            <div class="weather-hero-rain" id="weather-hero-rain">💧 15% chance of rain</div>
           </div>
         </div>
 
-        <!-- 5-Day Forecast Grid -->
-        <h4 class="weather-forecast-heading">Upcoming Days</h4>
-        <div class="weather-forecast-list" id="weather-forecast-list">
-          <!-- Dynamically populated in app.js -->
-        </div>
+        <ul class="weather-forecast-list" id="weather-forecast-list" aria-label="The next five days"></ul>
+
+        <p class="weather-updated"><span id="weather-hero-updated">Updated just now</span> · <button type="button" class="weather-refresh-link" id="btn-refresh-weather">Refresh</button></p>
       </div>
 
       <div class="weather-modal-footer">
-        <button type="button" class="btn-weather-refresh" id="btn-refresh-weather">
-          <span>🔄 Refresh Weather</span>
-        </button>
         <button type="button" class="btn-weather-done" id="btn-done-weather">Done</button>
       </div>
     </div>
@@ -2510,7 +2431,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=84d5dbf9"></script>
+  <script src="js/build-info.js?v=66c323f8"></script>
   <script src="js/utils.js?v=5c606f25"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=55f9380e"></script>
@@ -2523,7 +2444,7 @@
   <script src="js/meal-genie.js?v=253296c7"></script>
   <script src="js/join-qr.js?v=65c515ef"></script>
   <script src="js/getting-started.js?v=bf829c26"></script>
-  <script src="js/weather.js?v=be0a8650"></script>
+  <script src="js/weather.js?v=4d344242"></script>
   <script src="js/sleep.js?v=c50d8e01"></script>
   <script src="js/grocery.js?v=f93c76e7"></script>
   <script src="js/list-types.js?v=ea9bb7f3"></script>
@@ -2534,11 +2455,10 @@
   <script src="js/reward-goals.js?v=e4e41e2c"></script>
   <script src="js/reward-photos.js?v=4f6e66a6"></script>
   <script src="js/rewards-page.js?v=932dad3f"></script>
-  <script src="js/page-intro.js?v=02396012"></script>
-  <script src="js/sticky-note.js?v=a23ec091"></script>
+  <script src="js/page-intro.js?v=780283aa"></script>
   <script src="js/google-calendar.js?v=6960b9a6"></script>
-  <script src="js/calendar-views.js?v=598f0776"></script>
-  <script src="js/calendar.js?v=7b3dcb9b"></script>
+  <script src="js/calendar-views.js?v=bc6945e4"></script>
+  <script src="js/calendar.js?v=7670bc11"></script>
   <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
   <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
   <script src="js/event-chime.js?v=f2665b30"></script>
@@ -2579,9 +2499,9 @@
   <script src="js/secret-keys.js?v=56739ba9"></script>
   <script src="js/film-night.js?v=bed9b5e2"></script>
   <script src="js/today-screen.js?v=f8d8f9de"></script>
-  <script src="js/side-panel.js?v=0a39f198"></script>
+  <script src="js/side-panel.js?v=2f3fa495"></script>
   <script type="module" src="js/meals.js?v=5884ad35"></script>
-  <script type="module" src="app.js?v=a8709e8b"></script>
+  <script type="module" src="app.js?v=715d8f19"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {

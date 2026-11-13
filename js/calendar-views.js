@@ -107,7 +107,7 @@
       <div class="skylight-card cv-card" data-event-id="${esc(evt.id)}" style="background: ${bg}; border-color: ${pal.border}; --cv-edge: ${pal.primary};" title="${esc(evt.title)}">
         <span class="cv-card-time">${esc(timeLabel(evt))}</span>
         <span class="cv-card-main">
-          <span class="cv-card-title" style="color: ${pal.text};">${esc(evt.icon || "📅")} ${esc(evt.title)}${evt.repeat && evt.repeat !== "none" ? ` <span class="cv-repeat" title="Repeats">🔁</span>` : ""}${evt.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>
+          <span class="cv-card-title" style="color: ${pal.text};">${esc(evt.icon || "📅")} ${esc(evt.title)}${(evt.repeat && evt.repeat !== "none") || evt.repeatText ? ` <span class="cv-repeat" title="${esc(evt.repeatText || "Repeats")}">🔁</span>` : ""}${evt.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>
           ${length ? `<span class="cv-card-sub">${esc(timeLabel(evt))}${length}</span>` : ""}
         </span>
         <span class="skylight-card-avatar-wrap">${faces}</span>
@@ -142,6 +142,8 @@
   }
 
   // ---- Phone: Day --------------------------------------------------------------------------
+  // Today's weather is already at the top of the page, so only other days show
+  // theirs here; adding is the + button, which adds to the day on screen
   function phoneDayHtml(date) {
     const info = dayInfo(date);
     const list = `${info.holiday}${mealHtml(info)}${info.events.map(cardHtml).join("")}`;
@@ -150,10 +152,9 @@
       <section class="cv-day ${info.isToday ? "is-today" : ""}" data-date="${info.ds}" data-day="${info.dayName}">
         <header class="cv-day-head">
           <h3 class="cv-day-title">${dayWord(info)}<small>${info.isToday || info.isTomorrow ? `${info.dayName} ` : ""}${info.num} ${MONTHS[info.date.getMonth()]}</small></h3>
-          ${weatherHtml(info)}
+          ${info.isToday ? "" : weatherHtml(info)}
         </header>
         <div class="cv-day-list">${list || `<p class="cv-empty">Nothing planned.</p>`}</div>
-        ${addBtn(info, "＋ Add an event")}
       </section>`;
   }
 
@@ -162,13 +163,18 @@
   function phoneWeekHtml(date) {
     const mon = mondayOf(date);
     const days = Array.from({ length: 7 }, (_, i) => dayInfo(addDays(mon, i)));
-    const past = days.filter(d => d.isPast);
-    const rest = days.filter(d => !d.isPast);
+    // Only this week folds its gone days away; a past week shows in full
+    const thisWeek = days.some(d => d.isToday);
+    const past = thisWeek ? days.filter(d => d.isPast) : [];
+    const rest = thisWeek ? days.filter(d => !d.isPast) : days;
     const pastCount = past.reduce((n, d) => n + d.events.length, 0);
+    // The days of this week that have gone: folded into one bar that says
+    // what it is ("Earlier this week"), so opening it doesn't read as last week
+    const pastDays = `${past[0] ? past[0].short : ""}${past.length > 1 ? `–${past[past.length - 1].short}` : ""}`;
     const pastHtml = past.length ? `
-      <button type="button" class="cv-past-toggle" data-cv-past aria-expanded="${showPast}">
-        ${showPast ? "▾" : "▸"} ${past[0].short} ${past[0].num}${past.length > 1 ? ` – ${past[past.length - 1].short} ${past[past.length - 1].num}` : ""} · ${pastCount ? `${pastCount} event${pastCount === 1 ? "" : "s"}` : "nothing on"}
-      </button>
+      <button type="button" class="cv-past-toggle" data-cv-past aria-expanded="${showPast}">${showPast
+        ? `▾ Hide earlier this week`
+        : `▸ Earlier this week · ${pastDays} · ${pastCount ? `${pastCount} event${pastCount === 1 ? "" : "s"}` : "nothing on"}`}</button>
       ${showPast ? past.map(dayBlock).join("") : ""}` : "";
     return `${stripHtml(date, "week")}<div class="cv-week-list">${pastHtml}${rest.map(dayBlock).join("")}</div>`;
 

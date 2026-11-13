@@ -1469,15 +1469,6 @@ body.theme-dark .calendar-drag-toast {
 
 
 /* FAB Note Option Icon */
-.fab-option-note .fab-option-icon {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-body.theme-dark .fab-option-note .fab-option-icon {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-}
 
 
 

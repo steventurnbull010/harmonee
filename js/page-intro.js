@@ -156,9 +156,9 @@ const PAGE_INTROS = {
         rows: [["🎨", "Each person has their own colour, so you can see who's busy at a glance."],
                ["📅", "Switch between 3-day, day, week and month views."],
                ["🔁", "Repeat things like lessons and clubs every week."]] },
-      { title: "Add an event", lead: "Tap + and choose Add Event: what it is, when, and who it's for.",
+      { title: "Add an event", lead: "Tap + and choose Add an event: what it is, when, and who it's for.",
         rows: [["👨‍👩‍👧", "Pick one person, a few of you, or the whole family."],
-               ["📌", "Pin a message of the day for everyone to see."]] },
+               ["📷", "Or add it from a photo of a letter, invite or fixture list."]] },
       { title: "Always in sync", lead: "Anything added on the tablet or a phone shows on every device that's joined your family board.",
         rows: [["🔎", "Use Filter to show just one person's plans."]] }
     ]

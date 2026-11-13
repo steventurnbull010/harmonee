@@ -425,15 +425,15 @@ function openWeatherForecastModal() {
 
   if (heroUpdated && wf && wf.timestamp) {
     const minsAgo = Math.max(0, Math.round((Date.now() - wf.timestamp) / 60000));
-    heroUpdated.textContent = minsAgo === 0 ? "Updated Just Now" : ("Updated " + minsAgo + "m ago");
+    heroUpdated.textContent = minsAgo === 0 ? "Updated just now" : minsAgo < 60 ? ("Updated " + minsAgo + " min ago") : ("Updated " + Math.round(minsAgo / 60) + " hr ago");
   }
 
   if (wf && wf.daily && Array.isArray(wf.daily.time) && wf.daily.time.length > 0) {
     const todayMax = Math.round(wf.daily.temperature_2m_max[0]);
     const todayMin = Math.round(wf.daily.temperature_2m_min[0]);
     const todayRain = wf.daily.precipitation_probability_max ? wf.daily.precipitation_probability_max[0] : 0;
-    if (heroRange) heroRange.textContent = "High: " + todayMax + "° • Low: " + todayMin + "°";
-    if (heroRain) heroRain.textContent = "💧 " + (todayRain || 0) + "% Rain";
+    if (heroRange) heroRange.textContent = "High " + todayMax + "° · Low " + todayMin + "°";
+    if (heroRain) heroRain.textContent = "💧 " + (todayRain || 0) + "% chance of rain";
 
     if (listEl) {
       listEl.innerHTML = "";
@@ -441,28 +441,21 @@ function openWeatherForecastModal() {
       for (let i = 0; i < daysCount; i++) {
         const dateStr = wf.daily.time[i];
         const dObj = new Date(dateStr + "T12:00:00");
-        const dayLabel = i === 0 ? "Today" : dObj.toLocaleDateString([], { weekday: "short", month: "numeric", day: "numeric" });
+        const dayLabel = i === 0 ? "Today" : dObj.toLocaleDateString("en-GB", { weekday: "short" }) + " " + dObj.getDate();
         const code = wf.daily.weathercode ? wf.daily.weathercode[i] : 0;
         const info = weatherMap[code] || { icon: "🌤️", text: "Mainly Clear" };
         const max = Math.round(wf.daily.temperature_2m_max[i]);
         const min = Math.round(wf.daily.temperature_2m_min[i]);
         const rainProb = wf.daily.precipitation_probability_max ? wf.daily.precipitation_probability_max[i] : 0;
 
-        const row = document.createElement("div");
+        // One line a day: the day, the weather (its words can wrap), rain, low / high
+        const row = document.createElement("li");
         row.className = "weather-day-row";
-        row.innerHTML = "<div class=\"weather-day-name\">" + dayLabel + "</div>" +
-          "<div class=\"weather-day-condition-wrap\">" +
-            "<span class=\"weather-day-icon\">" + info.icon + "</span>" +
-            "<span class=\"weather-day-desc\">" + info.text + "</span>" +
-          "</div>" +
-          "<div class=\"weather-day-metrics\">" +
-            "<span class=\"weather-day-rain\">💧 " + rainProb + "%</span>" +
-            "<div class=\"weather-day-temp-bar\">" +
-              "<span class=\"weather-temp-min\">" + min + "°</span>" +
-              "<span>/</span>" +
-              "<span class=\"weather-temp-max\">" + max + "°</span>" +
-            "</div>" +
-          "</div>";
+        row.innerHTML = "<span class=\"weather-day-name\">" + dayLabel + "</span>" +
+          "<span class=\"weather-day-icon\" aria-hidden=\"true\">" + info.icon + "</span>" +
+          "<span class=\"weather-day-desc\">" + info.text + "</span>" +
+          "<span class=\"weather-day-rain\" aria-label=\"" + (rainProb || 0) + "% chance of rain\">💧 " + (rainProb || 0) + "%</span>" +
+          "<span class=\"weather-day-temps\" aria-label=\"Low " + min + "°, high " + max + "°\"><span class=\"weather-temp-min\">" + min + "°</span> <span class=\"weather-temp-max\">" + max + "°</span></span>";
         listEl.appendChild(row);
       }
     }
@@ -482,9 +475,11 @@ function openWeatherForecastModal() {
   if (btnDone) btnDone.onclick = closeModal;
   if (btnRefresh) {
     btnRefresh.onclick = async () => {
-      btnRefresh.innerHTML = "<span>🔄 Refreshing...</span>";
+      btnRefresh.textContent = "Refreshing…";
+      btnRefresh.disabled = true;
       await initLocalWeather();
-      btnRefresh.innerHTML = "<span>🔄 Refresh Weather</span>";
+      btnRefresh.disabled = false;
+      btnRefresh.textContent = "Refresh";
       openWeatherForecastModal();
     };
   }

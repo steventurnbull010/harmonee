@@ -1335,6 +1335,108 @@ const PAGES = [
     await p.waitForTimeout(200);
     if (await p.evaluate(() => document.getElementById("cook-timers").getBoundingClientRect().height > 0)) throw new Error("the timer stack stays after the last one goes");
   }],
+  // The Calendar tidy (13 Nov, from Steven's run through on an iPhone 16)
+  ["calendar-tidy", async (p) => {
+    const added = await p.evaluate(() => {
+      const k = (d) => window.getLocalDateKey(d);
+      const t = new Date(); const plus = (n) => { const d = new Date(t); d.setDate(t.getDate() + n); return k(d); };
+      const extra = [];
+      for (let i = 1; i <= 3; i++) extra.push({ id: `ct-past${i}`, title: `Earlier thing ${i}`, date: plus(-i), time: "09:00", duration: "1 hour", repeat: "none", member: "Sam", icon: "📌" });
+      for (let i = 0; i < 6; i++) extra.push({ id: `ct-busy${i}`, title: `Busy day ${i + 1}`, date: plus(3), time: `${String(9 + i).padStart(2, "0")}:00`, duration: "1 hour", repeat: "none", member: ["Sam", "Alex", "Jo"][i % 3], icon: "📅" });
+      (window.familyEvents || []).push(...extra);
+      return { ids: extra.map(e => e.id), busy: plus(3) };
+    });
+    const shot = (name) => p.screenshot({ path: path.join(SHOTS, `${p.__size}-${name}.png`) });
+    const problems = [];
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); window.setCalendarView("day", new Date()); });
+    await p.waitForTimeout(300);
+    if (p.__size === "phone") {
+      const day = await p.evaluate(() => ({ add: !!document.querySelector("#calendar-week-grid .cv-day .cv-add"), weather: !!document.querySelector("#calendar-week-grid .cv-day-head .cv-weather"), note: !!document.getElementById("family-sticky-container") }));
+      if (day.add) problems.push("Day view still has + Add an event");
+      if (day.weather) problems.push("Day view still shows today's weather twice");
+      if (day.note) problems.push("the note is still on the page");
+    }
+    // The + menu: Add from a photo, then Add an event; no note
+    await p.click("#btn-floating-add-calendar");
+    await p.waitForTimeout(300);
+    const menu = await p.evaluate(() => [...document.querySelectorAll("#calendar-fab-menu .calendar-fab-option")].filter(b => !b.hidden).map(b => b.querySelector(".fab-option-title").textContent));
+    await shot("calendar-plus-menu");
+    await p.evaluate(() => document.getElementById("calendar-fab-backdrop").click());
+    if (menu.join(" / ") !== "Add from a photo / Add an event") problems.push(`the + menu shows ${menu.join(" / ")}`);
+    // The weather: one tidy line a day, a 44px ✕ clear of the title
+    await p.evaluate(() => {
+      const t = Date.now(), day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return window.getLocalDateKey(d); };
+      const wf = { city: "Rostrevor, Northern Ireland, United Kingdom", timestamp: t - 23 * 60000, current: { temperature: 6, weathercode: 3 },
+        daily: { time: [0, 1, 2, 3, 4].map(day), weathercode: [3, 61, 53, 3, 3], temperature_2m_max: [7, 10, 11, 6, 6], temperature_2m_min: [0, 2, 4, 2, 3], precipitation_probability_max: [0, 74, 94, 11, 37] } };
+      // localWeatherForecast is js/weather.js's own (a top-level let)
+      (0, eval)("localWeatherForecast = " + JSON.stringify(wf));
+      window.openWeatherForecastModal();
+    });
+    await p.waitForTimeout(300);
+    const wx = await p.evaluate(() => {
+      const m = document.getElementById("weather-forecast-modal"), x = document.getElementById("btn-close-weather-modal").getBoundingClientRect(), h = document.getElementById("weather-modal-title").getBoundingClientRect();
+      const rows = [...m.querySelectorAll(".weather-day-row")];
+      const box = m.querySelector(".weather-modal-content").getBoundingClientRect();
+      return { open: m.open, x: [Math.round(x.width), Math.round(x.height)], overlap: !(x.left >= h.right || x.bottom <= h.top || x.top >= h.bottom), rows: rows.length, oneLine: rows.every(r => { const n = r.querySelector(".weather-day-name").getBoundingClientRect(), t = r.querySelector(".weather-day-temps").getBoundingClientRect(); return Math.abs(n.top - t.top) < 24; }), fits: box.top >= 0 && box.bottom <= innerHeight, refresh: !!document.querySelector("#btn-refresh-weather.weather-refresh-link") };
+    });
+    await shot("weather-popup");
+    await p.evaluate(() => document.getElementById("btn-done-weather").click());
+    if (!wx.open || wx.rows !== 5) problems.push(`weather pop-up: ${JSON.stringify(wx)}`);
+    if (wx.x[0] < 44 || wx.x[1] < 44 || wx.overlap) problems.push(`weather ✕ is ${wx.x.join("×")}${wx.overlap ? " and overlaps the title" : ""}`);
+    if (!wx.oneLine || !wx.fits || !wx.refresh) problems.push(`weather pop-up layout: ${JSON.stringify(wx)}`);
+    // A repeating Google event says how it repeats (it used to say "Does not repeat")
+    const gRepeat = await p.evaluate(() => {
+      const evt = { id: "g-ct-1", title: "Swim club", date: window.getLocalDateKey(new Date()), time: "18:00", duration: "1 hour", member: "Sam", icon: "📅", repeat: "none", repeatText: "Every week on Friday", source: "google", readOnly: true };
+      window.openEventQuickView(evt, evt.date);
+      const txt = document.getElementById("event-pop-repeat").textContent;
+      document.getElementById("btn-event-pop-close").click();
+      return txt;
+    });
+    if (gRepeat !== "Every week on Friday") problems.push(`a weekly Google event says "${gRepeat}"`);
+    if (p.__size === "phone") {
+      // Week: the earlier days of this week open under their bar, which says so
+      await p.evaluate(() => window.setCalendarView("week", new Date()));
+      await p.waitForTimeout(300);
+      const pill = await p.evaluate(() => (document.querySelector("[data-cv-past]") || {}).textContent || "");
+      if (!/Earlier this week/.test(pill)) problems.push(`the earlier-days bar says "${pill.trim()}"`);
+      const before = await p.evaluate(() => ({ title: document.getElementById("cal-toolbar-title").textContent, y: document.querySelector("[data-cv-past]").getBoundingClientRect().top }));
+      await p.click("[data-cv-past]");
+      await p.waitForTimeout(400);
+      const after = await p.evaluate(() => ({ title: document.getElementById("cal-toolbar-title").textContent, y: document.querySelector("[data-cv-past]").getBoundingClientRect().top, shown: document.querySelectorAll(".cv-week-day.is-past").length, label: document.querySelector("[data-cv-past]").textContent }));
+      await shot("calendar-earlier-days");
+      if (after.title !== before.title || Math.abs(after.y - before.y) > 4 || after.shown < 1 || !/Hide/.test(after.label)) problems.push(`opening the earlier days: ${JSON.stringify({ before, after })}`);
+      await p.click("[data-cv-past]");
+      await p.waitForTimeout(300);
+      // Next week: ‹ Today › with Today between the arrows
+      await p.click("#btn-calendar-next-week");
+      await p.waitForTimeout(300);
+      const bar = await p.evaluate(() => ["btn-calendar-prev-week", "btn-calendar-today", "btn-calendar-next-week"].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.width ? Math.round(r.left) : -1; }));
+      await shot("calendar-next-week");
+      if (!(bar[0] >= 0 && bar[0] < bar[1] && bar[1] < bar[2])) problems.push(`next week's bar isn't ‹ Today ›: ${bar.join(", ")}`);
+      // Month: tap a busy day, and its whole list can be seen
+      await p.evaluate(() => window.setCalendarView("month", new Date()));
+      await p.waitForTimeout(300);
+      await p.click(`.cv-month-cell[data-cv-day="${added.busy}"]`);
+      await p.waitForTimeout(500);
+      const mo = await p.evaluate(() => {
+        const cards = [...document.querySelectorAll(".cv-month-day .cv-card")];
+        const last = cards[cards.length - 1];
+        if (!last) return { cards: 0 };
+        // Scrolled to the bottom, the last one sits clear above the tab bar
+        window.scrollTo(0, document.scrollingElement.scrollHeight);
+        const r = last.getBoundingClientRect(), bar = document.getElementById("skylight-sidebar").getBoundingClientRect();
+        return { cards: cards.length, clear: r.bottom <= bar.top && r.top >= 0 };
+      });
+      await shot("calendar-month-day");
+      if (mo.cards < 6 || !mo.clear) problems.push(`month view's day list: ${JSON.stringify(mo)}`);
+    }
+    await p.evaluate((ids) => {
+      const list = window.familyEvents || [];
+      for (let i = list.length - 1; i >= 0; i--) if (ids.includes(list[i].id)) list.splice(i, 1);
+      window.setCalendarView("day", new Date());
+    }, added.ids);
+    if (problems.length) throw new Error(problems.join("; "));
+  }],
   // Right-click: the page menu (and Inspect) on a laptop; switched off on a
   // touch screen so a press-and-hold drag isn't interrupted
   ["right-click", async (p) => {

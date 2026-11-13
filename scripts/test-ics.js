@@ -83,6 +83,20 @@ check("monthly on the 31st skips short months", ics.toHarmoneeEvents(monthly31, 
 // Every other week
 const fortnightly = ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "DTSTART:20261102T180000Z", "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO", "UID:f@x", "SUMMARY:Bins", "END:VEVENT", "END:VCALENDAR"].join("\n");
 check("every other Monday", ics.toHarmoneeEvents(fortnightly, { fromKey: "2026-11-01", toKey: "2026-12-01" }).events.map(e => e.date), ["2026-11-02", "2026-11-16", "2026-11-30"]);
+// Repeats say how they repeat (Google's copies used to say "Does not repeat")
+const W = (rule, start) => ics.repeatWords(ics.parseRule(rule), start);
+const tue = { y: 2026, m: 11, d: 17 };
+check("weekly, from the start day", W("FREQ=WEEKLY", tue), "Every week on Tuesday");
+check("weekly on two days", W("FREQ=WEEKLY;BYDAY=MO,WE", tue), "Every week on Monday and Wednesday");
+check("every weekday", W("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", tue), "Every weekday");
+check("every other week", W("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO", tue), "Every 2 weeks on Monday");
+check("daily", W("FREQ=DAILY", tue), "Every day");
+check("monthly on the date", W("FREQ=MONTHLY", tue), "Every month on the 17th");
+check("monthly on the 2nd Tuesday", W("FREQ=MONTHLY;BYDAY=2TU", tue), "Every month on the 2nd Tuesday");
+check("monthly on the last Friday", W("FREQ=MONTHLY;BYDAY=-1FR", tue), "Every month on the last Friday");
+check("yearly", W("FREQ=YEARLY", tue), "Every year on 17 November");
+check("each copy carries the words", [...new Set(ics.toHarmoneeEvents(fortnightly, { fromKey: "2026-11-01", toKey: "2026-12-01" }).events.map(e => e.repeatText))], ["Every 2 weeks on Monday"]);
+check("a one-off has none", ics.toHarmoneeEvents(spring.replace("RRULE:FREQ=WEEKLY;COUNT=3\n", ""), { fromKey: "2027-03-01", toKey: "2027-04-30" }).events.map(e => e.repeatText || ""), [""]);
 // Limit
 check("a huge feed is capped", ics.toHarmoneeEvents(FEED, { fromKey: "2026-11-01", toKey: "2026-12-31", max: 5 }).events.length, 5);
 

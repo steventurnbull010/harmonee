@@ -404,7 +404,8 @@ function openEventQuickView(evt, dateStr = null) {
     monthly: d ? `Every month on the ${ord(d.getDate())}` : "Every month",
     annually: d ? `Every year on ${d.getDate()} ${MONTHS[d.getMonth()]}` : "Every year"
   }[evt.repeat || "none"] || "Repeats";
-  $("event-pop-repeat").textContent = repeatText;
+  // Google's repeats come as one copy per date, with the rule in words
+  $("event-pop-repeat").textContent = evt.repeatText || repeatText;
 
   // Where and notes, only when there's something to show
   const where = (evt.location || "").trim();
@@ -1592,32 +1593,6 @@ function renderWeekCalendar() {
     famTitleEl.textContent = isDefaultTurnbullBoard ? "Turnbull Family" : (boardSettings.familyName || "Our Family");
   }
 
-  // 1b. Render Family Sticky Note / Message of the Day
-  renderFamilyStickyNote();
-  const btnEditSticky = document.getElementById("btn-edit-sticky");
-  if (btnEditSticky && (!btnEditSticky.hasAttribute || !btnEditSticky.hasAttribute("data-wired"))) {
-    if (typeof btnEditSticky.setAttribute === "function") btnEditSticky.setAttribute("data-wired", "true");
-    btnEditSticky.onclick = (e) => {
-      e.stopPropagation();
-      openStickyNoteModal();
-    };
-  }
-  const stickyCard = document.getElementById("family-sticky-card");
-  if (stickyCard && (!stickyCard.hasAttribute || !stickyCard.hasAttribute("data-wired"))) {
-    if (typeof stickyCard.setAttribute === "function") stickyCard.setAttribute("data-wired", "true");
-    stickyCard.onclick = () => {
-      openStickyNoteModal();
-    };
-  }
-  const btnAddNote = document.getElementById("btn-calendar-add-note");
-  if (btnAddNote && (!btnAddNote.hasAttribute || !btnAddNote.hasAttribute("data-wired"))) {
-    if (typeof btnAddNote.setAttribute === "function") btnAddNote.setAttribute("data-wired", "true");
-    btnAddNote.onclick = (e) => {
-      e.stopPropagation();
-      openStickyNoteModal();
-    };
-  }
-
   // 2. View Dropdown label & active checks (Header shows "View")
   const currentViewLabel = document.getElementById("current-view-label");
   if (currentViewLabel) {
@@ -1881,6 +1856,8 @@ function renderWeekCalendar() {
     let repeatBadgeHtml = "";
     if (evt.repeat && evt.repeat !== "none") {
       repeatBadgeHtml = ` <span title="Repeats: ${escapeHtml(evt.repeat)}">🔁</span>`;
+    } else if (evt.repeatText) {
+      repeatBadgeHtml = ` <span title="${escapeHtml(evt.repeatText)}">🔁</span>`;
     }
 
     const durationText = evt.duration ? ` (${escapeHtml(evt.duration)})` : "";

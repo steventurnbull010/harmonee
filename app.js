@@ -706,7 +706,7 @@ let currentTasks = [];
 window.currentTasks = currentTasks;
 let currentActiveView = "calendar";
 // Shared with the classic scripts: app.js is a module, so a "let" here would
-// be a private copy that js/calendar.js, js/sticky-note.js, js/lists.js and
+// be a private copy that js/calendar.js, js/lists.js and
 // js/sleep.js never see (the Calendar's Today and Filter buttons and the
 // sticky note's live updates were silently changing copies). These are
 // declared once, in those scripts, and used here by name.
@@ -828,7 +828,7 @@ function initChoreEmojiPalette() {
 
 let weeklyMeals = null;
 let dateMealsStore = null;
-// familyStickyNote, selectedStickyColor: js/sticky-note.js. familyLists: js/lists.js.
+// familyLists: js/lists.js.
 let activeListId = "groceries";
 let familyGroceryList = null;
 
@@ -1120,7 +1120,6 @@ function initApp() {
   // board is opened or created; the board's own list replaces it once loaded
   loadLocalRoster();
   setupEventListeners();
-  loadFamilyStickyNote();
   loadFamilyLists();
   loadLocalTasks(); // Instant cache rendering so user never sees 0 tasks
   loadSavedFirebaseConfig();
@@ -1723,16 +1722,6 @@ function listenToFirestoreBoard() {
         if (window.FamilyRecipes) window.FamilyRecipes.fromBoard(safeRecipes);
         else { try { localStorage.setItem(boardCacheKey("turnbull_custom_recipes"), JSON.stringify(safeRecipes)); } catch (e) {} }
         shouldRender = true;
-      }
-      if (data.stickyNote !== undefined) {
-        if (data.stickyNote && data.stickyNote.text && !data.stickyNote.deleted) {
-          familyStickyNote = data.stickyNote;
-          try { localStorage.setItem(boardCacheKey("turnbull_sticky_note"), JSON.stringify(data.stickyNote)); } catch (e) {}
-        } else {
-          familyStickyNote = null;
-          try { localStorage.setItem(boardCacheKey("turnbull_sticky_note"), "none"); } catch (e) {}
-        }
-        renderFamilyStickyNote();
       }
       if (typeof window.applyBoardRewardData === "function") {
         window.applyBoardRewardData(data);
@@ -5169,7 +5158,6 @@ function switchSkylightView(viewName) {
     }
     window.__calScroll = null; // opening the calendar: start an hour before now
     renderWeekCalendar();
-    renderFamilyStickyNote();
     window.scrollTo({ top: 0, behavior: "instant" });
     { const mv = document.querySelector(".skylight-main-viewport"); if (mv) mv.scrollTop = 0; }
   } else if (viewName === "meals") {
@@ -5363,8 +5351,18 @@ function initSkylightNavigation() {
     }
   };
 
+  // With "Add from a photo" switched off, the menu would have one choice:
+  // + goes straight to Add an event instead
   if (btnFloatingAddCalendar) {
-    btnFloatingAddCalendar.onclick = toggleFabSpeedDial;
+    btnFloatingAddCalendar.onclick = (e) => {
+      const photo = document.getElementById("fab-action-snap-flyer");
+      if (photo && photo.hidden && !(fabContainer && fabContainer.classList.contains("is-open"))) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        handleCalendarAddEvent();
+        return;
+      }
+      toggleFabSpeedDial(e);
+    };
   }
 
   if (fabBackdrop) {
@@ -5402,16 +5400,6 @@ function initSkylightNavigation() {
       e.stopPropagation();
       closeFabSpeedDial();
       if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer();
-    };
-  }
-
-  const fabBtnAddNote = document.getElementById("fab-action-add-note");
-  if (fabBtnAddNote) {
-    fabBtnAddNote.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFabSpeedDial();
-      openStickyNoteModal();
     };
   }
 
@@ -5618,14 +5606,6 @@ function initSkylightNavigation() {
     });
   }
 
-  const btnCalendarAddNote = document.getElementById("btn-calendar-add-note");
-  if (btnCalendarAddNote) {
-    btnCalendarAddNote.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openStickyNoteModal();
-    });
-  }
-
   // Delegated clicks inside calendar week grid (checkmarks, cards, discreet add, meals)
   if (weekGrid) {
     weekGrid.addEventListener("click", (e) => {
@@ -5747,7 +5727,6 @@ function initSkylightNavigation() {
 
 // [Extracted to js/meals.js: Skylight 4-Tier Meals & Recipes Module]
 // ============================================================================
-// [Extracted to js/sticky-note.js: Family Sticky Note / Message of the Day]
 
 // [Extracted to js/lists.js: Dedicated Family Lists Hub]
 // [Extracted to js/meals.js: wireMealsHeaderAndDrawerListeners, isDrawerDirty, handleAttemptCloseDrawer]

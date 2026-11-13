@@ -14,7 +14,6 @@
 const SIDE_PANEL_DIALOGS = [
   "event-modal",        // Calendar: add / edit event
   "task-modal",         // Calendar: edit chore for a day
-  "sticky-note-modal",  // Home: message of the day
   "create-list-modal",  // Lists: new list
   "roster-modal",       // Family members
   "settings-modal",     // Settings
