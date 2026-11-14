@@ -503,6 +503,76 @@ const PAGES = [
   }],
   // Shopping list: yesterday's meal's mince has gone by itself, and a
   // teaspoon of cinnamon reads just "Cinnamon"
+  // Checking a photo's events before adding them (14 Nov, from Steven): who
+  // for all of them in one tap, faces on each, and the details changed in place
+  ["magic-check", async (p) => {
+    await goTo("calendar")(p);
+    const ahead = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+    const titles = ["U10s v Rovers", "U10s v City", "U10s v Athletic", "U10s v United", "U10s v Town", "U10s v Wanderers", "Training camp", "Presentation night", "U10s v Albion", "Away tournament"];
+    await p.evaluate(async (a) => {
+      window.__SMOKE_AI = async () => a;
+      // A pretend fixture list: white paper with lines on it
+      const c = document.createElement("canvas"); c.width = 600; c.height = 800;
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 600, 800); g.fillStyle = "#94a3b8";
+      for (let y = 80; y < 760; y += 60) g.fillRect(40, y, 400 + (y % 120), 12);
+      const blob = await new Promise(r => c.toBlob(r, "image/png"));
+      await window.MagicImport.readPhoto(new File([blob], "fixtures.png", { type: "image/png" }));
+      await new Promise(r => setTimeout(r, 300));
+    }, { events: titles.map((t, i) => ({ title: t, date: ahead(7 * (i + 1)), startTime: i === 6 ? "" : "10:00", allDay: i === 6, people: i === 7 ? ["Max"] : [], emoji: "⚽" })) });
+    const rows = await p.locator("#magic-import [data-mi-pick]").count();
+    if (rows !== 10) throw new Error(`expected 10 events, got ${rows}`);
+    // Jo for all of them: one tap. The presentation night keeps Max (the photo named him)
+    await p.click('#magic-import [data-mi-all][data-name="Jo"]');
+    // Sam too, on the first match only
+    await p.click('#magic-import [data-mi-who="0"][data-name="Sam"]');
+    // Fix the third: its name, time and place
+    await p.click('#magic-import [data-mi-edit="2"]');
+    await p.fill("#mi-title-2", "U10s v Athletic (cup)");
+    await p.fill("#mi-start-2", "11:15");
+    await p.fill("#mi-place-2", "Riverside Park");
+    await p.waitForTimeout(200);
+    const look = await p.evaluate(() => {
+      const d = document.getElementById("magic-import"), r = (sel) => d.querySelector(sel).getBoundingClientRect();
+      const ed = r('[data-mi-editor="2"]'), card = d.querySelector(".magic-import-card").getBoundingClientRect();
+      return { line: d.querySelector('[data-mi-item="2"] [data-mi-when]').textContent, name: d.querySelector('[data-mi-item="2"] [data-mi-name]').textContent,
+        wide: card.right <= innerWidth && card.left >= 0, editorIn: ed.left >= card.left && ed.right <= card.right,
+        allFace: Math.round(r('[data-mi-all][data-name="Jo"]').width), boxH: Math.round(r("#mi-title-2").height) };
+    });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-check-edit.png`) });
+    if (look.name !== "U10s v Athletic (cup)" || !/11:15am/.test(look.line) || !/Riverside Park/.test(look.line)) throw new Error(`the event's line didn't update: ${JSON.stringify(look)}`);
+    if (!look.wide || !look.editorIn || look.allFace < 44 || look.boxH < 44) throw new Error(`the check screen's layout: ${JSON.stringify(look)}`);
+    await p.click('#magic-import [data-mi-done="2"]');
+    // Leave the last one out
+    await p.locator("#magic-import [data-mi-pick]").nth(9).uncheck();
+    await p.evaluate(() => document.querySelector("#magic-import .magic-import-card").scrollTo(0, 0));
+    await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-check-list.png`) });
+    // The photo, full size, and back
+    await p.click("#magic-import [data-mi-photo]");
+    const full = await p.evaluate(() => { const f = document.querySelector("#magic-import [data-mi-photo-full]"); const r = f.getBoundingClientRect(); return !f.hidden && r.width >= innerWidth - 1; });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-check-photo.png`) });
+    await p.click("#magic-import [data-mi-photo-full]");
+    if (!full) throw new Error("the photo didn't open full size");
+    if (!(await p.evaluate(() => document.getElementById("magic-import").open && document.querySelector("#magic-import [data-mi-photo-full]").hidden))) throw new Error("closing the photo closed the list too");
+    const label = await p.$eval("#magic-import [data-mi-add]", b => b.textContent);
+    if (!/Add 9/.test(label)) throw new Error(`button says "${label}"`);
+    await p.click("#magic-import [data-mi-add]");
+    await p.waitForTimeout(400);
+    const saved = await p.evaluate((t) => (window.familyEvents || []).filter(e => t.includes(e.title) || e.title === "U10s v Athletic (cup)").map(e => ({ t: e.title, m: e.member, time: e.time, d: e.duration, place: e.location })), titles);
+    const by = (t) => saved.find(e => e.t === t) || {};
+    const problems = [];
+    if (saved.length !== 9) problems.push(`${saved.length} saved, not 9`);
+    if (saved.some(e => e.t === "Away tournament")) problems.push("the unticked one was added");
+    if (by("U10s v Rovers").m !== "Sam & Jo") problems.push(`first match is for "${by("U10s v Rovers").m}"`);
+    if (by("U10s v City").m !== "Jo") problems.push(`second match is for "${by("U10s v City").m}"`);
+    if (by("Presentation night").m !== "Max") problems.push(`presentation night is for "${by("Presentation night").m}"`);
+    const cup = by("U10s v Athletic (cup)");
+    if (cup.time !== "11:15" || cup.place !== "Riverside Park" || cup.m !== "Jo") problems.push(`the changed one saved as ${JSON.stringify(cup)}`);
+    if (by("Training camp").d !== "All Day") problems.push("the all-day one isn't all day");
+    await p.evaluate((t) => { const l = window.familyEvents || []; for (let i = l.length - 1; i >= 0; i--) if (t.includes(l[i].title) || l[i].title === "U10s v Athletic (cup)") l.splice(i, 1); window.renderWeekCalendar(); }, titles);
+    await p.evaluate(() => { const t = document.getElementById("hm-action-toast"); if (t) t.classList.remove("is-visible"); });
+    if (problems.length) throw new Error(problems.join("; "));
+  }],
   ["shopping-list", async (p) => {
     await goTo("lists")(p);
     await p.waitForTimeout(300);

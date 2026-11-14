@@ -64,6 +64,61 @@ body.theme-dark .magic-import-row:has(input:checked) { background: rgba(2, 132, 
 .magic-import-text b { font-weight: 700; overflow-wrap: anywhere; }
 .magic-import-text small { color: var(--text-secondary, #64748b); font-size: 0.85rem; overflow-wrap: anywhere; }
 
+/* Checking several before adding: faces for who, and each event's boxes */
+.magic-import-dialog:has(.mi-who-all) { width: min(560px, calc(100vw - 32px)); }
+.mi-review-head { display: flex; align-items: center; gap: 16px; }
+.mi-review-title { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mi-thumb { flex: none; width: 64px; height: 80px; padding: 0; overflow: hidden; border: 1.5px solid var(--card-border, #e2e8f0); border-radius: 12px; background: #f1f5f9; cursor: zoom-in; }
+.mi-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mi-photo-full { position: fixed; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 16px; border: 0; background: rgba(15, 23, 42, 0.92); cursor: zoom-out; }
+.mi-photo-full[hidden] { display: none; }
+.mi-photo-full img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
+
+.mi-who-all { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--card-border, #e2e8f0); }
+body.theme-dark .mi-who-all { background: rgba(255, 255, 255, 0.04); border-color: #334155; }
+.mi-who-label { font-weight: 800; font-size: 0.95rem; }
+.mi-faces { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mi-face {
+  flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%;
+  border: 2px solid var(--mi-face); background: transparent; color: var(--mi-face);
+  font: 800 1rem var(--font-body); cursor: pointer;
+}
+.mi-face.is-on { background: var(--mi-face); color: #ffffff; }
+.mi-face.is-small { width: 32px; height: 32px; font-size: 0.8rem; border-width: 1.5px; }
+.mi-everyone { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--card-border, #cbd5e1); background: transparent; color: inherit; font: 700 0.9rem var(--font-body); cursor: pointer; }
+.mi-everyone.is-on { background: #0f172a; border-color: #0f172a; color: #ffffff; }
+body.theme-dark .mi-everyone.is-on { background: #f8fafc; border-color: #f8fafc; color: #0f172a; }
+.mi-family { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary, #64748b); }
+.mi-face:focus-visible, .mi-everyone:focus-visible, .mi-open:focus-visible, .mi-thumb:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+
+/* An event: tick, emoji, name (tap to change), and its faces underneath */
+.mi-item .magic-import-row {
+  display: grid; grid-template-columns: 22px auto minmax(0, 1fr); column-gap: 16px; row-gap: 8px;
+  align-items: center; cursor: default;
+}
+.mi-item:has(input[data-mi-pick]:checked) .magic-import-row { border-color: #7dd3fc; background: #f0f9ff; }
+body.theme-dark .mi-item:has(input[data-mi-pick]:checked) .magic-import-row { background: rgba(2, 132, 199, 0.15); border-color: #0369a1; }
+.mi-item:not(:has(input[data-mi-pick]:checked)) .magic-import-row { opacity: 0.6; }
+.mi-open { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mi-open b { text-decoration: underline dotted var(--text-secondary, #94a3b8); text-underline-offset: 4px; }
+.mi-row-faces { grid-column: 3; }
+.mi-item.is-editing .magic-import-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+.mi-edit {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; align-items: end;
+  padding: 16px; border: 1.5px solid #7dd3fc; border-top: 0; border-radius: 0 0 16px 16px;
+}
+.mi-edit[hidden] { display: none; }
+.mi-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary, #64748b); }
+.mi-field-wide { grid-column: 1 / -1; }
+.mi-field input { min-height: 44px; width: 100%; box-sizing: border-box; padding: 0 12px; border: 1.5px solid var(--card-border, #cbd5e1); border-radius: 12px; background: var(--input-bg, #ffffff); color: var(--text-primary, #0f172a); font: 600 1rem var(--font-body); }
+.mi-field input:disabled { opacity: 0.45; }
+.mi-field input[type="date"], .mi-field input[type="time"] { padding: 0 8px; font-size: 0.95rem; }
+body.theme-dark .mi-field input { background: #0f172a; border-color: #334155; color: #f8fafc; }
+.mi-allday { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+.mi-allday input { width: 22px; height: 22px; accent-color: #0284c7; }
+.mi-done { grid-column: 1 / -1; justify-self: end; min-height: 44px; }
+
 .magic-import-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .magic-import-btn {
   min-height: 48px; padding: 8px 24px; border-radius: 999px;

@@ -276,7 +276,12 @@
     dlg.setAttribute("aria-labelledby", "magic-import-title");
     document.body.appendChild(dlg);
     dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
-    dlg.addEventListener("cancel", (e) => { e.preventDefault(); close(); });
+    dlg.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      // Esc on the full-size photo goes back to the list
+      const full = dlg.querySelector("[data-mi-photo-full]:not([hidden])");
+      if (full) full.hidden = true; else close();
+    });
     return dlg;
   }
   let busy = 0; // counts each read, so a cancelled one is ignored when it returns
@@ -324,29 +329,133 @@
       { title: e.title, members: e.people.length ? e.people : null, location: e.location, description: e.notes, icon: e.icon, fromPhoto: true });
   }
 
-  // Several: tick the ones to add
-  function chooseMany(list) {
+  // Several: check them before adding (14 Nov, from Steven: ten events from
+  // a fixture list shouldn't mean opening ten events to say who they're for).
+  // - "Who are these for?" sets everyone the photo didn't name, in one tap
+  // - each event has its own faces, for the odd one that's different
+  // - tap an event's name to fix the name, date, time or place in place
+  // - the photo at the top, to check against; nothing is saved until Add
+  function chooseMany(found, photo) {
+    const family = people();
+    const list = found.map(e => ({ ...e, picked: true, own: e.people.length > 0 }));
+    let forAll = []; // who the events without their own people are for (none: the family)
+    const whoOf = (e) => e.own ? e.people : forAll;
+    const colour = (n) => (typeof window.getMemberPalette === "function" ? window.getMemberPalette(n).primary : "#0284c7");
+    const face = (n, on, attr, small) => `<button type="button" class="mi-face${small ? " is-small" : ""}${on ? " is-on" : ""}" ${attr} aria-pressed="${on}" style="--mi-face: ${colour(n)};" aria-label="${esc(n)}" title="${esc(n)}">${esc(n.charAt(0).toUpperCase())}</button>`;
+    const summary = (e) => `${esc(whenText(e))}${e.location ? ` · ${esc(e.location)}` : ""}`;
+    const rowFaces = (e, i) => family.length
+      ? family.map(n => face(n, whoOf(e).includes(n), `data-mi-who="${i}" data-name="${esc(n)}"`, true)).join("") + (whoOf(e).length ? "" : `<span class="mi-family">Family</span>`)
+      : "";
+    const editor = (e, i) => `
+      <div class="mi-edit" data-mi-editor="${i}" hidden>
+        <label class="mi-field mi-field-wide"><span>Name</span><input type="text" id="mi-title-${i}" data-mi-field="title" maxlength="60" value="${esc(e.title)}"></label>
+        <label class="mi-field"><span>Date</span><input type="date" id="mi-date-${i}" data-mi-field="date" value="${esc(e.date)}"></label>
+        <label class="mi-allday"><input type="checkbox" id="mi-allday-${i}" data-mi-field="allDay" ${e.allDay ? "checked" : ""}> All day</label>
+        <label class="mi-field" data-mi-times><span>Starts</span><input type="time" id="mi-start-${i}" data-mi-field="start" value="${esc(e.start)}" ${e.allDay ? "disabled" : ""}></label>
+        <label class="mi-field" data-mi-times><span>Ends</span><input type="time" id="mi-end-${i}" data-mi-field="end" value="${esc(e.end)}" ${e.allDay ? "disabled" : ""}></label>
+        <label class="mi-field mi-field-wide"><span>Place</span><input type="text" id="mi-place-${i}" data-mi-field="location" maxlength="120" value="${esc(e.location)}" placeholder="Optional"></label>
+        <button type="button" class="magic-import-btn mi-done" data-mi-done="${i}">Done</button>
+      </div>`;
     const dlg = show(`
-      <h2 class="magic-import-title" id="magic-import-title">Found ${list.length} events</h2>
-      <p class="magic-import-lead">Untick any you don't want. You can change them afterwards on the calendar.</p>
-      <ul class="magic-import-list">${list.map((e, i) => `<li>
-        <label class="magic-import-row">
-          <input type="checkbox" data-mi-pick="${i}" checked>
+      <div class="mi-review-head">
+        ${photo ? `<button type="button" class="mi-thumb" data-mi-photo aria-label="See your photo full size"><img src="${photo.dataUrl}" alt=""></button>` : ""}
+        <div class="mi-review-title">
+          <h2 class="magic-import-title" id="magic-import-title">Found ${list.length} events</h2>
+          <p class="magic-import-lead">Check them against your photo. Tap a name to change it.</p>
+        </div>
+      </div>
+      ${family.length ? `<div class="mi-who-all" role="group" aria-labelledby="mi-who-label">
+        <span class="mi-who-label" id="mi-who-label">Who are these for?</span>
+        <div class="mi-faces" data-mi-allfaces>${family.map(n => face(n, false, `data-mi-all data-name="${esc(n)}"`)).join("")}
+          <button type="button" class="mi-everyone is-on" data-mi-everyone aria-pressed="true">Everyone</button></div>
+      </div>` : ""}
+      <ul class="magic-import-list">${list.map((e, i) => `<li class="mi-item" data-mi-item="${i}">
+        <div class="magic-import-row">
+          <input type="checkbox" data-mi-pick="${i}" checked aria-label="Add ${esc(e.title)}">
           <span class="magic-import-emoji" aria-hidden="true">${esc(e.icon || "📅")}</span>
-          <span class="magic-import-text"><b>${esc(e.title)}</b><small>${esc(whenText(e))}${e.location ? ` · ${esc(e.location)}` : ""}${e.people.length ? ` · ${esc(e.people.join(" & "))}` : ""}</small></span>
-        </label></li>`).join("")}</ul>
+          <button type="button" class="mi-open magic-import-text" data-mi-edit="${i}" aria-expanded="false"><b data-mi-name>${esc(e.title)}</b><small data-mi-when>${summary(e)}</small></button>
+          <span class="mi-faces mi-row-faces" data-mi-faces="${i}">${rowFaces(e, i)}</span>
+        </div>
+        ${editor(e, i)}
+      </li>`).join("")}</ul>
       <div class="magic-import-actions">
         <button type="button" class="magic-import-btn" data-mi-close>Cancel</button>
         <button type="button" class="magic-import-btn is-primary" data-mi-add>Add ${list.length} to the calendar</button>
-      </div>`);
+      </div>
+      ${photo ? `<button type="button" class="mi-photo-full" data-mi-photo-full hidden aria-label="Close your photo"><img src="${photo.dataUrl}" alt="Your photo"></button>` : ""}`);
+    // Listen on this card (new each time), not the dialog, which is reused
+    const card = dlg.querySelector(".magic-import-card");
     const addBtn = dlg.querySelector("[data-mi-add]");
-    const picked = () => [...dlg.querySelectorAll("[data-mi-pick]")].filter(c => c.checked).map(c => list[Number(c.getAttribute("data-mi-pick"))]);
-    dlg.querySelectorAll("[data-mi-pick]").forEach(c => c.addEventListener("change", () => {
+    const picked = () => list.filter(e => e.picked);
+    const refreshCount = () => {
       const n = picked().length;
       addBtn.textContent = n ? `Add ${n} to the calendar` : "Pick at least one";
       addBtn.disabled = !n;
-    }));
-    addBtn.onclick = () => addAll(picked());
+    };
+    const refreshFaces = () => {
+      list.forEach((e, i) => { const box = dlg.querySelector(`[data-mi-faces="${i}"]`); if (box) box.innerHTML = rowFaces(e, i); });
+      dlg.querySelectorAll("[data-mi-all]").forEach(b => { const on = forAll.includes(b.getAttribute("data-name")); b.classList.toggle("is-on", on); b.setAttribute("aria-pressed", on); });
+      const every = dlg.querySelector("[data-mi-everyone]");
+      if (every) { every.classList.toggle("is-on", !forAll.length); every.setAttribute("aria-pressed", !forAll.length); }
+    };
+    const openEditor = (i, open) => {
+      list.forEach((_, j) => {
+        const ed = dlg.querySelector(`[data-mi-editor="${j}"]`), btn = dlg.querySelector(`[data-mi-edit="${j}"]`);
+        const show = j === i && open;
+        ed.hidden = !show; btn.setAttribute("aria-expanded", show);
+        dlg.querySelector(`[data-mi-item="${j}"]`).classList.toggle("is-editing", show);
+      });
+      if (open) { const f = dlg.querySelector(`#mi-title-${i}`); if (f) f.focus({ preventScroll: true }); dlg.querySelector(`[data-mi-item="${i}"]`).scrollIntoView({ block: "nearest" }); }
+    };
+    card.addEventListener("change", (ev) => {
+      const pick = ev.target.closest("[data-mi-pick]");
+      if (pick) { list[Number(pick.getAttribute("data-mi-pick"))].picked = pick.checked; refreshCount(); }
+    });
+    // Typing in an event's boxes changes it straight away (its line updates)
+    const onField = (ev) => {
+      const f = ev.target.closest("[data-mi-field]");
+      if (!f) return;
+      const i = Number(f.closest("[data-mi-editor]").getAttribute("data-mi-editor")), e = list[i], k = f.getAttribute("data-mi-field");
+      if (k === "title") { const t = clean(f.value, 60); if (t) e.title = t; }
+      else if (k === "location") e.location = clean(f.value, 120);
+      else if (k === "date") {
+        const [y, mo, d] = String(f.value).split("-").map(Number);
+        if (y && mo && d) { e.date = f.value; e.when = new Date(y, mo - 1, d); }
+      } else if (k === "allDay") {
+        e.allDay = f.checked;
+        dlg.querySelectorAll(`[data-mi-editor="${i}"] [data-mi-times] input`).forEach(t => { t.disabled = f.checked; });
+        if (!f.checked && !e.start) { e.start = "09:00"; dlg.querySelector(`#mi-start-${i}`).value = "09:00"; }
+      } else if (k === "start") { e.start = f.value || ""; if (!e.start) { e.allDay = true; dlg.querySelector(`#mi-allday-${i}`).checked = true; } if (e.end && e.start && mins(e.end) <= mins(e.start)) e.end = ""; }
+      else if (k === "end") e.end = e.start ? (f.value || "") : "";
+      const item = dlg.querySelector(`[data-mi-item="${i}"]`);
+      item.querySelector("[data-mi-name]").textContent = e.title;
+      item.querySelector("[data-mi-when]").innerHTML = summary(e);
+      item.querySelector("[data-mi-pick]").setAttribute("aria-label", `Add ${e.title}`);
+    };
+    card.addEventListener("input", onField);
+    card.addEventListener("change", onField);
+    card.addEventListener("click", (ev) => {
+      const t = ev.target;
+      const all = t.closest("[data-mi-all]");
+      if (all) { const n = all.getAttribute("data-name"); forAll = forAll.includes(n) ? forAll.filter(x => x !== n) : family.filter(x => x === n || forAll.includes(x)); refreshFaces(); return; }
+      if (t.closest("[data-mi-everyone]")) { forAll = []; refreshFaces(); return; }
+      const who = t.closest("[data-mi-who]");
+      if (who) {
+        const e = list[Number(who.getAttribute("data-mi-who"))], n = who.getAttribute("data-name");
+        const now = whoOf(e);
+        e.people = now.includes(n) ? now.filter(x => x !== n) : family.filter(x => x === n || now.includes(x));
+        e.own = true;
+        refreshFaces();
+        return;
+      }
+      const edit = t.closest("[data-mi-edit]");
+      if (edit) { const i = Number(edit.getAttribute("data-mi-edit")); openEditor(i, edit.getAttribute("aria-expanded") !== "true"); return; }
+      const done = t.closest("[data-mi-done]");
+      if (done) { const i = Number(done.getAttribute("data-mi-done")); openEditor(i, false); dlg.querySelector(`[data-mi-edit="${i}"]`).focus({ preventScroll: true }); return; }
+      if (t.closest("[data-mi-photo]")) { const full = dlg.querySelector("[data-mi-photo-full]"); full.hidden = false; full.focus(); return; }
+      if (t.closest("[data-mi-photo-full]")) { t.closest("[data-mi-photo-full]").hidden = true; return; }
+    });
+    addBtn.onclick = () => addAll(picked().map(e => ({ ...e, people: whoOf(e) })));
   }
 
   function addAll(list) {
@@ -408,7 +517,7 @@
       if (ticket !== busy) return; // cancelled while reading
       if (!events.length) problem({ title: "No dates found", lead: "Try a closer photo, straight on, with the date and time in it." });
       else if (events.length === 1) fillEditor(events[0]);
-      else chooseMany(events);
+      else chooseMany(events, photo);
     } catch (err) {
       if (ticket !== busy) return;
       console.warn("Magic Import couldn't read the photo:", err);
