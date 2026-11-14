@@ -350,12 +350,18 @@
   .tasks-toolbar .tasks-slot-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
   #view-chores .tasks-today-extra { display: none; }
-  #view-chores .skylight-single-header .calendar-nav-buttons { max-width: 100%; overflow: hidden; }
+  /* The stepper fills the space between 👥 and 🛠️ and the day button takes
+     what the arrows leave, so its width never depends on measuring its own
+     words (Safari measured "Today" short and trimmed it to "To…") */
+  #view-chores .skylight-single-header .calendar-nav-buttons { display: flex !important; justify-self: stretch !important; width: 100%; max-width: 280px; margin: 0 auto; overflow: hidden; }
+  #view-chores .skylight-single-header .calendar-nav-buttons #btn-tasks-today { flex: 1 1 auto; }
   #view-chores #btn-tasks-today {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 0; height: 36px; line-height: 1;
-    padding: 0 16px !important;
+    padding: 0 8px !important;
     overflow: hidden; text-overflow: ellipsis;
   }
+  /* 👥 ▾ had the laptop's 16px each side (page-spacing.css wins without !important) */
+  #view-chores #btn-tasks-filter-dropdown { min-height: 40px; padding: 0 8px !important; gap: 2px !important; }
   #view-chores .skylight-single-header .calendar-btn-nav { flex: none; width: 36px; height: 36px; }
 }
