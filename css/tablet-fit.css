@@ -329,3 +329,33 @@
   #view-chores .tasks-grab-btn .tasks-grab-btn-label { display: none; }
   #view-chores .tasks-grab-btn { padding-left: 12px; padding-right: 8px; gap: 6px; }
 }
+
+/* Time of day (14 Nov): three buttons, Morning / Afternoon & evening / Chores.
+   Wide screens show the long name; phones show the short one. */
+.tasks-slot-label i { font-style: normal; }
+.tasks-slot-short { display: none; }
+/* The day button's words centred by the layout at every size */
+#view-chores #btn-tasks-today { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+#view-chores .tasks-today-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Phones, Tasks (14 Nov, from Steven's iPhone): three time-of-day buttons with
+   room for their names, and a top row that can't overlap. The day button says
+   "Today" (or "Sun 15") and is trimmed rather than spilling onto 👥 or 🛠️;
+   its text is centred by the layout, not the font's line spacing (iOS sat it low). */
+@media (max-width: 600px) {
+  .tasks-slot-long { display: none; }
+  .tasks-slot-short { display: inline; }
+  .tasks-toolbar .tasks-slot-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tasks-toolbar .tasks-slot-pill { gap: 4px; padding: 4px; font-size: 0.8rem; letter-spacing: 0; white-space: nowrap; overflow: hidden; }
+  .tasks-toolbar .tasks-slot-pill span { font-size: 1rem; }
+  .tasks-toolbar .tasks-slot-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+  #view-chores .tasks-today-extra { display: none; }
+  #view-chores .skylight-single-header .calendar-nav-buttons { max-width: 100%; overflow: hidden; }
+  #view-chores #btn-tasks-today {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 0; height: 36px; line-height: 1;
+    padding: 0 16px !important;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  #view-chores .skylight-single-header .calendar-btn-nav { flex: none; width: 36px; height: 36px; }
+}

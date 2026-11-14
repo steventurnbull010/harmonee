@@ -46,10 +46,23 @@
   }
 
   // Something Back should close first opened / closed
+  // One thing closing and the next opening straight away (Big jobs → the job
+  // panel and back): the closed one's step is still being taken off, so the
+  // new step waits for that, or the Back would take the new one off instead.
+  let waitingPushes = [];
+  function pushLayerStep(id) {
+    try { history.pushState({ ...(history.state || {}), hm: true, layer: id }, "", location.href); } catch (e) {}
+  }
   function openLayer(id, close) {
     if (!started || restoring || layers.some(l => l.id === id)) return;
     layers.push({ id, close });
-    try { history.pushState({ ...(history.state || {}), hm: true, layer: id }, "", location.href); } catch (e) {}
+    if (ignorePops) waitingPushes.push(id);
+    else pushLayerStep(id);
+  }
+  function flushWaitingPushes() {
+    const ids = waitingPushes;
+    waitingPushes = [];
+    ids.filter(id => layers.some(l => l.id === id)).forEach(pushLayerStep);
   }
   function closedLayer(id) {
     const i = layers.findIndex(l => l.id === id);
@@ -60,7 +73,7 @@
   }
 
   window.addEventListener("popstate", (e) => {
-    if (ignorePops) { ignorePops--; return; }
+    if (ignorePops) { ignorePops--; if (!ignorePops) flushWaitingPushes(); return; }
     if (document.body.classList.contains("shop-mode-open")) return; // Shop mode closes itself
     if (layers.length) {
       const layer = layers.pop();
@@ -104,6 +117,8 @@
       close: () => { const b = document.getElementById("btn-close-plan-drawer"); if (b) b.click(); else if (window.closePlanMealDrawer) window.closePlanMealDrawer(); } },
     { id: "phone-list", isOpen: () => { const b = document.getElementById("lists-board"); return !!(b && b.classList.contains("is-phone-detail") && window.matchMedia("(max-width: 600px)").matches); },
       close: () => { const b = document.querySelector("#lists-board [data-lists-back]"); if (b) b.click(); } },
+    { id: "task-drawer", isOpen: () => { const o = document.getElementById("skylight-task-drawer-overlay"); return !!(o && o.style.display && o.style.display !== "none"); },
+      close: () => { const b = document.getElementById("btn-task-drawer-back"); if (b) b.click(); } },
     { id: "recipe-collection", isOpen: () => !!document.querySelector("#meals-recipes-view:not([hidden]) [data-rb-home]"),
       close: () => { const b = document.querySelector("#meals-recipes-view [data-rb-home]"); if (b) b.click(); } }
   ];

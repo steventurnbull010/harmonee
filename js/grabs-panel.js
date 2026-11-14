@@ -110,7 +110,7 @@
     list.innerHTML = shown.map(t => {
       const given = justGiven.get(t.id);
       const icon = t.icon || (typeof window.detectEmojiForChore === "function" && window.detectEmojiForChore(t.title)) || "🪆";
-      const value = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
+      const value = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} ${taskPoints(t) === 1 ? "pt" : "pts"}`;
       const open = !given && openWho === t.id;
       const meta = [
         t.isPriority ? `<span class="grabs-tag is-important">Important</span>` : "",
@@ -139,6 +139,11 @@
     }).join("");
   }
 
+  // Back (or Save) on the job panel comes back to this list, not the page
+  function returnHereAfterDrawer(day) {
+    if (typeof window.setTaskDrawerReturn === "function") window.setTaskDrawerReturn(() => openGrabsPanel(day));
+  }
+
   function onClick(e) {
     const dlg = document.getElementById("grabs-modal");
     // Add a job for anyone: the usual new-job panel, already set to Grab it
@@ -146,12 +151,15 @@
       const day = panelDate;
       dlg.close();
       if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(null, { people: [POOL], date: day });
+      returnHereAfterDrawer(day);
       return;
     }
     const edit = e.target.closest("[data-grabs-edit]");
     if (edit) {
+      const day = panelDate;
       dlg.close();
       if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer(edit.getAttribute("data-grabs-edit"));
+      returnHereAfterDrawer(day);
       return;
     }
     const whoBtn = e.target.closest("[data-grabs-who]");

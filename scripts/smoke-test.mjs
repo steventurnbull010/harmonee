@@ -1571,6 +1571,44 @@ const PAGES = [
     if (after.view !== "rewards") throw new Error(`a refresh on Rewards opened ${after.view}`);
     await nav("calendar");
   }],
+  // Big jobs → ✏️ → the job panel: its ← and the phone's Back both come back
+  // to the Big jobs list (14 Nov, from Steven), and one more Back closes it
+  ["big-jobs-back", async (p) => {
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    await goTo("chores")(p);
+    const state = () => p.evaluate(() => ({
+      panel: document.getElementById("grabs-modal").open,
+      editor: document.getElementById("skylight-task-drawer-overlay").style.display === "flex",
+      view: window.currentActiveView
+    }));
+    const openEditor = async () => {
+      await p.click("[data-open-grabs]"); await p.waitForTimeout(400);
+      await p.locator("#grabs-list [data-grabs-edit]").first().click(); await p.waitForTimeout(400);
+      const s = await state();
+      if (!s.editor || s.panel) throw new Error(`✏️ didn't swap Big jobs for the job panel: ${JSON.stringify(s)}`);
+    };
+    await openEditor();
+    await p.click("#btn-task-drawer-back"); await p.waitForTimeout(500);
+    let s = await state();
+    if (!s.panel || s.editor) throw new Error(`← on the job panel didn't go back to Big jobs: ${JSON.stringify(s)}`);
+    await p.evaluate(() => document.getElementById("grabs-modal").close()); await p.waitForTimeout(400);
+    await openEditor();
+    await p.evaluate(() => history.back()); await p.waitForTimeout(600);
+    s = await state();
+    if (!s.panel || s.editor || s.view !== "chores") throw new Error(`Back on the job panel didn't go back to Big jobs: ${JSON.stringify(s)}`);
+    await p.evaluate(() => history.back()); await p.waitForTimeout(600);
+    s = await state();
+    if (s.panel || s.editor || s.view !== "chores") throw new Error(`Back on Big jobs didn't just close it: ${JSON.stringify(s)}`);
+    // Points say "0 pts", "1 pt", "2 pts"
+    await p.click("#btn-floating-add-task"); await p.waitForTimeout(400);
+    const label = () => p.$eval("#drawer-reward-display", el => el.textContent.trim());
+    for (let i = 0; i < 30 && !(await p.$eval("#btn-drawer-reward-minus", b => b.disabled)); i++) await p.click("#btn-drawer-reward-minus");
+    if (await label() !== "0 pts") throw new Error(`no points says "${await label()}"`);
+    await p.click("#btn-drawer-reward-plus");
+    const one = await label();
+    if (one === "1 pts" || !/^(1 pt|\d+ pts)$/.test(one)) throw new Error(`points say "${one}"`);
+    await p.click("#btn-task-drawer-back"); await p.waitForTimeout(800);
+  }],
   // Today at a glance never opens by itself: after the night clock wakes the
   // board, and after it's been left alone, it stays on the page it was on
   ["stays-put", async (p) => {
@@ -2652,7 +2690,7 @@ const PAGES = [
     if (!/quick grab/i.test(iron.afterAnyone.hint)) throw new Error(`Anyone + Every week + Any day doesn't say quick grab: ${iron.afterAnyone.hint}`);
     if (!/nobody can grab/i.test(iron.routineHint)) throw new Error(`Routine + Anyone doesn't explain itself: ${iron.routineHint}`);
     await p.keyboard.press("Escape");
-    // A job worth no points (Make your bed): the stepper goes down to "No points",
+    // A job worth no points (Make your bed): the stepper goes down to "0 pts",
     // it saves as 0, and its card shows no points
     const bed = await p.evaluate(async () => {
       window.openSkylightTaskDrawer();
@@ -2671,7 +2709,7 @@ const PAGES = [
       const card = [...document.querySelectorAll(".skylight-task-card")].find(c => t && c.getAttribute("data-task-id") === t.id);
       return { shown, off, value: t ? t.value : "missing", points: t ? window.taskPoints(t) : null, card: card ? card.textContent.replace(/\s+/g, " ").trim() : null };
     });
-    if (bed.shown !== "No points" || !bed.off) throw new Error(`the points stepper doesn't go down to No points: ${JSON.stringify(bed)}`);
+    if (bed.shown !== "0 pts" || !bed.off) throw new Error(`the points stepper doesn't go down to 0 pts: ${JSON.stringify(bed)}`);
     if (bed.value !== 0 || bed.points !== 0) throw new Error(`Brush your teeth wasn't saved with no points: ${JSON.stringify(bed)}`);
     if (!bed.card) throw new Error("Brush your teeth's card isn't on the board");
     if (/\bpts?\b|\bpoints?\b/.test(bed.card)) throw new Error(`Brush your teeth's card still shows points: ${bed.card}`);

@@ -4854,7 +4854,7 @@ function setupEventListeners() {
       const pillsHtml = Object.entries(entry.totals)
         .map(([name, score]) => {
           const num = Number(score) || 0;
-          const val = isMoney ? `${currency}${num.toFixed(2)}` : `${num} pts`;
+          const val = isMoney ? `${currency}${num.toFixed(2)}` : `${num} ${num === 1 ? "pt" : "pts"}`;
           return `<span class="history-member-pill">${escapeHtml(name)}: <span class="history-member-score">${val}</span></span>`;
         })
         .join("");

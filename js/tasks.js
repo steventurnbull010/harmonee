@@ -121,12 +121,15 @@ let tasksColumnFilters = {};
 // Taps hold until the next switchover (midday, or the next family day).
 // Any other day shows everything.
 // ---------------------------------------------------------------------------
+// Afternoon and Evening share one button (they always switch over together at
+// midday); the jobs underneath keep their own Afternoon and Evening headings.
+// "short" is the phone label.
 const TASK_SLOTS = [
-  { key: "morning", icon: "🌤️", label: "Morning" },
-  { key: "afternoon", icon: "⛅", label: "Afternoon" },
-  { key: "evening", icon: "🌙", label: "Evening" },
-  { key: "chores", icon: "🧹", label: "Chores" }
+  { key: "morning", keys: ["morning"], icon: "🌤️", label: "Morning", short: "Morning" },
+  { key: "afternoon", keys: ["afternoon", "evening"], icon: "🌇", label: "Afternoon & evening", short: "Afternoon" },
+  { key: "chores", keys: ["chores"], icon: "🧹", label: "Chores", short: "Chores" }
 ];
+const TASK_SLOT_KEYS = TASK_SLOTS.flatMap(x => x.keys);
 let tasksSlotChoice = null; // { period, on: Set } after a tap
 function tasksSlotPeriod(viewingToday) {
   if (!viewingToday) return "other-day";
@@ -137,12 +140,15 @@ function tasksSlotPeriod(viewingToday) {
 function tasksSlotsOn(viewingToday) {
   const period = tasksSlotPeriod(viewingToday);
   if (tasksSlotChoice && tasksSlotChoice.period === period) return tasksSlotChoice.on;
-  if (!viewingToday) return new Set(TASK_SLOTS.map(x => x.key));
+  if (!viewingToday) return new Set(TASK_SLOT_KEYS);
   return new Set(period.endsWith("|am") ? ["morning", "chores"] : ["afternoon", "evening", "chores"]);
 }
 function toggleTaskSlot(key, viewingToday) {
   const on = new Set(tasksSlotsOn(viewingToday));
-  if (on.has(key)) on.delete(key); else on.add(key);
+  const slot = TASK_SLOTS.find(x => x.key === key);
+  const keys = slot ? slot.keys : [key];
+  const wasOn = keys.some(k => on.has(k));
+  keys.forEach(k => { if (wasOn) on.delete(k); else on.add(k); });
   tasksSlotChoice = { period: tasksSlotPeriod(viewingToday), on };
 }
 // Midday (or a new day) while the board is up: the defaults move on
@@ -366,7 +372,11 @@ function renderSkylightTasksPage() {
     // so there's no separate date line taking up the board's room
     const todayBtn = document.getElementById("btn-tasks-today");
     if (todayBtn) {
-      todayBtn.textContent = isToday ? `Today · ${dow.slice(0, 3)} ${dt}` : `${dow.slice(0, 3)} ${dt} ${mon}`;
+      // Phones hide the parts in .tasks-today-extra: "Today" on today, "Sun 15" on other days
+      // (one wrapper, so the centring keeps the spaces)
+      todayBtn.innerHTML = `<span class="tasks-today-text">${isToday
+        ? `Today<span class="tasks-today-extra"> · ${escapeHtml(dow.slice(0, 3))} ${escapeHtml(String(dt))}</span>`
+        : `${escapeHtml(dow.slice(0, 3))} ${escapeHtml(String(dt))}<span class="tasks-today-extra"> ${escapeHtml(String(mon))}</span>`}</span>`;
       todayBtn.setAttribute("aria-label", isToday ? `Today, ${dateText.replace(/^Today • /, "")}` : `Showing ${dow} ${dt} ${mon}. Go back to today`);
       todayBtn.classList.toggle("is-other-day", !isToday);
     }
@@ -471,7 +481,7 @@ function renderSkylightTasksPage() {
       const isMoney = (window.boardSettings || {}).gameMode === "money";
       const curr = (window.boardSettings || {}).currency || "£";
       // A job worth nothing shows no points at all
-      const valText = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : `${taskPoints(t)} pts`;
+      const valText = !taskPoints(t) ? "" : isMoney ? `${curr}${taskReward(t, true).toFixed(2)}` : ptsLabel(taskPoints(t));
       const timeSubtitle = t.time || (isDaily ? "Daily" : (isAnyDayWeekly(t) ? "This week" : "Today"));
       const overdue = !isDone && isOverdueOn(t, tasksSelectedDate, isGrabPool ? null : mLower);
       const important = !!t.isPriority && !isDone;
@@ -1507,9 +1517,33 @@ function wireDrawerRota() {
 }
 
 // prefill (new tasks only, e.g. from voice): { title, people: [names], date, daily, slot, weekly }
+// Where the job panel goes back to when it closes (←, Save, Delete or the
+// phone's Back): set by whatever opened it, e.g. the Big jobs panel, so Back
+// returns there instead of to the page underneath. Cleared on every open.
+let taskDrawerReturnTo = null;
+window.setTaskDrawerReturn = (fn) => { taskDrawerReturnTo = typeof fn === "function" ? fn : null; };
+let taskDrawerWatched = false;
+function watchTaskDrawerClose(overlay) {
+  if (taskDrawerWatched) return;
+  taskDrawerWatched = true;
+  let wasOpen = overlay.style.display === "flex";
+  new MutationObserver(() => {
+    const open = overlay.style.display !== "none" && overlay.style.display !== "";
+    if (wasOpen && !open && taskDrawerReturnTo) {
+      const back = taskDrawerReturnTo;
+      taskDrawerReturnTo = null;
+      // A moment later, so the Back history has tidied up the panel's step first
+      setTimeout(() => { try { back(); } catch (e) {} }, 60);
+    }
+    wasOpen = open;
+  }).observe(overlay, { attributes: true, attributeFilter: ["style"] });
+}
+
 function openSkylightTaskDrawer(taskId = null, prefill = null) {
   const overlay = document.getElementById("skylight-task-drawer-overlay");
   if (!overlay) return;
+  watchTaskDrawerClose(overlay);
+  taskDrawerReturnTo = null;
 
   const headingEl = document.getElementById("task-drawer-heading");
   const submitBtn = document.getElementById("btn-drawer-submit");
@@ -1802,12 +1836,19 @@ function syncDrawerTypeUI() {
   if (timeField) timeField.hidden = !timed;
 }
 
+// "0 pts", "1 pt", "2 pts"
+function ptsLabel(n) {
+  const v = Number(n) || 0;
+  return `${v} ${v === 1 ? "pt" : "pts"}`;
+}
+
 function syncDrawerRewardUI() {
   const isMoney = (window.boardSettings || {}).gameMode === "money";
   const curr = (window.boardSettings || {}).currency || "£";
   document.getElementById("drawer-reward-mode-text").textContent = isMoney ? `Pocket Money (${curr})` : `Reward Points`;
-  document.getElementById("drawer-reward-display").textContent = !drawerRewardValue ? (isMoney ? "Nothing" : "No points")
-    : isMoney ? `${curr}${(drawerRewardValue / 10).toFixed(2)}` : `${drawerRewardValue} pts`;
+  document.getElementById("drawer-reward-display").textContent = isMoney
+    ? (!drawerRewardValue ? "Nothing" : `${curr}${(drawerRewardValue / 10).toFixed(2)}`)
+    : ptsLabel(drawerRewardValue);
   const minus = document.getElementById("btn-drawer-reward-minus");
   if (minus) minus.disabled = drawerRewardValue <= 0;
 }
@@ -2247,7 +2288,10 @@ function renderTasksSlotBar(grid) {
     });
   }
   const on = tasksSlotsOn(familyDayKey(new Date()) === getLocalDateKey(tasksSelectedDate));
-  bar.innerHTML = TASK_SLOTS.map(x => `<button type="button" class="tasks-slot-pill${on.has(x.key) ? " is-on" : ""}" data-slot-filter="${x.key}" aria-pressed="${on.has(x.key)}" title="${x.label}"><span aria-hidden="true">${x.icon}</span> <b class="tasks-slot-label">${x.label}</b></button>`).join("");
+  bar.innerHTML = TASK_SLOTS.map(x => {
+    const isOn = x.keys.some(k => on.has(k));
+    return `<button type="button" class="tasks-slot-pill${isOn ? " is-on" : ""}" data-slot-filter="${x.key}" aria-pressed="${isOn}" aria-label="${x.label}" title="${x.label}"><span aria-hidden="true">${x.icon}</span> <b class="tasks-slot-label" aria-hidden="true"><i class="tasks-slot-long">${x.label}</i><i class="tasks-slot-short">${x.short}</i></b></button>`;
+  }).join("");
 }
 
 function renderTasksFilterMenu() {

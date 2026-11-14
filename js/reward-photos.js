@@ -165,7 +165,7 @@
   // A big number, a slider you drag (a tick at each step, rising with the
   // number; nothing when you let go) and shortcuts underneath
   function sliderHtml(o) {
-    const fmt = (v) => (o.money ? `${o.currency}${Number(v).toFixed(v % 1 ? 2 : 0)}` : `${v} pts`);
+    const fmt = (v) => (o.money ? `${o.currency}${Number(v).toFixed(v % 1 ? 2 : 0)}` : `${v} ${Number(v) === 1 ? "pt" : "pts"}`);
     return `
       <div class="rw-points">
         <output class="rw-points-value" data-pts-value>${fmt(o.value)}</output>
@@ -179,7 +179,7 @@
     if (!box) return;
     const slider = box.querySelector("[data-pts-slider]");
     const out = box.querySelector("[data-pts-value]");
-    const fmt = (v) => (o.money ? `${o.currency}${Number(v).toFixed(v % 1 ? 2 : 0)}` : `${v} pts`);
+    const fmt = (v) => (o.money ? `${o.currency}${Number(v).toFixed(v % 1 ? 2 : 0)}` : `${v} ${Number(v) === 1 ? "pt" : "pts"}`);
     const paint = (v) => {
       out.textContent = fmt(v);
       const pct = ((v - o.min) / (o.max - o.min)) * 100;
