@@ -5808,6 +5808,19 @@ body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background:
 #event-modal .drawer-weekday-pills .drawer-pill-segment { padding: 8px 0; min-width: 0; font-size: 0.85rem; }
 #event-modal .ev-repeat-note { margin: 8px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #64748b); }
 #event-modal .ev-time-row-nice { margin-top: 8px; display: flex; align-items: flex-end; gap: 8px; }
+/* Until (15 Nov): all day, once, over several days */
+#event-modal .ev-span-row { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#event-modal .ev-span-row[hidden] { display: none; }
+#event-modal .ev-span-row .ev-field-label { flex: 0 0 100%; }
+#event-modal .ev-span-row .drawer-date-button { flex: 1 1 100%; min-width: 0; }
+#event-modal .ev-span-days { font-weight: 700; color: var(--text-primary, #0f172a); white-space: nowrap; }
+#event-modal .ev-span-days:empty { display: none; }
+#event-modal .ev-span-clear {
+  min-height: 40px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--card-border, #e2e8f0); background: transparent;
+  color: var(--text-secondary, #64748b); font: 600 0.85rem var(--font-body); cursor: pointer;
+}
+#event-modal .ev-span-clear[hidden] { display: none; }
 #event-modal .ev-time-row-nice .ev-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 #event-modal .ev-time-row-nice .ev-time-arrow { flex: none; padding-bottom: 12px; color: var(--text-secondary, #94a3b8); }
 #event-modal .ev-time-row-nice .ev-field > input { width: 100%; min-width: 0; }

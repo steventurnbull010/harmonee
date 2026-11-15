@@ -343,6 +343,9 @@ function eventWhenShort(evt) {
     const h = Math.floor(mins / 60) % 24, mm = Math.round(mins % 60);
     timeText = `${h % 12 === 0 ? 12 : h % 12}${mm ? ":" + String(mm).padStart(2, "0") : ""}${h >= 12 ? "pm" : "am"}`;
   }
+  // Several days: "Fri 20 Nov, 4 days"
+  const span = window.eventSpan ? window.eventSpan(evt) : null;
+  if (span) return `${dayText}, ${span.days} days`;
   return dayText ? `${dayText}, ${timeText}` : timeText;
 }
 window.eventWhenShort = eventWhenShort;
@@ -378,6 +381,16 @@ function openEventQuickView(evt, dateStr = null) {
     const same = (Math.floor(start / 60) % 24 >= 12) === (Math.floor(end / 60) % 24 >= 12);
     timeText = `${clock(start, !same)} – ${clock(end, true)}`;
   }
+  // Several days: "Fri 20 – Mon 23 Nov" and "All day · 4 days"
+  const span = window.eventSpan ? window.eventSpan(evt) : null;
+  let spanDayLabel = "";
+  if (span) {
+    const pk = (k) => { const [y, m, dd] = k.split("-").map(Number); return new Date(y, m - 1, dd); };
+    const a = pk(span.start), b = pk(span.end);
+    const short = (x, withMonth) => `${DAYS[x.getDay()].slice(0, 3)} ${x.getDate()}${withMonth ? ` ${MONTHS[x.getMonth()].slice(0, 3)}` : ""}`;
+    spanDayLabel = `${short(a, a.getMonth() !== b.getMonth())} – ${short(b, true)}`;
+    timeText = `All day · ${span.days} days`;
+  }
 
   // Who
   const isFamily = (n) => /^(family|whole family|everyone)$/i.test(n);
@@ -388,7 +401,7 @@ function openEventQuickView(evt, dateStr = null) {
   $("event-pop-swatch").style.background = firstColor;
   const shown = (d && typeof eventForDay === "function") ? eventForDay(evt, d) : evt; // "· turns 9" on birthdays
   $("event-pop-title").textContent = `${evt.icon || "📅"} ${shown.title || "Event"}`;
-  $("event-pop-when").textContent = `${dayLabel} · ${timeText}`;
+  $("event-pop-when").textContent = `${spanDayLabel || dayLabel} · ${timeText}`;
   $("event-pop-who").innerHTML = named.length
     ? `<span class="task-pop-avatars">${named.map(n => { const f = memberFace(n); return `<span class="task-pop-avatar${f.cls}" style="background:${getMemberPalette(n).primary};${f.style}">${f.html}</span>`; }).join("")}</span><span>${escapeHtml(named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} & ${named[named.length - 1]}`)}</span>`
     : `<span class="task-pop-avatar" style="background:#f59e0b">👪</span><span>Everyone</span>`;
@@ -531,9 +544,13 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   let currentMinute = "30";
   let currentDay = "Tuesday";
   let currentDateKey = getLocalDateKey(new Date());
+  // Last day of a multi-day event (all day, once), or null for one day
+  let currentEndKey = null;
 
   // 1. Event Date & Day Helper
   const setDate = (target) => {
+    // A multi-day event moved to another start keeps its number of days
+    const spanLen = currentEndKey ? window.dayNumOfKey(currentEndKey) - window.dayNumOfKey(currentDateKey) : 0;
     let dObj;
     if (target instanceof Date) {
       dObj = new Date(target);
@@ -547,6 +564,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     dObj.setHours(0, 0, 0, 0);
 
     currentDateKey = getLocalDateKey(dObj);
+    if (currentEndKey) currentEndKey = spanLen > 0 ? window.keyOfDayNum(window.dayNumOfKey(currentDateKey) + spanLen) : null;
     const dayOfWeekIdx = dObj.getDay() === 0 ? 6 : dObj.getDay() - 1;
     const dayName = weekDaysList[dayOfWeekIdx] || "Tuesday";
     currentDay = dayName;
@@ -1002,6 +1020,24 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       note.hidden = !text;
     }
     const allDay = durationSelect && durationSelect.value === "All Day";
+    // Until: all day and once (not a birthday) can run over several days
+    const spanRow = document.getElementById("event-span-row");
+    const canSpan = allDay && rep === "none" && !(document.getElementById("event-birthday-toggle") || {}).checked;
+    if (spanRow) {
+      spanRow.hidden = !canSpan;
+      const days = currentEndKey ? window.dayNumOfKey(currentEndKey) - window.dayNumOfKey(currentDateKey) + 1 : 1;
+      const endLabel = document.getElementById("event-end-date-label");
+      const daysEl = document.getElementById("event-span-days");
+      const clear = document.getElementById("event-span-clear");
+      if (endLabel) {
+        if (days > 1) {
+          const [ey, em, ed] = currentEndKey.split("-").map(Number);
+          endLabel.textContent = new Date(ey, em - 1, ed).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        } else endLabel.textContent = "Same day";
+      }
+      if (daysEl) daysEl.textContent = days > 1 ? `${days} days` : "";
+      if (clear) clear.hidden = days <= 1;
+    }
     document.querySelectorAll("#event-time-pills [data-time-mode]").forEach(b => {
       const on = (b.getAttribute("data-time-mode") === "allday") === allDay;
       b.classList.toggle("active", on);
@@ -1017,6 +1053,22 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     const [y, mo, dd] = String(currentDateKey).split("-").map(Number);
     window.openDatePicker({ value: new Date(y, mo - 1, dd), onSelect: (picked) => { setDate(picked); syncEventPills(); } });
   };
+  const endDateBtn = document.getElementById("event-end-date-btn");
+  if (endDateBtn) endDateBtn.onclick = () => {
+    if (typeof window.openDatePicker !== "function") return;
+    const [y, mo, dd] = String(currentEndKey || currentDateKey).split("-").map(Number);
+    window.openDatePicker({ value: new Date(y, mo - 1, dd), onSelect: (picked) => {
+      const key = getLocalDateKey(picked);
+      // On or before the start: just the one day
+      currentEndKey = key > currentDateKey ? key : null;
+      if (currentEndKey && window.dayNumOfKey(currentEndKey) - window.dayNumOfKey(currentDateKey) >= 366) {
+        currentEndKey = window.keyOfDayNum(window.dayNumOfKey(currentDateKey) + 365);
+      }
+      syncEventPills();
+    } });
+  };
+  const spanClear = document.getElementById("event-span-clear");
+  if (spanClear) spanClear.onclick = () => { currentEndKey = null; syncEventPills(); };
   document.querySelectorAll("#event-weekdays [data-weekday]").forEach(b => {
     b.onclick = () => {
       // The next one from today (never in the past)
@@ -1036,6 +1088,8 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     };
   });
 
+  // Set after the date, so loading the event doesn't move its last day
+  currentEndKey = (evt && evt.endDate && window.eventSpan && window.eventSpan(evt)) ? window.eventSpan(evt).end : null;
   syncWhenUI();
 
   // Extras: countdown and birthday. A birthday repeats every year, all day.
@@ -1164,6 +1218,8 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       };
       // Extras (only stored when switched on, so old events stay as they were)
       if (countdownToggle && countdownToggle.checked) newEvt.countdown = true;
+      // Several days: all day, once, and the last day after the first
+      if (currentEndKey && currentEndKey > date && /all\s*day/i.test(duration) && repeat === "none" && !(birthdayToggle && birthdayToggle.checked)) newEvt.endDate = currentEndKey;
       if (birthdayToggle && birthdayToggle.checked) {
         newEvt.birthday = true;
         newEvt.repeat = "annually";
@@ -1333,6 +1389,11 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
   let dayCounter = 1;
   let nextMonthDay = 1;
   const totalCells = (firstDayDow + totalDays) > 35 ? 42 : 35;
+  // Multi-day events: a piece in each day they cover, in the same lane across
+  // each week row, so they read as one bar (title on the row's first piece)
+  let monthSpanSrc = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => e && e.endDate);
+  if (activeCalendarMemberFilters !== null) monthSpanSrc = monthSpanSrc.filter(e => isMemberSelected(e.member));
+  let rowSpans = { bars: [], lanes: 0 };
 
   for (let cellIdx = 0; cellIdx < totalCells; cellIdx++) {
     let cellDate;
@@ -1356,6 +1417,23 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     const dayDowIdx = cellDate.getDay() === 0 ? 6 : cellDate.getDay() - 1;
     const dayName = weekDayNames[dayDowIdx];
     const dateStr = getLocalDateKey(cellDate);
+    if (cellIdx % 7 === 0 && window.spanLanes) {
+      const rowKeys = Array.from({ length: 7 }, (_, k) => getLocalDateKey(new Date(cellDate.getFullYear(), cellDate.getMonth(), cellDate.getDate() + k)));
+      rowSpans = window.spanLanes(rowKeys, monthSpanSrc);
+    }
+    const col = cellIdx % 7;
+    let spanPiecesHtml = "";
+    for (let lane = 0; lane < rowSpans.lanes; lane++) {
+      const bar = rowSpans.bars.find(b => b.lane === lane && col >= b.from && col < b.from + b.len);
+      if (!bar) { spanPiecesHtml += `<div class="month-span-spacer" aria-hidden="true"></div>`; continue; }
+      const e = bar.evt;
+      const people = (e.member || "Family").split(/&|,|\band\b|\+/i).map(x => x.trim()).filter(Boolean);
+      const pal = getMemberPalette(people[0] || "family");
+      const first = col === bar.from, last = col === bar.from + bar.len - 1;
+      const opensHere = first && !bar.startsBefore, endsHere = last && !bar.endsAfter;
+      const sd = window.eventSpanDay(e, dateStr);
+      spanPiecesHtml += `<div class="month-mini-event month-span${opensHere ? " span-start" : ""}${endsHere ? " span-end" : ""}${first ? " span-row-first" : ""}" data-event-id="${escapeHtml(String(e.id))}" style="background: ${pal.lightBg}; color: ${pal.text}; border-color: ${pal.border}; border-left-color: ${opensHere ? pal.primary : pal.border};" title="${escapeHtml(e.title)}${sd ? ` (day ${sd.day} of ${sd.days})` : ""}">${first ? `<span class="mini-icon">${escapeHtml(e.icon || "📅")}</span><span class="mini-title">${escapeHtml(e.title)}</span>` : `<span class="mini-title month-span-quiet">${escapeHtml(e.title)}</span>`}</div>`;
+    }
 
     let dayEvents = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => isEventOnDate(e, dateStr, dayName, cellDate)).map(e => eventForDay(e, cellDate));
     if (activeCalendarMemberFilters !== null) {
@@ -1434,8 +1512,9 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     // Chores are cleanly summarized at the bottom as a count badge (e.g. ✓ 5/5).
     const cellItems = [];
 
-    // 1. Scheduled Events (Tutors, lessons, rehearsals, activities)
-    dayEvents.forEach(evt => {
+    // 1. Scheduled Events (Tutors, lessons, rehearsals, activities); multi-day
+    //    ones are the bars above
+    dayEvents.filter(evt => !evt.spanDays).forEach(evt => {
       const mList = (evt.member || "Family").split(/&|,|\band\b|\+/i).map(s => s.trim()).filter(Boolean);
       const pal = getMemberPalette(mList[0] || "family");
       cellItems.push({
@@ -1485,12 +1564,13 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
     }
 
     cellsHtml += `
-      <div class="calendar-month-cell ${isOtherMonth ? 'is-other-month' : ''} ${isToday ? 'is-today' : ''}" 
+      <div class="calendar-month-cell ${isOtherMonth ? 'is-other-month' : ''} ${isToday ? 'is-today' : ''}${spanPiecesHtml ? ' has-spans' : ''}" 
            data-date-str="${dateStr}"
            title="Tap to open ${dayName}, ${dayNum} in Day View">
         <div class="month-cell-header">
           <span class="month-cell-date">${dayNum}</span>
         </div>
+        ${spanPiecesHtml && currentCalendarContentFilter !== "chores" ? `<div class="month-span-lanes">${spanPiecesHtml}</div>` : ""}
         ${holidaySnippet}${dinnerSnippet}
         ${monthContentHtml}
       </div>
@@ -1540,7 +1620,9 @@ function renderCalendarMonthView(gridContainer, anchorDate, today, familyEventsL
 function fitMonthCells(grid) {
   const cells = grid.querySelectorAll(".calendar-month-cell");
   cells.forEach(cell => {
-    const chips = [...cell.querySelectorAll(".month-mini-event")];
+    // Multi-day pieces always show (hiding some would break the bar), so only
+    // the day's own events fold into "+N more"
+    const chips = [...cell.querySelectorAll(".month-cell-events .month-mini-event")];
     const badge = cell.querySelector(".month-more-badge");
     if (!badge) return;
     const base = Number(badge.getAttribute("data-extra")) || 0;
@@ -2055,6 +2137,7 @@ function renderWeekCalendar() {
     const allDayEvents = [];
     const timedEvents = [];
     dayEvents.forEach(evt => {
+      if (evt.spanDays) return; // multi-day: drawn as one bar across the all-day row
       const t = (evt.time || "").trim().toLowerCase();
       if (!t || t === "all day") {
         allDayEvents.push(evt);
@@ -2078,6 +2161,14 @@ function renderWeekCalendar() {
       colMeal
     });
   }
+
+  // Multi-day events: one bar each across the all-day row, above the day's own
+  // all-day items (each column leaves room for the bars on top)
+  const spanDayKeys = columnsData.map(c => c.colDateStr);
+  let spanSource = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => e && e.endDate);
+  if (activeCalendarMemberFilters !== null) spanSource = spanSource.filter(e => isMemberSelected(e.member));
+  const spanLayout = window.spanLanes ? window.spanLanes(spanDayKeys, spanSource) : { bars: [], lanes: 0 };
+  const spanBarsHtml = spanLayout.bars.map(b => window.spanBarHtml(b, spanDayKeys)).join("");
 
   // Generate HTML for Skylight continuous layout with dividing lines
   let colHeadersHtml = "";
@@ -2293,7 +2384,8 @@ function renderWeekCalendar() {
         <!-- All-Day Banners / Dinners Row -->
         <div class="skylight-trad-allday-row">
           <div class="skylight-gutter-allday-label">all-day</div>
-          <div class="skylight-allday-track">
+          <div class="skylight-allday-track${spanLayout.lanes ? " has-spans" : ""}" style="--cols:${dayCount};--lanes:${spanLayout.lanes}">
+            ${spanBarsHtml}
             ${allDayBannersHtml}
           </div>
         </div>

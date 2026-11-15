@@ -89,6 +89,91 @@ function showCalendarToast(message) {
 }
 window.showCalendarToast = showCalendarToast;
 
+// ---------------------------------------------------------------------------
+// Multi-day events (15 Nov): an all-day event that doesn't repeat can have an
+// endDate ("YYYY-MM-DD", after its date) and then shows on every day from its
+// date to its endDate. Devices on an older build just show the first day.
+// ---------------------------------------------------------------------------
+const MAX_SPAN_DAYS = 366;
+function dayNumOfKey(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ""));
+  return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000) : null;
+}
+function keyOfDayNum(n) {
+  const d = new Date(n * 86400000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+// { start, end, days } for an event that covers more than one day, else null
+function eventSpan(e) {
+  if (!e || !e.endDate || !e.date) return null;
+  const repeat = String(e.repeat || "none").toLowerCase();
+  if (repeat !== "none" && repeat !== "one-off") return null;
+  if (!/all\s*day/i.test(`${e.duration || ""} ${e.time || ""}`) && e.time) return null;
+  const start = getLocalDateKey(e.date);
+  const a = dayNumOfKey(start), b = dayNumOfKey(e.endDate);
+  if (a === null || b === null || b <= a) return null;
+  const days = Math.min(b - a + 1, MAX_SPAN_DAYS);
+  return { start, end: keyOfDayNum(a + days - 1), days };
+}
+// Which day of a span a date is: { day: 2, days: 4, first, last } or null
+function eventSpanDay(e, dateKey) {
+  const sp = eventSpan(e);
+  if (!sp) return null;
+  const n = dayNumOfKey(dateKey) - dayNumOfKey(sp.start);
+  if (!(n >= 0 && n < sp.days)) return null;
+  return { day: n + 1, days: sp.days, first: n === 0, last: n === sp.days - 1, start: sp.start, end: sp.end };
+}
+// Bars for multi-day events across a run of days in a row (a timeline's
+// all-day row, a week, a month's week row). dayKeys: consecutive days.
+// Each bar gets the first free lane, so a bar keeps one line all the way
+// across and two bars never overlap. Returns { bars, lanes }.
+function spanLanes(dayKeys, events) {
+  if (!dayKeys.length) return { bars: [], lanes: 0 };
+  const first = dayNumOfKey(dayKeys[0]), last = first + dayKeys.length - 1;
+  const bars = [];
+  (events || []).forEach(e => {
+    const sp = eventSpan(e);
+    if (!sp) return;
+    const a = dayNumOfKey(sp.start), b = dayNumOfKey(sp.end);
+    const from = Math.max(a, first), to = Math.min(b, last);
+    if (from > to) return;
+    bars.push({ evt: e, from: from - first, len: to - from + 1, startsBefore: a < first, endsAfter: b > last, days: sp.days });
+  });
+  bars.sort((x, y) => x.from - y.from || y.len - x.len || String(x.evt.title).localeCompare(String(y.evt.title)));
+  const laneEnds = [];
+  bars.forEach(bar => {
+    let lane = laneEnds.findIndex(end => end < bar.from);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(0); }
+    laneEnds[lane] = bar.from + bar.len - 1;
+    bar.lane = lane;
+  });
+  return { bars, lanes: laneEnds.length };
+}
+// One bar: "🏖️ Cornwall  (S)". Placed by the view with --from, --len, --lane
+// (and --cols); taps go to the calendar's usual event handler.
+function spanBarHtml(bar, dayKeys) {
+  const e = bar.evt;
+  const esc = (typeof escapeHtml === "function") ? escapeHtml : (x) => String(x == null ? "" : x);
+  const people = String(e.member || "Family").split(/&|,|\band\b|\+/i).map(x => x.trim()).filter(Boolean);
+  const pal = (n) => (typeof window.getMemberPalette === "function" ? window.getMemberPalette(n) : { primary: "#0284c7", lightBg: "#e0f2fe", border: "#7dd3fc", text: "#075985" });
+  const p1 = pal(people[0] || "Family"), p2 = people[1] ? pal(people[1]) : null;
+  const bg = p2 ? `linear-gradient(135deg, ${p1.lightBg} 0%, ${p1.lightBg} 48%, ${p2.lightBg} 52%, ${p2.lightBg} 100%)` : p1.lightBg;
+  const faces = people.slice(0, 3).map(n => `<span class="cal-span-face" style="background:${pal(n).primary}" aria-hidden="true">${esc(n.charAt(0).toUpperCase())}</span>`).join("");
+  const sp = eventSpan(e);
+  const fmt = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); };
+  const label = `${e.title}, ${fmt(sp.start)} to ${fmt(sp.end)}, ${sp.days} days${people.length ? `, ${people.join(" and ")}` : ""}`;
+  return `<div class="skylight-day-event-banner cal-span-bar${bar.startsBefore ? " starts-before" : ""}${bar.endsAfter ? " ends-after" : ""}" role="button" tabindex="0" data-event-id="${esc(e.id)}" data-date="${dayKeys[bar.from]}" aria-label="${esc(label)}" title="${esc(label)}" style="--from:${bar.from};--len:${bar.len};--lane:${bar.lane};background:${bg};border-color:${p1.border};color:${p1.text}">
+    <span class="cal-span-title">${bar.startsBefore ? `<span class="cal-span-more" aria-hidden="true">‹</span>` : ""}${esc(e.icon || "📅")} ${esc(e.title)}${e.source === "google" ? ` <span class="ev-g" title="From Google Calendar">G</span>` : ""}</span>
+    <span class="cal-span-faces">${faces}${bar.endsAfter ? `<span class="cal-span-more" aria-hidden="true">›</span>` : ""}</span>
+  </div>`;
+}
+window.spanLanes = spanLanes;
+window.spanBarHtml = spanBarHtml;
+window.eventSpan = eventSpan;
+window.eventSpanDay = eventSpanDay;
+window.dayNumOfKey = dayNumOfKey;
+window.keyOfDayNum = keyOfDayNum;
+
 // Determines if an event should be rendered on a specific calendar date/day
 function isEventOnDate(e, targetDateStr, dayName, targetDate) {
   if (!e) return false;
@@ -97,9 +182,12 @@ function isEventOnDate(e, targetDateStr, dayName, targetDate) {
   // One date of a repeating event moved somewhere else (js/calendar-drag.js)
   if (Array.isArray(e.skipDates) && targetDateStr && e.skipDates.includes(targetDateStr)) return false;
 
-  // 1. One-off (Does not repeat) - strictly matches the specific date
+  // 1. One-off (Does not repeat) - strictly matches the specific date,
+  //    or every day of a multi-day event
   if (repeat === "none" || repeat === "one-off") {
     if (eDateStr) {
+      const sp = eventSpan(e);
+      if (sp) return targetDateStr >= sp.start && targetDateStr <= sp.end;
       return eDateStr === targetDateStr;
     }
     // Fallback for legacy events created before explicit date picker
@@ -373,6 +461,11 @@ function eventForDay(e, dateObj) {
   const allDayByLength = /all\s*day/i.test(e.duration || "");
   const timeSaysAllDay = !e.time || /all\s*day/i.test(e.time);
   if (allDayByLength && !timeSaysAllDay) out = Object.assign({}, out, { time: "All Day" });
+  // A day of a multi-day event: which one, for drawing ("Day 2 of 4", bars)
+  if (e.endDate && dateObj instanceof Date) {
+    const sd = eventSpanDay(e, getLocalDateKey(dateObj));
+    if (sd) out = Object.assign({}, out, { spanDay: sd.day, spanDays: sd.days, spanStart: sd.start, spanEnd: sd.end, time: "All Day" });
+  }
   if (e.birthday && e.bornYear && dateObj instanceof Date) {
     const age = dateObj.getFullYear() - Number(e.bornYear);
     if (age >= 1 && age <= 130) out = Object.assign({}, out, { title: `${e.title} · turns ${age}` });

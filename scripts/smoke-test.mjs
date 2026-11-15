@@ -1609,6 +1609,96 @@ const PAGES = [
     if (one === "1 pts" || !/^(1 pt|\d+ pts)$/.test(one)) throw new Error(`points say "${one}"`);
     await p.click("#btn-task-drawer-back"); await p.waitForTimeout(800);
   }],
+  // Multi-day events (15 Nov, from Steven): one bar across their days in the
+  // timeline's all-day row, tablet Week and Month, "Day 2 of 4" in the phone
+  // lists; all-day cards on one line; the editor's Until; dragging moves both ends
+  ["multi-day", async (p) => {
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    await p.evaluate(() => {
+      const k = (n) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return window.getLocalDateKey(d); };
+      const add = [
+        { id: "md-trip", title: "Cornwall trip", date: k(-1), endDate: k(2), time: "All Day", duration: "All Day", repeat: "none", member: "Jo", icon: "🏖️" },
+        { id: "md-nana", title: "Nana staying", date: k(1), endDate: k(9), time: "All Day", duration: "All Day", repeat: "none", member: "Sam & Alex", icon: "👵" },
+        { id: "md-inset", title: "Inset day, no school for anyone", date: k(1), time: "All Day", duration: "All Day", repeat: "none", member: "Max", icon: "🏫" }
+      ];
+      window.saveFamilyEvents((window.familyEvents || []).filter(e => !String(e.id).startsWith("md-")).concat(add));
+    });
+    await goTo("calendar")(p);
+    const viewBefore = await p.evaluate(() => (typeof currentCalendarView !== "undefined" ? currentCalendarView : null));
+    const phone = p.__size === "phone";
+    const setView = async (v) => { await p.evaluate((v) => window.setCalendarView(v, new Date()), v); await p.waitForTimeout(500); };
+    const overlaps = (rects) => rects.some((a, i) => rects.some((b, j) => i < j && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1));
+    if (!phone) {
+      // 3 days (today, tomorrow, the day after): two bars, apart, inside the row
+      await setView("schedule");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-3days.png`) });
+      const tl = await p.evaluate(() => {
+        const track = document.querySelector(".skylight-allday-track");
+        const tr = track.getBoundingClientRect();
+        const bars = [...track.querySelectorAll(".cal-span-bar")].map(b => { const r = b.getBoundingClientRect(); return { id: b.dataset.eventId, left: r.left, right: r.right, top: r.top, bottom: r.bottom, h: r.height, cut: b.classList.contains("starts-before") }; });
+        const inset = [...document.querySelectorAll(".skylight-allday-col .skylight-card")].find(c => c.dataset.eventId === "md-inset");
+        const ir = inset && inset.getBoundingClientRect();
+        const below = ir && bars.every(b => ir.top >= b.bottom - 1 || ir.right <= b.left || ir.left >= b.right);
+        return { inTrack: bars.every(b => b.left >= tr.left - 1 && b.right <= tr.right + 1), bars, insetH: ir ? Math.round(ir.height) : null, below, sub: inset ? getComputedStyle(inset.querySelector(".skylight-card-sub")).display : null };
+      });
+      if (tl.bars.length !== 2) throw new Error(`3 days shows ${tl.bars.length} bars, not 2: ${JSON.stringify(tl.bars)}`);
+      if (!tl.inTrack || overlaps(tl.bars)) throw new Error(`3-day bars overlap or spill: ${JSON.stringify(tl.bars)}`);
+      if (!tl.bars.find(b => b.id === "md-trip").cut) throw new Error("the trip started yesterday but its bar doesn't show it carries on");
+      if (!(tl.insetH && tl.insetH <= 40)) throw new Error(`the one-day all-day card is ${tl.insetH}px tall (one line is up to 40)`);
+      if (tl.sub !== "none" || !tl.below) throw new Error(`all-day card isn't one line under the bars: ${JSON.stringify(tl)}`);
+      // Week: bars under the day names, above each day's list
+      await setView("week");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-week.png`) });
+      const wk = await p.evaluate(() => {
+        const bars = [...document.querySelectorAll(".cv-week-cols .cal-span-bar")].map(b => { const r = b.getBoundingClientRect(); return { id: b.dataset.eventId, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; });
+        const head = document.querySelector(".cv-col-head").getBoundingClientRect();
+        const firstCards = [...document.querySelectorAll(".cv-col-body")].map(b => b.firstElementChild && b.firstElementChild.getBoundingClientRect().top).filter(Boolean);
+        const lowest = Math.max(...bars.map(b => b.bottom));
+        return { bars, underHead: bars.every(b => b.top >= head.bottom - 1), clear: firstCards.every(t => t >= lowest - 1), dup: [...document.querySelectorAll(".cv-col-body [data-event-id^='md-trip'], .cv-col-body [data-event-id='md-nana']")].length };
+      });
+      if (!wk.bars.some(b => b.id === "md-trip") || overlaps(wk.bars)) throw new Error(`week bars missing or overlapping: ${JSON.stringify(wk.bars)}`);
+      if (!wk.underHead || !wk.clear || wk.dup) throw new Error(`week bars sit wrong: ${JSON.stringify(wk)}`);
+      // Month: a piece in each day, in the same lane across a week row
+      await setView("month");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-month.png`) });
+      const mo = await p.evaluate(() => {
+        const pieces = [...document.querySelectorAll(".month-span[data-event-id='md-nana']")].filter(x => !x.hidden);
+        const rows = {};
+        pieces.forEach(x => { const r = x.getBoundingClientRect(); const cell = x.closest(".calendar-month-cell").getBoundingClientRect(); (rows[Math.round(cell.top)] = rows[Math.round(cell.top)] || []).push(Math.round(r.top - cell.top)); });
+        return { n: pieces.length, level: Object.values(rows).every(tops => new Set(tops).size === 1) };
+      });
+      if (mo.n < 7 || !mo.level) throw new Error(`month pieces for a 9-day stay: ${JSON.stringify(mo)}`);
+    } else {
+      // Phones: the lists say which day of it
+      await setView("day");
+      await p.evaluate(() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1); window.setCalendarView("day", d); });
+      await p.waitForTimeout(400);
+      const labels = await p.$$eval(".cv-day-list .cv-card", els => els.map(e => e.textContent.replace(/\s+/g, " ").trim()));
+      if (!labels.some(t => /Day 3 of 4.*Cornwall/.test(t)) || !labels.some(t => /Day 1 of 9.*Nana/.test(t))) throw new Error(`phone day list: ${JSON.stringify(labels)}`);
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-day.png`) });
+      await setView("week");
+      await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-week.png`) });
+    }
+    // The editor: Until shows the last day and how many days; Just one day clears it
+    await p.evaluate(() => window.openEventModal(window.familyEvents.find(e => e.id === "md-nana")));
+    await p.waitForTimeout(400);
+    const ed = await p.evaluate(() => ({ shown: !document.getElementById("event-span-row").hidden, days: document.getElementById("event-span-days").textContent, end: document.getElementById("event-end-date-label").textContent }));
+    if (!ed.shown || ed.days !== "9 days" || ed.end === "Same day") throw new Error(`the editor's Until: ${JSON.stringify(ed)}`);
+    await p.evaluate(() => document.getElementById("event-span-row").scrollIntoView({ block: "center" }));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-editor.png`) });
+    await p.click("#event-span-clear");
+    if (await p.$eval("#event-span-days", el => el.textContent) !== "") throw new Error("Just one day didn't clear Until");
+    await p.click('#event-time-pills [data-time-mode="set"]');
+    if (!(await p.$eval("#event-span-row", el => el.hidden))) throw new Error("Until still shows for a timed event");
+    await p.evaluate(() => { const m = document.getElementById("event-modal"); if (m && m.open) m.close(); });
+    // Dragging the trip to start two days later moves its last day too
+    await p.evaluate(() => { const e = window.familyEvents.find(x => x.id === "md-trip"); const k = (n) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return window.getLocalDateKey(d); }; return window.moveCalendarEvent(e, e.date, k(1), null); });
+    await p.waitForTimeout(300);
+    const moved = await p.evaluate(() => { const e = window.familyEvents.find(x => x.id === "md-trip"); const k = (n) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return window.getLocalDateKey(d); }; return { ok: e.date === k(1) && e.endDate === k(4), date: e.date, end: e.endDate }; });
+    if (!moved.ok) throw new Error(`dragging the trip: ${JSON.stringify(moved)}`);
+    await p.evaluate(() => window.saveFamilyEvents(window.familyEvents.filter(e => !String(e.id).startsWith("md-"))));
+    await p.evaluate((v) => { if (v) window.setCalendarView(v, new Date()); }, viewBefore);
+  }],
   // Today at a glance never opens by itself: after the night clock wakes the
   // board, and after it's been left alone, it stays on the page it was on
   ["stays-put", async (p) => {

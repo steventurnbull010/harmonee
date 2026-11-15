@@ -69,11 +69,13 @@
         else if (v === "week") zones = [...grid.querySelectorAll(".skylight-day-box[data-date]:not(.skylight-next-week-box)")];
         else zones = [...grid.querySelectorAll(".skylight-time-col[data-date]")];
         const origin = item.closest(".calendar-month-cell, .skylight-day-box, .skylight-time-col, [data-date]");
-        const fromDate = origin ? zoneDate(origin) : (evt.date || null);
+        // A multi-day event moves by its first day: dropping it says where it starts
+        const span = window.eventSpan ? window.eventSpan(evt) : null;
+        const fromDate = span ? span.start : origin ? zoneDate(origin) : (evt.date || null);
         return {
           zones,
           origin: (v === "week" || v === "month") ? origin : null, // on a timeline the day can take another time
-          data: { evt, fromDate, geo: (v === "day" || v === "schedule") ? timeline(grid) : null, allDay: isAllDay(evt) }
+          data: { evt, fromDate, span, geo: (v === "day" || v === "schedule") ? timeline(grid) : null, allDay: isAllDay(evt) || !!span }
         };
       },
       hit(ctx, x, y, under) {
@@ -89,6 +91,7 @@
         const start = startAt(ctx, zone, y);
         if (start !== null) return `${dayLabel(k)} · ${clock(start)}`;
         const same = k === ctx.data.fromDate;
+        if (ctx.data.span) return same ? "Leave it here" : `Starts ${dayLabel(k)}`;
         return same ? "Leave it here" : `Move to ${dayLabel(k)}`;
       },
       scroller: () => document.getElementById("skylight-trad-body-scroll") || grid.querySelector(".skylight-schedule-scroll, .skylight-trad-body-scroll"),
@@ -134,6 +137,12 @@
 
     if (!repeats) {
       list[idx] = { ...evt, date: toDate, day: toDay, time: newTime };
+      // Several days: the last day moves by the same number of days
+      const sp = window.eventSpan ? window.eventSpan(evt) : null;
+      if (sp && dayChanged) {
+        const shift = window.dayNumOfKey(toDate) - window.dayNumOfKey(sp.start);
+        list[idx].endDate = window.keyOfDayNum(window.dayNumOfKey(sp.end) + shift);
+      }
     } else if (which === "one") {
       // Skip that date in the series, and put a one-off copy on the new one
       const skip = Array.isArray(evt.skipDates) ? evt.skipDates.slice() : [];

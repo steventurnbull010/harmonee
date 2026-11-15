@@ -63,8 +63,8 @@
   <link rel="stylesheet" href="css/meals.css?v=6e427bc3">
   <link rel="stylesheet" href="css/cook-timers.css?v=613379c4">
   <link rel="stylesheet" href="css/meal-screen.css?v=3b6750bd">
-  <link rel="stylesheet" href="css/calendar.css?v=ba5fe150">
-  <link rel="stylesheet" href="css/calendar-v2.css?v=7e1700ec">
+  <link rel="stylesheet" href="css/calendar.css?v=9d0a8667">
+  <link rel="stylesheet" href="css/calendar-v2.css?v=ab5910d1">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=091b4ac8">
   <link rel="stylesheet" href="css/rewards-v2.css?v=d3d72a35">
@@ -2225,6 +2225,16 @@
             <button type="button" class="drawer-pill-segment" data-time-mode="allday">All day</button>
             <button type="button" class="drawer-pill-segment" data-time-mode="set">Set a time</button>
           </div>
+          <!-- All day, once: it can run over several days (a holiday, a trip) -->
+          <div class="ev-span-row" id="event-span-row" hidden>
+            <span class="ev-field-label">Until</span>
+            <button type="button" class="drawer-date-button" id="event-end-date-btn" aria-describedby="event-span-days">
+              <span id="event-end-date-label">Same day</span>
+              <span class="drawer-date-button-change" aria-hidden="true">Change</span>
+            </button>
+            <span class="ev-span-days" id="event-span-days"></span>
+            <button type="button" class="ev-span-clear" id="event-span-clear" hidden>Just one day</button>
+          </div>
           <div class="ev-time-row ev-time-row-nice" id="event-time-row">
             <label class="ev-field">
               <span class="ev-field-label">Starts</span>
@@ -2431,8 +2441,8 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=79dbc45e"></script>
-  <script src="js/utils.js?v=5c606f25"></script>
+  <script src="js/build-info.js?v=a64b7eff"></script>
+  <script src="js/utils.js?v=0ae4664f"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=a5a66322"></script>
   <script src="js/board-sync.js?v=e08b297d"></script>
@@ -2457,8 +2467,8 @@
   <script src="js/rewards-page.js?v=932dad3f"></script>
   <script src="js/page-intro.js?v=780283aa"></script>
   <script src="js/google-calendar.js?v=6960b9a6"></script>
-  <script src="js/calendar-views.js?v=bc6945e4"></script>
-  <script src="js/calendar.js?v=7670bc11"></script>
+  <script src="js/calendar-views.js?v=2eff8d17"></script>
+  <script src="js/calendar.js?v=f01acba7"></script>
   <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
   <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
   <script src="js/event-chime.js?v=f2665b30"></script>
@@ -2467,7 +2477,7 @@
   <script src="js/quick-grabs.js?v=a641ad69"></script>
   <script src="js/grabs-panel.js?v=2ba899df"></script>
   <script src="js/item-drag.js?v=7b57cedf"></script>
-  <script src="js/calendar-drag.js?v=4950cc8c"></script>
+  <script src="js/calendar-drag.js?v=28961ee6"></script>
   <script src="js/buddy-art.js?v=f8c669b6"></script>
   <script src="js/buddies.js?v=9d881186"></script>
   <script src="js/voice-clips.js?v=ca7b34db"></script>

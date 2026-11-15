@@ -36,6 +36,9 @@ function world(events, answer) {
   win.showTaskMoveToast = (text, undo) => { win.toast = text; win.undo = undo; };
   vm.createContext(win);
   vm.runInContext(extract("js/utils.js", "getLocalDateKey"), win);
+  // Multi-day events (15 Nov): the span helpers isEventOnDate and the drag use
+  vm.runInContext("var MAX_SPAN_DAYS = 366;", win);
+  ["dayNumOfKey", "keyOfDayNum", "eventSpan"].forEach(n => vm.runInContext(extract("js/utils.js", n), win));
   vm.runInContext(extract("js/utils.js", "isEventOnDate"), win);
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "js", "calendar-drag.js"), "utf8"), win);
   return win;
@@ -90,6 +93,13 @@ const on = (win, evt, key) => { const [y, m, d] = key.split("-").map(Number); co
   w = world([tutor], "all");
   await w.moveCalendarEvent(w.familyEvents[0], "2026-11-10", "2026-11-10", 930);
   check("same day and time: nothing saved", w.saved, null);
+
+  // A 4-day trip (Fri 20 to Mon 23) dropped to start on Sun 22: ends Wed 25
+  const trip = { id: "trip", title: "Cornwall", date: "2026-11-20", endDate: "2026-11-23", time: "All Day", duration: "All Day", repeat: "none", member: "Jo" };
+  w = world([trip], "one");
+  await w.moveCalendarEvent(w.familyEvents[0], "2026-11-20", "2026-11-22", null);
+  check("multi-day: both ends move", [w.saved[0].date, w.saved[0].endDate, w.saved[0].day], ["2026-11-22", "2026-11-25", "Sunday"]);
+  check("multi-day: shows Sun to Wed", ["2026-11-21", "2026-11-22", "2026-11-25", "2026-11-26"].map(k => on(w, w.saved[0], k)), [false, true, true, false]);
 
   console.log(`${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

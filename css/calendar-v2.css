@@ -512,3 +512,91 @@ body.theme-dark .gcal-check-line { border-color: #334155; }
 #view-calendar .calendar-week-grid.view-month { height: calc(100vh - 160px); height: calc(100dvh - 160px); }
 /* Day view on tablets: a little room above the week strip (it sat on the card's top edge) */
 .skylight-trad-calendar-grid.cv-has-strip > .cv-strip { margin-top: 8px; }
+
+/* ==========================================================================
+   MULTI-DAY EVENTS AND ONE-LINE ALL-DAY CARDS (15 Nov, from Steven)
+   A multi-day event is one bar across its days (js/utils.js spanBarHtml),
+   in its own lane so it reads straight across. A bar that carries on past
+   the days shown has a square, dashed end and ‹ or ›. 8px spacing steps.
+   ========================================================================== */
+.cal-span-bar.skylight-day-event-banner {
+  --span-h: 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  height: var(--span-h); min-width: 0; padding: 0 8px;
+  border: 1.5px solid; border-radius: 8px; box-sizing: border-box;
+  font: 700 0.85rem/1 var(--font-body); overflow: hidden;
+}
+.cal-span-bar.skylight-day-event-banner:hover { transform: none; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
+.cal-span-bar:focus-visible { outline: 2px solid #0284c7; outline-offset: 2px; }
+.cal-span-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-span-faces { flex: none; display: flex; align-items: center; gap: 2px; }
+.cal-span-face {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff; font-size: 0.65rem; font-weight: 800;
+}
+.cal-span-more { font-weight: 800; opacity: 0.7; padding: 0 4px; }
+.cal-span-bar.starts-before { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; }
+.cal-span-bar.ends-after { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; }
+
+/* Timeline (Day, 3 days): bars laid over the all-day row; each day's own
+   all-day items start below them */
+.skylight-allday-track { position: relative; --span-h: 32px; --span-gap: 4px; --track-pr: 8px; }
+#view-calendar .skylight-allday-track.has-spans .skylight-allday-col {
+  padding-top: calc(8px + var(--lanes) * (var(--span-h) + var(--span-gap))) !important;
+}
+.skylight-allday-track .cal-span-bar {
+  position: absolute; z-index: 2;
+  top: calc(8px + var(--lane) * (var(--span-h) + var(--span-gap)));
+  left: calc((100% - var(--track-pr)) * var(--from) / var(--cols) + 8px);
+  width: calc((100% - var(--track-pr)) * var(--len) / var(--cols) - 16px);
+}
+.skylight-allday-track .cal-span-bar.starts-before { left: calc((100% - var(--track-pr)) * var(--from) / var(--cols)); width: calc((100% - var(--track-pr)) * var(--len) / var(--cols) - 8px); }
+.skylight-allday-track .cal-span-bar.ends-after { width: calc((100% - var(--track-pr)) * var(--len) / var(--cols) - 8px); }
+.skylight-allday-track .cal-span-bar.starts-before.ends-after { width: calc((100% - var(--track-pr)) * var(--len) / var(--cols)); }
+
+/* All-day cards on one line: the row already says all day */
+.skylight-allday-col .skylight-card { min-height: 0; align-items: center; }
+#view-calendar .skylight-allday-col .skylight-card { padding: 4px 8px !important; }
+.skylight-allday-col .skylight-card-sub { display: none; }
+.skylight-allday-col .skylight-card-main { min-width: 0; }
+.skylight-allday-col .skylight-card-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.skylight-allday-col .skylight-card-avatar-wrap .skylight-avatar { width: 24px; height: 24px; font-size: 0.7rem; }
+
+/* Phones, 3 days: narrow columns, so bars are a little shorter and smaller */
+@media (max-width: 680px) {
+  .days-3 .skylight-allday-track { --span-h: 28px; }
+  .days-3 .cal-span-bar.skylight-day-event-banner { font-size: 0.72rem; padding: 0 4px; gap: 4px; }
+  .days-3 .cal-span-faces { display: none; }
+}
+
+/* Tablet Week: bars under the day names (placed in px by placeWeekSpans);
+   each column's list starts below them */
+.cv-week-cols.has-spans { position: relative; --span-h: 32px; --span-gap: 4px; }
+.cv-week-cols .cal-span-bar { position: absolute; z-index: 2; top: calc(var(--span-top, 48px) + var(--lane) * (var(--span-h) + var(--span-gap))); }
+.cv-week-cols.has-spans .cv-col-body { padding-top: calc(var(--lanes) * (var(--span-h) + var(--span-gap))); }
+
+/* Month: a piece of the bar in each day, edge to edge where it carries on,
+   in the same lane across the week row (spacers hold the lane on days
+   without one). The title shows on the row's first piece. */
+.month-span-lanes { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.month-span-spacer { height: 18px; flex: none; }
+.calendar-month-cell .month-mini-event.month-span {
+  height: 18px; box-sizing: border-box; flex: none;
+  padding-top: 0; padding-bottom: 0; font-size: 0.68rem; line-height: 1;
+  border: 1px solid; border-left-width: 3.5px;
+  margin: 0 -8px; border-radius: 0; padding-left: 8px;
+}
+.calendar-month-cell .month-mini-event.month-span.span-start { margin-left: 0; border-top-left-radius: 5px; border-bottom-left-radius: 5px; padding-left: 6px; }
+.calendar-month-cell .month-mini-event.month-span.span-end { margin-right: 0; border-top-right-radius: 5px; border-bottom-right-radius: 5px; }
+.calendar-month-cell .month-mini-event.month-span:not(.span-start) { border-left-width: 0; }
+.calendar-month-cell .month-mini-event.month-span:not(.span-end) { border-right-width: 0; }
+.month-span-quiet { visibility: hidden; }
+/* A box with bars and nothing else room for: the count of its other
+   events sits beside the date, where it can't be pushed out of sight */
+.calendar-month-cell.has-spans.is-dots .month-more-row { position: absolute; top: 8px; left: 40px; }
+.calendar-month-cell.has-spans.is-dots.is-compact .month-more-row { top: 4px; }
+/* Short month boxes (kitchen tablet): slimmer bar pieces so two lanes fit */
+.calendar-month-cell.is-compact .month-span-lanes { gap: 1px; }
+.calendar-month-cell.is-compact .month-mini-event.month-span,
+.calendar-month-cell.is-compact .month-span-spacer { height: 15px; font-size: 0.62rem; }

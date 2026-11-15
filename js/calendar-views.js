@@ -52,6 +52,7 @@
 
   // "8:15am", "10am", "All day"
   function timeLabel(e) {
+    if (e && e.spanDays) return `Day ${e.spanDay} of ${e.spanDays}`; // a multi-day event
     if (isAllDay(e)) return "All day";
     const m = window.getEventMinutes ? window.getEventMinutes(e) : 0;
     const h = Math.floor(m / 60), mm = m % 60;
@@ -233,8 +234,16 @@
   // ---- Tablets and computers: Week, seven columns ----------------------------------------------
   function tabletWeekHtml(date) {
     const mon = mondayOf(date);
-    return `<div class="cv-week-cols">${Array.from({ length: 7 }, (_, i) => {
+    // Multi-day events: one bar each across the top of their days (placed by
+    // placeWeekSpans once the columns are on screen)
+    const keys = Array.from({ length: 7 }, (_, i) => keyOf(addDays(mon, i)));
+    let spanSrc = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).filter(e => e && e.endDate);
+    if (filters() !== null && typeof window.isMemberSelected === "function") spanSrc = spanSrc.filter(e => window.isMemberSelected(e.member));
+    const lay = window.spanLanes ? window.spanLanes(keys, spanSrc) : { bars: [], lanes: 0 };
+    const bars = lay.bars.map(b => window.spanBarHtml(b, keys)).join("");
+    return `<div class="cv-week-cols${lay.lanes ? " has-spans" : ""}" style="--lanes:${lay.lanes}">${bars}${Array.from({ length: 7 }, (_, i) => {
       const info = dayInfo(addDays(mon, i));
+      info.events = info.events.filter(e => !e.spanDays);
       return `<section class="cv-col ${info.isToday ? "is-today" : ""} ${info.isPast ? "is-past" : ""}" data-date="${info.ds}" data-day="${info.dayName}">
         <header class="cv-col-head">
           <span class="cv-col-name">${info.short}</span>
@@ -367,10 +376,38 @@
     if (view === "week") {
       grid.className = "calendar-week-grid cv-tablet-week";
       grid.innerHTML = tabletWeekHtml(date);
+      placeWeekSpans(grid);
       return true;
     }
     return false;
   }
+  // Week bars: from the first to the last of their columns, under the day
+  // names, measured from the columns themselves (the week can scroll sideways)
+  function placeWeekSpans(grid) {
+    const wrap = grid && grid.querySelector(".cv-week-cols.has-spans");
+    if (!wrap) return;
+    const cols = [...wrap.querySelectorAll(".cv-col")];
+    const head = cols[0] && cols[0].querySelector(".cv-col-head");
+    if (!head) return;
+    const top = cols[0].offsetTop + head.offsetTop + head.offsetHeight;
+    wrap.style.setProperty("--span-top", `${top}px`);
+    wrap.querySelectorAll(".cal-span-bar").forEach(bar => {
+      const from = Number(bar.style.getPropertyValue("--from")) || 0;
+      const len = Number(bar.style.getPropertyValue("--len")) || 1;
+      const a = cols[from], b = cols[Math.min(cols.length - 1, from + len - 1)];
+      if (!a || !b) return;
+      const inset = 8;
+      const left = a.offsetLeft + (bar.classList.contains("starts-before") ? 0 : inset);
+      const right = b.offsetLeft + b.offsetWidth - (bar.classList.contains("ends-after") ? 0 : inset);
+      bar.style.left = `${left}px`;
+      bar.style.width = `${Math.max(24, right - left)}px`;
+    });
+  }
+  let spanResizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(spanResizeTimer);
+    spanResizeTimer = setTimeout(() => placeWeekSpans(document.getElementById("calendar-week-grid")), 120);
+  });
   // Tablets' Day view: the week strip above the one-day timeline
   function stripAbove(grid) {
     if (!grid || isPhone()) return;
