@@ -246,3 +246,112 @@ body.theme-dark .list-starter-row { background: rgba(13, 148, 136, 0.15); color:
 .list-pick-chip-tick { flex: none; font-weight: 900; }
 body.theme-dark .list-pick-chip { background: #0f172a; color: #f8fafc; }
 body.theme-dark .list-pick-chip.is-on { background: color-mix(in srgb, var(--list-accent) 28%, #1e293b); color: #f8fafc; }
+
+/* ==========================================================================
+   Tablets and computers (16 Nov): more of the list on screen. My lists down
+   the side already shows each list's photo, so the open list's header is one
+   slim row (its name, how many, then Shop · Send · Edit), not a photo strip.
+   Phones keep the photo strip. Also 📷 beside + reads a photo of a list.
+   ========================================================================== */
+@media (min-width: 601px) {
+  .list-hero {
+    min-height: 0;
+    padding: 16px 24px;
+    align-items: center !important;
+    color: inherit;
+    background: none;
+    border-bottom: 1px solid var(--card-border, #e2e8f0);
+  }
+  .list-hero-kind { display: none; }
+  .list-hero .list-detail-titles { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; }
+  .list-hero .list-detail-title { color: var(--list-accent) !important; font-size: 1.5rem; text-shadow: none; }
+  .list-hero .list-detail-count { color: var(--text-secondary, #64748b); }
+  .list-hero .list-detail-send,
+  .list-hero .list-column-edit {
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+    background: var(--card-bg, #ffffff) !important;
+    color: var(--text-primary, #0f172a) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .list-hero .list-detail-send:hover,
+  .list-hero .list-column-edit:hover { background: color-mix(in srgb, var(--list-light) 60%, #ffffff) !important; }
+  .list-hero-main { background: var(--list-accent); color: #fff; box-shadow: none; }
+  .list-detail > .list-hero + * { margin-top: 8px; }
+  .list-detail .list-detail-sections { margin-top: 8px; }
+  body.theme-dark .list-hero { border-color: #334155; }
+  body.theme-dark .list-hero .list-detail-title { color: color-mix(in srgb, var(--list-accent) 70%, #ffffff) !important; }
+  body.theme-dark .list-hero .list-detail-send,
+  body.theme-dark .list-hero .list-column-edit { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+}
+@media (max-width: 900px) and (min-width: 601px) {
+  .list-hero { padding: 16px; }
+}
+/* Tighter aisles and rows on tablets (still 44px to tap) */
+@media (min-width: 601px) {
+  .list-detail-sections { gap: 8px; }
+  .list-detail-sections.is-aisled .list-section,
+  .list-detail-sections.is-packing .list-section { margin-bottom: 8px; }
+  .list-section-head { min-height: 44px; padding: 4px 0; }
+  .list-detail .list-row-check { min-height: 44px; padding: 4px 0; }
+}
+
+/* 📷 beside +: quiet, in the list's colour */
+.list-detail .list-column-add .list-add-photo,
+.list-column-add .list-add-photo {
+  background: transparent;
+  color: var(--list-accent);
+  border: 1.5px solid color-mix(in srgb, var(--list-accent) 45%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.list-column-add .list-add-photo:hover { background: color-mix(in srgb, var(--list-light) 70%, transparent); filter: none; }
+.list-column-add { gap: 8px; }
+.list-detail .list-column-add { gap: 8px; }
+.list-detail .list-column-add .list-add-ring { margin-right: 8px; }
+
+/* "Read 12 things from your photo": above the box in Add several */
+.list-item-photo-note {
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: #e0f2fe;
+  color: #075985;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.list-item-photo-note[hidden] { display: none; }
+body.theme-dark .list-item-photo-note { background: rgba(2, 132, 199, 0.18); color: #bae6fd; }
+
+/* "Add several" from a photo: a tick list, each with its words to change */
+.list-review { display: flex; flex-direction: column; gap: 8px; }
+.list-review[hidden], #list-item-text-group[hidden] { display: none; }
+.list-review-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.list-review-count { font-size: 0.9rem; font-weight: 700; color: var(--text-secondary, #64748b); }
+.list-review-all {
+  min-height: 40px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--card-border, #e2e8f0); background: transparent;
+  color: var(--text-primary, #0f172a); font: 700 0.85rem var(--font-body); cursor: pointer;
+}
+.list-review-items { display: flex; flex-direction: column; border: 1px solid var(--card-border, #e2e8f0); border-radius: 16px; padding: 0 16px; background: var(--card-bg, #fff); }
+.list-review-group + .list-review-group { border-top: 1px solid var(--card-border, #e2e8f0); }
+.list-review-aisle { padding: 12px 0 4px; font-size: 0.85rem; font-weight: 800; color: var(--text-secondary, #64748b); }
+.list-review-row { display: flex; align-items: center; gap: 16px; min-height: 48px; }
+.list-review-items > .list-review-row + .list-review-row,
+.list-review-group .list-review-row + .list-review-row { border-top: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent); }
+.list-review-tick { flex: none; width: 24px; height: 24px; margin: 0; accent-color: #0284c7; cursor: pointer; }
+.list-review-text {
+  flex: 1; min-width: 0; min-height: 40px; padding: 0 8px; margin-left: -8px;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  font: 500 1rem var(--font-body); color: var(--text-primary, #0f172a);
+}
+.list-review-text:hover { border-color: var(--card-border, #e2e8f0); }
+.list-review-text:focus { outline: none; border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+.list-review-row.is-off .list-review-text { color: var(--text-secondary, #94a3b8); text-decoration: line-through; }
+#btn-save-list-item:disabled { opacity: 0.5; cursor: default; }
+body.theme-dark .list-review-items { background: #0f172a; border-color: #334155; }
+body.theme-dark .list-review-group + .list-review-group, body.theme-dark .list-review-row + .list-review-row { border-color: #334155; }
+body.theme-dark .list-review-text, body.theme-dark .list-review-all { color: #f8fafc; }
+body.theme-dark .list-review-all { border-color: #334155; }

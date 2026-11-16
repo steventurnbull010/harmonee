@@ -835,6 +835,7 @@ function renderListDetail(list, index, justTicked) {
       <form class="list-column-add" data-add-item>
         <span class="list-add-ring" aria-hidden="true"></span>
         <input type="text" placeholder="${escapeHtml(addPlaceholder)}" aria-label="${escapeHtml(addPlaceholder)}" autocomplete="off" enterkeyhint="done">
+        ${window.MagicImport && window.MagicImport.available("list") ? `<button type="button" class="list-add-photo" data-list-photo aria-label="Add from a photo of a list" title="Add from a photo: a handwritten list, a whiteboard or a screenshot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></button>` : ""}
         <button type="button" data-open-add-panel aria-label="Add to ${escapeHtml(list.title)} (with nothing typed: add several at once)" title="Add (or, with nothing typed, add several at once)">+</button>
       </form>
       ${usualsHtml}
@@ -1002,6 +1003,12 @@ function onListsBoardClick(e) {
     openCreateListModal(listId);
     return;
   }
+  // 📷 A photo of a list (handwritten, a whiteboard, a screenshot): its items
+  // fill in "Add several", to check before adding (js/magic-import.js)
+  if (e.target.closest("[data-list-photo]")) {
+    if (window.MagicImport) window.MagicImport.pickListPhoto((items) => openAddListItemPanel(listId, "", { items }));
+    return;
+  }
   if (e.target.closest("[data-open-add-panel]")) {
     // Something typed: ＋ adds it to this list straight away, like Done on
     // the keyboard (on an iPhone it used to open the Add panel, needing a
@@ -1043,14 +1050,73 @@ function renderAddPanelListPicker() {
   const list = lists.find(l => l.id === addPanelListId);
   const heading = document.getElementById("list-item-title");
   if (heading) heading.textContent = list ? `Add to ${list.title}` : "Add Items";
+  renderListReview();
 }
 
-function openAddListItemPanel(listId, draft = "") {
+// ---- From a photo: a tick list to check (16 Nov) ---------------------------
+// Each thing read from the photo, ticked, with its words in a box to change.
+// Untick what's wrong; Add adds only the ticked ones. Groceries are grouped
+// by aisle, like the list itself.
+let listReviewItems = null; // [{ text, on }] while reviewing, else null
+function renderListReview() {
+  const wrap = document.getElementById("list-item-review");
+  const textGroup = document.getElementById("list-item-text-group");
+  const saveBtn = document.getElementById("btn-save-list-item");
+  const reviewing = Array.isArray(listReviewItems);
+  if (wrap) wrap.hidden = !reviewing;
+  if (textGroup) textGroup.hidden = reviewing;
+  if (!reviewing) { if (saveBtn) saveBtn.textContent = "Add"; return; }
+  const list = loadFamilyLists().find(l => l.id === addPanelListId);
+  const grocery = !!(list && window.Aisles && window.ListTypes && window.ListTypes.typeOf(list) === "shopping");
+  const row = (it, n) => `<label class="list-review-row${it.on ? "" : " is-off"}">
+      <input type="checkbox" class="list-review-tick" data-review-tick="${n}" ${it.on ? "checked" : ""} aria-label="Add ${escapeHtml(it.text || "this")}">
+      <input type="text" class="list-review-text" data-review-text="${n}" value="${escapeHtml(it.text)}" aria-label="Item ${n + 1}" autocomplete="off" enterkeyhint="done">
+    </label>`;
+  let html = "";
+  if (grocery) {
+    const groups = new Map(window.Aisles.AISLES.map(a => [a.key, []]));
+    listReviewItems.forEach((it, n) => groups.get(window.Aisles.aisleFor(it.text, list.aisles)).push(n));
+    html = window.Aisles.AISLES.filter(a => groups.get(a.key).length).map(a => `<div class="list-review-group">
+        <div class="list-review-aisle">${a.icon} ${escapeHtml(a.label)}</div>
+        ${groups.get(a.key).map(n => row(listReviewItems[n], n)).join("")}
+      </div>`).join("");
+  } else {
+    html = listReviewItems.map(row).join("");
+  }
+  const box = document.getElementById("list-review-items");
+  if (box) box.innerHTML = html;
+  syncListReviewCount();
+}
+function syncListReviewCount() {
+  if (!Array.isArray(listReviewItems)) return;
+  const on = listReviewItems.filter(it => it.on && it.text.trim()).length;
+  const all = listReviewItems.length;
+  const count = document.getElementById("list-review-count");
+  if (count) count.textContent = `${on} of ${all} ticked`;
+  const allBtn = document.getElementById("list-review-all");
+  if (allBtn) allBtn.textContent = listReviewItems.every(it => it.on) ? "Untick all" : "Tick all";
+  const list = loadFamilyLists().find(l => l.id === addPanelListId);
+  const saveBtn = document.getElementById("btn-save-list-item");
+  if (saveBtn) { saveBtn.textContent = on ? `Add ${on} to ${list ? list.title : "the list"}` : "Nothing ticked"; saveBtn.disabled = !on; }
+}
+
+function openAddListItemPanel(listId, draft = "", opts = {}) {
   const modal = document.getElementById("list-item-modal");
   if (!modal) return;
   addPanelListId = listId || GROCERIES_LIST_ID;
   const textarea = document.getElementById("list-item-text");
   textarea.value = draft;
+  // Read from a photo: a tick list to check instead of the box
+  const photoNote = document.getElementById("list-item-photo-note");
+  const read = Array.isArray(opts.items) ? opts.items.filter(t => String(t).trim()) : null;
+  if (photoNote) {
+    const n = read ? read.length : 0;
+    photoNote.textContent = `📷 Read ${n} thing${n === 1 ? "" : "s"} from your photo. Photos can be misread: untick anything that's wrong, or tap the words to change them.`;
+    photoNote.hidden = !read;
+  }
+  listReviewItems = read ? read.map(text => ({ text: String(text), on: true })) : null;
+  const saveBtnReset = document.getElementById("btn-save-list-item");
+  if (saveBtnReset) saveBtnReset.disabled = false;
   renderAddPanelListPicker();
 
   if (!modal.hasAttribute("data-wired")) {
@@ -1062,10 +1128,38 @@ function openAddListItemPanel(listId, draft = "") {
       addPanelListId = pill.getAttribute("data-pick-list");
       renderAddPanelListPicker();
     });
+    // The tick list: ticks, words changed, Untick all / Tick all
+    const review = document.getElementById("list-item-review");
+    review.addEventListener("change", (e) => {
+      const t = e.target.closest("[data-review-tick]");
+      if (!t || !listReviewItems) return;
+      const it = listReviewItems[Number(t.getAttribute("data-review-tick"))];
+      if (it) it.on = t.checked;
+      t.closest(".list-review-row").classList.toggle("is-off", !t.checked);
+      syncListReviewCount();
+    });
+    review.addEventListener("input", (e) => {
+      const t = e.target.closest("[data-review-text]");
+      if (!t || !listReviewItems) return;
+      const it = listReviewItems[Number(t.getAttribute("data-review-text"))];
+      if (it) it.text = t.value;
+      syncListReviewCount();
+    });
+    // Enter in a word box: done with that one, not Add
+    review.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.closest("[data-review-text]")) { e.preventDefault(); e.target.blur(); } });
+    document.getElementById("list-review-all").addEventListener("click", () => {
+      if (!listReviewItems) return;
+      const allOn = listReviewItems.every(it => it.on);
+      listReviewItems.forEach(it => { it.on = !allOn; });
+      renderListReview();
+    });
+    modal.addEventListener("close", () => { listReviewItems = null; });
     document.getElementById("list-item-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      const lines = document.getElementById("list-item-text").value
-        .split("\n").map(s => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+      const lines = Array.isArray(listReviewItems)
+        ? listReviewItems.filter(it => it.on).map(it => it.text.trim()).filter(Boolean)
+        : document.getElementById("list-item-text").value
+          .split("\n").map(s => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
       if (lines.length === 0) { document.getElementById("list-item-text").focus(); return; }
       if (!loadFamilyLists().some(l => l.id === addPanelListId)) return;
       // Keep the order they were typed in, at the top of the list (and no
@@ -1079,7 +1173,8 @@ function openAddListItemPanel(listId, draft = "") {
   }
 
   if (!modal.open) modal.showModal();
-  focusAfterPanelOpens(textarea, () => textarea.setSelectionRange(textarea.value.length, textarea.value.length));
+  // The tick list: no keyboard popping up (the words are there to tap if wrong)
+  if (!listReviewItems) focusAfterPanelOpens(textarea, () => textarea.setSelectionRange(textarea.value.length, textarea.value.length));
 }
 window.openAddListItemPanel = openAddListItemPanel;
 

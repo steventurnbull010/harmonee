@@ -992,6 +992,61 @@ const PAGES = [
   // Lists: type an item and tap ＋ and it's on the list (it used to open the
   // Add panel on a phone); ＋ with nothing typed opens the panel, whose list
   // chips show whole names
+  // 📷 beside + (16 Nov): a photo of a handwritten list fills in Add several
+  // to check; doubles and already-on-the-list things aren't added twice.
+  // Tablets and up: the open list's header is one slim row, not a photo.
+  ["list-photo", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { const b = document.querySelector('#lists-board [data-open-list="groceries"]'); if (b) b.click(); });
+    await p.waitForTimeout(300);
+    const head = await p.evaluate(() => {
+      const h = document.querySelector('#lists-board [data-list-id="groceries"] .list-hero');
+      const first = document.querySelector('#lists-board [data-list-id="groceries"] .list-row');
+      return { h: Math.round(h.getBoundingClientRect().height), firstRow: first ? Math.round(first.getBoundingClientRect().top) : null, photo: getComputedStyle(h).backgroundImage !== "none" };
+    });
+    if (p.__size !== "phone" && (head.h > 80 || head.photo)) throw new Error(`the list's header should be one slim row: ${JSON.stringify(head)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-slim.png`) });
+    await p.evaluate(() => { window.__SMOKE_AI = async (photo, kind) => (kind === "list" ? { isList: true, items: ["Oat milk", "eggs", "Eggs", "Bread <b>", "Ring the vet"] } : { events: [] }); });
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click('#lists-board [data-list-id="groceries"] [data-list-photo]')]);
+    await chooser.setFiles({ name: "list.png", mimeType: "image/png", buffer: png });
+    await p.waitForTimeout(800);
+    // A tick list to check: all ticked, grouped by aisle, words to change
+    const panel = await p.evaluate(() => ({
+      open: document.getElementById("list-item-modal").open,
+      texts: [...document.querySelectorAll("#list-review-items .list-review-text")].map(i => i.value).sort(),
+      ticked: document.querySelectorAll("#list-review-items .list-review-tick:checked").length,
+      aisles: document.querySelectorAll("#list-review-items .list-review-aisle").length,
+      box: !document.getElementById("list-item-text-group").hidden,
+      noteShown: !document.getElementById("list-item-photo-note").hidden,
+      btn: document.getElementById("btn-save-list-item").textContent
+    }));
+    if (!panel.open || panel.texts.join("|") !== "Bread|Oat milk|Ring the vet|eggs" || panel.ticked !== 4 || panel.box || !panel.noteShown || panel.aisles < 2 || panel.btn !== "Add 4 to Groceries")
+      throw new Error(`the photo didn't make a tick list to check: ${JSON.stringify(panel)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-photo-check.png`) });
+    // Untick "Ring the vet", change "eggs" to "Free range eggs", then Add
+    await p.evaluate(() => {
+      const rowOf = (t) => [...document.querySelectorAll("#list-review-items .list-review-row")].find(r => r.querySelector(".list-review-text").value === t);
+      rowOf("Ring the vet").querySelector(".list-review-tick").click();
+      const eggs = rowOf("eggs").querySelector(".list-review-text");
+      eggs.value = "Free range eggs";
+      eggs.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const btn = await p.$eval("#btn-save-list-item", b => b.textContent);
+    if (btn !== "Add 3 to Groceries") throw new Error(`after unticking one, the button says ${btn}`);
+    await p.click("#btn-save-list-item");
+    await p.waitForTimeout(400);
+    const after = await p.evaluate(() => { const g = (window.familyLists || []).find(l => l.id === "groceries") || {}; return (g.items || []).map(i => i.text); });
+    for (const want of ["Oat milk", "Free range eggs", "Bread"]) if (!after.includes(want)) throw new Error(`${want} wasn't added: ${after.join(", ")}`);
+    if (after.includes("Ring the vet") || after.includes("eggs")) throw new Error(`an unticked or changed item was added: ${after.join(", ")}`);
+    // A plain + afterwards has no photo note
+    await p.evaluate(() => window.openAddListItemPanel("groceries"));
+    await p.waitForTimeout(200);
+    const plain = await p.evaluate(() => ({ note: document.getElementById("list-item-photo-note").hidden, review: document.getElementById("list-item-review").hidden, box: !document.getElementById("list-item-text-group").hidden, btn: document.getElementById("btn-save-list-item").textContent }));
+    if (!plain.note || !plain.review || !plain.box || plain.btn !== "Add") throw new Error(`a plain Add several still shows the photo check: ${JSON.stringify(plain)}`);
+    await p.evaluate(() => { document.getElementById("list-item-modal").close(); delete window.__SMOKE_AI; });
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);

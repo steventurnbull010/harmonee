@@ -1,13 +1,14 @@
 // ============================================================================
 // MAGIC IMPORT (js/magic-import.js)
-// "📷 Snap a flyer" in the Calendar's ＋ menu (straight to the camera, like
-// Snap a recipe), or "📷 From a photo" in the Add Event panel: a photo of a
-// flyer, invite, school letter or screenshot, and harmonee reads it.
+// Photo at the top of Add Event (＋ on the Calendar): a photo of a flyer,
+// invite, school letter or screenshot, and harmonee reads it.
 //   - One event: the Add Event panel is filled in (title, date, time, place,
 //     notes, who it's for, an emoji) to check, then Add as usual.
 //   - Several (a term's dates, a fixture list): a tick list, "Add 3 to the
 //     calendar"; each can be opened and changed afterwards.
 //   - None: says so, with a tip for a better photo.
+// Also 📷 beside + on a list: a photo of a list (handwritten, a whiteboard,
+// a screenshot) fills in "Add several" with its items to check (js/lists.js).
 //
 // The reading is done by Google's Gemini through Firebase AI Logic (the
 // key stays with Firebase, never in the page). It's off until the board's
@@ -24,9 +25,10 @@
 // ============================================================================
 (function () {
   // AI Logic, App Check (Fraud Defense key, enforced) and billing are on.
-  // Each use has its own switch: recipes from a photo (since 10 Nov) and
-  // flyers to events (Snap a flyer, 10 Nov)
-  const AI_SWITCHED_ON = { recipe: true, events: true };
+  // Each use has its own switch: recipes from a photo (since 10 Nov), flyers
+  // to events (Snap a flyer, 10 Nov) and a photo of a list to its items
+  // (a handwritten shopping list, a whiteboard, a screenshot; 16 Nov)
+  const AI_SWITCHED_ON = { recipe: true, events: true, list: true };
   const AI_SDK = "https://www.gstatic.com/firebasejs/12.19.0";
   const MODEL = "gemini-3.8-flash";        // current Flash model on Firebase AI Logic (Nov 2026; gemini-2.5-flash is redirected from 1 Dec)
   const TIMEOUT_MS = 45000;
@@ -90,6 +92,20 @@
       "emoji: one emoji that suits the dish. isRecipe: false if the photos don't show a recipe."
     ].join("\n");
   }
+  // A list: a handwritten note, a whiteboard, a printed list or a screenshot (js/lists.js)
+  function listInstructions() {
+    return [
+      "You read photos of a family's lists: shopping lists, to-do lists, packing lists and wish lists. They may be handwritten notes, a whiteboard, a printed list or a screenshot.",
+      "items: one entry per thing on the list, in the order written, short and plain as written (\"Milk\", \"2 tins chopped tomatoes\", \"Ring the dentist\").",
+      "Fix obvious spelling. Leave out the list's heading, dates, prices, page numbers, crossed-out or ticked-off things, and anything that isn't an item.",
+      "If handwriting is hard to read, give your best reading.",
+      "isList: false if the photo doesn't show a list."
+    ].join("\n");
+  }
+  async function listSchema(ai) {
+    const S = ai.Schema;
+    return S.object({ properties: { isList: S.boolean(), items: S.array({ items: S.string() }) }, propertyOrdering: ["isList", "items"] });
+  }
   async function recipeSchema(ai) {
     const S = ai.Schema;
     return S.object({
@@ -151,11 +167,11 @@
       const backend = ai.getAI(app, { backend: new ai.GoogleAIBackend() });
       return ai.getGenerativeModel(backend, {
         model: MODEL,
-        systemInstruction: kind === "recipe" ? recipeInstructions() : instructions(),
+        systemInstruction: kind === "recipe" ? recipeInstructions() : kind === "list" ? listInstructions() : instructions(),
         // Reading a flyer needs little "thinking", and a short answer: keeps
         // each photo to about a penny (paid Gemini prices, Nov 2026)
         generationConfig: {
-          responseMimeType: "application/json", responseSchema: kind === "recipe" ? await recipeSchema(ai) : await schemaFor(ai),
+          responseMimeType: "application/json", responseSchema: kind === "recipe" ? await recipeSchema(ai) : kind === "list" ? await listSchema(ai) : await schemaFor(ai),
           temperature: 0.1, maxOutputTokens: kind === "recipe" ? 4096 : 2048,
           ...(ai.ThinkingLevel && ai.ThinkingLevel.LOW ? { thinkingConfig: { thinkingLevel: ai.ThinkingLevel.LOW } } : {})
         }
@@ -171,7 +187,7 @@
     const m = await model(kind);
     const res = await m.generateContent([
       ...photos.map(p => ({ inlineData: { mimeType: "image/jpeg", data: p.base64 } })),
-      { text: kind === "recipe" ? "Read the recipe in these photos." : "Find the events in this photo." }
+      { text: kind === "recipe" ? "Read the recipe in these photos." : kind === "list" ? "Read the list in this photo." : "Find the events in this photo." }
     ]);
     return JSON.parse(res.response.text());
   }
@@ -217,6 +233,57 @@
       problem({ title: "Couldn't read that one", lead: err && /too long|internet|connected/.test(err.message) ? err.message : "Something went wrong reading the photo. Try again in a moment." }, false);
       return null;
     }
+  }
+
+  // A list that came back: short plain items, no doubles, at most 60
+  function tidyList(a) {
+    if (!a || a.isList === false) return [];
+    const seen = new Set();
+    return (Array.isArray(a.items) ? a.items : []).map(v => clean(v, 80)).filter(t => {
+      const k = t.toLowerCase();
+      if (!t || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 60);
+  }
+
+  // A photo of a list -> its items to check, or null (it says why)
+  async function readList(file) {
+    const ticket = ++busy;
+    let photo;
+    try { photo = await shrink(file); }
+    catch (err) { problem({ title: "That isn't a photo", lead: err.message }, false); return null; }
+    reading(photo, "list");
+    if (window.isOffline && window.isOffline()) { problem({ title: "No internet", lead: "Reading a photo needs the internet. Try again when you're back online." }, false); return null; }
+    try {
+      const items = tidyList(await withTimeout(askAI(photo, "list")));
+      if (ticket !== busy) return null; // cancelled while reading
+      if (!items.length) { problem({ title: "No list found", lead: "Try a closer photo, straight on and in good light, with the whole list in it." }, false); return null; }
+      close();
+      return items;
+    } catch (err) {
+      if (ticket !== busy) return null;
+      console.warn("Magic Import couldn't read the list:", err);
+      problem({ title: "Couldn't read that one", lead: err && /too long|internet|connected/.test(err.message) ? err.message : "Something went wrong reading the photo. Try again in a moment." }, false);
+      return null;
+    }
+  }
+  // The camera or photo library, then the list's items to onItems
+  function pickListPhoto(onItems) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.hidden = true;
+    input.addEventListener("click", (e) => e.stopPropagation());
+    document.body.appendChild(input);
+    input.addEventListener("cancel", () => input.remove());
+    input.addEventListener("change", async () => {
+      input.remove();
+      if (!(input.files && input.files[0])) return;
+      const items = await readList(input.files[0]);
+      if (items && items.length) onItems(items);
+    });
+    input.click();
   }
 
   function withTimeout(promise) {
@@ -302,8 +369,8 @@
   function reading(photo, kind = "events") {
     show(`
       <div class="magic-import-photo"><img src="${photo.dataUrl}" alt=""><span class="magic-import-scan" aria-hidden="true"></span></div>
-      <h2 class="magic-import-title" id="magic-import-title">${kind === "recipe" ? "Reading your recipe…" : "Reading your photo…"}</h2>
-      <p class="magic-import-lead" role="status">${kind === "recipe" ? "Looking for the ingredients and method. This takes a few seconds." : "Looking for dates, times and places. This takes a few seconds."}</p>
+      <h2 class="magic-import-title" id="magic-import-title">${kind === "recipe" ? "Reading your recipe…" : kind === "list" ? "Reading your list…" : "Reading your photo…"}</h2>
+      <p class="magic-import-lead" role="status">${kind === "recipe" ? "Looking for the ingredients and method. This takes a few seconds." : kind === "list" ? "Looking for each thing on it. This takes a few seconds." : "Looking for dates, times and places. This takes a few seconds."}</p>
       <div class="magic-import-actions"><button type="button" class="magic-import-btn" data-mi-close>Cancel</button></div>`);
   }
 
@@ -527,5 +594,5 @@
 
   // Started from Photo at the top of Add Event (js/calendar.js)
 
-  window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, _tidy: tidy, _tidyRecipe: tidyRecipe };
+  window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, readList, pickListPhoto, _tidy: tidy, _tidyRecipe: tidyRecipe, _tidyList: tidyList };
 })();

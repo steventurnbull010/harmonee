@@ -79,7 +79,7 @@
   <link rel="stylesheet" href="css/tablet-fit.css?v=a4804eaf">
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
   <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
-  <link rel="stylesheet" href="css/lists-v3.css?v=f4855b9a">
+  <link rel="stylesheet" href="css/lists-v3.css?v=e143f289">
   <link rel="stylesheet" href="css/sheet.css?v=9776fb49">
   <link rel="stylesheet" href="css/magic-import.css?v=ab80c902">
   <link rel="stylesheet" href="css/meal-genie.css?v=326cd336">
@@ -601,7 +601,17 @@
         <h2 id="list-item-title" class="modal-title">Add Items</h2>
       </div>
       <form id="list-item-form" class="settings-form list-panel-form" novalidate>
-        <div class="drawer-field-group">
+        <p class="list-item-photo-note" id="list-item-photo-note" role="status" hidden></p>
+        <!-- From a photo: each thing it read, ticked, with its words to change
+             (untick what's wrong); like Skylight's Review List Items -->
+        <div class="list-review" id="list-item-review" hidden>
+          <div class="list-review-head">
+            <span class="list-review-count" id="list-review-count"></span>
+            <button type="button" class="list-review-all" id="list-review-all">Untick all</button>
+          </div>
+          <div class="list-review-items" id="list-review-items"></div>
+        </div>
+        <div class="drawer-field-group" id="list-item-text-group">
           <div class="drawer-section-label-row">
             <span class="drawer-section-icon">📝</span>
             <label class="drawer-section-label" for="list-item-text">Items</label>
@@ -2406,7 +2416,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=68b529ba"></script>
+  <script src="js/build-info.js?v=6b4e6676"></script>
   <script src="js/utils.js?v=0ae4664f"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=a5a66322"></script>
@@ -2423,7 +2433,7 @@
   <script src="js/sleep.js?v=c50d8e01"></script>
   <script src="js/grocery.js?v=f93c76e7"></script>
   <script src="js/list-types.js?v=ea9bb7f3"></script>
-  <script src="js/lists.js?v=4037ab13"></script>
+  <script src="js/lists.js?v=95eab024"></script>
   <script src="js/aisles.js?v=171f4f8e"></script>
   <script src="js/shop-mode.js?v=7d6e082d"></script>
   <script src="js/rewards.js?v=8b5c1e0c"></script>
@@ -2465,7 +2475,7 @@
   <script src="js/meals-phone.js?v=eda18f9e"></script>
   <script src="js/meal-ideas.js?v=9717439a"></script>
   <script src="js/recipe-browse.js?v=6a29db55"></script>
-  <script src="js/magic-import.js?v=cc98ab27"></script>
+  <script src="js/magic-import.js?v=106ef622"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
   <script src="js/meal-groceries.js?v=b934ab2d"></script>
