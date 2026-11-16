@@ -1,7 +1,7 @@
 // ============================================================================
 // MOVING EVENTS BY DRAGGING (js/calendar-drag.js)
 // Press and hold an event (or press and move it with a mouse), then drop it:
-//   - week view: on another day (same time);
+//   - week view (tablet columns, phone list): on another day (same time);
 //   - 3-day and day views: on a day and a time (15-minute steps; all-day
 //     events keep being all day);
 //   - month view: on another day.
@@ -66,9 +66,11 @@
         const v = view();
         let zones;
         if (v === "month") zones = [...grid.querySelectorAll(".calendar-month-cell[data-date-str]")];
-        else if (v === "week") zones = [...grid.querySelectorAll(".skylight-day-box[data-date]:not(.skylight-next-week-box)")];
+        // Week (js/calendar-views.js, since 11 Nov): the tablet's day columns,
+        // or the phone list's days (an empty day is a thin line, still a target)
+        else if (v === "week") zones = [...grid.querySelectorAll(".cv-col[data-date], .cv-week-day[data-date], .skylight-day-box[data-date]:not(.skylight-next-week-box)")];
         else zones = [...grid.querySelectorAll(".skylight-time-col[data-date]")];
-        const origin = item.closest(".calendar-month-cell, .skylight-day-box, .skylight-time-col, [data-date]");
+        const origin = item.closest(".calendar-month-cell, .cv-col, .cv-week-day, .skylight-day-box, .skylight-time-col, [data-date]");
         // A multi-day event moves by its first day: dropping it says where it starts
         const span = window.eventSpan ? window.eventSpan(evt) : null;
         const fromDate = span ? span.start : origin ? zoneDate(origin) : (evt.date || null);

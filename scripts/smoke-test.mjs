@@ -1699,6 +1699,45 @@ const PAGES = [
     await p.evaluate(() => window.saveFamilyEvents(window.familyEvents.filter(e => !String(e.id).startsWith("md-"))));
     await p.evaluate((v) => { if (v) window.setCalendarView(v, new Date()); }, viewBefore);
   }],
+  // Week view: press, hold and drag an event to another day (16 Nov, from
+  // Steven); it keeps its time. Tablet columns and the phone's list.
+  ["week-drag", async (p) => {
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    const keys = await p.evaluate(() => {
+      const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+      const k = (n) => { const x = new Date(d); x.setDate(d.getDate() + n); return window.getLocalDateKey(x); };
+      window.saveFamilyEvents((window.familyEvents || []).filter(e => e.id !== "wk-drag").concat([{ id: "wk-drag", title: "Piano lesson", date: k(1), time: "10:00", duration: "30 mins", repeat: "none", member: "Alex", icon: "🎹" }]));
+      return { from: k(1), to: k(3) };
+    });
+    await goTo("calendar")(p);
+    const viewBefore = await p.evaluate(() => (typeof currentCalendarView !== "undefined" ? currentCalendarView : null));
+    await p.evaluate(() => window.setCalendarView("week", new Date()));
+    await p.waitForTimeout(500);
+    // Phones fold away days gone by: open them so both days are in the list
+    const past = await p.$("[data-cv-past][aria-expanded='false']");
+    if (past) { await past.click(); await p.waitForTimeout(300); }
+    const card = p.locator('[data-event-id="wk-drag"]').first();
+    await card.scrollIntoViewIfNeeded();
+    const a = await card.boundingBox();
+    const target = p.locator(`.cv-col[data-date="${keys.to}"], .cv-week-day[data-date="${keys.to}"]`).first();
+    await target.scrollIntoViewIfNeeded();
+    const a2 = await card.boundingBox();
+    const b = await target.boundingBox();
+    if (!a2 || !b) throw new Error("the card or the day to drop it on isn't on screen");
+    const sx = a2.x + a2.width / 2, sy = a2.y + a2.height / 2, tx = b.x + b.width / 2, ty = b.y + Math.min(b.height / 2, 40);
+    await p.mouse.move(sx, sy);
+    await p.mouse.down();
+    await p.waitForTimeout(400); // press and hold
+    for (let i = 1; i <= 12; i++) { await p.mouse.move(sx + (tx - sx) * i / 12, sy + (ty - sy) * i / 12); await p.waitForTimeout(20); }
+    await p.waitForTimeout(150);
+    await p.mouse.up();
+    await p.waitForTimeout(500);
+    const moved = await p.evaluate(() => { const e = window.familyEvents.find(x => x.id === "wk-drag"); return { date: e.date, time: e.time }; });
+    if (moved.date !== keys.to || moved.time !== "10:00") throw new Error(`dragging in Week: wanted ${keys.to} at 10:00, got ${JSON.stringify(moved)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-week-drag-dropped.png`) });
+    await p.evaluate(() => window.saveFamilyEvents(window.familyEvents.filter(e => e.id !== "wk-drag")));
+    await p.evaluate((v) => { if (v) window.setCalendarView(v, new Date()); }, viewBefore);
+  }],
   // Today at a glance never opens by itself: after the night clock wakes the
   // board, and after it's been left alone, it stays on the page it was on
   ["stays-put", async (p) => {
