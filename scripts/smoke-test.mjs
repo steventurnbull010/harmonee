@@ -424,20 +424,20 @@ const PAGES = [
       await window.MagicImport.readPhoto(new File([blob], "flyer.png", { type: "image/png" }));
       await new Promise(r => setTimeout(r, 300));
     }, answer);
-    // Switched on (10 Nov): the button shows in Add Event, as "📷 From a photo"
-    const onShown = await p.evaluate(async () => { delete window.__SMOKE_AI; window.openEventModal(); await new Promise(r => setTimeout(r, 100)); const b = document.getElementById("btn-event-from-photo"); return !b.hidden && /From a photo/.test(b.textContent); });
-    if (!onShown) throw new Error("no 📷 From a photo button in Add Event");
+    // Switched on: Photo shows at the top of Add Event (Type · Photo · Talk, 16 Nov)
+    const onShown = await p.evaluate(async () => { delete window.__SMOKE_AI; window.openEventModal(); await new Promise(r => setTimeout(r, 100)); const b = document.getElementById("event-way-photo"); return !b.hidden && b.offsetParent !== null; });
+    if (!onShown) throw new Error("no Photo at the top of Add Event");
     await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
-    // 📷 Snap a flyer in the Calendar's ＋ menu: straight to the photo picker
+    // ＋ opens Add Event; Photo there goes straight to the photo picker
     await p.evaluate(() => window.switchSkylightView("calendar"));
     await p.waitForTimeout(300);
     await p.click("#btn-floating-add-calendar");
-    await p.waitForTimeout(300);
-    if (!(await p.locator("#fab-action-snap-flyer").isVisible())) throw new Error("no Snap a flyer in the ＋ menu");
+    await p.waitForTimeout(400);
+    if (!(await p.locator("#event-way-photo").isVisible())) throw new Error("＋ didn't open Add Event with Photo at the top");
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-snap-menu.png`) });
     await p.evaluate(() => { window.__SMOKE_AI = async () => ({ events: [{ title: "Book fair", date: (() => { const d = new Date(); d.setDate(d.getDate() + 9); return window.getLocalDateKey(d); })(), startTime: "15:30", allDay: false, people: [] }] }); });
     const pngFlyer = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-    const [flyerChooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#fab-action-snap-flyer")]);
+    const [flyerChooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#event-way-photo")]);
     await flyerChooser.setFiles({ name: "flyer.png", mimeType: "image/png", buffer: pngFlyer });
     await p.waitForTimeout(800);
     const snapped = await p.evaluate(() => ({ open: document.getElementById("event-modal").open, title: document.getElementById("event-title-input").value, note: document.getElementById("event-magic-note").textContent }));
@@ -447,7 +447,7 @@ const PAGES = [
     await p.waitForTimeout(300);
     await p.evaluate(() => { window.__SMOKE_AI = async () => ({ events: [] }); window.openEventModal(); });
     await p.waitForTimeout(400);
-    if (!(await p.locator("#btn-event-from-photo").isVisible())) throw new Error("no 📷 Fill in from a photo button in Add Event");
+    if (!(await p.locator("#event-way-photo").isVisible())) throw new Error("no Photo at the top of Add Event");
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-magic-button.png`) });
 
     // One event (with a name not on the board and HTML in the title)
@@ -1426,13 +1426,14 @@ const PAGES = [
       if (day.weather) problems.push("Day view still shows today's weather twice");
       if (day.note) problems.push("the note is still on the page");
     }
-    // The + menu: Add from a photo, then Add an event; no note
+    // + opens Add Event straight away, with Type · Photo · Talk at the top (16 Nov)
     await p.click("#btn-floating-add-calendar");
-    await p.waitForTimeout(300);
-    const menu = await p.evaluate(() => [...document.querySelectorAll("#calendar-fab-menu .calendar-fab-option")].filter(b => !b.hidden).map(b => b.querySelector(".fab-option-title").textContent));
+    await p.waitForTimeout(400);
+    const ways = await p.evaluate(() => ({ open: document.getElementById("event-modal").open, labels: [...document.querySelectorAll("#event-ways .ev-way")].filter(b => !b.hidden).map(b => b.textContent.trim()) }));
     await shot("calendar-plus-menu");
-    await p.evaluate(() => document.getElementById("calendar-fab-backdrop").click());
-    if (menu.join(" / ") !== "Add from a photo / Add an event") problems.push(`the + menu shows ${menu.join(" / ")}`);
+    await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
+    if (!ways.open) problems.push("+ didn't open Add Event");
+    if (ways.labels.slice(0, 2).join(" / ") !== "Type / Photo") problems.push(`Add Event's top row shows ${ways.labels.join(" / ")}`);
     // The weather: one tidy line a day, a 44px ✕ clear of the title
     await p.evaluate(() => {
       const t = Date.now(), day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return window.getLocalDateKey(d); };
@@ -1688,7 +1689,7 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-multi-day-editor.png`) });
     await p.click("#event-span-clear");
     if (await p.$eval("#event-span-days", el => el.textContent) !== "") throw new Error("Just one day didn't clear Until");
-    await p.click('#event-time-pills [data-time-mode="set"]');
+    await p.evaluate(() => document.getElementById("event-allday-toggle").click());
     if (!(await p.$eval("#event-span-row", el => el.hidden))) throw new Error("Until still shows for a timed event");
     await p.evaluate(() => { const m = document.getElementById("event-modal"); if (m && m.open) m.close(); });
     // Dragging the trip to start two days later moves its last day too
@@ -2782,6 +2783,47 @@ const PAGES = [
     if (r.stray) throw new Error("a stray date box shows in Add Event");
     await p.waitForTimeout(200);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-times.png`) });
+    // Skylight's order (16 Nov): Type · Photo · Talk, title, All day, Starts/Ends,
+    // Repeats (off = once; on shows how often), Countdown, Who's it for, More
+    await p.evaluate(() => { const c = document.querySelector("#event-modal .modal-content"); if (c) c.scrollTop = 0; });
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-new.png`) });
+    const lay = await p.evaluate(() => {
+      const $ = (id) => document.getElementById(id);
+      const shown = (el) => !!el && el.offsetParent !== null;
+      const before = { repeatsShown: shown($("event-repeat-pills")), moreOpen: $("event-more").open, ways: shown($("event-ways")), endSame: $("event-end-same").textContent, mic: shown(document.querySelector("#event-modal .voice-mini")) };
+      $("event-repeat-toggle").click();
+      const on = { shown: shown($("event-repeat-pills")), active: [...document.querySelectorAll("#event-repeat-pills .active")].map(b => b.dataset.repeat), weekdays: shown($("event-weekdays")), heading: $("event-day-heading").textContent };
+      $("event-repeat-toggle").click();
+      const off = { shown: shown($("event-repeat-pills")), value: $("event-repeat-select").value };
+      $("event-allday-toggle").click();
+      const allDay = { times: shown($("event-start-time")), ends: shown($("event-end-date-btn")) };
+      $("event-allday-toggle").click();
+      return { before, on, off, allDay };
+    });
+    if (!lay.before.ways) throw new Error("no Type · Photo · Talk row on a new event");
+    if (lay.before.repeatsShown || lay.before.moreOpen) throw new Error(`a new event should start with Repeats off and More shut: ${JSON.stringify(lay.before)}`);
+    if (!lay.on.shown || lay.on.active.join() !== "weekly" || !lay.on.weekdays || lay.on.heading !== "Starting") throw new Error(`Repeats on: ${JSON.stringify(lay.on)}`);
+    if (lay.off.shown || lay.off.value !== "none") throw new Error(`Repeats off: ${JSON.stringify(lay.off)}`);
+    if (lay.allDay.times || !lay.allDay.ends) throw new Error(`All day: ${JSON.stringify(lay.allDay)}`);
+    await p.evaluate(() => { document.getElementById("event-repeat-toggle").click(); document.getElementById("event-repeat-toggle").closest(".ev-list-row").scrollIntoView({ block: "start" }); });
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-repeats.png`) });
+    await p.evaluate(() => { document.getElementById("event-repeat-toggle").click(); document.getElementById("btn-save-event").scrollIntoView({ block: "end" }); });
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-bottom.png`) });
+    // Editing: no Type · Photo · Talk, and More opens when it has a place
+    await p.evaluate(() => { document.getElementById("btn-close-event-modal").click(); const e = { ...window.familyEvents[0], location: "Leisure centre" }; window.openEventModal(e); });
+    await p.waitForTimeout(300);
+    const edit = await p.evaluate(() => ({ ways: document.getElementById("event-ways").offsetParent !== null, more: document.getElementById("event-more").open }));
+    if (edit.ways || !edit.more) throw new Error(`editing an event: ${JSON.stringify(edit)}`);
+    // Who's it for shows each person's avatar when they have one, the initial when not
+    await p.evaluate(() => { document.getElementById("btn-close-event-modal").click(); window.boardSettings.memberBuddies = { alex: "robot", jo: "dragon", sam: "kitten" }; window.openEventModal(); });
+    await p.waitForTimeout(300);
+    const faces = await p.evaluate(() => [...document.querySelectorAll("#event-who-row [data-event-member]")].map(b => `${b.dataset.eventMember}:${b.querySelector(".drawer-profile-avatar.is-buddy") ? "avatar" : b.querySelector(".drawer-profile-avatar").textContent.trim()}`));
+    await p.evaluate(() => document.getElementById("event-who-row").scrollIntoView({ block: "center" }));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-event-avatars.png`) });
+    await p.evaluate(() => { window.boardSettings.memberBuddies = {}; });
+    if (faces.slice(0, 4).join() !== "Sam:avatar,Alex:avatar,Jo:avatar,Max:M") throw new Error(`Who's it for faces: ${faces.join(", ")}`);
     await p.evaluate(() => document.getElementById("btn-close-event-modal").click());
   }],
   // The job editor: "Bigger job" shows for a daily household job, not for a routine

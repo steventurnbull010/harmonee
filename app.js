@@ -5318,94 +5318,14 @@ function initSkylightNavigation() {
   if (btnCalendarAddTask) {
     btnCalendarAddTask.addEventListener("click", () => window.openSkylightTaskDrawer && window.openSkylightTaskDrawer());
   }
-  const fabContainer = document.getElementById("calendar-fab-container");
-  const fabBackdrop = document.getElementById("calendar-fab-backdrop");
-  const fabBtnAddEvent = document.getElementById("fab-action-add-event");
-  const fabBtnAddChore = document.getElementById("fab-action-add-chore");
-
-  const closeFabSpeedDial = () => {
-    if (fabContainer) fabContainer.classList.remove("is-open");
-    if (fabBackdrop) fabBackdrop.classList.remove("is-active");
-    document.body.classList.remove("has-fab-open");
-    if (btnFloatingAddCalendar) btnFloatingAddCalendar.setAttribute("aria-expanded", "false");
-  };
-
-  const openFabSpeedDial = () => {
-    if (fabContainer) fabContainer.classList.add("is-open");
-    if (fabBackdrop) fabBackdrop.classList.add("is-active");
-    document.body.classList.add("has-fab-open");
-    if (btnFloatingAddCalendar) btnFloatingAddCalendar.setAttribute("aria-expanded", "true");
-    if (typeof sfx !== "undefined" && sfx && sfx.playClick) sfx.playClick();
-  };
-
-  const toggleFabSpeedDial = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (!fabContainer) return;
-    if (fabContainer.classList.contains("is-open")) {
-      closeFabSpeedDial();
-    } else {
-      openFabSpeedDial();
-    }
-  };
-
-  // With "Add from a photo" switched off, the menu would have one choice:
-  // + goes straight to Add an event instead
+  // ＋ opens Add Event straight away (16 Nov). Type, Photo or Talk is chosen
+  // at the top of the panel, like Skylight, instead of a menu first.
   if (btnFloatingAddCalendar) {
     btnFloatingAddCalendar.onclick = (e) => {
-      const photo = document.getElementById("fab-action-snap-flyer");
-      if (photo && photo.hidden && !(fabContainer && fabContainer.classList.contains("is-open"))) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        handleCalendarAddEvent();
-        return;
-      }
-      toggleFabSpeedDial(e);
-    };
-  }
-
-  if (fabBackdrop) {
-    fabBackdrop.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFabSpeedDial();
-    };
-  }
-
-  // 📷 Snap a flyer: straight to the camera (js/magic-import.js)
-  const fabBtnSnapFlyer = document.getElementById("fab-action-snap-flyer");
-  if (fabBtnSnapFlyer) {
-    fabBtnSnapFlyer.hidden = !(window.MagicImport && window.MagicImport.available("events"));
-    fabBtnSnapFlyer.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFabSpeedDial();
-      if (window.MagicImport) window.MagicImport.pickPhoto();
-    };
-  }
-
-  if (fabBtnAddEvent) {
-    fabBtnAddEvent.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFabSpeedDial();
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       handleCalendarAddEvent();
     };
   }
-
-  if (fabBtnAddChore) {
-    fabBtnAddChore.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFabSpeedDial();
-      if (typeof window.openSkylightTaskDrawer === "function") window.openSkylightTaskDrawer();
-    };
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeFabSpeedDial();
-  });
 
   // Helper to ensure dropdown menus never clip outside the viewport
   function alignDropdownOnScreen(menuEl, buttonEl) {

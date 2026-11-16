@@ -525,10 +525,7 @@
     }
   }
 
-  // The button in the Add Event panel
-  document.addEventListener("click", (e) => {
-    if (e.target.closest("#btn-event-from-photo")) { e.preventDefault(); pickPhoto(); }
-  });
+  // Started from Photo at the top of Add Event (js/calendar.js)
 
   window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, _tidy: tidy, _tidyRecipe: tidyRecipe };
 })();

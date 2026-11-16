@@ -5826,6 +5826,86 @@ body.theme-dark .countdown-list-pop.is-sheet .countdown-list-close { background:
 #event-modal .ev-time-row-nice .ev-field > input { width: 100%; min-width: 0; }
 #event-modal [hidden] { display: none !important; } /* the kept-for-saving fields stay out of sight */
 
+/* ---- Add Event, like Skylight (16 Nov): Type · Photo · Talk, the title with
+   its icon, one list (All day, Starts/Ends, Repeats, Countdown), Who's it
+   for, then More (birthday, place, notes). 8px grid. ------------------------ */
+#event-modal .ev-ways { display: flex; gap: 16px; padding: 0 0 16px; }
+#event-modal .ev-way {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-width: 64px; padding: 0; border: none; background: none; cursor: pointer;
+  font: 600 0.85rem var(--font-body); color: var(--text-secondary, #64748b);
+}
+#event-modal .ev-way-icon {
+  width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--card-border, #e2e8f0); color: var(--text-primary, #0f172a);
+  background: var(--card-bg, #ffffff); transition: background 0.15s ease, border-color 0.15s ease;
+}
+#event-modal .ev-way:hover .ev-way-icon { background: #f1f5f9; }
+#event-modal .ev-way.is-on .ev-way-icon { border: 2px solid var(--text-primary, #0f172a); }
+#event-modal .ev-way.is-on { color: var(--text-primary, #0f172a); }
+#event-modal.has-talk .voice-mini { display: none; } /* Talk is at the top */
+
+#event-modal .ev-emoji-btn {
+  flex: none; width: 40px; height: 40px; border-radius: 12px; border: none;
+  background: rgba(15, 23, 42, 0.05); font-size: 1.3rem; line-height: 1; cursor: pointer;
+  display: grid; place-items: center;
+}
+#event-modal .ev-emoji-btn:hover { background: rgba(15, 23, 42, 0.09); }
+
+#event-modal .ev-list {
+  display: flex; flex-direction: column; padding: 0 16px; border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1); background: var(--card-bg, #ffffff);
+}
+#event-modal .ev-list > * + * { border-top: 1px solid rgba(15, 23, 42, 0.08); }
+#event-modal .ev-list > .ev-when-grid, #event-modal .ev-list > .ev-repeat-more, #event-modal .ev-list > .ev-born { border-top: none; }
+#event-modal .ev-list-row { display: flex; align-items: center; gap: 16px; min-height: 56px; padding: 8px 0; box-sizing: border-box; cursor: pointer; }
+#event-modal .ev-list-icon { flex: none; width: 24px; text-align: center; font-size: 1.1rem; }
+#event-modal .ev-list-label { flex: 1; min-width: 0; font-weight: 600; font-size: 1rem; color: var(--text-primary, #0f172a); }
+#event-modal .ev-list-label small { display: block; margin-top: 2px; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary, #64748b); }
+#event-modal .ev-list-row .skylight-switch { flex: none; }
+
+/* Starts / Ends: dates on the left, times on the right (all day: dates side by side) */
+#event-modal .ev-when-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 8px 16px; padding: 0 0 16px 40px; }
+#event-modal .ev-when-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+#event-modal .ev-when-btn {
+  width: 100%; min-height: 44px; padding: 0 12px; box-sizing: border-box; text-align: left;
+  border: 1px solid var(--card-border, #e2e8f0); border-radius: 12px; background: transparent;
+  font: 600 1rem var(--font-body); color: var(--text-primary, #0f172a); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#event-modal .ev-when-btn:hover { border-color: #94a3b8; }
+#event-modal .ev-when-time input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; border: 1px solid var(--card-border, #e2e8f0); font-size: 1rem; font-weight: 600; }
+#event-modal .ev-when-time input:focus, #event-modal .ev-when-btn:focus-visible { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18); outline: none; }
+body.theme-dark #event-modal .ev-when-time input { background: transparent; border-color: #334155; color: #f8fafc; color-scheme: dark; }
+#event-modal .ev-when-same { min-height: 44px; display: flex; align-items: center; padding: 0 12px; font-weight: 600; color: var(--text-secondary, #64748b); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#event-modal .ev-when-grid.is-allday .ev-when-time { display: none; }
+#event-modal .ev-when-cell .ev-span-row { margin: 0; display: block; }
+#event-modal .ev-span-more { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+#event-modal .ev-repeat-more { display: flex; flex-direction: column; gap: 8px; padding: 0 0 16px 40px; }
+#event-modal .ev-repeat-more .ev-repeat-note { margin: 0; }
+#event-modal .ev-born { padding: 0 0 16px 40px; }
+
+#event-modal .ev-more { border-radius: 16px; }
+#event-modal .ev-more-summary {
+  display: flex; align-items: baseline; gap: 8px; min-height: 48px; padding: 12px 0; box-sizing: border-box;
+  list-style: none; cursor: pointer; font-weight: 700; font-size: 1rem; color: var(--text-primary, #0f172a);
+}
+#event-modal .ev-more-summary::-webkit-details-marker { display: none; }
+#event-modal .ev-more-summary span { font-weight: 500; font-size: 0.9rem; color: var(--text-secondary, #64748b); }
+#event-modal .ev-more-summary::after { content: "›"; margin-left: auto; font-size: 1.4rem; line-height: 1; color: var(--text-secondary, #94a3b8); transition: transform 0.15s ease; }
+#event-modal .ev-more[open] .ev-more-summary::after { transform: rotate(90deg); }
+#event-modal .ev-more-body { display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
+
+body.theme-dark #event-modal .ev-way-icon { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.theme-dark #event-modal .ev-way:hover .ev-way-icon { background: #273449; }
+body.theme-dark #event-modal .ev-way.is-on .ev-way-icon { border-color: #f8fafc; }
+body.theme-dark #event-modal .ev-way.is-on, body.theme-dark #event-modal .ev-list-label, body.theme-dark #event-modal .ev-more-summary, body.theme-dark #event-modal .ev-when-btn { color: #f8fafc; }
+body.theme-dark #event-modal .ev-emoji-btn { background: rgba(255, 255, 255, 0.07); }
+body.theme-dark #event-modal .ev-list { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.1); }
+body.theme-dark #event-modal .ev-list > * + * { border-top-color: rgba(255, 255, 255, 0.08); }
+body.theme-dark #event-modal .ev-when-btn { border-color: #334155; }
+
 /* ==========================================================================
    Bank holidays (js/bank-holidays.js): a chip beside the day's dinner in
    each calendar view, and a line on Today at a glance

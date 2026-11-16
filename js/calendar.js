@@ -849,7 +849,6 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       btnEmojiPicker.setAttribute("aria-expanded", String(!isOpen));
       if (!isOpen) emojiPalette.scrollTop = 0;
     };
-    btnEmojiPicker.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") btnEmojiPicker.onclick(e); };
   }
 
   if (btnClosePalette) {
@@ -937,14 +936,34 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   }
   // "Filled in from your photo: check it before saving", and the button to do it
   { const note = document.getElementById("event-magic-note"); if (note) note.hidden = !(prefill && prefill.fromPhoto); }
-  { const btn = document.getElementById("btn-event-from-photo"); if (btn) btn.hidden = !!evt || !!(prefill && prefill.fromPhoto) || !(window.MagicImport && window.MagicImport.available()); }
+  // Type · Photo · Talk, for a new event: Photo and Talk fill in this form
+  // (js/magic-import.js, js/voice.js), each hidden where it can't work
+  {
+    const ways = document.getElementById("event-ways");
+    const photoWay = document.getElementById("event-way-photo");
+    const talkWay = document.getElementById("event-way-talk");
+    const typeWay = document.getElementById("event-way-type");
+    const canPhoto = !!(window.MagicImport && window.MagicImport.available("events"));
+    const canTalk = !!(window.Voice && window.Voice.supported());
+    if (photoWay) photoWay.hidden = !canPhoto;
+    if (talkWay) talkWay.hidden = !canTalk;
+    if (ways) ways.hidden = !!evt || (!canPhoto && !canTalk);
+    modal.classList.toggle("has-talk", !evt && canTalk);
+    if (typeWay) typeWay.onclick = () => { if (titleInput) titleInput.focus(); };
+    if (photoWay) photoWay.onclick = () => { if (window.MagicImport) window.MagicImport.pickPhoto(); };
+    if (talkWay) talkWay.onclick = () => { if (window.Voice) window.Voice.start({ want: "event" }); };
+  }
+  // More (birthday, place, notes): open when there's something in it
+  {
+    const more = document.getElementById("event-more");
+    if (more) more.open = !!(evt && (evt.location || evt.description || evt.birthday)) || !!(!evt && prefill && (prefill.location || prefill.description));
+  }
 
   // When: Starts and Ends (the device's own time pickers) and All day. Saving
   // still uses the start time plus a length, so Ends sets the length.
   const startInput = document.getElementById("event-start-time");
   const endInput = document.getElementById("event-end-time");
   const allDayToggle = document.getElementById("event-allday-toggle");
-  const timeRow = document.getElementById("event-time-row");
   const durLabel = document.getElementById("event-duration-label");
   const toMins = (hhmm) => { const [h, m] = (hhmm || "00:00").split(":").map(Number); return h * 60 + m; };
   const toHHMM = (mins) => { const t = ((mins % 1440) + 1440) % 1440; return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
@@ -957,7 +976,6 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   const syncWhenUI = () => {
     const allDay = durationSelect && durationSelect.value === "All Day";
     if (allDayToggle) allDayToggle.checked = allDay;
-    if (timeRow) timeRow.style.display = allDay ? "none" : "";
     const start = (timeInput && timeInput.value) || "09:00";
     const len = allDay ? 60 : durationMins(durationSelect && durationSelect.value);
     if (startInput) startInput.value = start;
@@ -986,6 +1004,11 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   // ---- The same pills as the task panel: how often, which day, time --------
   function syncEventPills() {
     const rep = repeatSelect ? repeatSelect.value : "none";
+    // Repeats: off is once; on shows how often (and which day, every week)
+    const repeatToggle = document.getElementById("event-repeat-toggle");
+    const repeatMore = document.getElementById("event-repeat-more");
+    if (repeatToggle) repeatToggle.checked = rep !== "none";
+    if (repeatMore) repeatMore.hidden = rep === "none";
     document.querySelectorAll("#event-repeat-pills [data-repeat]").forEach(b => {
       const on = b.getAttribute("data-repeat") === rep;
       b.classList.toggle("active", on);
@@ -994,18 +1017,16 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     const [y, mo, dd] = String(currentDateKey).split("-").map(Number);
     const d = new Date(y, (mo || 1) - 1, dd || 1);
     const heading = document.getElementById("event-day-heading");
-    if (heading) heading.textContent = rep === "weekly" ? "Every" : (rep === "daily" || rep === "weekdays") ? "Starting" : "On";
-    const dateBtn = document.getElementById("event-date-btn");
+    if (heading) heading.textContent = rep === "none" ? "Starts" : "Starting";
     const weekdays = document.getElementById("event-weekdays");
-    if (dateBtn) dateBtn.hidden = rep === "weekly";
     if (weekdays) weekdays.hidden = rep !== "weekly";
-    const label = document.getElementById("event-date-label");
-    if (label) {
+    const dayLabel = (x) => {
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const diff = Math.round((d - today) / 86400000);
-      const nice = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-      label.textContent = diff === 0 ? `Today · ${nice}` : diff === 1 ? `Tomorrow · ${nice}` : nice;
-    }
+      const diff = Math.round((x - today) / 86400000);
+      return diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : x.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    };
+    const label = document.getElementById("event-date-label");
+    if (label) label.textContent = dayLabel(d);
     if (weekdays) weekdays.querySelectorAll("[data-weekday]").forEach(b => {
       const on = b.getAttribute("data-weekday") === String(d.getDay());
       b.classList.toggle("active", on);
@@ -1020,29 +1041,40 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       note.hidden = !text;
     }
     const allDay = durationSelect && durationSelect.value === "All Day";
-    // Until: all day and once (not a birthday) can run over several days
-    const spanRow = document.getElementById("event-span-row");
+    const grid = document.getElementById("event-when-grid");
+    if (grid) grid.classList.toggle("is-allday", !!allDay);
+    // Ends: a timed event ends the same day; all day and once (not a
+    // birthday) can run over several days; other all-day events have no Ends
     const canSpan = allDay && rep === "none" && !(document.getElementById("event-birthday-toggle") || {}).checked;
-    if (spanRow) {
-      spanRow.hidden = !canSpan;
-      const days = currentEndKey ? window.dayNumOfKey(currentEndKey) - window.dayNumOfKey(currentDateKey) + 1 : 1;
-      const endLabel = document.getElementById("event-end-date-label");
-      const daysEl = document.getElementById("event-span-days");
-      const clear = document.getElementById("event-span-clear");
-      if (endLabel) {
-        if (days > 1) {
-          const [ey, em, ed] = currentEndKey.split("-").map(Number);
-          endLabel.textContent = new Date(ey, em - 1, ed).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-        } else endLabel.textContent = "Same day";
-      }
-      if (daysEl) daysEl.textContent = days > 1 ? `${days} days` : "";
-      if (clear) clear.hidden = days <= 1;
+    const endsCell = document.getElementById("event-ends-cell");
+    const endSame = document.getElementById("event-end-same");
+    const spanRow = document.getElementById("event-span-row");
+    const spanMore = document.getElementById("event-span-more");
+    if (endsCell) endsCell.hidden = allDay && !canSpan;
+    if (endSame) { endSame.hidden = !!allDay; endSame.textContent = dayLabel(d); }
+    const days = currentEndKey ? window.dayNumOfKey(currentEndKey) - window.dayNumOfKey(currentDateKey) + 1 : 1;
+    if (spanRow) spanRow.hidden = !canSpan;
+    if (spanMore) spanMore.hidden = !(canSpan && days > 1);
+    const endLabel = document.getElementById("event-end-date-label");
+    const daysEl = document.getElementById("event-span-days");
+    const clear = document.getElementById("event-span-clear");
+    if (endLabel) {
+      if (days > 1) {
+        const [ey, em, ed] = currentEndKey.split("-").map(Number);
+        endLabel.textContent = dayLabel(new Date(ey, em - 1, ed));
+      } else endLabel.textContent = "Same day";
     }
-    document.querySelectorAll("#event-time-pills [data-time-mode]").forEach(b => {
-      const on = (b.getAttribute("data-time-mode") === "allday") === allDay;
-      b.classList.toggle("active", on);
-      b.setAttribute("aria-pressed", String(on));
-    });
+    if (daysEl) daysEl.textContent = days > 1 ? `${days} days` : "";
+    if (clear) clear.hidden = days <= 1;
+  }
+  { const repeatToggle = document.getElementById("event-repeat-toggle");
+    // Switched on: every week to start with; off: once
+    if (repeatToggle) repeatToggle.onchange = () => {
+      if (repeatSelect) repeatSelect.value = repeatToggle.checked ? (repeatSelect.value !== "none" ? repeatSelect.value : "weekly") : "none";
+      const bday = document.getElementById("event-birthday-toggle");
+      if (!repeatToggle.checked && bday && bday.checked) { bday.checked = false; const r = document.getElementById("event-born-row"); if (r) r.hidden = true; }
+      syncEventPills();
+    };
   }
   document.querySelectorAll("#event-repeat-pills [data-repeat]").forEach(b => {
     b.onclick = () => { if (repeatSelect) repeatSelect.value = b.getAttribute("data-repeat"); syncEventPills(); };
@@ -1079,15 +1111,6 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       syncEventPills();
     };
   });
-  document.querySelectorAll("#event-time-pills [data-time-mode]").forEach(b => {
-    b.onclick = () => {
-      const wantAllDay = b.getAttribute("data-time-mode") === "allday";
-      const isAllDay = durationSelect && durationSelect.value === "All Day";
-      if (wantAllDay !== isAllDay) setEventDurationValue(durationSelect, wantAllDay ? "All Day" : "1 hour");
-      syncWhenUI();
-    };
-  });
-
   // Set after the date, so loading the event doesn't move its last day
   currentEndKey = (evt && evt.endDate && window.eventSpan && window.eventSpan(evt)) ? window.eventSpan(evt).end : null;
   syncWhenUI();
@@ -1101,10 +1124,11 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   if (birthdayToggle) birthdayToggle.checked = !!(evt && evt.birthday);
   if (bornInput) bornInput.value = (evt && evt.bornYear) ? String(evt.bornYear) : "";
   if (bornRow) bornRow.hidden = !(birthdayToggle && birthdayToggle.checked);
+  syncEventPills(); // now the birthday switch is set (it decides whether Ends shows)
   if (birthdayToggle) birthdayToggle.onchange = () => {
     const on = birthdayToggle.checked;
     if (bornRow) bornRow.hidden = !on;
-    if (!on) return;
+    if (!on) { syncEventPills(); return; }
     if (repeatSelect) repeatSelect.value = "annually";
     setEventDurationValue(durationSelect, "All Day");
     syncWhenUI();

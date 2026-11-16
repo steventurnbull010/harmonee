@@ -63,7 +63,7 @@
   <link rel="stylesheet" href="css/meals.css?v=6e427bc3">
   <link rel="stylesheet" href="css/cook-timers.css?v=613379c4">
   <link rel="stylesheet" href="css/meal-screen.css?v=3b6750bd">
-  <link rel="stylesheet" href="css/calendar.css?v=9d0a8667">
+  <link rel="stylesheet" href="css/calendar.css?v=8a44fb9c">
   <link rel="stylesheet" href="css/calendar-v2.css?v=ab5910d1">
   <link rel="stylesheet" href="css/lists.css?v=2f7e3e6f">
   <link rel="stylesheet" href="css/rewards.css?v=091b4ac8">
@@ -74,7 +74,7 @@
   <link rel="stylesheet" href="css/side-panel.css?v=fe317c76">
   <link rel="stylesheet" href="css/page-intro.css?v=019b6c9b">
   <link rel="stylesheet" href="css/page-spacing.css?v=01d8ae96">
-  <link rel="stylesheet" href="css/panel-spacing.css?v=904320a4">
+  <link rel="stylesheet" href="css/panel-spacing.css?v=a25187de">
   <link rel="stylesheet" href="css/setup.css?v=c0b6ba8b">
   <link rel="stylesheet" href="css/tablet-fit.css?v=a4804eaf">
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
@@ -325,31 +325,10 @@
           </div>
         </div>
 
-        <!-- Backdrop for Floating Add Speed-Dial -->
-        <div class="calendar-fab-backdrop" id="calendar-fab-backdrop"></div>
-
-        <!-- Floating Add Speed-Dial Container (Add Event or Add Chore) -->
+        <!-- ＋ opens Add Event straight away (16 Nov); Photo and Talk are
+             chosen at the top of the panel -->
         <div class="calendar-fab-container" id="calendar-fab-container">
-          <div class="calendar-fab-menu" id="calendar-fab-menu" role="menu" aria-label="Add options">
-            <!-- Two ways to add: from a photo (js/magic-import.js; the phone
-                 offers the camera or the photo library), or type it in (nearest
-                 the + button, the one used most) -->
-            <button type="button" class="calendar-fab-option fab-option-photo" id="fab-action-snap-flyer" role="menuitem" hidden>
-              <span class="fab-option-icon">📷</span>
-              <span class="fab-option-text">
-                <span class="fab-option-title">Add from a photo</span>
-                <span class="fab-option-sub">Snap or pick a letter, invite or fixtures</span>
-              </span>
-            </button>
-            <button type="button" class="calendar-fab-option fab-option-event" id="fab-action-add-event" role="menuitem">
-              <span class="fab-option-icon">✏️</span>
-              <span class="fab-option-text">
-                <span class="fab-option-title">Add an event</span>
-                <span class="fab-option-sub">Type in what, when and who</span>
-              </span>
-            </button>
-          </div>
-          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-calendar" aria-label="Add an event" aria-expanded="false" title="Add an event">
+          <button type="button" class="skylight-floating-add-btn" id="btn-floating-add-calendar" aria-label="Add an event" title="Add an event">
             <svg class="fab-plus-icon" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -2132,10 +2111,24 @@
         <div class="modal-trophy" id="event-modal-trophy" hidden>📅</div>
         <h2 id="event-modal-title" class="modal-title">Add Event</h2>
       </div>
-      <!-- Magic Import (js/magic-import.js): a flyer, invite or letter photo fills this in -->
-      <button type="button" class="event-from-photo-btn" id="btn-event-from-photo" aria-label="Fill in from a photo of a flyer, invite, letter or screenshot" hidden>
-        <span aria-hidden="true">📷</span> From a photo
-      </button>
+      <!-- Type · Photo · Talk (16 Nov, like Skylight): how to fill in a new
+           event. Photo reads a flyer or letter (js/magic-import.js), Talk is the
+           browser's speech-to-text (js/voice.js); both fill in the form below
+           to check before tapping Add. Hidden when editing. -->
+      <div class="ev-ways" id="event-ways" role="group" aria-label="How to add it">
+        <button type="button" class="ev-way is-on" id="event-way-type" aria-pressed="true">
+          <span class="ev-way-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path></svg></span>
+          <span class="ev-way-label">Type</span>
+        </button>
+        <button type="button" class="ev-way" id="event-way-photo" aria-pressed="false" aria-label="Photo: fill it in from a photo of a flyer, invite or letter">
+          <span class="ev-way-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>
+          <span class="ev-way-label">Photo</span>
+        </button>
+        <button type="button" class="ev-way" id="event-way-talk" aria-pressed="false" aria-label="Talk: say the event">
+          <span class="ev-way-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3"></rect><path d="M5 10.5a7 7 0 0 0 14 0M12 17.5V21"></path></svg></span>
+          <span class="ev-way-label">Talk</span>
+        </button>
+      </div>
       <p class="event-magic-note" id="event-magic-note" role="status" hidden>📷 Filled in. Check it, then tap Add.</p>
 
       <form id="form-event" class="event-form">
@@ -2147,25 +2140,117 @@
         <input type="hidden" id="event-time-input" value="16:30">
         <input type="hidden" id="event-member-input" value="Family">
 
-        <!-- Title -->
-        <div class="drawer-input-row">
-          <span class="drawer-input-icon">≡</span>
+        <!-- Title, with its icon at the front (tap it to choose another) -->
+        <div class="drawer-input-row ev-title-row">
+          <button type="button" class="ev-emoji-btn" id="btn-event-emoji-picker" aria-expanded="false" aria-controls="event-emoji-palette" aria-label="Choose an icon" title="Choose an icon">
+            <span id="event-emoji-display">📅</span>
+          </button>
           <input type="text" id="event-title-input" aria-label="Event title" class="drawer-input-title" placeholder="Add a title" required autocomplete="off">
         </div>
-
-        <!-- Icon: grouped, like the Tasks panel -->
-        <div class="drawer-field-group">
-          <div class="drawer-accordion-trigger" id="btn-event-emoji-picker" role="button" tabindex="0" aria-expanded="false" aria-controls="event-emoji-palette">
-            <div class="drawer-trigger-left">
-              <span class="drawer-emoji-preview" id="event-emoji-display">📅</span>
-              <span class="drawer-trigger-label">Icon</span>
-            </div>
-            <svg class="icon-chevron-wide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </div>
-          <div class="drawer-emoji-grid" id="event-emoji-palette" style="display: none;">
-            <div id="emoji-palette-grid"></div>
-          </div>
+        <div class="drawer-emoji-grid" id="event-emoji-palette" style="display: none;">
+          <div id="emoji-palette-grid"></div>
         </div>
+
+        <!-- When, how often, countdown: one list, like Skylight -->
+        <div class="ev-list">
+          <label class="ev-list-row">
+            <span class="ev-list-icon" aria-hidden="true">📅</span>
+            <span class="ev-list-label">All day</span>
+            <span class="skylight-switch">
+              <input type="checkbox" id="event-allday-toggle">
+              <span class="switch-slider"></span>
+            </span>
+          </label>
+
+          <!-- Starts and Ends: the date on the left, the time on the right -->
+          <div class="ev-when-grid" id="event-when-grid">
+            <div class="ev-when-cell">
+              <span class="ev-field-label" id="event-day-heading">Starts</span>
+              <button type="button" class="ev-when-btn" id="event-date-btn"><span id="event-date-label">Today</span></button>
+            </div>
+            <label class="ev-when-cell ev-when-time">
+              <span class="ev-field-label">At</span>
+              <input type="time" id="event-start-time" class="drawer-time-input-nice" step="300">
+            </label>
+            <div class="ev-when-cell" id="event-ends-cell">
+              <span class="ev-field-label">Ends</span>
+              <span class="ev-when-same" id="event-end-same">Same day</span>
+              <!-- All day, once: it can run over several days (a holiday, a trip) -->
+              <div class="ev-span-row" id="event-span-row" hidden>
+                <button type="button" class="ev-when-btn" id="event-end-date-btn" aria-describedby="event-span-days"><span id="event-end-date-label">Same day</span></button>
+              </div>
+            </div>
+            <label class="ev-when-cell ev-when-time">
+              <span class="ev-field-label">Until <span class="ev-day-name" id="event-duration-label"></span></span>
+              <input type="time" id="event-end-time" class="drawer-time-input-nice" step="300">
+            </label>
+            <div class="ev-span-more" id="event-span-more" hidden>
+              <span class="ev-span-days" id="event-span-days"></span>
+              <button type="button" class="ev-span-clear" id="event-span-clear" hidden>Just one day</button>
+            </div>
+          </div>
+
+          <!-- Repeats: off is once; on shows how often -->
+          <label class="ev-list-row">
+            <span class="ev-list-icon" aria-hidden="true">🔁</span>
+            <span class="ev-list-label">Repeats</span>
+            <span class="skylight-switch">
+              <input type="checkbox" id="event-repeat-toggle">
+              <span class="switch-slider"></span>
+            </span>
+          </label>
+          <div class="ev-repeat-more" id="event-repeat-more" hidden>
+            <div class="drawer-segmented-pills ev-repeat-pills" id="event-repeat-pills" role="group" aria-label="How often">
+              <button type="button" class="drawer-pill-segment" data-repeat="daily">Every day</button>
+              <button type="button" class="drawer-pill-segment" data-repeat="weekdays">Weekdays</button>
+              <button type="button" class="drawer-pill-segment" data-repeat="weekly">Every week</button>
+              <button type="button" class="drawer-pill-segment" data-repeat="monthly">Every month</button>
+              <button type="button" class="drawer-pill-segment" data-repeat="annually">Every year</button>
+            </div>
+            <div class="drawer-weekday-pills" id="event-weekdays" role="radiogroup" aria-label="Day of the week" hidden>
+              <button type="button" class="drawer-pill-segment" data-weekday="1" aria-label="Monday">Mon</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="2" aria-label="Tuesday">Tue</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="3" aria-label="Wednesday">Wed</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="4" aria-label="Thursday">Thu</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="5" aria-label="Friday">Fri</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="6" aria-label="Saturday">Sat</button>
+              <button type="button" class="drawer-pill-segment" data-weekday="0" aria-label="Sunday">Sun</button>
+            </div>
+            <p class="ev-repeat-note" id="event-repeat-note" hidden></p>
+          </div>
+
+          <label class="ev-list-row">
+            <span class="ev-list-icon" aria-hidden="true">⏳</span>
+            <span class="ev-list-label">Countdown<small>Sleeps to go, on the Calendar</small></span>
+            <span class="skylight-switch">
+              <input type="checkbox" id="event-countdown-toggle">
+              <span class="switch-slider"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- What the save reads (kept as they were, now set by the controls above) -->
+        <input type="date" id="event-date-input" aria-label="Date" hidden aria-hidden="true" tabindex="-1">
+        <span id="event-selected-day-badge" hidden></span>
+        <select id="event-repeat-select" aria-label="How often it repeats" hidden aria-hidden="true" tabindex="-1">
+          <option value="none" selected>Does not repeat</option>
+          <option value="daily">Every day</option>
+          <option value="weekdays">Every weekday (Mon to Fri)</option>
+          <option value="weekly" id="repeat-opt-weekly">Weekly on Tuesday</option>
+          <option value="monthly" id="repeat-opt-monthly">Monthly on this day</option>
+          <option value="annually" id="repeat-opt-annually">Every year on this day</option>
+        </select>
+        <!-- Length, kept for saving: worked out from Starts and Until -->
+        <select id="event-duration-select" aria-label="How long" hidden aria-hidden="true" tabindex="-1">
+          <option value="15 mins">15 mins</option>
+          <option value="30 mins">30 mins</option>
+          <option value="45 mins">45 mins</option>
+          <option value="1 hour" selected>1 hour</option>
+          <option value="1.5 hours">1.5 hours</option>
+          <option value="2 hours">2 hours</option>
+          <option value="3 hours">3 hours</option>
+          <option value="All Day">All Day</option>
+        </select>
 
         <!-- Who's it for: avatars, like the Tasks panel -->
         <div class="drawer-field-group">
@@ -2177,154 +2262,34 @@
           <p class="drawer-who-summary" id="event-who-summary" aria-live="polite"></p>
         </div>
 
-        <!-- How often: the same pills as chores, plus the extra repeats events need -->
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">🗓️</span>
-            <span class="drawer-section-label">How often</span>
-          </div>
-          <div class="drawer-segmented-pills drawer-pills-3 ev-repeat-pills" id="event-repeat-pills" role="group" aria-label="How often">
-            <button type="button" class="drawer-pill-segment" data-repeat="none">Once</button>
-            <button type="button" class="drawer-pill-segment" data-repeat="weekly">Every week</button>
-            <button type="button" class="drawer-pill-segment" data-repeat="daily">Every day</button>
-            <button type="button" class="drawer-pill-segment" data-repeat="weekdays">Weekdays</button>
-            <button type="button" class="drawer-pill-segment" data-repeat="monthly">Every month</button>
-            <button type="button" class="drawer-pill-segment" data-repeat="annually">Every year</button>
-          </div>
-        </div>
-
-        <!-- On / Every / Starting: a date button, or Mon–Sun pills for every week -->
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">📅</span>
-            <span class="drawer-section-label" id="event-day-heading">On</span>
-          </div>
-          <button type="button" class="drawer-date-button" id="event-date-btn">
-            <span id="event-date-label">Today</span>
-            <span class="drawer-date-button-change" aria-hidden="true">Change</span>
-          </button>
-          <div class="drawer-weekday-pills" id="event-weekdays" role="radiogroup" aria-label="Day of the week" hidden>
-            <button type="button" class="drawer-pill-segment" data-weekday="1" aria-label="Monday">Mon</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="2" aria-label="Tuesday">Tue</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="3" aria-label="Wednesday">Wed</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="4" aria-label="Thursday">Thu</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="5" aria-label="Friday">Fri</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="6" aria-label="Saturday">Sat</button>
-            <button type="button" class="drawer-pill-segment" data-weekday="0" aria-label="Sunday">Sun</button>
-          </div>
-          <p class="ev-repeat-note" id="event-repeat-note" hidden></p>
-        </div>
-
-        <!-- Time: All day, or a start and end -->
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">🕒</span>
-            <span class="drawer-section-label">Time</span>
-          </div>
-          <div class="drawer-segmented-pills" id="event-time-pills" role="group" aria-label="Time">
-            <button type="button" class="drawer-pill-segment" data-time-mode="allday">All day</button>
-            <button type="button" class="drawer-pill-segment" data-time-mode="set">Set a time</button>
-          </div>
-          <!-- All day, once: it can run over several days (a holiday, a trip) -->
-          <div class="ev-span-row" id="event-span-row" hidden>
-            <span class="ev-field-label">Until</span>
-            <button type="button" class="drawer-date-button" id="event-end-date-btn" aria-describedby="event-span-days">
-              <span id="event-end-date-label">Same day</span>
-              <span class="drawer-date-button-change" aria-hidden="true">Change</span>
-            </button>
-            <span class="ev-span-days" id="event-span-days"></span>
-            <button type="button" class="ev-span-clear" id="event-span-clear" hidden>Just one day</button>
-          </div>
-          <div class="ev-time-row ev-time-row-nice" id="event-time-row">
-            <label class="ev-field">
-              <span class="ev-field-label">Starts</span>
-              <input type="time" id="event-start-time" class="drawer-time-input-nice" step="300">
-            </label>
-            <span class="ev-time-arrow" aria-hidden="true">→</span>
-            <label class="ev-field">
-              <span class="ev-field-label">Ends <span class="ev-day-name" id="event-duration-label"></span></span>
-              <input type="time" id="event-end-time" class="drawer-time-input-nice" step="300">
-            </label>
-          </div>
-
-          <!-- What the save reads (kept as they were, now set by the buttons above) -->
-          <input type="date" id="event-date-input" aria-label="Date" hidden aria-hidden="true" tabindex="-1">
-          <span id="event-selected-day-badge" hidden></span>
-          <input type="checkbox" id="event-allday-toggle" aria-label="All day" hidden aria-hidden="true" tabindex="-1">
-          <select id="event-repeat-select" aria-label="How often it repeats" hidden aria-hidden="true" tabindex="-1">
-            <option value="none" selected>Does not repeat</option>
-            <option value="daily">Every day</option>
-            <option value="weekdays">Every weekday (Mon to Fri)</option>
-            <option value="weekly" id="repeat-opt-weekly">Weekly on Tuesday</option>
-            <option value="monthly" id="repeat-opt-monthly">Monthly on this day</option>
-            <option value="annually" id="repeat-opt-annually">Every year on this day</option>
-          </select>
-          <!-- Length, kept for saving: worked out from Starts and Ends -->
-          <select id="event-duration-select" aria-label="How long" hidden aria-hidden="true" tabindex="-1">
-            <option value="15 mins">15 mins</option>
-            <option value="30 mins">30 mins</option>
-            <option value="45 mins">45 mins</option>
-            <option value="1 hour" selected>1 hour</option>
-            <option value="1.5 hours">1.5 hours</option>
-            <option value="2 hours">2 hours</option>
-            <option value="3 hours">3 hours</option>
-            <option value="All Day">All Day</option>
-          </select>
-        </div>
-
-        <!-- Extras: countdown and birthday -->
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">✨</span>
-            <span class="drawer-section-label">Extras</span>
-          </div>
-          <div class="ev-when-card">
-            <div class="drawer-toggle-row">
-              <div class="drawer-toggle-left">
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">⏳ Count down to it</span>
-                  <span class="drawer-toggle-sub">Shows how many sleeps to go at the top of the Calendar and on Today at a glance</span>
-                </div>
-              </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="event-countdown-toggle">
-                <span class="switch-slider"></span>
+        <!-- More: what Skylight doesn't ask for, out of the way until wanted -->
+        <details class="ev-more" id="event-more">
+          <summary class="ev-more-summary">More <span>Birthday, place and notes</span></summary>
+          <div class="ev-more-body">
+            <div class="ev-list">
+              <label class="ev-list-row">
+                <span class="ev-list-icon" aria-hidden="true">🎂</span>
+                <span class="ev-list-label">It's a birthday<small>Every year, all day, with a countdown in the month before</small></span>
+                <span class="skylight-switch">
+                  <input type="checkbox" id="event-birthday-toggle">
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+              <label class="ev-field ev-born" id="event-born-row" hidden>
+                <span class="ev-field-label">Year born (optional, shows their age)</span>
+                <input type="number" id="event-born-year" class="ev-native-input" inputmode="numeric" min="1900" max="2100" placeholder="e.g. 2017" autocomplete="off">
               </label>
             </div>
-            <div class="drawer-toggle-row">
-              <div class="drawer-toggle-left">
-                <div class="drawer-toggle-texts">
-                  <span class="drawer-toggle-title">🎂 It's a birthday</span>
-                  <span class="drawer-toggle-sub">Every year, all day, with a countdown in the month before</span>
-                </div>
-              </div>
-              <label class="skylight-switch">
-                <input type="checkbox" id="event-birthday-toggle">
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-            <label class="ev-field" id="event-born-row" hidden>
-              <span class="ev-field-label">Year born (optional, shows their age)</span>
-              <input type="number" id="event-born-year" class="ev-native-input" inputmode="numeric" min="1900" max="2100" placeholder="e.g. 2017" autocomplete="off">
+            <label class="ev-field">
+              <span class="ev-field-label">📍 Where</span>
+              <input type="text" id="event-location-input" aria-label="Place" class="ev-native-input" placeholder="Add a place (optional)" autocomplete="off">
+            </label>
+            <label class="ev-field">
+              <span class="ev-field-label">📝 Notes</span>
+              <textarea id="event-description-input" aria-label="Notes" class="ev-native-input ev-notes" rows="3" placeholder="Anything to remember (optional)"></textarea>
             </label>
           </div>
-        </div>
-
-        <!-- Where and notes -->
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">📍</span>
-            <span class="drawer-section-label">Where</span>
-          </div>
-          <input type="text" id="event-location-input" aria-label="Place" class="ev-native-input" placeholder="Add a place (optional)" autocomplete="off">
-        </div>
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">📝</span>
-            <span class="drawer-section-label">Notes</span>
-          </div>
-          <textarea id="event-description-input" aria-label="Notes" class="ev-native-input ev-notes" rows="3" placeholder="Anything to remember (optional)"></textarea>
-        </div>
+        </details>
 
         <div class="modal-actions ev-actions">
           <button type="button" class="btn-cancel" id="btn-cancel-event-modal" hidden>Cancel</button>
@@ -2441,7 +2406,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=86f02698"></script>
+  <script src="js/build-info.js?v=68b529ba"></script>
   <script src="js/utils.js?v=0ae4664f"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=a5a66322"></script>
@@ -2468,7 +2433,7 @@
   <script src="js/page-intro.js?v=780283aa"></script>
   <script src="js/google-calendar.js?v=6960b9a6"></script>
   <script src="js/calendar-views.js?v=2eff8d17"></script>
-  <script src="js/calendar.js?v=f01acba7"></script>
+  <script src="js/calendar.js?v=559e8cc1"></script>
   <script src="js/bank-holidays-data.js?v=d03e3fe9"></script>
   <script src="js/bank-holidays.js?v=3c3e5cd0"></script>
   <script src="js/event-chime.js?v=f2665b30"></script>
@@ -2500,7 +2465,7 @@
   <script src="js/meals-phone.js?v=eda18f9e"></script>
   <script src="js/meal-ideas.js?v=9717439a"></script>
   <script src="js/recipe-browse.js?v=6a29db55"></script>
-  <script src="js/magic-import.js?v=d3cc427b"></script>
+  <script src="js/magic-import.js?v=cc98ab27"></script>
   <script src="js/voice-intent.js?v=b2d33b92"></script>
   <script src="js/voice.js?v=55269d74"></script>
   <script src="js/meal-groceries.js?v=b934ab2d"></script>
@@ -2511,7 +2476,7 @@
   <script src="js/today-screen.js?v=f8d8f9de"></script>
   <script src="js/side-panel.js?v=2f3fa495"></script>
   <script type="module" src="js/meals.js?v=5884ad35"></script>
-  <script type="module" src="app.js?v=556502fe"></script>
+  <script type="module" src="app.js?v=4a50793f"></script>
   <script>
     // Offline support and "Install app" (sw.js)
     if ("serviceWorker" in navigator) {
