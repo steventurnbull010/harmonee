@@ -2,23 +2,23 @@
 // WHAT'S IN THE FRIDGE? (js/fridge.js) · asked for by Steven, 17 Nov
 // Like Skylight's Fridge Photo, but it looks in your own recipes first.
 //
-//   1. Which meal: Breakfast, Lunch or Dinner (skipped when opened from a
-//      day's meal slot, which already knows).
-//   2. What have you got: up to 5 photos (fridge, freezer, cupboard), and/or
-//      type it ("half a bag of spinach, eggs").
-//   3. Check: what harmonee read, as a tick list. Untick what's wrong, fix the
-//      words, add anything it missed (photos miss things in drawers).
-//   4. Ideas:
-//      - From your recipes: the family's recipes and the built-in ones, by how
-//        much of each you've already got ("You have 5 of 7 · need peppers,
-//        wraps"). Salt, pepper, oil, water and dried spices don't count either
-//        way. Everyone's diet and won't-eats are kept to (Magic Mealtime).
-//        No AI and no cost.
-//      - Something new: one tap and Gemini makes up a recipe from what's
-//        ticked (js/magic-import.js, about a penny). Save it to your recipes,
-//        or plan it (which saves it too).
-//      Planning asks "Add the ingredients to the shopping list?" as usual, with
-//      what's in the fridge already unticked (js/meal-groceries.js).
+// The point: what can we make right now with what's here? So no shopping.
+//   1. What have you got: Breakfast, Lunch or Dinner (always asked, at the
+//      top), then up to 5 photos (fridge, freezer, cupboard) and/or type or
+//      say it ("half a bag of spinach, eggs").
+//   2. Check: what we read, as a tick list. Untick what's wrong, fix the
+//      words, add anything we missed (photos miss things in drawers).
+//   3. Ideas you can make now:
+//      - From your recipes: the family's recipes and the built-in ones with
+//        everything here, or just one or two things short (said honestly:
+//        "Just missing a lemon"). Salt, pepper, oil, water and dried spices
+//        count as in the cupboard. Everyone's diet and won't-eats are kept to
+//        (Magic Mealtime). No AI and no cost.
+//      - Something new: one tap and Gemini makes up a recipe from only what's
+//        ticked plus cupboard basics (js/magic-import.js, about a penny). Save
+//        it to your recipes, or plan it (which saves it too).
+//      Cook it opens the recipe; planning from here doesn't ask about the
+//      shopping list (js/meal-groceries.js skipNext).
 //
 // Photos are shrunk and sent to be read, and never kept.
 //
@@ -27,6 +27,8 @@
 // ============================================================================
 (function () {
   const MAX_PHOTOS = 5;
+  const MAX_SHORT = 2;     // a recipe this many things short still shows ("Just missing a lemon")
+  const MAX_TYPED = 300;   // characters in the typing box
   const PER_PAGE = 3;
   const esc = (s) => (typeof window.escapeHtml === "function" ? window.escapeHtml(String(s ?? "")) : String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -88,34 +90,37 @@
       let fit = type === slot ? 4 : (slot === "lunch" && type === "dinner") ? 1 : (slot === "dinner" && type === "lunch") ? 0.5 : null;
       if (fit === null) return null; // no puddings for dinner, no roasts for breakfast
       const m = match(r, haveKeys);
-      if (!m.total || m.have.length < (m.total <= 3 ? 1 : 2)) return null;
+      // Make it now: everything here, or at most two things short
+      if (!m.total || m.need.length > MAX_SHORT || m.have.length < (m.total <= 3 ? 1 : 2)) return null;
+      // Short of the thing it's named after ("Long beans" with no beans): not really makeable
+      const titleWords = wordsOf(r.title);
+      if (m.need.some(line => { const k = keyOfLine(line); const w = k ? wordsOf(k.key) : []; return w.length && titleWords.includes(w[w.length - 1]); })) return null;
       if (!fits(r)) return null;
       const own = !String(r.id || "").startsWith("mealdb-");
-      const score = m.have.length * 3 - m.need.length * 1.5 + (m.have.length / m.total) * 4 + fit + (own ? 1 : 0);
+      // Using more of what's here beats being one thing short of something
+      const score = m.have.length * 2 - m.need.length * 3 + fit + (own ? 1 : 0);
       return { r, m, score };
-    }).filter(Boolean).sort((a, b) => b.score - a.score);
+    }).filter(Boolean).sort((a, b) => ((a.m.need.length ? 1 : 0) - (b.m.need.length ? 1 : 0)) || (b.score - a.score));
   }
 
   // ---- The sheet --------------------------------------------------------------------
   let dlg = null, state = null, fileInput = null;
   const people = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
   const keyOfDate = (d) => (typeof window.getLocalDateKey === "function" ? window.getLocalDateKey(d) : d.toISOString().slice(0, 10));
-  function nextFreeDay(slot) {
-    if (state && state.date) return state.date;
-    const get = window.getMealForDate;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(today); d.setDate(today.getDate() + i);
-      const m = typeof get === "function" ? get(d, slot) : null;
-      if (!m || !m.title) return d;
-    }
-    return today;
-  }
+  // Made now: today (or the day of the meal slot it was opened from)
+  const planDay = () => state.date || (() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; })();
+  const slotTaken = (d) => { const m = typeof window.getMealForDate === "function" ? window.getMealForDate(d, state.meal) : null; return !!(m && m.title); };
   function dayLabel(d, slot) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const diff = Math.round((d - today) / 86400000);
     if (diff === 0) return slot === "dinner" ? "tonight" : "today";
     return diff === 1 ? "tomorrow" : `${DAYS[d.getDay()]} ${d.getDate()}`;
+  }
+  // "Plan for tonight", or "Add to tonight's dinner" when something's already planned
+  function planWords(d) {
+    const when = dayLabel(d, state.meal);
+    if (!state.date && slotTaken(d)) return when === "tonight" ? "Add to tonight's dinner" : `Add to ${when === "today" ? "today" : when}'s ${state.meal}`;
+    return `Plan for ${when}`;
   }
 
   function getDialog() {
@@ -149,6 +154,7 @@
   }
   function close() {
     if (state) state.ticket++;
+    if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
     if (!dlg) return;
     if (window.Sheet) window.Sheet.close(dlg); else if (dlg.open) dlg.close();
   }
@@ -163,24 +169,24 @@
   function draw() {
     const canPhoto = !!(window.MagicImport && window.MagicImport.available("fridge"));
     const slotWord = (MEALS.find(m => m.key === state.meal) || MEALS[2]).label.toLowerCase();
-    if (state.step === "meal") {
-      dlg.innerHTML = `<div class="genie-card">${head("Show me what you've got, and I'll find something to make.")}
-        <p class="genie-q">Which meal?</p>
-        <div class="genie-opts">${MEALS.map(m => `<button type="button" class="genie-opt${state.meal === m.key ? " is-on" : ""}" data-fr="meal" data-val="${m.key}"><span class="genie-opt-icon" aria-hidden="true">${m.icon}</span><span>${esc(m.label)}</span></button>`).join("")}</div>
-      </div>`;
-      return;
-    }
     if (state.step === "show") {
       const thumbs = state.photos.map((p, i) => `<div class="fridge-thumb"><img src="${p.dataUrl}" alt="Photo ${i + 1}"><button type="button" class="fridge-thumb-x" data-fr="unphoto" data-i="${i}" aria-label="Remove photo ${i + 1}">✕</button></div>`).join("");
-      dlg.innerHTML = `<div class="genie-card">${head(`Finding you a ${slotWord}.`)}
+      const canTalk = !!(window.Voice && window.Voice.supported());
+      dlg.innerHTML = `<div class="genie-card">${head("Show us what's in, and we'll find something to make.")}
+        <p class="genie-q" id="fridge-meal-q">Which meal?</p>
+        <div class="fridge-meals" role="radiogroup" aria-labelledby="fridge-meal-q">${MEALS.map(m => `<button type="button" class="fridge-meal${state.meal === m.key ? " is-on" : ""}" role="radio" aria-checked="${state.meal === m.key}" data-fr="meal" data-val="${m.key}"><span aria-hidden="true">${m.icon}</span> ${esc(m.label)}</button>`).join("")}</div>
         <p class="genie-q">What have you got?</p>
         ${canPhoto ? `<p class="genie-hint">Take a photo of the fridge, freezer or cupboard (up to ${MAX_PHOTOS}), or type it, or both.</p>
         <div class="fridge-photos">${thumbs}${state.photos.length < MAX_PHOTOS ? `<button type="button" class="fridge-add-photo" data-fr="photo"><span class="fridge-add-photo-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span><span>${state.photos.length ? "Add another" : "Add a photo"}</span></button>` : ""}</div>` : `<p class="genie-hint">Type what you've got: one a line, or with commas.</p>`}
-        <label class="fridge-type-label" for="fridge-typed">${canPhoto ? "Or type what you've got" : "What you've got"}</label>
-        <textarea id="fridge-typed" class="fridge-typed" rows="3" placeholder="e.g. eggs, half a bag of spinach, cheddar, leftover rice">${esc(state.typed)}</textarea>
+        <label class="fridge-type-label" for="fridge-typed">${canPhoto ? `Or type${canTalk ? " or say" : ""} what you've got` : `Type${canTalk ? " or say" : ""} what you've got`}</label>
+        <div class="fridge-typed-wrap">
+          <textarea id="fridge-typed" class="fridge-typed${canTalk ? " has-mic" : ""}" rows="3" maxlength="${MAX_TYPED}" placeholder="e.g. eggs, half a bag of spinach, cheddar, leftover rice">${esc(state.typed)}</textarea>
+          ${canTalk ? `<button type="button" class="fridge-mic${state.listening ? " is-listening" : ""}" data-fr="talk" aria-pressed="${!!state.listening}" aria-label="${state.listening ? "Stop listening" : "Say what you've got"}" title="${state.listening ? "Stop listening" : "Say what you've got"}">${window.Voice.MIC_SVG}</button>` : ""}
+        </div>
+        ${state.listening ? `<p class="fridge-listening" role="status">Listening… say what you've got</p>` : ""}
         ${state.error ? `<p class="fridge-error" role="alert">${esc(state.error)}</p>` : ""}
         <div class="genie-foot is-sticky">
-          ${state.fixedMeal ? "<span></span>" : `<button type="button" class="genie-back" data-fr="to-meal">‹ Back</button>`}
+          <span></span>
           <button type="button" class="genie-plan" data-fr="read">Next</button>
         </div>
       </div>`;
@@ -191,8 +197,8 @@
       dlg.innerHTML = `<div class="genie-card">${head(`Finding you a ${slotWord}.`)}
         <div class="fridge-reading" role="status" aria-live="polite">
           <div class="fridge-reading-photos">${state.photos.map(p => `<span class="fridge-reading-photo"><img src="${p.dataUrl}" alt=""><span class="magic-import-scan" aria-hidden="true"></span></span>`).join("")}</div>
-          <p class="genie-q">Looking in your fridge…</p>
-          <p class="genie-hint">Spotting the food in your photo${state.photos.length === 1 ? "" : "s"}. This takes a few seconds.</p>
+          <p class="genie-q">Having a look in your fridge…</p>
+          <p class="genie-hint">We're spotting the food in your photo${state.photos.length === 1 ? "" : "s"}. This takes a few seconds.</p>
         </div>
         <div class="genie-foot"><span></span><button type="button" class="genie-back" data-fr="cancel-read">Cancel</button></div>
       </div>`;
@@ -205,13 +211,13 @@
         </label>`).join("");
       dlg.innerHTML = `<div class="genie-card">${head(`Finding you a ${slotWord}.`)}
         <p class="genie-q">Is this right?</p>
-        ${state.fromPhotos ? `<p class="fridge-note">📷 Photos can be misread: untick anything that's wrong, or tap the words to change them.</p>` : ""}
+        ${state.fromPhotos ? `<p class="fridge-note">📷 We might have misread something. Untick anything that's wrong, or tap the words to change them.</p>` : ""}
         <div class="list-review">
           <div class="list-review-head"><span class="list-review-count" id="fridge-count"></span><button type="button" class="list-review-all" data-fr="all">Untick all</button></div>
           ${rows ? `<div class="list-review-items">${rows}</div>` : `<p class="genie-hint">Nothing yet. Add what you've got below.</p>`}
         </div>
         <div class="fridge-extra-row">
-          <input type="text" id="fridge-extra" class="fridge-extra" placeholder="Add something it missed" autocomplete="off" enterkeyhint="done" aria-label="Add something it missed">
+          <input type="text" id="fridge-extra" class="fridge-extra" placeholder="Add something we missed" autocomplete="off" enterkeyhint="done" aria-label="Add something we missed">
           <button type="button" class="genie-recipe" data-fr="extra">＋ Add</button>
         </div>
         <div class="genie-foot is-sticky">
@@ -224,15 +230,16 @@
     }
     // Results
     const slot = state.meal;
-    const free = nextFreeDay(slot);
     const list = state.results.slice(state.page * PER_PAGE, state.page * PER_PAGE + PER_PAGE);
     const canIdea = !!(window.MagicImport && window.MagicImport.available("idea"));
     const need = (m) => m.need.length === 0 ? `<span class="fridge-need is-none">✓ You've got everything</span>`
-      : `<span class="fridge-need">Need ${esc(m.need.slice(0, 3).map(nameOf).join(", "))}${m.need.length > 3 ? ` +${m.need.length - 3} more` : ""}</span>`;
+      : `<span class="fridge-need">Just missing ${esc(m.need.map(nameOf).join(" and "))}</span>`;
+    const today = state.date || (() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; })();
+    const planLabel = esc(planWords(today));
     const ideaHtml = () => {
       const idea = state.idea;
       if (!canIdea) return "";
-      if (!idea) return `<button type="button" class="fridge-idea-btn" data-fr="idea"><span aria-hidden="true">✨</span><span><strong>Make up a new recipe</strong><small>From what you've got, to suit everyone</small></span></button>`;
+      if (!idea) return `<button type="button" class="fridge-idea-btn" data-fr="idea"><span aria-hidden="true">✨</span><span><strong>Make up a new recipe</strong><small>From just what you've got, to suit everyone</small></span></button>`;
       if (idea.loading) return `<div class="fridge-idea is-loading" role="status"><span class="fridge-idea-spin" aria-hidden="true">✨</span> Thinking up a recipe…</div>`;
       if (idea.error) return `<div class="fridge-idea"><p class="fridge-error" role="alert">${esc(idea.error)}</p><button type="button" class="genie-recipe" data-fr="idea">Try again</button></div>`;
       const r = idea.recipe, m = idea.m;
@@ -241,30 +248,31 @@
         <div class="fridge-idea-top"><span class="fridge-idea-emoji" aria-hidden="true">${esc(r.emoji || "🍲")}</span>
           <div><strong class="genie-result-title">${esc(r.title)}</strong>
           <span class="genie-result-sub">Made up for you${mins ? ` · about ${mins} mins` : ""}${r.servings ? ` · serves ${r.servings}` : ""}</span></div></div>
-        ${m ? `<p class="fridge-have-line">You have ${m.have.length} of ${m.total} · ${need(m)}</p>` : ""}
+        ${m ? `<p class="fridge-have-line">${need(m)}</p>` : ""}
         ${idea.unsuitable ? `<p class="fridge-error">Check it over: it may have something someone won't eat.</p>` : ""}
         <details class="fridge-idea-more"><summary>Ingredients and method</summary>
           <ul>${r.ingredients.map(i => `<li>${esc(i)}</li>`).join("")}</ul>
           <ol>${r.instructions.map(i => `<li>${esc(i)}</li>`).join("")}</ol>
         </details>
         <div class="genie-result-actions">
-          <button type="button" class="genie-plan" data-fr="plan-idea">📅 Plan for ${esc(dayLabel(free, slot))}</button>
+          <button type="button" class="genie-plan" data-fr="cook-idea">🍳 Cook it</button>
+          <button type="button" class="genie-recipe" data-fr="plan-idea">📅 ${planLabel}</button>
           <button type="button" class="genie-recipe" data-fr="save-idea"${idea.saved ? " disabled" : ""}>${idea.saved ? "✓ Saved" : "💾 Save recipe"}</button>
           <button type="button" class="genie-recipe" data-fr="idea">🔄 Another</button>
         </div>
       </div>`;
     };
     dlg.innerHTML = `<div class="genie-card">${head(`Finding you a ${state.meal === "dinner" ? "dinner" : state.meal}.`)}
-      <p class="genie-q">${list.length ? "From your recipes" : "Nothing in your recipes fits"}</p>
-      ${list.length ? "" : `<p class="genie-hint">${canIdea ? "Make up something new from what you've got instead." : "Try ticking a few more things."}</p>`}
+      <p class="genie-q">${!list.length ? "Nothing in your recipes fits what's here" : state.results.some(x => !x.m.need.length) ? "You can make these now" : "So close: just a thing or two short"}</p>
+      ${list.length ? "" : `<p class="genie-hint">${canIdea ? "Let's make up something new from what you've got instead." : "Try adding a few more things."}</p>`}
       <ul class="genie-results">${list.map(({ r, m }) => `<li class="genie-result">
         ${r.image ? `<img class="genie-photo" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="genie-photo is-emoji" aria-hidden="true">${esc(r.emoji || "🍽️")}</span>`}
         <div class="genie-result-body">
           <strong class="genie-result-title">${esc(r.title)}</strong>
-          <span class="fridge-have-line">You have ${m.have.length} of ${m.total} · ${need(m)}</span>
+          <span class="fridge-have-line">${need(m)}</span>
           <div class="genie-result-actions">
-            <button type="button" class="genie-plan" data-fr="plan" data-id="${esc(r.id)}">📅 Plan for ${esc(dayLabel(free, slot))}</button>
-            <button type="button" class="genie-recipe" data-fr="recipe" data-id="${esc(r.id)}">📖 Recipe</button>
+            <button type="button" class="genie-plan" data-fr="recipe" data-id="${esc(r.id)}">🍳 Cook it</button>
+            <button type="button" class="genie-recipe" data-fr="plan" data-id="${esc(r.id)}">📅 ${planLabel}</button>
           </div>
         </div>
       </li>`).join("")}</ul>
@@ -344,7 +352,7 @@
       if (ticket !== state.ticket) return;
       state.items = []; state.fromPhotos = true;
       mergeItems([...found, ...typed]);
-      if (!found.length && !typed.length) { state.step = "show"; state.error = "I couldn't spot any food. Try a closer photo in good light, or type what you've got."; draw(); return; }
+      if (!found.length && !typed.length) { state.step = "show"; state.error = "We couldn't spot any food. Try a closer photo in good light, or type what you've got."; draw(); return; }
       state.step = "check"; draw();
     } catch (err) {
       if (ticket !== state.ticket) return;
@@ -402,18 +410,50 @@
     return idea.recipe;
   }
 
-  function plan(recipe, m) {
+  // Into the plan for today. It's made from what's here, so no "add the
+  // ingredients to the shopping list?"
+  function plan(recipe) {
     const slot = state.meal;
-    const day = nextFreeDay(slot);
+    const day = planDay();
     const fromDrawer = !!state.date;
+    const add = !fromDrawer && slotTaken(day);
     close();
     setTimeout(() => {
       if (fromDrawer && typeof window.closePlanMealDrawer === "function") window.closePlanMealDrawer();
-      // "Add the ingredients to the shopping list?" with what's here unticked
-      if (window.MealGroceries && window.MealGroceries.haveForNext) window.MealGroceries.haveForNext(m ? m.haveKeys : []);
-      if (typeof window.planRecipeOn === "function") window.planRecipeOn(recipe, keyOfDate(day), slot);
-      if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🧊 ${recipe.title} planned for ${dayLabel(day, slot)}!`);
+      if (window.MealGroceries && window.MealGroceries.skipNext) window.MealGroceries.skipNext();
+      if (typeof window.planRecipeOn === "function") window.planRecipeOn(recipe, keyOfDate(day), slot, add ? { add: true } : {});
+      if (typeof window.showCalendarToast === "function") window.showCalendarToast(`🧊 ${recipe.title} ${add ? "added to" : "planned for"} ${dayLabel(day, slot)}${add ? `'s ${slot}` : ""}!`);
     }, 250);
+  }
+
+  // The recipe card, to cook from now
+  function cook(recipe) {
+    const slot = state.meal, day = planDay();
+    close();
+    setTimeout(() => { if (typeof window.openCookingRecipeModal === "function") window.openCookingRecipeModal(recipe, keyOfDate(day), slot); }, 250);
+  }
+
+  // 🎤 on the typing box: what's said goes in the box (no meaning read into it)
+  let rec = null;
+  function talk() {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) return;
+    if (rec) { try { rec.stop(); } catch (e) {} return; }
+    const r = new Rec();
+    rec = r;
+    r.lang = "en-GB";
+    r.interimResults = false;
+    r.continuous = false;
+    r.onresult = (e) => {
+      const said = [...e.results].map(x => x[0].transcript).join(" ").trim();
+      if (!said) return;
+      const now = String(state.typed || "").trim();
+      state.typed = (now ? `${now.replace(/[,\s]+$/, "")}, ${said}` : said).slice(0, MAX_TYPED);
+    };
+    const done = () => { if (rec === r) rec = null; state.listening = false; if (state.step === "show") draw(); };
+    r.onend = done;
+    r.onerror = done;
+    try { r.start(); state.listening = true; draw(); } catch (e) { rec = null; }
   }
 
   function onClick(e) {
@@ -422,8 +462,8 @@
     if (!b) return;
     const act = b.getAttribute("data-fr");
     if (act === "close") { close(); return; }
-    if (act === "meal") { state.meal = b.getAttribute("data-val"); state.step = "show"; draw(); return; }
-    if (act === "to-meal") { state.step = "meal"; draw(); return; }
+    if (act === "meal") { state.meal = b.getAttribute("data-val"); draw(); return; }
+    if (act === "talk") { talk(); return; }
     if (act === "photo") { pickPhotos(); return; }
     if (act === "unphoto") { state.photos.splice(Number(b.getAttribute("data-i")), 1); draw(); return; }
     if (act === "read") { read(); return; }
@@ -440,15 +480,12 @@
       if (r) { draw(); if (typeof window.showCalendarToast === "function") window.showCalendarToast(`💾 ${r.title} saved to your recipes`); }
       return;
     }
-    if (act === "plan-idea") { const r = saveIdea(); if (r) plan(r, state.idea.m); return; }
+    if (act === "plan-idea") { const r = saveIdea(); if (r) plan(r); return; }
+    if (act === "cook-idea") { const r = state.idea && state.idea.recipe; if (r) cook(r); return; }
     const hit = state.results.find(x => String(x.r.id) === b.getAttribute("data-id"));
     if (!hit) return;
-    if (act === "plan") { plan(hit.r, hit.m); return; }
-    if (act === "recipe") {
-      const slot = state.meal, day = nextFreeDay(slot);
-      close();
-      setTimeout(() => { if (typeof window.openCookingRecipeModal === "function") window.openCookingRecipeModal(hit.r, keyOfDate(day), slot); }, 250);
-    }
+    if (act === "plan") { plan(hit.r); return; }
+    if (act === "recipe") cook(hit.r);
   }
 
   // meal: "breakfast" | "lunch" | "dinner" (a guess from the time if not given)
@@ -458,11 +495,10 @@
     const known = ["breakfast", "lunch", "dinner"].includes(meal);
     const date = opts.date ? new Date(`${opts.date}T00:00:00`) : null;
     state = {
-      step: known && date ? "show" : "meal",
+      step: "show",
       meal: known ? meal : (h < 10 ? "breakfast" : h < 14 ? "lunch" : "dinner"),
-      fixedMeal: !!(known && date),
       date: date && !isNaN(date) ? date : null,
-      photos: [], typed: "", items: [], fromPhotos: false, results: [], page: 0, idea: null, error: "", ticket: 0
+      photos: [], typed: "", listening: false, items: [], fromPhotos: false, results: [], page: 0, idea: null, error: "", ticket: 0
     };
     getDialog();
     draw();

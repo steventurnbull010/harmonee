@@ -100,13 +100,12 @@
   }
 
   // ---- Add: after planning a meal --------------------------------------------------
-  // What's already in the fridge (js/fridge.js): planned from there, those
-  // ingredients start unticked ("In your fridge"). One go, for a short while.
-  let haveNext = null;
-  function haveForNext(keys) { haveNext = { keys: new Set(keys || []), until: Date.now() + 20000 }; }
+  // Planned from What's in the fridge (js/fridge.js): made from what's
+  // there, so don't ask. One go, for a short while.
+  let skipUntil = 0;
+  function skipNext() { skipUntil = Date.now() + 20000; }
   async function askAdd(meal, dateStr, slot) {
-    const have = haveNext && haveNext.until > Date.now() ? haveNext.keys : null;
-    haveNext = null;
+    if (skipUntil > Date.now()) { skipUntil = 0; return; }
     const lines = ingredientsOf(meal);
     const list = groceries();
     if (!lines.length || !window.Grocery || !window.Grocery.lineText || typeof window.addIngredientsToGroceryList !== "function") return;
@@ -119,10 +118,9 @@
       const t = window.Grocery.lineText(line);
       if (!t) return;
       if (seen.has(t.key)) { seen.get(t.key).lines.push(line); return; }
-      const got = !!(have && have.has(t.key));
-      seen.set(t.key, { key: t.key, text: t.text, basic: t.basic, got, lines: [line], note: got ? "In your fridge" : t.basic ? "Usually in the cupboard" : onNow.has(t.key) ? "Already on the list: this adds to it" : "" });
+      seen.set(t.key, { key: t.key, text: t.text, basic: t.basic, lines: [line], note: t.basic ? "Usually in the cupboard" : onNow.has(t.key) ? "Already on the list: this adds to it" : "" });
     });
-    const rows = [...seen.values()].map(r => ({ ...r, on: !r.basic && !r.got }));
+    const rows = [...seen.values()].map(r => ({ ...r, on: !r.basic }));
     if (!rows.length) return;
     const picked = await ask({ title: "Add the ingredients to the shopping list?", sub: `${meal.title} · ${whenText(dateStr, slot)}`, rows, verb: "Add", skip: "Not now" });
     if (!picked || !picked.length) return;
@@ -174,5 +172,5 @@
   }
   async function afterRemove({ dateStr, slot, meal }) { await askRemove(meal, dateStr, slot); }
 
-  window.MealGroceries = { afterPlan, afterRemove, onList, askRemove, askAdd, haveForNext };
+  window.MealGroceries = { afterPlan, afterRemove, onList, askRemove, askAdd, skipNext };
 })();

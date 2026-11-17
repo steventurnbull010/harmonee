@@ -1047,9 +1047,9 @@ const PAGES = [
     if (!plain.note || !plain.review || !plain.box || plain.btn !== "Add") throw new Error(`a plain Add several still shows the photo check: ${JSON.stringify(plain)}`);
     await p.evaluate(() => { document.getElementById("list-item-modal").close(); delete window.__SMOKE_AI; });
   }],
-  // What's in the fridge (17 Nov): photos -> a tick list -> your recipes by
-  // what you've got, and a made-up one to save or plan. Planning unticks
-  // what's in the fridge in "Add the ingredients to the shopping list?".
+  // What's in the fridge (17 Nov): which meal (always asked, at the top),
+  // photos -> a tick list -> recipes you can make now, and a made-up one from
+  // only what's here. Planning from here doesn't ask about the shopping list.
   ["fridge", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("meals"); });
     await p.waitForTimeout(300);
@@ -1057,27 +1057,31 @@ const PAGES = [
       window.__SMOKE_AI = async (photo, kind, extra) => {
         if (kind === "fridge") return { isList: true, items: ["Chicken breasts", "Red peppers", "Cheddar cheese", "Eggs", "Mystery tub"] };
         if (kind === "idea") return { isRecipe: true, title: "Cheesy chicken traybake", servings: 4, prepMinutes: 10, cookMinutes: 30, mealType: "dinner", emoji: "🍗",
-          ingredients: ["4 chicken breasts", "2 red peppers", "100g cheddar", "1 onion"], method: ["Heat the oven to 200C.", "Roast everything for 30 minutes."] };
+          ingredients: ["4 chicken breasts", "2 red peppers", "100g cheddar", "1 onion", "1 tbsp olive oil"], method: ["Heat the oven to 200C.", "Roast everything for 30 minutes."] };
         return { events: [] };
       };
-      window.Fridge.open("dinner");
+      window.Fridge.open();
     });
     await p.waitForTimeout(300);
+    // The meal is asked on the first screen
+    const meals = await p.$$eval("#fridge-sheet .fridge-meal", b => b.map(x => x.textContent.trim()));
+    if (meals.join("|") !== "🥞 Breakfast|🥪 Lunch|🍝 Dinner") throw new Error(`the meal question: ${meals.join(", ")}`);
     await p.click('#fridge-sheet [data-fr="meal"][data-val="dinner"]');
-    await p.waitForTimeout(200);
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
     const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click('#fridge-sheet [data-fr="photo"]')]);
     await chooser.setFiles([{ name: "fridge.png", mimeType: "image/png", buffer: png }, { name: "freezer.png", mimeType: "image/png", buffer: png }]);
     await p.waitForTimeout(500);
     await p.fill("#fridge-typed", "frozen peas, eggs");
-    const thumbs = await p.$$eval("#fridge-sheet .fridge-thumb", t => t.length);
-    if (thumbs !== 2) throw new Error(`two photos should show, got ${thumbs}`);
+    const box = await p.evaluate(() => ({ thumbs: document.querySelectorAll("#fridge-sheet .fridge-thumb").length, max: document.getElementById("fridge-typed").maxLength, mic: !!document.querySelector('#fridge-sheet [data-fr="talk"]') }));
+    if (box.thumbs !== 2 || box.max !== 300) throw new Error(`the first screen: ${JSON.stringify(box)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-fridge-show.png`) });
     await p.click('#fridge-sheet [data-fr="read"]');
     await p.waitForTimeout(600);
     const check = await p.evaluate(() => [...document.querySelectorAll("#fridge-sheet [data-fr-text]")].map(i => i.value));
     if (check.join("|") !== "Chicken breasts|Red peppers|Cheddar cheese|Eggs|Mystery tub|frozen peas") throw new Error(`the check list: ${check.join(", ")}`);
-    // Untick the mystery tub, add an onion it missed
+    const missed = await p.$eval("#fridge-extra", el => el.placeholder);
+    if (missed !== "Add something we missed") throw new Error(`the add box says ${missed}`);
+    // Untick the mystery tub, add an onion we missed
     await p.evaluate(() => { [...document.querySelectorAll("#fridge-sheet .list-review-row")].find(r => r.querySelector("[data-fr-text]").value === "Mystery tub").querySelector("[data-fr-tick]").click(); });
     await p.fill("#fridge-extra", "Onion");
     await p.click('#fridge-sheet [data-fr="extra"]');
@@ -1087,15 +1091,22 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-fridge-check.png`) });
     await p.click("#fridge-find");
     await p.waitForTimeout(300);
-    const res = await p.evaluate(() => [...document.querySelectorAll("#fridge-sheet .genie-result")].map(r => ({ title: r.querySelector(".genie-result-title").textContent, have: r.querySelector(".fridge-have-line").textContent.replace(/\s+/g, " ").trim() })));
-    if (!res.length) throw new Error("no recipes matched chicken, peppers, cheese, eggs, peas and onion");
-    if (!res.every(x => /^You have \d+ of \d+ · /.test(x.have))) throw new Error(`have/need lines: ${JSON.stringify(res)}`);
+    const res = await p.evaluate(() => [...document.querySelectorAll("#fridge-sheet .genie-result")].map(r => r.querySelector(".fridge-have-line").textContent.replace(/\s+/g, " ").trim()));
+    if (res.some(t => !/^(✓ You've got everything|Just missing .+)$/.test(t))) throw new Error(`make-now lines: ${JSON.stringify(res)}`);
+    if (res.some(t => (t.match(/ and /g) || []).length > 1)) throw new Error(`a result is more than two things short: ${JSON.stringify(res)}`);
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-fridge-results.png`) });
-    // Something new: made up, saved, then planned with what's here unticked
+    // Breakfast: only breakfast recipes
+    const breakfast = await p.evaluate(() => {
+      const all = window.getAllFamilyRecipes();
+      const ids = window.Fridge._rank(all, ["egg", "milk", "bread", "cheddar cheese", "chicken breast", "red pepper"], "breakfast").map(x => x.r);
+      return ids.filter(r => String(r.mealType || r.category || "dinner").toLowerCase() !== "breakfast").map(r => r.title);
+    });
+    if (breakfast.length) throw new Error(`breakfast ideas include ${breakfast.join(", ")}`);
+    // Something new: from only what's here, saved, then planned with no shopping question
     await p.click('#fridge-sheet [data-fr="idea"]');
     await p.waitForTimeout(500);
     const idea = await p.evaluate(() => ({ title: (document.querySelector("#fridge-sheet .fridge-idea .genie-result-title") || {}).textContent, have: (document.querySelector("#fridge-sheet .fridge-idea .fridge-have-line") || {}).textContent }));
-    if (idea.title !== "Cheesy chicken traybake" || !/You have 4 of 4/.test(idea.have || "")) throw new Error(`the made-up recipe: ${JSON.stringify(idea)}`);
+    if (idea.title !== "Cheesy chicken traybake" || !/You've got everything/.test(idea.have || "")) throw new Error(`the made-up recipe: ${JSON.stringify(idea)}`);
     await p.evaluate(() => document.querySelector("#fridge-sheet .fridge-idea").scrollIntoView({ block: "center" }));
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-fridge-idea.png`) });
     await p.click('#fridge-sheet [data-fr="save-idea"]');
@@ -1104,20 +1115,18 @@ const PAGES = [
     if (!saved) throw new Error("Save recipe didn't save it to the family recipes");
     await p.click('#fridge-sheet [data-fr="plan-idea"]');
     await p.waitForTimeout(1200);
-    const groc = await p.evaluate(() => {
+    const after = await p.evaluate(() => {
       const d = document.getElementById("meal-groc-dialog");
-      if (!d || !d.open) return null;
-      return [...d.querySelectorAll(".meal-groc-row")].map(r => `${r.querySelector("input").checked ? "on" : "off"}:${r.querySelector(".meal-groc-text").textContent.trim()}`);
+      const today = window.getMealForDate(new Date(), "dinner");
+      const dishes = today && window.MealDishes ? window.MealDishes.dishesOf(today).map(x => x.title) : [today && today.title];
+      return { asked: !!(d && d.open), planned: dishes.includes("Cheesy chicken traybake") };
     });
-    if (!groc) throw new Error("planning didn't ask about the shopping list");
-    const onOnly = groc.filter(x => x.startsWith("on:"));
-    if (onOnly.length !== 0 || !groc.some(x => /In your fridge/.test(x))) throw new Error(`what's in the fridge should start unticked: ${groc.join(" / ")}`);
-    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-fridge-groceries.png`) });
-    await p.evaluate(() => { const d = document.getElementById("meal-groc-dialog"); d.querySelector("[data-mg-skip]").click(); delete window.__SMOKE_AI; });
-    await p.waitForTimeout(300);
-    // A way in from the Recipes tab and Magic Mealtime
-    const ways = await p.evaluate(() => ({ genie: (() => { window.MealGenie.open("dinner"); const b = !!document.querySelector('#meal-genie [data-genie="fridge"]'); document.getElementById("meal-genie").close(); return b; })() }));
-    if (!ways.genie) throw new Error("no 'Or use what's in the fridge' in Magic Mealtime");
+    if (after.asked) throw new Error("planning from the fridge asked about the shopping list");
+    if (!after.planned) throw new Error("the made-up recipe wasn't planned for tonight");
+    await p.evaluate(() => { delete window.__SMOKE_AI; });
+    // A way in from Magic Mealtime
+    const genie = await p.evaluate(() => { window.MealGenie.open("dinner"); const b = !!document.querySelector('#meal-genie [data-genie="fridge"]'); document.getElementById("meal-genie").close(); return b; });
+    if (!genie) throw new Error("no 'Or use what's in the fridge' in Magic Mealtime");
   }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });

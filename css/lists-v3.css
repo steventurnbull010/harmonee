@@ -337,7 +337,7 @@ body.theme-dark .list-item-photo-note { background: rgba(2, 132, 199, 0.18); col
 }
 .list-review-items { display: flex; flex-direction: column; border: 1px solid var(--card-border, #e2e8f0); border-radius: 16px; padding: 0 16px; background: var(--card-bg, #fff); }
 .list-review-group + .list-review-group { border-top: 1px solid var(--card-border, #e2e8f0); }
-.list-review-aisle { padding: 12px 0 4px; font-size: 0.85rem; font-weight: 800; color: var(--text-secondary, #64748b); }
+.list-review-aisle { padding: 16px 0 8px; font-size: 0.85rem; font-weight: 800; color: var(--text-secondary, #64748b); }
 .list-review-row { display: flex; align-items: center; gap: 16px; min-height: 48px; }
 .list-review-items > .list-review-row + .list-review-row,
 .list-review-group .list-review-row + .list-review-row { border-top: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent); }

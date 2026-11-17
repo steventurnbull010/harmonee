@@ -118,8 +118,9 @@
   // A new recipe from what they have (js/fridge.js)
   function ideaInstructions() {
     return [
-      "You are a friendly family cook in the UK. You make up one recipe a family can cook tonight from what they already have.",
-      "Use mostly the food they list. You may add a few things most kitchens have (salt, pepper, oil, butter, flour, stock cubes, dried herbs and spices) and at most two other things they'd need to buy.",
+      "You are a friendly family cook in the UK. You make up one recipe a family can cook right now from what they already have, without going to the shops.",
+      "Use only the food they list, plus things most kitchens have in the cupboard (salt, pepper, oil, butter, flour, sugar, stock cubes, dried herbs and spices). Nothing else: they can't buy anything.",
+      "You don't have to use everything they list.",
       "Keep it simple and family friendly, ready in about 45 minutes or less. UK English and metric measures.",
       "Never use anything they say someone won't eat, and respect every diet given.",
       "title: the dish's name, at most 60 characters. mealType: breakfast, lunch or dinner, as asked.",
@@ -313,13 +314,13 @@
     let photos;
     try { photos = await Promise.all([...files].slice(0, 5).map(shrink)); }
     catch (err) { throw new Error(err.message); }
-    if (window.isOffline && window.isOffline()) throw new Error("Reading photos needs the internet. Try again when you're back online, or type what you've got.");
+    if (window.isOffline && window.isOffline()) throw new Error("We need the internet to look at photos. Try again when you're back online, or type what you've got.");
     try { return tidyList(await withTimeout(askAI(photos, "fridge"))); }
     catch (err) { console.warn("Couldn't read the fridge photos:", err); throw friendly(err, "reading the photos"); }
   }
   // A new recipe from what they have: { meal, have: [..], avoid: "..", serves }
   async function invent({ meal = "dinner", have = [], avoid = "", serves = 4 } = {}) {
-    if (window.isOffline && window.isOffline()) throw new Error("Making up a recipe needs the internet. Try again when you're back online.");
+    if (window.isOffline && window.isOffline()) throw new Error("We need the internet to make up a recipe. Try again when you're back online.");
     const text = [
       `Make up one ${meal} recipe for ${serves} people.`,
       `What we have: ${have.join(", ")}.`,
@@ -328,7 +329,7 @@
     let recipe;
     try { recipe = tidyRecipe(await withTimeout(askText("idea", text))); }
     catch (err) { console.warn("Couldn't make up a recipe:", err); throw friendly(err, "making up a recipe"); }
-    if (!recipe) throw new Error("I couldn't come up with one from that. Try ticking a few more things.");
+    if (!recipe) throw new Error("We couldn't come up with one from that. Try adding a few more things.");
     return recipe;
   }
 

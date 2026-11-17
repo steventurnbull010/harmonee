@@ -45,7 +45,13 @@ check("fajitas: need onion, wraps, soured cream", mf.need.length, 3);
 const curry = { id: "c", title: "Thai curry", mealType: "dinner", ingredients: ["400ml coconut milk", "500g beef", "1 onion", "Rice"] };
 const pudding = { id: "p", title: "Rice pudding", mealType: "pudding", ingredients: ["Milk", "Eggs", "Rice"] };
 const ranked = F._rank([curry, fajitas, omelette, pudding], have, "dinner").map(x => x.r.id);
-check("dinner: fajitas in, curry (nothing got) out, breakfast and pudding out", ranked, ["f"]);
+check("dinner: curry (nothing got), fajitas (3 short), breakfast and pudding all out", ranked, []);
+const nearly = { id: "n", title: "Chicken and pepper pilaf", mealType: "dinner", ingredients: ["2 chicken breasts", "1 red pepper", "200g rice", "Splash of oil"] };
+const ready = { id: "r", title: "Cheesy pepper eggs", mealType: "dinner", ingredients: ["4 eggs", "1 red pepper", "50g cheddar"] };
+check("dinner: everything here first, then one short", F._rank([nearly, fajitas, ready], have, "dinner").map(x => x.r.id), ["r", "n"]);
+const beans = { id: "b", title: "Long beans", mealType: "dinner", ingredients: ["500g long beans", "2 eggs"] };
+const bigger = { id: "g", title: "Chicken pepper bake", mealType: "dinner", ingredients: ["2 chicken breasts", "2 red peppers", "50g cheddar", "2 eggs", "1 lemon"] };
+check("short of the thing it's named after: left out", F._rank([beans, bigger], have, "dinner").map(x => x.r.id), ["g"]);
 check("breakfast: the omelette", F._rank([curry, fajitas, omelette], have, "breakfast").map(x => x.r.id), ["o"]);
 
 console.log(`${fail ? "❌" : "✅"} what's in the fridge: ${pass} passed, ${fail} failed`);
