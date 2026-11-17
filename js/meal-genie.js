@@ -417,6 +417,7 @@
         <ol class="genie-dots" aria-label="Question ${state.step + 1} of ${steps.length}">${steps.map((_, i) => `<li class="${i === state.step ? "is-now" : i < state.step ? "is-done" : ""}"></li>`).join("")}</ol>
         <p class="genie-q">${esc(st.q)}</p>
         <div class="genie-opts${st.opts.length > 3 ? " is-many" : ""}">${st.opts.map(o => `<button type="button" class="genie-opt${state.answers[key] === o.key ? " is-on" : ""}" data-genie="pick" data-key="${key}" data-val="${o.key}"><span class="genie-opt-icon" aria-hidden="true">${o.icon}</span><span>${esc(o.label)}</span></button>`).join("")}</div>
+        ${key === "meal" && window.Fridge ? `<button type="button" class="genie-fridge-link" data-genie="fridge"><span aria-hidden="true">🧊</span> Or use what's in the fridge</button>` : ""}
         ${state.step > 0 ? `<button type="button" class="genie-back" data-genie="back">‹ Back</button>` : ""}
       </div>`;
       return;
@@ -472,6 +473,7 @@
     if (!b) return;
     const act = b.getAttribute("data-genie");
     if (act === "close") { close(); return; }
+    if (act === "fridge") { const meal = state.answers.meal, date = state.date ? keyOf(state.date) : null; close(); setTimeout(() => window.Fridge && window.Fridge.open(meal, date ? { date } : {}), 250); return; }
     if (act === "back") { state.step = Math.max(0, state.step - 1); draw(); return; }
     if (act === "who-pick") {
       const n = b.getAttribute("data-name");
@@ -574,7 +576,17 @@
   // "Ava, Dara" — people with tastes saved, for a friendly line elsewhere
   const peopleWithTastes = () => people().filter(n => { const p = prefsOf(n); return p.diet || p.dislikes.length; });
 
-  window.MealGenie = { open: start, openTastes, fitsEveryone, peopleWithTastes, foods: () => FOODS.map(f => f.key), hasFood: (k, r) => hasFood(k, rawText(r)) };
+  // "Ava: vegetarian. Dara: won't eat mushrooms, fish" (for a made-up recipe, js/fridge.js)
+  function tastesSummary() {
+    return people().map(n => {
+      const p = prefsOf(n), bits = [];
+      if (p.diet) bits.push(dietLabel(p.diet).toLowerCase());
+      if (p.dislikes.length) bits.push(`won't eat ${p.dislikes.map(foodLabel).join(", ")}`);
+      return bits.length ? `${n}: ${bits.join("; ")}` : "";
+    }).filter(Boolean).join(". ");
+  }
+
+  window.MealGenie = { open: start, openTastes, fitsEveryone, peopleWithTastes, tastesSummary, foods: () => FOODS.map(f => f.key), hasFood: (k, r) => hasFood(k, rawText(r)) };
   document.addEventListener("click", (e) => {
     if (e.target.closest && e.target.closest("[data-open-genie]")) start();
   });

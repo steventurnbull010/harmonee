@@ -1039,6 +1039,7 @@ function renderDrawerMagicHero() {
       if (!window.MealGenie) return;
       if (e.target.closest("[data-drawer-tastes]")) { window.MealGenie.openTastes(); return; }
       if (e.target.closest("[data-drawer-genie]")) window.MealGenie.open(currentPlanningSlot, { date: currentPlanningDateStr });
+      if (e.target.closest("[data-drawer-fridge]") && window.Fridge) window.Fridge.open(currentPlanningSlot, { date: currentPlanningDateStr });
     });
   }
   const slotWord = { breakfast: "breakfast", lunch: "lunch", dinner: "dinner" }[currentPlanningSlot] || "meal";
@@ -1052,6 +1053,7 @@ function renderDrawerMagicHero() {
         <span class="magic-slim-wand" aria-hidden="true">🪄</span>
         <span class="magic-slim-words"><strong>Not sure?</strong> Find me a ${escapeHtml(slotWord)}</span>
       </button>
+      ${window.Fridge ? `<button type="button" class="magic-slim-tastes" data-drawer-fridge title="Use what's in the fridge: a photo or a list">🧊 Fridge</button>` : ""}
       <button type="button" class="magic-slim-tastes" data-drawer-tastes>Who eats what</button>
     </div>`;
   // A gentle glow each time the drawer opens (not on every search keystroke)

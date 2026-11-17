@@ -96,6 +96,7 @@
         <input type="search" data-rb-search placeholder="Search recipes or ingredients" autocomplete="off" aria-label="Search recipes" value="${esc(q)}">
       </label>
       <button type="button" class="rb-ideas-chip" data-open-genie title="Not sure what to make? Answer a few questions, get three ideas"><span aria-hidden="true">🪄</span> Ideas</button>
+      <button type="button" class="rb-ideas-chip" data-open-fridge title="What can I make with what's in the fridge?"><span aria-hidden="true">🧊</span> Fridge</button>
       <button type="button" class="rb-snap" data-snap-recipe><span aria-hidden="true">📷</span> Snap a recipe</button>
     </div>`;
   }

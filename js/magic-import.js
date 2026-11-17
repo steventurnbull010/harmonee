@@ -28,7 +28,10 @@
   // Each use has its own switch: recipes from a photo (since 10 Nov), flyers
   // to events (Snap a flyer, 10 Nov) and a photo of a list to its items
   // (a handwritten shopping list, a whiteboard, a screenshot; 16 Nov)
-  const AI_SWITCHED_ON = { recipe: true, events: true, list: true };
+  // What's in the fridge (js/fridge.js, 17 Nov): photos of the fridge, freezer
+  // or cupboard to a list of food ("fridge"), and a new recipe from what's
+  // there ("idea")
+  const AI_SWITCHED_ON = { recipe: true, events: true, list: true, fridge: true, idea: true };
   const AI_SDK = "https://www.gstatic.com/firebasejs/12.19.0";
   const MODEL = "gemini-3.8-flash";        // current Flash model on Firebase AI Logic (Nov 2026; gemini-2.5-flash is redirected from 1 Dec)
   const TIMEOUT_MS = 45000;
@@ -102,6 +105,28 @@
       "isList: false if the photo doesn't show a list."
     ].join("\n");
   }
+  // The fridge, freezer and cupboard (js/fridge.js)
+  function fridgeInstructions() {
+    return [
+      "You look at photos of a family's fridge, freezer and food cupboards to help them decide what to cook.",
+      "items: each food or cooking ingredient you can clearly see, short and plain, without brands (\"Cheddar cheese\", \"Chicken breasts\", \"Frozen peas\", \"Tinned chopped tomatoes\").",
+      "One entry per food, even if there are several of it. Leave out drinks (except milk), sauces and condiments in jars, and anything you can't make out.",
+      "Don't guess at what's inside closed tubs or packets unless the label says.",
+      "isList: false if the photos don't show food."
+    ].join("\n");
+  }
+  // A new recipe from what they have (js/fridge.js)
+  function ideaInstructions() {
+    return [
+      "You are a friendly family cook in the UK. You make up one recipe a family can cook tonight from what they already have.",
+      "Use mostly the food they list. You may add a few things most kitchens have (salt, pepper, oil, butter, flour, stock cubes, dried herbs and spices) and at most two other things they'd need to buy.",
+      "Keep it simple and family friendly, ready in about 45 minutes or less. UK English and metric measures.",
+      "Never use anything they say someone won't eat, and respect every diet given.",
+      "title: the dish's name, at most 60 characters. mealType: breakfast, lunch or dinner, as asked.",
+      "ingredients: one item per ingredient with its amount (\"2 chicken breasts\", \"200g frozen peas\").",
+      "method: short clear steps, in order. emoji: one emoji for the dish. isRecipe: true."
+    ].join("\n");
+  }
   async function listSchema(ai) {
     const S = ai.Schema;
     return S.object({ properties: { isList: S.boolean(), items: S.array({ items: S.string() }) }, propertyOrdering: ["isList", "items"] });
@@ -167,12 +192,12 @@
       const backend = ai.getAI(app, { backend: new ai.GoogleAIBackend() });
       return ai.getGenerativeModel(backend, {
         model: MODEL,
-        systemInstruction: kind === "recipe" ? recipeInstructions() : kind === "list" ? listInstructions() : instructions(),
+        systemInstruction: kind === "recipe" ? recipeInstructions() : kind === "list" ? listInstructions() : kind === "fridge" ? fridgeInstructions() : kind === "idea" ? ideaInstructions() : instructions(),
         // Reading a flyer needs little "thinking", and a short answer: keeps
         // each photo to about a penny (paid Gemini prices, Nov 2026)
         generationConfig: {
-          responseMimeType: "application/json", responseSchema: kind === "recipe" ? await recipeSchema(ai) : kind === "list" ? await listSchema(ai) : await schemaFor(ai),
-          temperature: 0.1, maxOutputTokens: kind === "recipe" ? 4096 : 2048,
+          responseMimeType: "application/json", responseSchema: (kind === "recipe" || kind === "idea") ? await recipeSchema(ai) : (kind === "list" || kind === "fridge") ? await listSchema(ai) : await schemaFor(ai),
+          temperature: kind === "idea" ? 0.8 : 0.1, maxOutputTokens: (kind === "recipe" || kind === "idea") ? 4096 : 2048,
           ...(ai.ThinkingLevel && ai.ThinkingLevel.LOW ? { thinkingConfig: { thinkingLevel: ai.ThinkingLevel.LOW } } : {})
         }
       });
@@ -187,8 +212,15 @@
     const m = await model(kind);
     const res = await m.generateContent([
       ...photos.map(p => ({ inlineData: { mimeType: "image/jpeg", data: p.base64 } })),
-      { text: kind === "recipe" ? "Read the recipe in these photos." : kind === "list" ? "Read the list in this photo." : "Find the events in this photo." }
+      { text: kind === "recipe" ? "Read the recipe in these photos." : kind === "list" ? "Read the list in this photo." : kind === "fridge" ? "List the food in these photos." : "Find the events in this photo." }
     ]);
+    return JSON.parse(res.response.text());
+  }
+  // Words only (no photo): a new recipe from what they have
+  async function askText(kind, text) {
+    if (typeof window.__SMOKE_AI === "function") return window.__SMOKE_AI(null, kind, text);
+    const m = await model(kind);
+    const res = await m.generateContent([{ text }]);
     return JSON.parse(res.response.text());
   }
 
@@ -268,6 +300,38 @@
       return null;
     }
   }
+  // ---- What's in the fridge (js/fridge.js) --------------------------------------------
+  // Its own sheet shows the waiting and any problem, so these just answer or throw
+  const friendly = (err, what) => {
+    const m = String(err && err.message || "");
+    if (/too long|internet|connected/.test(m)) return new Error(m);
+    if (/429|prepay|quota|exhaust/i.test(m)) return new Error("harmonee's photo reader has used up its credit for now. It needs topping up in Google AI Studio.");
+    return new Error(`Something went wrong ${what}. Try again in a moment.`);
+  };
+  // Up to 5 photos of the fridge, freezer or cupboard -> the food in them
+  async function readFood(files) {
+    let photos;
+    try { photos = await Promise.all([...files].slice(0, 5).map(shrink)); }
+    catch (err) { throw new Error(err.message); }
+    if (window.isOffline && window.isOffline()) throw new Error("Reading photos needs the internet. Try again when you're back online, or type what you've got.");
+    try { return tidyList(await withTimeout(askAI(photos, "fridge"))); }
+    catch (err) { console.warn("Couldn't read the fridge photos:", err); throw friendly(err, "reading the photos"); }
+  }
+  // A new recipe from what they have: { meal, have: [..], avoid: "..", serves }
+  async function invent({ meal = "dinner", have = [], avoid = "", serves = 4 } = {}) {
+    if (window.isOffline && window.isOffline()) throw new Error("Making up a recipe needs the internet. Try again when you're back online.");
+    const text = [
+      `Make up one ${meal} recipe for ${serves} people.`,
+      `What we have: ${have.join(", ")}.`,
+      avoid ? `Our family: ${avoid}` : ""
+    ].filter(Boolean).join("\n");
+    let recipe;
+    try { recipe = tidyRecipe(await withTimeout(askText("idea", text))); }
+    catch (err) { console.warn("Couldn't make up a recipe:", err); throw friendly(err, "making up a recipe"); }
+    if (!recipe) throw new Error("I couldn't come up with one from that. Try ticking a few more things.");
+    return recipe;
+  }
+
   // The camera or photo library, then the list's items to onItems
   function pickListPhoto(onItems) {
     const input = document.createElement("input");
@@ -594,5 +658,5 @@
 
   // Started from Photo at the top of Add Event (js/calendar.js)
 
-  window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, readList, pickListPhoto, _tidy: tidy, _tidyRecipe: tidyRecipe, _tidyList: tidyList };
+  window.MagicImport = { available, readPhoto, pickPhoto, readRecipe, readList, pickListPhoto, readFood, invent, shrink, _tidy: tidy, _tidyRecipe: tidyRecipe, _tidyList: tidyList };
 })();
