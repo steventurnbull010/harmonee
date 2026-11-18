@@ -8,8 +8,10 @@
 // Which list is a board setting (Settings > Display > Bank holidays):
 // England & Wales (the default), Scotland, Northern Ireland, or off.
 //
-//   BankHolidays.on("2026-12-26")   -> "Boxing Day" | null
-//   BankHolidays.chipHtml(dateKey, "box" | "month" | "banner")
+//   BankHolidays.on("2026-12-28")   -> "Day off for Boxing Day" | null (bank holidays only)
+//   BankHolidays.dayOf("2026-12-26") -> { name: "Boxing Day", dayOff: "2026-12-28" } | null
+//     a holiday on a weekend: its own date, when the day off has moved
+//   BankHolidays.chipHtml(dateKey, "box" | "month" | "banner")   either kind
 // ============================================================================
 (function () {
   const REGIONS = {
@@ -33,13 +35,30 @@
     return (data && data[dateKey]) || null;
   }
 
+  // A holiday on a weekend whose day off has moved: it's still that day
+  function dayOf(dateKey) {
+    const r = region();
+    if (r === "off") return null;
+    const days = window.BANK_HOLIDAYS_DATA && window.BANK_HOLIDAYS_DATA.days && window.BANK_HOLIDAYS_DATA.days[r];
+    return (days && days[dateKey]) || null;
+  }
+  // "Monday 28th"
+  function dayOffText(key) {
+    const [y, m, d] = String(key).split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  }
+
   // The chip, in the shape each calendar view uses for the day's dinner
   function chipHtml(dateKey, variant = "box") {
-    const name = on(dateKey);
-    if (!name) return "";
-    const title = `Bank holiday: ${name}`;
+    const bank = on(dateKey);
+    const day = bank ? null : dayOf(dateKey);
+    if (!bank && !day) return "";
+    const name = bank || day.name;
+    const title = bank ? `Bank holiday: ${name}` : `${name} (the bank holiday is ${dayOffText(day.dayOff)})`;
+    const label = bank ? "Bank holiday" : "Holiday";
     if (variant === "month") return `<div class="bank-holiday-chip is-month" title="${esc(title)}"><span aria-hidden="true">🎉</span><span class="bank-holiday-name">${esc(name)}</span></div>`;
-    if (variant === "banner") return `<div class="bank-holiday-chip is-banner" title="${esc(title)}"><span class="bank-holiday-icon" aria-hidden="true">🎉</span><span class="bank-holiday-text"><span class="bank-holiday-label">Bank holiday</span><span class="bank-holiday-name">${esc(name)}</span></span></div>`;
+    if (variant === "banner") return `<div class="bank-holiday-chip is-banner" title="${esc(title)}"><span class="bank-holiday-icon" aria-hidden="true">🎉</span><span class="bank-holiday-text"><span class="bank-holiday-label">${label}</span><span class="bank-holiday-name">${esc(name)}</span></span></div>`;
     return `<div class="bank-holiday-chip" title="${esc(title)}"><span aria-hidden="true">🎉</span><span class="bank-holiday-name">${esc(name)}</span></div>`;
   }
 
@@ -59,5 +78,5 @@
     }
   });
 
-  window.BankHolidays = { on, chipHtml, region, renderSettings, REGIONS };
+  window.BankHolidays = { on, dayOf, chipHtml, region, renderSettings, REGIONS };
 })();
