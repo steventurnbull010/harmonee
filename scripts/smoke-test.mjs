@@ -1249,6 +1249,91 @@ const PAGES = [
     await p.evaluate(async () => { document.querySelector('#panel-save-prompt [data-choice="discard"]').click(); });
     await p.waitForTimeout(400);
   }],
+  // The Bookshelf (22 Nov): a kind of list. Search with covers, a book panel
+  // (who, where they're up to, stars, comment), points for finishing, and a
+  // reading target with a bonus, all counting in Rewards
+  ["bookshelf", async (p) => {
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      window.boardSettings.bookPoints = { perBook: 5, targetBonus: 10 };
+      window.boardSettings.readingGoals = { Sam: { target: 2, period: "year" } };
+      window.mutateFamilyLists({ type: "upsertList", list: { id: "shelf-test", title: "Our bookshelf", emoji: "📚", color: "violet", type: "books" } });
+      window.mutateFamilyLists({ type: "addItems", listId: "shelf-test", items: [
+        { id: "bk-1", text: "The Gruffalo", author: "Julia Donaldson", who: "Sam", status: "done", rating: 5, finishedAt: window.getLocalDateKey(new Date()), checked: true, points: 5 },
+        { id: "bk-2", text: "Charlotte's Web", author: "E. B. White", who: "Alex", status: "reading", checked: false },
+        { id: "bk-3", text: "The Hobbit", author: "J. R. R. Tolkien", who: "Everyone", status: "want", checked: false }
+      ] });
+      window.__SMOKE_BOOKS = async (q) => [{ title: "Matilda", author: "Roald Dahl", cover: "", olKey: "/works/OL45846W", year: 1988 }];
+      window.switchSkylightView("lists");
+    });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { const b = document.querySelector('#lists-board [data-open-list="shelf-test"]'); if (b) b.click(); });
+    await p.waitForTimeout(400);
+    const shelf = await p.evaluate(() => {
+      const col = document.querySelector('#lists-board [data-list-id="shelf-test"]');
+      return {
+        sections: [...col.querySelectorAll(".book-section-title")].map(h => h.textContent.replace(/\s+/g, " ").trim()),
+        tiles: col.querySelectorAll(".book-tile").length,
+        count: col.querySelector(".list-detail-count").textContent,
+        target: (col.querySelector(".book-target-words") || {}).textContent || "",
+        targetsBtn: !!col.querySelector("[data-book-targets]")
+      };
+    });
+    if (shelf.sections.join("|") !== "📖 Reading 1|🔖 Want to read 1|✅ Finished 1" || shelf.tiles !== 3) throw new Error(`the shelf: ${JSON.stringify(shelf)}`);
+    if (shelf.count !== "1 reading · 1 finished" || !/Sam 1 of 2 books this year/.test(shelf.target.replace(/\s+/g, " ")) || !shelf.targetsBtn) throw new Error(`the shelf's header and target: ${JSON.stringify(shelf)}`);
+    const before = await p.evaluate(() => window.getMemberRewardBalance("Sam"));
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-bookshelf-shelf.png`) });
+    // Search, pick Matilda, Sam finished it, 4 stars
+    await p.fill('#lists-board [data-list-id="shelf-test"] [data-book-search]', "Matil");
+    await p.waitForTimeout(300);
+    await p.click('#lists-board [data-book-suggest] [data-book-pick="0"]');
+    await p.waitForTimeout(400);
+    const panel = await p.evaluate(() => ({ open: document.getElementById("book-modal").open, title: document.getElementById("book-title").value, author: document.getElementById("book-author").value }));
+    if (!panel.open || panel.title !== "Matilda" || panel.author !== "Roald Dahl") throw new Error(`picking a suggestion: ${JSON.stringify(panel)}`);
+    await p.click('#book-modal [data-book-who="Sam"]');
+    await p.click('#book-modal [data-book-status="done"]');
+    await p.click('#book-modal [data-book-star="4"]');
+    await p.fill("#book-comment", "Loved Miss Honey");
+    const note = await p.$eval("#book-points-note", el => el.hidden ? "" : el.textContent);
+    if (!/Sam gets 5 points/.test(note)) throw new Error(`the points note: ${note}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-book-panel.png`) });
+    await p.click("#book-save");
+    await p.waitForTimeout(500);
+    const after = await p.evaluate(() => {
+      const l = window.loadFamilyLists().find(x => x.id === "shelf-test");
+      const m = l.items.find(b => b.text === "Matilda");
+      return { m, balance: window.getMemberRewardBalance("Sam"), awarded: ((window.boardSettings.readingGoals || {}).Sam || {}).awarded };
+    });
+    if (!after.m || after.m.status !== "done" || after.m.rating !== 4 || after.m.who !== "Sam" || after.m.points !== 5 || after.m.comment !== "Loved Miss Honey" || !after.m.checked) throw new Error(`the saved book: ${JSON.stringify(after.m)}`);
+    const year = String(new Date().getFullYear());
+    if (!after.awarded || after.awarded[year] !== 10) throw new Error(`the target bonus: ${JSON.stringify(after.awarded)}`);
+    if (Math.round((after.balance - before) * 100) !== 1500) throw new Error(`Sam's balance went from ${before} to ${after.balance}, not +15`);
+    // Un-finishing it takes its 5 points back (the target bonus stays)
+    await p.evaluate(() => window.Bookshelf.openBook("shelf-test", window.loadFamilyLists().find(x => x.id === "shelf-test").items.find(b => b.text === "Matilda").id));
+    await p.waitForTimeout(300);
+    await p.click('#book-modal [data-book-status="reading"]');
+    await p.click("#book-save");
+    await p.waitForTimeout(400);
+    const back = await p.evaluate(() => window.getMemberRewardBalance("Sam"));
+    if (Math.round((back - before) * 100) !== 1000) throw new Error(`after un-finishing, Sam's balance is ${back} (was ${before})`);
+    // Sam's chip shows just Sam's books
+    await p.click('#lists-board [data-book-filter="Sam"]');
+    await p.waitForTimeout(300);
+    const sams = await p.$$eval('#lists-board [data-list-id="shelf-test"] .book-title', t => t.map(x => x.textContent));
+    if (sams.sort().join("|") !== "Matilda|The Gruffalo") throw new Error(`Sam's shelf: ${sams.join(", ")}`);
+    // Targets panel
+    await p.click('#lists-board [data-book-targets]');
+    await p.waitForTimeout(400);
+    const tp = await p.evaluate(() => ({ open: document.getElementById("reading-targets-modal").open, sam: document.getElementById("rt-target-0").value, per: document.getElementById("rt-per-book").value }));
+    if (!tp.open || tp.per !== "5") throw new Error(`the targets panel: ${JSON.stringify(tp)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-reading-targets.png`) });
+    await p.evaluate(() => {
+      document.getElementById("reading-targets-modal").close();
+      window.mutateFamilyLists({ type: "deleteList", listId: "shelf-test" });
+      delete window.__SMOKE_BOOKS; window.boardSettings.readingGoals = {}; window.boardSettings.bookPoints = {};
+      window.renderListsView();
+    });
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);
@@ -1335,7 +1420,8 @@ const PAGES = [
     // New list: pick Packing, keep the suggestions
     await p.evaluate(() => window.openCreateListModal());
     await p.waitForTimeout(500);
-    if ((await p.locator("#new-list-kind-picker [data-kind]").count()) !== 4) throw new Error("New list doesn't offer the four kinds");
+    const offered = await p.$$eval("#new-list-kind-picker [data-kind]", b => b.map(x => x.dataset.kind));
+    if (offered.join(",") !== "shopping,packing,wish,books,todo") throw new Error(`New list offers ${offered.join(", ")}, not the five kinds (Bookshelf too since 22 Nov)`);
     await p.click('#new-list-kind-picker [data-kind="packing"]');
     await p.fill("#new-list-title-input", "Summer holiday");
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-new.png`) });

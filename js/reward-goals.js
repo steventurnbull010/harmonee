@@ -21,7 +21,8 @@
 // even though the chores themselves reset. Writing by week key means two
 // devices doing the reset at once write the same numbers, never double.
 //
-// Spendable balance = banked past weeks + this week's live points − redeemed.
+// Spendable balance = banked past weeks + this week's live points + reading
+// points (finished books and targets, js/bookshelf.js) − redeemed.
 // ============================================================================
 
 
@@ -168,7 +169,9 @@ function getMemberRewardBalance(member) {
   const spent = (window.rewardRedemptions || [])
     .filter(r => r.member === member)
     .reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
-  return Math.round((banked + live - spent) * 100) / 100;
+  // Points from reading: finished books and reading targets (js/bookshelf.js)
+  const reading = window.Bookshelf ? window.Bookshelf.pointsFor(member) : 0;
+  return Math.round((banked + live + reading - spent) * 100) / 100;
 }
 window.getMemberRewardBalance = getMemberRewardBalance;
 

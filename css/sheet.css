@@ -128,11 +128,11 @@ body.theme-dark .hm-sheet-option { background: #0f172a; border-color: #334155; c
   z-index: 100600;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   width: max-content;
   max-width: min(480px, calc(100vw - 32px));
   min-height: 56px;
-  padding: 8px 8px 8px 16px;
+  padding: 8px 24px;
   box-sizing: border-box;
   border-radius: 999px;
   background: #0f172a;
@@ -143,8 +143,9 @@ body.theme-dark .hm-sheet-option { background: #0f172a; border-color: #334155; c
   transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hm-action-toast.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.hm-action-toast:has(.hm-action-toast-btn) { padding: 8px 8px 8px 24px; } /* the button sits 8px in from the round end */
 .hm-action-toast-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
-.hm-action-toast-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.hm-action-toast-words { display: flex; flex-direction: column; gap: 0; min-width: 0; flex: 1; }
 .hm-action-toast-words strong { font-size: 0.92rem; font-weight: 800; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hm-action-toast-words span { font-size: 0.82rem; font-weight: 600; line-height: 1.25; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hm-action-toast-btn {

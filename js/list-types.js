@@ -1,11 +1,13 @@
 // ============================================================================
 // KINDS OF LIST (js/list-types.js)
-// Every list is one of four kinds, each with its own cover photo and tools:
+// Every list is one of five kinds, each with its own cover photo and tools:
 //   shopping  the food shop: aisles, usuals, Shop mode, meal ingredients
 //   packing   holidays and days out: a section per person plus Family,
 //             "Start again" to untick it all for the next trip
 //   wish      Christmas and birthdays: whose list it is, links and prices
 //   todo      anything else, plain and simple
+//   books     the family bookshelf: covers, who's reading what, stars,
+//             comments and reading targets (js/bookshelf.js, 22 Nov)
 //
 // A list remembers its kind (list.type, set when it's made or edited). Older
 // lists don't have one, so it's worked out from the name: "Family Groceries"
@@ -17,9 +19,10 @@
     shopping: { key: "shopping", label: "Shopping", emoji: "🛒", color: "sky", cover: "images/lists/shopping.jpg", thumb: "images/lists/shopping-thumb.jpg", blurb: "Sorted into aisles, with your usuals" },
     packing: { key: "packing", label: "Packing", emoji: "🧳", color: "teal", cover: "images/lists/packing.jpg", thumb: "images/lists/packing-thumb.jpg", blurb: "Holidays and days out, a bit for each of you" },
     wish: { key: "wish", label: "Wish list", emoji: "🎁", color: "rose", cover: "images/lists/wish.jpg", thumb: "images/lists/wish-thumb.jpg", blurb: "Christmas and birthdays, with links and prices" },
-    todo: { key: "todo", label: "To-do", emoji: "✅", color: "amber", cover: "images/lists/todo.jpg", thumb: "images/lists/todo-thumb.jpg", blurb: "Anything else" }
+    todo: { key: "todo", label: "To-do", emoji: "✅", color: "amber", cover: "images/lists/todo.jpg", thumb: "images/lists/todo-thumb.jpg", blurb: "Anything else" },
+    books: { key: "books", label: "Bookshelf", emoji: "📚", color: "violet", cover: "images/lists/books.svg", thumb: "images/lists/books.svg", blurb: "Books you've read, with stars and reading targets" }
   };
-  const ORDER = ["shopping", "packing", "wish", "todo"];
+  const ORDER = ["shopping", "packing", "wish", "books", "todo"];
 
   const people = () => (window.familyMembers || []).map(m => (typeof m === "string" ? m : m && m.name)).filter(Boolean);
 
@@ -30,6 +33,8 @@
     if (list.id === "groceries" || list.emoji === "🛒" || has(list.title, /\b(grocer(y|ies)|shopping|food shop|supermarket)\b/)) return "shopping";
     if (list.emoji === "🧳" || has(list.title, /\b(pack|packing|holiday|holidays|travel|trip|camping|suitcase|weekend away)\b/)) return "packing";
     if (list.emoji === "🎁" || has(list.title, /\b(wish|wishlist|christmas|xmas|birthday|presents?|santa)\b/)) return "wish";
+    // Only clear names, so an older to-do like "Return library books" stays a to-do
+    if (list.emoji === "📚" || has(list.title, /\b(bookshelf|book shelf|reading list|books (we've|we have|i've|i have) read)\b/)) return "books";
     return "todo";
   }
   function typeOf(list) {

@@ -562,6 +562,7 @@ function renderListsView() {
     board.classList.add("lists-shell");
     board.classList.toggle("is-phone-detail", !!ui.phoneOpen);
     board.innerHTML = renderListsRail(lists, sel.id) + renderListDetail(sel, selIndex, justTicked);
+    if (window.Bookshelf) window.Bookshelf.afterRender(board);
   }
 
   Object.entries(drafts).forEach(([id, val]) => {
@@ -652,6 +653,7 @@ function railSubtitle(list) {
   const items = Array.isArray(list.items) ? list.items : [];
   if (type === "wish") { const o = T.ownerOf(list); return o && !String(list.title || "").toLowerCase().includes(o.toLowerCase()) ? `${o}'s wish list` : "Wish list"; }
   if (type === "packing") { const done = items.filter(i => i.checked).length; return items.length ? `${done} of ${items.length} packed` : "Packing"; }
+  if (type === "books" && window.Bookshelf) return window.Bookshelf.railSubtitle(list);
   return T.TYPES[type].label;
 }
 
@@ -665,8 +667,10 @@ function renderListsRail(lists, selectedId) {
           const toDo = (Array.isArray(list.items) ? list.items : []).filter(i => !i.checked).length;
           const on = list.id === selectedId;
           const kind = window.ListTypes ? window.ListTypes.info(list) : null;
+          // A bookshelf shows its newest book's cover (js/bookshelf.js)
+          const thumb = kind && kind.key === "books" && window.Bookshelf ? (window.Bookshelf.thumbOf(list) || kind.thumb) : kind && kind.thumb;
           return `<li><button type="button" class="lists-rail-row${on ? " is-selected" : ""}" data-open-list="${escapeHtml(list.id)}" aria-current="${on ? "true" : "false"}" style="--list-accent: ${col.accent}; --list-light: ${col.light};">
-            ${kind ? `<span class="lists-rail-photo" style="background-image: url('${kind.thumb}')" aria-hidden="true"><span class="lists-rail-photo-emoji">${escapeHtml(list.emoji || kind.emoji)}</span></span>` : ""}
+            ${kind ? `<span class="lists-rail-photo" style="background-image: url('${escapeHtml(thumb)}')" aria-hidden="true"><span class="lists-rail-photo-emoji">${escapeHtml(list.emoji || kind.emoji)}</span></span>` : ""}
             <span class="lists-rail-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span>
             <span class="lists-rail-words"><span class="lists-rail-name">${escapeHtml(list.title)}</span>${kind ? `<span class="lists-rail-kind">${escapeHtml(railSubtitle(list))}</span>` : ""}</span>
             <span class="lists-rail-count" aria-label="${toDo} to do">${toDo || ""}</span>
@@ -694,7 +698,8 @@ function renderListDetail(list, index, justTicked) {
   const owner = isWish && T ? T.ownerOf(list) : "";
   const textOf = (i) => (window.Grocery ? window.Grocery.displayText(i) : i.text);
   const aisleOf = (item) => window.Aisles.aisleFor(textOf(item), list.aisles);
-  const countText = items.length === 0 ? "Empty"
+  const isBooks = type === "books" && !!window.Bookshelf;
+  const countText = isBooks ? window.Bookshelf.countText(list) : items.length === 0 ? "Empty"
     : isPacking ? `${items.filter(i => i.checked).length} of ${items.length} packed`
     : isWish ? `${items.length} idea${items.length === 1 ? "" : "s"}`
     : `${toDo} to do${done.length ? ` · ${done.length} done` : ""}`;
@@ -797,7 +802,9 @@ function renderListDetail(list, index, justTicked) {
 
   // One main action per kind; Send and Edit are quiet
   const anyPacked = items.some(i => i.checked);
-  const primary = isGrocery && open.length
+  const primary = isBooks
+    ? `<button type="button" class="list-hero-main" data-book-targets title="Reading targets and points">🎯 Targets</button>`
+    : isGrocery && open.length
     ? `<button type="button" class="list-hero-main" data-shop-list="${escapeHtml(list.id)}" aria-label="Shop mode for ${escapeHtml(list.title)}" title="Shop mode: big, one-handed, sorted by aisle">🛒 Shop</button>`
     : isPacking && anyPacked
       ? `<button type="button" class="list-hero-main" data-start-again title="Untick everything, ready for the next trip">↺ Start again</button>`
@@ -831,7 +838,7 @@ function renderListDetail(list, index, justTicked) {
           </button>
         </div>
       </header>
-      ${whoPicker}
+      ${isBooks ? window.Bookshelf.bodyHtml(list) : `${whoPicker}
       <form class="list-column-add" data-add-item>
         <span class="list-add-ring" aria-hidden="true"></span>
         <input type="text" placeholder="${escapeHtml(addPlaceholder)}" aria-label="${escapeHtml(addPlaceholder)}" autocomplete="off" enterkeyhint="done">
@@ -841,7 +848,7 @@ function renderListDetail(list, index, justTicked) {
       ${usualsHtml}
       ${items.length === 0
         ? `<div class="list-detail-empty"><span class="list-detail-empty-icon" aria-hidden="true">${escapeHtml(list.emoji || "📋")}</span><p class="list-detail-empty-title">Nothing on ${escapeHtml(list.title)} yet</p><p class="list-detail-empty-text">${escapeHtml(emptyText)}</p></div>`
-        : `<div class="list-detail-sections${isGrocery ? " is-aisled" : ""}${isPacking ? " is-packing" : ""}">${sections}</div>`}
+        : `<div class="list-detail-sections${isGrocery ? " is-aisled" : ""}${isPacking ? " is-packing" : ""}">${sections}</div>`}`}
     </section>`;
 }
 
@@ -909,6 +916,7 @@ function onListsBoardSubmit(e) {
 
 function onListsBoardClick(e) {
   if (e.target.closest("[data-new-list]")) { openCreateListModal(); return; }
+  if (window.Bookshelf && window.Bookshelf.onBoardClick(e)) return; // js/bookshelf.js
   const openBtn = e.target.closest("[data-open-list]");
   if (openBtn) {
     const ui = listsUi();
@@ -1461,7 +1469,7 @@ function openCreateListModal(listId = null) {
   const suggestTitle = () => {
     if (titleTouched || !input) return;
     input.value = panelType === "wish" && panelOwner ? `${panelOwner}'s wish list` : "";
-    input.placeholder = { shopping: "List name, e.g. Big shop", packing: "List name, e.g. Summer holiday", wish: "List name, e.g. Ava's Christmas list", todo: "List name, e.g. Weekend jobs" }[panelType] || "List name";
+    input.placeholder = { shopping: "List name, e.g. Big shop", packing: "List name, e.g. Summer holiday", wish: "List name, e.g. Ava's Christmas list", books: "List name, e.g. Our bookshelf", todo: "List name, e.g. Weekend jobs" }[panelType] || "List name";
   };
   const renderKinds = () => {
     const row = document.getElementById("new-list-kind-picker");
