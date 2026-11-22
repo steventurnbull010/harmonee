@@ -5,9 +5,11 @@
 //   - Each book: its cover, title and author, who's reading it (a person, or
 //     Everyone for a read-together), Want to read / Reading / Finished, 0–5
 //     stars, a comment, and the day it was finished.
-//   - Adding: type a title and pick from Open Library's suggestions, with
-//     their covers (free, no account; only the typed words are sent), or just
-//     keep what you typed.
+//   - Adding: type a title and pick from the suggestions, with their covers
+//     (Open Library, then Google Books when it finds little; free, no
+//     account; only the typed words are sent), or just keep what you typed.
+//     A book with no cover gets one looked up by its title (once a visit).
+//   - Books with a cover show as covers; books without one as a slim row.
 //   - The shelf: Reading, Want to read and Finished, as covers, with a chip
 //     for each person to see just theirs.
 //   - Reading targets (🎯 Targets): each person can have a number of books
@@ -42,7 +44,9 @@
   const settings = () => window.boardSettings || {};
   const bookPoints = () => ({ perBook: 0, targetBonus: 0, ...(settings().bookPoints || {}) });
   const goals = () => settings().readingGoals || {};
-  const coverOf = (b) => (/^https:\/\/covers\.openlibrary\.org\/b\/id\/\d+-[SML]\.jpg$/.test(String(b.cover || "")) ? b.cover : "");
+  // Covers come from Open Library or Google Books only
+  const COVER_OK = /^(https:\/\/covers\.openlibrary\.org\/b\/id\/\d+-[SML]\.jpg|https:\/\/books\.google\.com\/books\/(publisher\/)?content\?[\w=&%.-]+)$/;
+  const coverOf = (b) => (COVER_OK.test(String(b.cover || "")) ? b.cover : "");
   const stars = (n, cls = "") => `<span class="book-stars ${cls}" aria-label="${n} star${n === 1 ? "" : "s"}">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= n ? "is-on" : ""}" aria-hidden="true">★</span>`).join("")}</span>`;
   function face(name) {
     if (!name || name === EVERYONE) return `<span class="book-face is-everyone" title="Read together" aria-hidden="true">👪</span>`;
@@ -78,9 +82,12 @@
     const who = filterBy[list.id] || "";
     const mine = who ? all.filter(b => b.who === who || (!b.who && who === EVERYONE)) : all;
     const names = people();
-    const chips = `<div class="book-filter" role="radiogroup" aria-label="Whose books">
-        <button type="button" class="list-who${!who ? " is-on" : ""}" role="radio" aria-checked="${!who}" data-book-filter="">Everyone</button>
-        ${names.map(n => `<button type="button" class="list-who${who === n ? " is-on" : ""}" role="radio" aria-checked="${who === n}" data-book-filter="${esc(n)}">${esc(n)}</button>`).join("")}
+    // Whose books: the same faces as Add Event's "Who's it for"
+    const pill = (key, name, html, color, buddy) => { const on = who === key; return `<button type="button" class="drawer-profile-pill ${on ? "active" : ""}" role="radio" aria-checked="${on}" data-book-filter="${esc(key)}" style="--profile-color:${color};">
+        <span class="drawer-profile-avatar${buddy ? " is-buddy" : ""}">${html}</span><span class="drawer-profile-name">${esc(name)}</span></button>`; };
+    const chips = `<div class="drawer-profiles-pills-row book-filter" role="radiogroup" aria-label="Whose books">
+        ${pill("", "Everyone", "👪", "#f59e0b", false)}
+        ${names.map(n => { const f = typeof window.memberFace === "function" ? window.memberFace(n) : { html: esc(n.charAt(0)), buddy: false }; return pill(n, n, f.html, palette(n).primary, f.buddy); }).join("")}
       </div>`;
     // Targets: each person (or the one picked) with one
     const g = goals();
@@ -109,12 +116,24 @@
         ${st === "done" && b.rating ? stars(Number(b.rating)) : ""}
       </button></li>`;
     };
+    // No cover: a slim row (a big blank cover is a lot of screen for a title)
+    const row = (b) => {
+      const st = statusOf(b);
+      return `<li><button type="button" class="book-row" data-book-open="${esc(b.id)}">
+        ${face(b.who)}
+        <span class="book-row-words"><strong>${esc(b.text)}</strong>${b.author ? `<small>${esc(b.author)}</small>` : ""}</span>
+        ${st === "done" && b.rating ? stars(Number(b.rating)) : ""}
+        <svg class="book-row-go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button></li>`;
+    };
     const sections = STATUSES.map(s => {
       let books = mine.filter(b => statusOf(b) === s.key);
       if (s.key === "done") books.sort((a, b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
       if (!books.length) return "";
+      const covered = books.filter(b => coverOf(b)), bare = books.filter(b => !coverOf(b));
       return `<section class="book-section"><h3 class="book-section-title">${s.icon} ${esc(s.label)} <span>${books.length}</span></h3>
-        <ul class="book-grid">${books.map(tile).join("")}</ul></section>`;
+        ${covered.length ? `<ul class="book-grid">${covered.map(tile).join("")}</ul>` : ""}
+        ${bare.length ? `<ul class="book-rows">${bare.map(row).join("")}</ul>` : ""}</section>`;
     }).join("");
     const empty = `<div class="list-detail-empty"><span class="list-detail-empty-icon" aria-hidden="true">📚</span>
         <p class="list-detail-empty-title">${who ? `Nothing on ${esc(who)}'s shelf yet` : "Your bookshelf is empty"}</p>
@@ -137,12 +156,36 @@
 
   // ---- Searching Open Library -----------------------------------------------------------
   let searchTimer = null, searchAbort = null;
+  // Google Books: better with misspellings ("The grufallo"), no key needed for a few looks
+  async function googleBooks(q, n = 5) {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=${n}&printType=books&fields=items(volumeInfo(title,authors,publishedDate,imageLinks/thumbnail))`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || []).map(it => {
+      const v = it.volumeInfo || {};
+      const thumb = String((v.imageLinks && v.imageLinks.thumbnail) || "").replace(/^http:/, "https:").replace(/&edge=curl/, "");
+      return { title: String(v.title || "").slice(0, 120), author: Array.isArray(v.authors) ? String(v.authors[0] || "").slice(0, 80) : "", cover: COVER_OK.test(thumb) ? thumb : "", olKey: "", year: parseInt(String(v.publishedDate || ""), 10) || null };
+    }).filter(d => d.title);
+  }
   async function search(q) {
     if (typeof window.__SMOKE_BOOKS === "function") return window.__SMOKE_BOOKS(q);
-    if (searchAbort) searchAbort.abort();
-    searchAbort = typeof AbortController === "function" ? new AbortController() : null;
+    const open = await openLibrary(q).catch(() => []);
+    if (open.filter(r => r.cover).length >= 2) return open;
+    const google = await googleBooks(q).catch(() => []);
+    const seen = new Set(open.map(r => r.title.toLowerCase()));
+    return [...open, ...google.filter(r => !seen.has(r.title.toLowerCase()))].slice(0, 6);
+  }
+  // typing: a newer search cancels the one before; a cover lookup isn't cancelled
+  async function openLibrary(q, typing = true) {
+    let signal;
+    if (typing) {
+      if (searchAbort) searchAbort.abort();
+      searchAbort = typeof AbortController === "function" ? new AbortController() : null;
+      signal = searchAbort ? searchAbort.signal : undefined;
+    }
     const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=key,title,author_name,cover_i,first_publish_year`;
-    const res = await fetch(url, searchAbort ? { signal: searchAbort.signal } : {});
+    const res = await fetch(url, signal ? { signal } : {});
     if (!res.ok) return [];
     const data = await res.json();
     return (data.docs || []).map(d => ({
@@ -152,6 +195,32 @@
       olKey: /^\/works\/OL\d+W$/.test(String(d.key || "")) ? d.key : "",
       year: Number.isInteger(d.first_publish_year) ? d.first_publish_year : null
     })).filter(d => d.title);
+  }
+  // A cover for a book with none: the best match by title (and author)
+  async function findCover(title, author) {
+    if (typeof window.__SMOKE_COVER === "function") return window.__SMOKE_COVER(title, author);
+    const q = [title, author].filter(Boolean).join(" ");
+    const open = await openLibrary(q, false).catch(() => []);
+    const hit = open.find(r => r.cover);
+    if (hit) return hit;
+    const google = await googleBooks(author ? `intitle:${title} inauthor:${author}` : title, 3).catch(() => []);
+    return google.find(r => r.cover) || null;
+  }
+  const looked = new Set(); // book ids looked up this visit
+  async function fillCover(listId, id) {
+    if (looked.has(id)) return;
+    looked.add(id);
+    const list = lists().find(l => l.id === listId);
+    const b = list && (list.items || []).find(x => x.id === id);
+    if (!b || coverOf(b) || (window.isOffline && window.isOffline())) return;
+    let hit = null;
+    try { hit = await findCover(b.text, b.author); } catch (e) { return; }
+    if (!hit || !hit.cover) return;
+    const now = lists().find(l => l.id === listId);
+    const cur = now && (now.items || []).find(x => x.id === id);
+    if (!cur || coverOf(cur)) return;
+    window.mutateFamilyLists({ type: "updateItem", listId, item: { ...cur, cover: hit.cover, author: cur.author || hit.author || "" } });
+    if (typeof window.renderListsView === "function") window.renderListsView();
   }
   function suggestHtml(results, typed) {
     return `<ul class="book-suggest-list" role="listbox" aria-label="Matching books">${results.map((r, i) => `<li><button type="button" class="book-suggest-row" data-book-pick="${i}" role="option">
@@ -210,9 +279,12 @@
     if (!col) return;
     const input = col.querySelector("[data-book-search]");
     const box = col.querySelector("[data-book-suggest]");
+    const listId = col.getAttribute("data-list-id");
+    // Covers for books without one (a few at a time, once a visit)
+    const list = lists().find(l => l.id === listId);
+    (list && list.items || []).filter(b => !coverOf(b) && !looked.has(b.id)).slice(0, 4).forEach(b => fillCover(listId, b.id));
     if (!input || !box || input._wired) return;
     input._wired = true;
-    const listId = col.getAttribute("data-list-id");
     wireSearch(input, box, (r) => {
       const typed = input.value.trim();
       input.value = "";
@@ -420,6 +492,7 @@
       window.showActionToast({ icon: justFinished ? "🎉" : "📚", title, text: justFinished ? `Finished${person ? ` by ${who}` : ""}${earnedNow ? ` · +${earnedNow} point${earnedNow === 1 ? "" : "s"}` : ""}` : before ? "Updated" : "Added to the shelf" });
     }
     if (justFinished && typeof sfx !== "undefined" && sfx && sfx.playCelebrationChime) sfx.playCelebrationChime();
+    if (!book.cover) { looked.delete(book.id); fillCover(editing.listId, book.id); }
     editing = null;
   }
   // Reached their target with this book? Gives the bonus once per year/month. Returns the bonus (or -1 for reached with no bonus), else 0

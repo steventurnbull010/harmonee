@@ -355,3 +355,33 @@ body.theme-dark .list-review-items { background: #0f172a; border-color: #334155;
 body.theme-dark .list-review-group + .list-review-group, body.theme-dark .list-review-row + .list-review-row { border-color: #334155; }
 body.theme-dark .list-review-text, body.theme-dark .list-review-all { color: #f8fafc; }
 body.theme-dark .list-review-all { border-color: #334155; }
+
+/* --- New list (22 Nov): the kinds as one row each, then the rest ----------- */
+.list-kind-picker.is-rows { grid-template-columns: 1fr; gap: 8px; }
+.list-kind.is-row { display: flex; flex-direction: row; align-items: center; gap: 16px; padding: 8px; min-height: 64px; text-align: left; }
+.list-kind.is-row:hover { transform: none; }
+.list-kind.is-row .list-kind-photo { flex: none; width: 72px; height: 48px; aspect-ratio: auto; border-radius: 8px; }
+.list-kind.is-row .list-kind-photo.is-emoji { display: grid; place-items: center; font-size: 1.6rem; background: #f1f5f9; }
+.list-kind.is-row .list-kind-words { flex: 1; min-width: 0; padding: 0; gap: 0; }
+.list-kind.is-row .list-kind-words strong { font-size: 1rem; }
+.list-kind.is-row .list-kind-words small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-kind-change {
+  justify-self: start; min-height: 40px; padding: 8px 16px; border: 1px solid var(--card-border, #e2e8f0); border-radius: 999px;
+  background: transparent; color: var(--text-primary, #0f172a); font: 700 0.88rem var(--font-body); cursor: pointer;
+}
+.new-list-details { display: flex; flex-direction: column; gap: 16px; }
+.new-list-details[hidden], .new-list-looks[hidden] { display: none; }
+.list-looks-toggle {
+  display: flex; align-items: center; gap: 16px; width: 100%; min-height: 64px; padding: 8px 16px; box-sizing: border-box;
+  border: 1px solid var(--card-border, #e2e8f0); border-radius: 16px; background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a); font: inherit; text-align: left; cursor: pointer;
+}
+.list-looks-swatch { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 1.3rem; }
+.list-looks-words { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.list-looks-words strong { font-size: 0.95rem; }
+.list-looks-words small { font-size: 0.82rem; color: var(--text-secondary, #64748b); }
+.list-looks-chevron { flex: none; width: 8px; height: 8px; margin: 0 8px 4px 0; border-right: 2.4px solid #64748b; border-bottom: 2.4px solid #64748b; transform: rotate(45deg); }
+.list-looks-toggle[aria-expanded="true"] .list-looks-chevron { transform: rotate(-135deg); margin-bottom: -4px; }
+.new-list-looks { display: flex; flex-direction: column; gap: 16px; }
+body.theme-dark .list-looks-toggle, body.theme-dark .list-kind-change { background: #0f172a; border-color: #334155; color: #f8fafc; }
+body.theme-dark .list-kind.is-row .list-kind-photo.is-emoji { background: #0f172a; }

@@ -79,8 +79,8 @@
   <link rel="stylesheet" href="css/tablet-fit.css?v=a4804eaf">
   <link rel="stylesheet" href="css/voice.css?v=59289b19">
   <link rel="stylesheet" href="css/lists-v2.css?v=9d38b07b">
-  <link rel="stylesheet" href="css/lists-v3.css?v=e69c6193">
-  <link rel="stylesheet" href="css/bookshelf.css?v=0e1e3c98">
+  <link rel="stylesheet" href="css/lists-v3.css?v=91e8c721">
+  <link rel="stylesheet" href="css/bookshelf.css?v=4909c594">
   <link rel="stylesheet" href="css/sheet.css?v=faf7706f">
   <link rel="stylesheet" href="css/magic-import.css?v=ab80c902">
   <link rel="stylesheet" href="css/meal-genie.css?v=326cd336">
@@ -2325,37 +2325,48 @@
         <button type="button" class="btn-modal-close" id="btn-close-create-list" aria-label="Close">✕</button>
       </div>
       <div class="modal-body list-panel-form">
-        <!-- What kind of list (js/list-types.js): photo tiles -->
-        <div class="drawer-field-group">
+        <!-- What kind of list (js/list-types.js): only this at first, one row
+             each; picking one shows the rest, with its icon and colour filled
+             in and folded away (22 Nov). Other = your own icon and colour. -->
+        <div class="drawer-field-group" id="new-list-kind-group">
           <div class="drawer-section-label-row"><span class="drawer-section-label" id="new-list-kind-label">What kind of list?</span></div>
-          <div class="list-kind-picker" id="new-list-kind-picker" role="radiogroup" aria-labelledby="new-list-kind-label"></div>
+          <div class="list-kind-picker is-rows" id="new-list-kind-picker" role="radiogroup" aria-labelledby="new-list-kind-label"></div>
         </div>
-        <div class="drawer-field-group" id="new-list-owner-group" hidden>
-          <div class="drawer-section-label-row"><span class="drawer-section-label" id="new-list-owner-label">Whose wish list?</span></div>
-          <div class="list-owner-picker" id="new-list-owner-picker" role="radiogroup" aria-labelledby="new-list-owner-label"></div>
-        </div>
-        <div class="drawer-input-row">
-          <span class="drawer-input-icon" aria-hidden="true">≡</span>
-          <input type="text" id="new-list-title-input" class="drawer-input-title" placeholder="List name, e.g. Camping Gear" aria-label="List name" autocomplete="off">
-        </div>
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">😀</span>
-            <span class="drawer-section-label" id="new-list-emoji-label">Icon</span>
+        <div class="new-list-details" id="new-list-details" hidden>
+          <div class="drawer-field-group" id="new-list-owner-group" hidden>
+            <div class="drawer-section-label-row"><span class="drawer-section-label" id="new-list-owner-label">Whose wish list?</span></div>
+            <div class="list-owner-picker" id="new-list-owner-picker" role="radiogroup" aria-labelledby="new-list-owner-label"></div>
           </div>
-          <div class="emoji-picker-row" id="new-list-emoji-picker" role="group" aria-labelledby="new-list-emoji-label"></div>
-        </div>
-        <div class="drawer-field-group">
-          <div class="drawer-section-label-row">
-            <span class="drawer-section-icon">🎨</span>
-            <span class="drawer-section-label" id="new-list-color-label">Colour</span>
+          <div class="drawer-input-row">
+            <span class="drawer-input-icon" aria-hidden="true">≡</span>
+            <input type="text" id="new-list-title-input" class="drawer-input-title" placeholder="List name, e.g. Camping Gear" aria-label="List name" autocomplete="off">
           </div>
-          <div class="list-color-picker" id="new-list-color-picker" role="group" aria-labelledby="new-list-color-label"></div>
+          <button type="button" class="list-looks-toggle" id="new-list-looks-toggle" aria-expanded="false" aria-controls="new-list-looks">
+            <span class="list-looks-swatch" id="new-list-looks-swatch" aria-hidden="true">📋</span>
+            <span class="list-looks-words"><strong>Icon and colour</strong><small id="new-list-looks-sub"></small></span>
+            <span class="list-looks-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="new-list-looks" id="new-list-looks" hidden>
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">😀</span>
+                <span class="drawer-section-label" id="new-list-emoji-label">Icon</span>
+              </div>
+              <div class="emoji-picker-row" id="new-list-emoji-picker" role="group" aria-labelledby="new-list-emoji-label"></div>
+            </div>
+            <div class="drawer-field-group">
+              <div class="drawer-section-label-row">
+                <span class="drawer-section-icon">🎨</span>
+                <span class="drawer-section-label" id="new-list-color-label">Colour</span>
+              </div>
+              <div class="list-color-picker" id="new-list-color-picker" role="group" aria-labelledby="new-list-color-label"></div>
+            </div>
+          </div>
+          <label class="list-starter-row" id="new-list-starter-row" hidden>
+            <input type="checkbox" id="new-list-starter" checked>
+            <span>Start with suggestions <small>passports, chargers, and a few things for each of you</small></span>
+          </label>
         </div>
-        <label class="list-starter-row" id="new-list-starter-row" hidden>
-          <input type="checkbox" id="new-list-starter" checked>
-          <span>Start with suggestions <small>passports, chargers, and a few things for each of you</small></span>
-        </label>
       </div>
       <div class="modal-footer create-list-footer">
         <button type="button" class="btn-sticky-delete" id="btn-delete-list-panel" style="display: none;">Delete List</button>
@@ -2419,7 +2430,7 @@
   </div>
 
   <!-- Core Utilities & Extracted Domain Modules -->
-  <script src="js/build-info.js?v=e0d249ae"></script>
+  <script src="js/build-info.js?v=cee3036c"></script>
   <script src="js/utils.js?v=0ae4664f"></script>
   <script src="js/streaks.js?v=d289c0a3"></script>
   <script src="js/nav-history.js?v=a5a66322"></script>
@@ -2435,9 +2446,9 @@
   <script src="js/weather.js?v=4d344242"></script>
   <script src="js/sleep.js?v=c50d8e01"></script>
   <script src="js/grocery.js?v=f93c76e7"></script>
-  <script src="js/list-types.js?v=512a62dd"></script>
-  <script src="js/lists.js?v=9ab01013"></script>
-  <script src="js/bookshelf.js?v=410a8a29"></script>
+  <script src="js/list-types.js?v=550f1e2d"></script>
+  <script src="js/lists.js?v=ff057b9c"></script>
+  <script src="js/bookshelf.js?v=579b1568"></script>
   <script src="js/aisles.js?v=171f4f8e"></script>
   <script src="js/shop-mode.js?v=7d6e082d"></script>
   <script src="js/rewards.js?v=8b5c1e0c"></script>

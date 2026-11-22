@@ -1457,9 +1457,16 @@ function openCreateListModal(listId = null) {
   if (input) input.value = editing ? editing.title : "";
   listPanelEmoji = editing ? (editing.emoji || "📋") : "📋";
   listPanelColor = editing ? getListColor(editing, lists.indexOf(editing)).key : LIST_COLOR_ORDER[lists.length % LIST_COLOR_ORDER.length];
-  // The kind of list and (wish lists) whose it is
+  // The kind of list and (wish lists) whose it is. A new list starts with
+  // just the kinds; picking one shows the rest (22 Nov)
   const T = window.ListTypes;
   let panelType = editing && T ? T.typeOf(editing) : "todo";
+  let pickedKind = editing && T ? T.typeOf(editing) : null; // "other" is a to-do with your own icon and colour
+  let kindsOpen = !editing;   // the full list of kinds, or just the one picked
+  let looksOpen = false;      // icon and colour folded away until wanted
+  const KIND_ORDER = ["shopping", "todo", "books", "wish", "packing", "other"];
+  const OTHER = { key: "other", label: "Other", emoji: "📋", blurb: "Your own name, icon and colour" };
+  const kindInfo = (k) => (k === "other" ? OTHER : T.TYPES[k]);
   let panelOwner = editing && T ? T.ownerOf(editing) : "";
   let titleTouched = !!editing;
   let looksTouched = !!editing; // icon or colour picked by hand
@@ -1469,15 +1476,32 @@ function openCreateListModal(listId = null) {
   const suggestTitle = () => {
     if (titleTouched || !input) return;
     input.value = panelType === "wish" && panelOwner ? `${panelOwner}'s wish list` : "";
-    input.placeholder = { shopping: "List name, e.g. Big shop", packing: "List name, e.g. Summer holiday", wish: "List name, e.g. Ava's Christmas list", books: "List name, e.g. Our bookshelf", todo: "List name, e.g. Weekend jobs" }[panelType] || "List name";
+    input.placeholder = pickedKind === "other" ? "List name" : ({ shopping: "List name, e.g. Big shop", packing: "List name, e.g. Summer holiday", wish: "List name, e.g. Ava's Christmas list", books: "List name, e.g. Our bookshelf", todo: "List name, e.g. Weekend jobs" }[panelType] || "List name");
+    // Bookshelf, Shopping: the kind's own name to start with
+    if (!editing && pickedKind === "books") input.value = "Our bookshelf";
+  };
+  const renderLooks = () => {
+    const sw = document.getElementById("new-list-looks-swatch");
+    const sub = document.getElementById("new-list-looks-sub");
+    const col = LIST_COLORS[listPanelColor] || LIST_COLORS.sky;
+    if (sw) { sw.textContent = listPanelEmoji; sw.style.background = col.light; sw.style.boxShadow = `inset 0 0 0 2px ${col.accent}`; }
+    if (sub) sub.textContent = `${col.label}${looksOpen ? "" : " · tap to change"}`;
+    const toggle = document.getElementById("new-list-looks-toggle");
+    const looks = document.getElementById("new-list-looks");
+    if (toggle) toggle.setAttribute("aria-expanded", String(looksOpen));
+    if (looks) looks.hidden = !looksOpen;
   };
   const renderKinds = () => {
     const row = document.getElementById("new-list-kind-picker");
     if (!row || !T) return;
-    row.innerHTML = T.ORDER.map(k => { const t = T.TYPES[k]; const on = k === panelType; return `<button type="button" class="list-kind${on ? " is-on" : ""}" data-kind="${k}" role="radio" aria-checked="${on}">
-        <span class="list-kind-photo" style="background-image: url('${t.thumb}')" aria-hidden="true"></span>
+    const shown = kindsOpen || !pickedKind ? KIND_ORDER : [pickedKind];
+    row.innerHTML = shown.map(k => { const t = kindInfo(k); const on = k === pickedKind; return `<button type="button" class="list-kind is-row${on ? " is-on" : ""}" data-kind="${k}" role="radio" aria-checked="${on}">
+        ${t.thumb ? `<span class="list-kind-photo" style="background-image: url('${t.thumb}')" aria-hidden="true"></span>` : `<span class="list-kind-photo is-emoji" aria-hidden="true">${t.emoji}</span>`}
         <span class="list-kind-words"><strong>${t.emoji} ${t.label}</strong><small>${t.blurb}</small></span>
-      </button>`; }).join("");
+      </button>`; }).join("") + (!kindsOpen && pickedKind && !(editing && editing.id === GROCERIES_LIST_ID) ? `<button type="button" class="list-kind-change" data-kind-change>Change</button>` : "");
+    const details = document.getElementById("new-list-details");
+    if (details) details.hidden = !pickedKind;
+    if (btnSave) { btnSave.hidden = !pickedKind; btnSave.style.display = pickedKind ? "" : "none"; } // its styles win over hidden
     if (ownerGroup) ownerGroup.hidden = panelType !== "wish";
     // Groceries is shared with Meals (ingredients go onto it), so it stays a shopping list
     const kindGroup = row.closest(".drawer-field-group");
@@ -1490,14 +1514,27 @@ function openCreateListModal(listId = null) {
   suggestTitle();
   const kindRow = document.getElementById("new-list-kind-picker");
   if (kindRow) kindRow.onclick = (e) => {
+    if (e.target.closest("[data-kind-change]")) { kindsOpen = true; renderKinds(); return; }
     const b = e.target.closest("[data-kind]");
     if (!b) return;
-    panelType = b.getAttribute("data-kind");
-    // A new list takes its kind's icon and colour (until you pick your own)
-    if (!looksTouched && T) { listPanelEmoji = T.TYPES[panelType].emoji; listPanelColor = T.TYPES[panelType].color; renderListEmojiPicker(modal); renderListColorPicker(); }
+    pickedKind = b.getAttribute("data-kind");
+    panelType = pickedKind === "other" ? "todo" : pickedKind;
+    kindsOpen = false;
+    // A new list takes its kind's icon and colour (until you pick your own);
+    // Other starts with the icon and colour open, to choose your own
+    if (!looksTouched && T) {
+      listPanelEmoji = kindInfo(pickedKind).emoji;
+      if (pickedKind !== "other") listPanelColor = T.TYPES[panelType].color;
+      renderListEmojiPicker(modal); renderListColorPicker();
+    }
+    looksOpen = pickedKind === "other";
     renderKinds();
+    renderLooks();
     suggestTitle();
+    if (input && !editing) focusAfterPanelOpens(input);
   };
+  const looksToggle = document.getElementById("new-list-looks-toggle");
+  if (looksToggle) looksToggle.onclick = () => { looksOpen = !looksOpen; renderLooks(); };
   const ownerRowEl = document.getElementById("new-list-owner-picker");
   if (ownerRowEl) ownerRowEl.onclick = (e) => {
     const b = e.target.closest("[data-owner]");
@@ -1523,6 +1560,7 @@ function openCreateListModal(listId = null) {
       if (!btn) return;
       looksTouched = true;
       listPanelEmoji = btn.getAttribute("data-emoji");
+      renderLooks();
       emojiRow.querySelectorAll(".emoji-picker-btn").forEach(b => {
         b.classList.toggle("selected", b === btn);
         b.classList.toggle("is-selected", b === btn);
@@ -1540,6 +1578,7 @@ function openCreateListModal(listId = null) {
       looksTouched = true;
       listPanelColor = sw.getAttribute("data-color");
       renderListColorPicker();
+      renderLooks();
     };
   }
 
@@ -1597,8 +1636,8 @@ function openCreateListModal(listId = null) {
     };
   }
 
+  renderLooks();
   if (!modal.open) modal.showModal();
-  if (input && !editing) focusAfterPanelOpens(input);
 }
 window.openCreateListModal = openCreateListModal;
 

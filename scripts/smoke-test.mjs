@@ -1264,22 +1264,29 @@ const PAGES = [
         { id: "bk-3", text: "The Hobbit", author: "J. R. R. Tolkien", who: "Everyone", status: "want", checked: false }
       ] });
       window.__SMOKE_BOOKS = async (q) => [{ title: "Matilda", author: "Roald Dahl", cover: "", olKey: "/works/OL45846W", year: 1988 }];
+      // A cover is looked up for a book without one (only The Gruffalo has one here)
+      window.__SMOKE_COVER = async (title) => (/gruffalo/i.test(title) ? { title, author: "Julia Donaldson", cover: "https://covers.openlibrary.org/b/id/8561698-M.jpg" } : null);
       window.switchSkylightView("lists");
     });
     await p.waitForTimeout(300);
     await p.evaluate(() => { const b = document.querySelector('#lists-board [data-open-list="shelf-test"]'); if (b) b.click(); });
-    await p.waitForTimeout(400);
+    await p.waitForTimeout(800);
     const shelf = await p.evaluate(() => {
       const col = document.querySelector('#lists-board [data-list-id="shelf-test"]');
       return {
         sections: [...col.querySelectorAll(".book-section-title")].map(h => h.textContent.replace(/\s+/g, " ").trim()),
         tiles: col.querySelectorAll(".book-tile").length,
+        rows: col.querySelectorAll(".book-row").length,
+        faces: col.querySelectorAll(".book-filter .drawer-profile-pill[data-book-filter]").length,
+        gruffaloCover: (window.loadFamilyLists().find(l => l.id === "shelf-test").items.find(b => b.id === "bk-1") || {}).cover || "",
         count: col.querySelector(".list-detail-count").textContent,
         target: (col.querySelector(".book-target-words") || {}).textContent || "",
         targetsBtn: !!col.querySelector("[data-book-targets]")
       };
     });
-    if (shelf.sections.join("|") !== "📖 Reading 1|🔖 Want to read 1|✅ Finished 1" || shelf.tiles !== 3) throw new Error(`the shelf: ${JSON.stringify(shelf)}`);
+    // The Gruffalo found its cover and shows as one; the others are slim rows
+    if (shelf.sections.join("|") !== "📖 Reading 1|🔖 Want to read 1|✅ Finished 1" || shelf.tiles !== 1 || shelf.rows !== 2 || !/8561698/.test(shelf.gruffaloCover)) throw new Error(`the shelf: ${JSON.stringify(shelf)}`);
+    if (shelf.faces !== 5) throw new Error(`the shelf should show Everyone and four faces: ${shelf.faces}`);
     if (shelf.count !== "1 reading · 1 finished" || !/Sam 1 of 2 books this year/.test(shelf.target.replace(/\s+/g, " ")) || !shelf.targetsBtn) throw new Error(`the shelf's header and target: ${JSON.stringify(shelf)}`);
     const before = await p.evaluate(() => window.getMemberRewardBalance("Sam"));
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-bookshelf-shelf.png`) });
@@ -1319,7 +1326,7 @@ const PAGES = [
     // Sam's chip shows just Sam's books
     await p.click('#lists-board [data-book-filter="Sam"]');
     await p.waitForTimeout(300);
-    const sams = await p.$$eval('#lists-board [data-list-id="shelf-test"] .book-title', t => t.map(x => x.textContent));
+    const sams = await p.$$eval('#lists-board [data-list-id="shelf-test"] .book-title, #lists-board [data-list-id="shelf-test"] .book-row-words strong', t => t.map(x => x.textContent));
     if (sams.sort().join("|") !== "Matilda|The Gruffalo") throw new Error(`Sam's shelf: ${sams.join(", ")}`);
     // Targets panel
     await p.click('#lists-board [data-book-targets]');
@@ -1329,8 +1336,9 @@ const PAGES = [
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-reading-targets.png`) });
     await p.evaluate(() => {
       document.getElementById("reading-targets-modal").close();
+      const back = document.querySelector("[data-lists-back]"); if (back && back.offsetParent) back.click(); // phones: back to My lists
       window.mutateFamilyLists({ type: "deleteList", listId: "shelf-test" });
-      delete window.__SMOKE_BOOKS; window.boardSettings.readingGoals = {}; window.boardSettings.bookPoints = {};
+      delete window.__SMOKE_BOOKS; delete window.__SMOKE_COVER; window.boardSettings.readingGoals = {}; window.boardSettings.bookPoints = {};
       window.renderListsView();
     });
   }],
@@ -1452,8 +1460,27 @@ const PAGES = [
     // New list: pick Packing, keep the suggestions
     await p.evaluate(() => window.openCreateListModal());
     await p.waitForTimeout(500);
-    const offered = await p.$$eval("#new-list-kind-picker [data-kind]", b => b.map(x => x.dataset.kind));
-    if (offered.join(",") !== "shopping,packing,wish,books,todo") throw new Error(`New list offers ${offered.join(", ")}, not the five kinds (Bookshelf too since 22 Nov)`);
+    // Only the kinds at first, one row each, in Steven's order (22 Nov)
+    const first = await p.evaluate(() => ({
+      offered: [...document.querySelectorAll("#new-list-kind-picker [data-kind]")].map(x => x.dataset.kind),
+      details: !document.getElementById("new-list-details").hidden,
+      save: getComputedStyle(document.getElementById("btn-save-new-list")).display !== "none",
+      tall: Math.max(...[...document.querySelectorAll("#new-list-kind-picker [data-kind]")].map(b => b.getBoundingClientRect().height))
+    }));
+    if (first.offered.join(",") !== "shopping,todo,books,wish,packing,other" || first.details || first.save || first.tall > 88) throw new Error(`New list at first: ${JSON.stringify(first)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-new-kinds.png`) });
+    // Bookshelf: its icon and colour filled in and folded away; the name too
+    await p.click('#new-list-kind-picker [data-kind="books"]');
+    const books = await p.evaluate(() => ({ shown: [...document.querySelectorAll("#new-list-kind-picker [data-kind]")].map(x => x.dataset.kind), looks: !document.getElementById("new-list-looks").hidden, swatch: document.getElementById("new-list-looks-swatch").textContent, name: document.getElementById("new-list-title-input").value }));
+    if (books.shown.join() !== "books" || books.looks || books.swatch !== "📚" || books.name !== "Our bookshelf") throw new Error(`picking Bookshelf: ${JSON.stringify(books)}`);
+    await p.click("#new-list-looks-toggle");
+    if (await p.$eval("#new-list-looks", el => el.hidden)) throw new Error("the icon and colour didn't open");
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-new-books.png`) });
+    // Other: your own icon and colour, open to start with
+    await p.click("#new-list-kind-picker [data-kind-change]");
+    await p.click('#new-list-kind-picker [data-kind="other"]');
+    if (await p.$eval("#new-list-looks", el => el.hidden)) throw new Error("Other should open the icon and colour");
+    await p.click("#new-list-kind-picker [data-kind-change]");
     await p.click('#new-list-kind-picker [data-kind="packing"]');
     await p.fill("#new-list-title-input", "Summer holiday");
     await p.screenshot({ path: path.join(SHOTS, `${p.__size}-list-new.png`) });

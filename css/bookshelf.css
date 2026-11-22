@@ -3,7 +3,8 @@
    and Finished, a chip per person, reading target bars, the search box with
    Open Library's suggestions, and the book and targets panels. 8px grid.
    ========================================================================== */
-.list-type-books .book-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* Whose books: Add Event's faces (drawer-profile-pill), Everyone first */
+.list-type-books .book-filter { margin-top: 16px; padding: 8px 0 0; gap: 8px; }
 .book-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 16px; margin-top: 16px; }
 .book-target { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px; border-radius: 16px; background: color-mix(in srgb, var(--list-light, #ede9fe) 60%, transparent); }
 .book-target-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -30,7 +31,16 @@
 .book-sections { display: flex; flex-direction: column; gap: 24px; margin: 24px 0; }
 .book-section-title { margin: 0 0 16px; font-size: 1.1rem; font-weight: 800; color: var(--text-primary, #0f172a); }
 .book-section-title span { margin-left: 8px; font-size: 0.85rem; font-weight: 700; color: var(--text-secondary, #64748b); }
-.book-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 24px 16px; }
+.book-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 24px 16px; }
+.book-grid + .book-rows { margin-top: 16px; }
+/* No cover: a slim row */
+.book-rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent); }
+.book-rows li { border-bottom: 1px solid color-mix(in srgb, var(--card-border, #e2e8f0) 70%, transparent); }
+.book-row { width: 100%; display: flex; align-items: center; gap: 16px; min-height: 56px; padding: 8px 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; color: var(--text-primary, #0f172a); }
+.book-row-words { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.book-row-words strong { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-row-words small { font-size: 0.82rem; color: var(--text-secondary, #64748b); }
+.book-row-go { flex: none; color: var(--text-secondary, #94a3b8); }
 .book-tile { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; color: var(--text-primary, #0f172a); }
 .book-cover {
   position: relative; width: 100%; aspect-ratio: 2 / 3; border-radius: 8px; background: #e2e8f0 center / cover no-repeat;
@@ -77,6 +87,12 @@
 .book-points-grid .ev-field { gap: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Narrow panels (portrait tablets): the title gets its own line above the buttons */
+@media (max-width: 900px) and (min-width: 601px) {
+  .list-type-books .list-hero { flex-wrap: wrap; gap: 8px 16px !important; }
+  .list-type-books .list-hero .list-detail-titles { flex: 1 1 100%; }
+  .list-type-books .list-hero .list-detail-title { font-size: 1.35rem; }
+}
 @media (max-width: 600px) {
   .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 8px; }
   .book-title { font-size: 0.85rem; }
@@ -87,7 +103,8 @@
 body.theme-dark .book-suggest { background: #1e293b; border-color: #334155; }
 body.theme-dark .book-suggest-row { color: #f8fafc; }
 body.theme-dark .book-suggest-row:hover { background: #273449; }
-body.theme-dark .book-tile, body.theme-dark .book-section-title, body.theme-dark .book-target-words strong { color: #f8fafc; }
+body.theme-dark .book-tile, body.theme-dark .book-row, body.theme-dark .book-section-title, body.theme-dark .book-target-words strong { color: #f8fafc; }
+body.theme-dark .book-rows, body.theme-dark .book-rows li { border-color: #334155; }
 body.theme-dark .book-target { background: rgba(124, 58, 237, 0.15); }
 body.theme-dark .book-target-bar { background: rgba(255, 255, 255, 0.1); }
 body.theme-dark .book-star { background: #0f172a; color: #475569; }
