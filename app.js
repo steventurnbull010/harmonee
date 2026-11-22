@@ -5544,9 +5544,12 @@ function initSkylightNavigation() {
       if (mealStrip) {
         e.stopPropagation();
         const dStr = mealStrip.getAttribute("data-date");
-        const dName = mealStrip.getAttribute("data-day") || "Tuesday";
-        if (typeof openPlanMealModalForDate === "function") {
-          openPlanMealModalForDate(dStr, dName);
+        // A planned dinner opens its recipe (ingredients, method, timers); an
+        // empty one, Plan Meal. (The day's name was passed as the meal here,
+        // so it never found the dinner and always opened Plan Meal.)
+        const open = window.openPlanMealModalForDate || (typeof openPlanMealModalForDate === "function" ? openPlanMealModalForDate : null);
+        if (open) {
+          open(dStr, mealStrip.getAttribute("data-slot") || "dinner");
         } else {
           switchSkylightView("meals");
         }

@@ -1374,6 +1374,32 @@ const PAGES = [
     if (!r.x || !r.x.countdown || r.x.icon !== "🎄" || !r.cd || !r.chip || r.own) throw new Error(`the Christmas countdown: ${JSON.stringify(r)}`);
     await p.evaluate(() => { window.boardSettings.eventExtras = {}; window.setCalendarView("week", new Date()); });
   }],
+  // Tapping a dinner on the calendar opens its recipe, not Plan Meal (22 Nov)
+  ["calendar-meal", async (p) => {
+    await p.evaluate(() => {
+      document.querySelectorAll("dialog[open]").forEach(d => d.close());
+      if (window.closePlanMealDrawer) window.closePlanMealDrawer();
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      window.setMealForDate(window.getLocalDateKey(d), { title: "Veggie burgers", emoji: "🍔", ingredients: ["4 bean burgers", "4 buns"], instructions: ["Grill the burgers for 10 mins."] }, "dinner");
+      window.switchSkylightView("calendar");
+      window.setCalendarView("week", d);
+    });
+    await p.waitForTimeout(500);
+    const r = await p.evaluate(async () => {
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      const chip = document.querySelector(`#calendar-week-grid .skylight-box-meal[data-date="${window.getLocalDateKey(d)}"]`);
+      if (!chip) return { chip: false };
+      chip.scrollIntoView({ block: "center" });
+      chip.click();
+      await new Promise(res => setTimeout(res, 500));
+      const mv = document.getElementById("meal-view");
+      const plan = document.getElementById("plan-meal-drawer");
+      return { chip: true, recipe: !!(mv && mv.open), title: mv ? (mv.querySelector("h1, h2, .mv-title") || {}).textContent : "", timer: !!(mv && mv.querySelector(".ct-start")), plan: !!(plan && plan.style.display !== "none") };
+    });
+    if (!r.chip || !r.recipe || !/Veggie burgers/.test(r.title || "") || !r.timer || r.plan) throw new Error(`tapping the dinner on the calendar: ${JSON.stringify(r)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-calendar-meal-open.png`) });
+    await p.evaluate(() => { const mv = document.getElementById("meal-view"); if (mv && mv.open) mv.close(); window.setCalendarView("week", new Date()); });
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);
