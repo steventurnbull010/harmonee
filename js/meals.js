@@ -1760,16 +1760,20 @@ function wireMealsHeaderAndDrawerListeners() {
 
   async function handleAttemptCloseDrawer() {
     if (isDrawerDirty()) {
-      const discard = window.Sheet
-        ? await window.Sheet.confirm({ icon: "📝", title: "Discard this meal?", text: "You've started filling it in, but it isn't saved yet.", yes: "Discard", no: "Keep editing", danger: true })
-        : confirm("You have unsaved meal details. Discard and close?");
-      if (discard) {
+      // The same question as every other panel (js/side-panel.js)
+      const discard = () => {
         const titleInput = document.getElementById("custom-meal-title");
         const notesInput = document.getElementById("custom-meal-notes");
         if (titleInput) titleInput.value = "";
         if (notesInput) notesInput.value = "";
         closePlanMealDrawer();
+      };
+      if (window.PanelGuard) {
+        const form = document.getElementById("form-custom-meal");
+        window.PanelGuard.ask({ onSave: () => { if (form) { const b = form.querySelector('[type="submit"]'); if (form.requestSubmit) form.requestSubmit(b); else b.click(); } }, onDiscard: discard });
+        return;
       }
+      if (confirm("You have unsaved meal details. Discard and close?")) discard();
     } else {
       closePlanMealDrawer();
     }

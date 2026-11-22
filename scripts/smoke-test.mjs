@@ -1183,6 +1183,72 @@ const PAGES = [
     const fresh = await p.evaluate(async () => { window.openEventModal(); await new Promise(res => setTimeout(res, 300)); const out = { imported: document.getElementById("event-modal").classList.contains("is-imported"), readOnly: document.getElementById("event-title-input").readOnly, dateLocked: document.getElementById("event-date-btn").disabled }; document.getElementById("btn-close-event-modal").click(); window.googleEvents = []; window.boardSettings.eventExtras = {}; return out; });
     if (fresh.imported || fresh.readOnly || fresh.dateLocked) throw new Error(`a new event after an imported one is still locked: ${JSON.stringify(fresh)}`);
   }],
+  // Unsaved changes (22 Nov): closing a panel any way but Save, with
+  // something changed, asks "Save your changes?"; nothing changed, it just closes
+  ["unsaved-changes", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      const out = {};
+      const ev = document.getElementById("event-modal");
+      const prompt = () => document.getElementById("panel-save-prompt");
+      const asked = () => !!(prompt() && prompt().open);
+      const choose = (c) => prompt().querySelector(`[data-choice="${c}"]`).click();
+      const outside = (el) => el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      // Nothing changed: closes straight away
+      window.openEventModal(); await wait(400);
+      outside(ev); await wait(400);
+      out.cleanClose = !ev.open && !asked();
+      // Typed a title, tapped outside: asked; Keep editing keeps it
+      window.openEventModal(); await wait(400);
+      const t = document.getElementById("event-title-input");
+      t.value = "Parents evening"; t.dispatchEvent(new Event("input", { bubbles: true }));
+      outside(ev); await wait(300);
+      out.asked = asked();
+      out.text = asked() ? prompt().querySelector(".save-prompt-title").textContent : "";
+      choose("keep"); await wait(300);
+      out.kept = ev.open && t.value === "Parents evening";
+      // ← with the change: Don't save closes it, nothing added
+      const before = (window.familyEvents || []).length;
+      ev.querySelector(".side-panel-back").click(); await wait(300);
+      out.askedBack = asked();
+      choose("discard"); await wait(500);
+      out.discarded = !ev.open && (window.familyEvents || []).length === before;
+      // Again, and Save saves it
+      window.openEventModal(); await wait(400);
+      t.value = "School play"; t.dispatchEvent(new Event("input", { bubbles: true }));
+      ev.dispatchEvent(new Event("cancel", { cancelable: true })); await wait(300);
+      out.askedEsc = asked();
+      choose("save"); await wait(600);
+      out.saved = !ev.open && (window.familyEvents || []).some(e => e.title === "School play");
+      // The Tasks drawer
+      window.openSkylightTaskDrawer(); await wait(400);
+      const ov = document.getElementById("skylight-task-drawer-overlay");
+      const tt = document.getElementById("drawer-task-title");
+      tt.value = "Feed the fish"; tt.dispatchEvent(new Event("input", { bubbles: true }));
+      outside(ov); await wait(300);
+      out.taskAsked = asked();
+      choose("discard"); await wait(300);
+      out.taskClosed = ov.style.display === "none";
+      // Add items to a list
+      window.openAddListItemPanel("groceries"); await wait(400);
+      const li = document.getElementById("list-item-modal");
+      document.getElementById("list-item-text").value = "Bananas";
+      outside(li); await wait(300);
+      out.listAsked = asked();
+      choose("discard"); await wait(400);
+      out.listClosed = !li.open;
+      return out;
+    });
+    const bad = Object.entries(r).filter(([k, v]) => k !== "text" && v !== true).map(([k]) => k);
+    if (bad.length || r.text !== "Save your changes?") throw new Error(`unsaved changes: ${bad.join(", ")} ${JSON.stringify(r)}`);
+    await p.evaluate(async () => { window.openEventModal(); await new Promise(res => setTimeout(res, 400)); const t = document.getElementById("event-title-input"); t.value = "Parents evening"; document.getElementById("event-modal").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await p.waitForTimeout(400);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-unsaved-ask.png`) });
+    await p.evaluate(async () => { document.querySelector('#panel-save-prompt [data-choice="discard"]').click(); });
+    await p.waitForTimeout(400);
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);

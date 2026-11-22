@@ -1672,9 +1672,14 @@ function openSkylightTaskDrawer(taskId = null, prefill = null) {
   overlay.style.display = "flex";
   if (typeof window.scrollPanelToTop === "function") window.scrollPanelToTop(overlay);
 
-  // Back button closes
-  document.getElementById("btn-task-drawer-back").onclick = () => { overlay.style.display = "none"; };
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = "none"; };
+  // Back, or tapping outside, closes: asking first if something's changed
+  // and not saved (js/side-panel.js PanelGuard)
+  const drawerForm = document.getElementById("skylight-task-drawer-form");
+  const shut = () => { overlay.style.display = "none"; };
+  const tryClose = () => (window.PanelGuard && drawerForm ? window.PanelGuard.dismiss(drawerForm, shut) : shut());
+  document.getElementById("btn-task-drawer-back").onclick = tryClose;
+  overlay.onclick = (e) => { if (e.target === overlay) tryClose(); };
+  if (window.PanelGuard && drawerForm) setTimeout(() => window.PanelGuard.mark(drawerForm), 120);
 }
 window.openSkylightTaskDrawer = openSkylightTaskDrawer;
 

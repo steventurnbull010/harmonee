@@ -26,6 +26,72 @@ const SIDE_PANEL_DIALOGS = [
 
 const SIDE_PANEL_SLIDE_MS = 300; // keep in step with css/side-panel.css
 
+// ---------------------------------------------------------------------------
+// "Save your changes?" (22 Nov): every panel remembers how its form looked
+// when it opened. Closing it any way but Save (←, tapping outside, Esc) with
+// something changed asks first: Save / Don't save / Keep editing.
+//   PanelGuard.mark(root)        remember how it looks now (on open)
+//   PanelGuard.dirty(root)       changed since?
+//   PanelGuard.dismiss(root, close, save)   ask if changed, else close
+// Only form fields count (what Save would save), not search boxes.
+// ---------------------------------------------------------------------------
+const PanelGuard = (() => {
+  const fields = (root) => [...root.querySelectorAll("form input, form select, form textarea")].filter(el =>
+    el.type !== "file" && el.type !== "search" && el.type !== "submit" && el.type !== "button" &&
+    !el.closest("[data-no-dirty]") && el.form && el.form.querySelector('[type="submit"]'));
+  function look(root) {
+    const vals = fields(root).map(el => (el.type === "checkbox" || el.type === "radio") ? (el.checked ? "1" : "0") : String(el.value || "").trim());
+    const pills = [...root.querySelectorAll("form [aria-pressed], form [aria-checked]")].filter(b => !b.closest("[data-no-dirty]")).map(b => `${b.getAttribute("data-event-member") || b.getAttribute("data-repeat") || b.textContent.trim().slice(0, 20)}=${b.getAttribute("aria-pressed") || b.getAttribute("aria-checked")}`).filter(x => /=true$/.test(x)).sort();
+    return JSON.stringify([vals, pills]);
+  }
+  function mark(root) { if (root) root._guardLook = look(root); }
+  function dirty(root) { return !!root && root._guardLook !== undefined && look(root) !== root._guardLook; }
+  function submit(root) {
+    const form = [...root.querySelectorAll("form")].find(f => f.querySelector('[type="submit"]'));
+    if (!form) return;
+    const btn = form.querySelector('[type="submit"]');
+    if (typeof form.requestSubmit === "function") form.requestSubmit(btn); else btn.click();
+  }
+  function ask({ onSave, onDiscard }) {
+    let dlg = document.getElementById("panel-save-prompt");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "panel-save-prompt";
+      dlg.className = "save-prompt-dialog hm-sheet";
+      dlg.setAttribute("aria-labelledby", "panel-save-prompt-title");
+      dlg.innerHTML = `
+        <div class="save-prompt-card">
+          <h2 class="save-prompt-title" id="panel-save-prompt-title">Save your changes?</h2>
+          <p class="save-prompt-text">You've made changes that aren't saved yet.</p>
+          <div class="save-prompt-actions">
+            <button type="button" class="save-prompt-btn is-primary" data-choice="save">Save</button>
+            <button type="button" class="save-prompt-btn" data-choice="discard">Don't save</button>
+          </div>
+          <button type="button" class="save-prompt-link" data-choice="keep">Keep editing</button>
+        </div>`;
+      document.body.appendChild(dlg);
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); dlg.close(); }); // Esc = keep editing
+    }
+    dlg.onclick = (e) => {
+      const btn = e.target.closest("[data-choice]");
+      if (!btn && e.target !== dlg) return;
+      const choice = btn ? btn.getAttribute("data-choice") : "keep"; // tap outside = keep editing
+      dlg.close();
+      if (choice === "save" && onSave) onSave();
+      if (choice === "discard" && onDiscard) onDiscard();
+    };
+    if (!dlg.open) dlg.showModal();
+    setTimeout(() => { try { dlg.querySelector('[data-choice="save"]').focus({ preventScroll: true }); } catch (e) {} }, 30);
+  }
+  // close: closes it without saving; save (optional): saves it (default: its form's Save)
+  function dismiss(root, close, save) {
+    if (!dirty(root)) { close(); return; }
+    ask({ onSave: save || (() => submit(root)), onDiscard: () => { root._guardLook = undefined; close(); } });
+  }
+  return { mark, dirty, dismiss, ask, submit };
+})();
+window.PanelGuard = PanelGuard;
+
 // Put the cursor in a field once the panel has finished sliding in. Doing it
 // mid-slide makes the browser jump to the field (and on an iPad starts the
 // keyboard), which is what made these panels feel jerkier than Tasks.
@@ -90,12 +156,15 @@ function addSmoothClose(dialog) {
     }
     if (!dialog.open) nativeShowModal();
     scrollPanelToTop(dialog);
+    // How it looks once it's filled in (some panels draw a moment after opening)
+    setTimeout(() => PanelGuard.mark(dialog), 120);
   };
 
-  // Escape: slide out too
+  // Escape: slide out too (asking first if something's changed)
   dialog.addEventListener("cancel", (e) => {
     e.preventDefault();
-    dialog.close();
+    if (typeof dialog.beforeClose === "function") { dialog.close(); return; } // Settings asks itself
+    PanelGuard.dismiss(dialog, () => dialog.close());
   });
 }
 
@@ -118,10 +187,15 @@ function upgradeToSidePanel(dialog) {
   back.className = "side-panel-back";
   back.setAttribute("aria-label", "Back");
   back.textContent = "←";
-  back.addEventListener("click", () => {
+  const closeNow = () => {
     if (closeBtn) closeBtn.click();
     // Belt and braces: if that handler didn't close it, close it ourselves.
     if (dialog.open) dialog.close();
+  };
+  // Changes not saved: ask first (Settings has its own question)
+  back.addEventListener("click", () => {
+    if (typeof dialog.beforeClose === "function") { closeNow(); return; }
+    PanelGuard.dismiss(dialog, closeNow);
   });
   header.appendChild(back);
   if (titleEl) {
