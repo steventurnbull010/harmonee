@@ -39,6 +39,14 @@ check("its chip says Boxing Day, and where the day off is", [/Boxing Day/.test(B
 check("the banner calls it a holiday, not a bank holiday", /bank-holiday-label">Holiday</.test(BH.chipHtml("2026-12-26", "banner")), true);
 check("Christmas 2027 (a Saturday) shows on the 25th, day off the 27th", [BH.dayOf("2027-12-25").name, BH.on("2027-12-27")], ["Christmas Day", "Day off for Christmas Day"]);
 check("a Thursday is no holiday at all", BH.dayOf("2026-12-24"), null);
+const xmas = BH.eventFor("2026-12-25");
+check("Christmas Day as an event to open", [xmas.id, xmas.title, xmas.source, xmas.duration, xmas.icon, xmas.countdown], ["bh-2026-12-25", "Christmas Day", "holiday", "All day", "🎉", false]);
+check("the chip opens it", /data-holiday-date="2026-12-25"/.test(BH.chipHtml("2026-12-25")), true);
+ctx.boardSettings = { eventExtras: { "bh-2026-12-25": { countdown: true, icon: "🎄" } } };
+ctx.getLocalDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+check("with a countdown and its own icon", [BH.eventFor("2026-12-25").countdown, BH.eventFor("2026-12-25").icon, /🎄/.test(BH.chipHtml("2026-12-25"))], [true, "🎄", true]);
+check("counted down to", BH.countdownEvents().map(e => e.id), new Date() <= new Date(2026, 11, 25) ? ["bh-2026-12-25"] : []);
+ctx.boardSettings = {};
 check("an ordinary day", BH.on("2026-11-09"), null);
 check("the data runs to the end of 2028", ctx.BANK_HOLIDAYS_DATA.until >= "2028-12-01", true);
 ctx.boardSettings = { bankHolidays: "scotland" };

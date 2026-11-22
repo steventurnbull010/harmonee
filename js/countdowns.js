@@ -31,7 +31,9 @@
     today.setHours(0, 0, 0, 0);
     const list = [];
     // The family's own events and imported ones with a countdown switched on
-    (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).forEach(evt => {
+    // ...and bank holidays with a countdown switched on (js/bank-holidays.js)
+    const holidays = window.BankHolidays && window.BankHolidays.countdownEvents ? window.BankHolidays.countdownEvents() : [];
+    [...(window.shownEvents ? window.shownEvents() : (window.familyEvents || [])), ...holidays].forEach(evt => {
       if (!evt || typeof evt !== "object" || !(evt.countdown || evt.birthday)) return;
       const next = nextOccurrence(evt, today, evt.countdown ? COUNTDOWN_DAYS : BIRTHDAY_DAYS);
       if (next) list.push({ evt, ...next });
@@ -186,7 +188,9 @@
   }
 
   function openEvent(el) {
-    const evt = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).find(x => x && String(x.id) === el.dataset.eventId);
+    const id = String(el.dataset.eventId || "");
+    const evt = /^bh-/.test(id) && window.BankHolidays ? window.BankHolidays.eventFor(id.slice(3))
+      : (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).find(x => x && String(x.id) === id);
     if (evt && typeof window.openEventQuickView === "function") window.openEventQuickView(evt, el.dataset.date);
   }
 

@@ -433,7 +433,11 @@ function openEventQuickView(evt, dateStr = null) {
   const fromGoogle = evt.source === "google" || evt.readOnly;
   $("btn-event-pop-edit").style.display = "";
   $("btn-event-pop-delete").style.display = fromGoogle ? "none" : "";
-  if (fromGoogle) {
+  if (evt.source === "holiday") {
+    $("btn-event-pop-delete").style.display = "none";
+    $("event-pop-notes-row").style.display = "";
+    $("event-pop-notes").textContent = `${notes ? `${notes}\n\n` : ""}Edit to add a countdown or change its icon.`;
+  } else if (fromGoogle) {
     $("event-pop-notes-row").style.display = "";
     $("event-pop-notes").textContent = `${notes ? `${notes}\n\n` : ""}From ${evt.member || "someone"}'s Google Calendar. Edit to add a countdown or change its icon; anything else, change in Google.`;
   }
@@ -1214,9 +1218,11 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
       // An imported event: just its countdown and icon, kept on the board
       if (modal.classList.contains("is-imported") && evt) {
         const google = (window.googleEvents || []).find(x => x.id === evt.id) || evt;
-        const icon = iconInput.value && iconInput.value !== (google.icon || "📅") ? iconInput.value : "";
+        const baseIcon = evt.source === "holiday" ? "🎉" : (google.icon || "📅");
+        const icon = iconInput.value && iconInput.value !== baseIcon ? iconInput.value : "";
         const countdown = !!(countdownToggle && countdownToggle.checked);
         Promise.resolve(window.saveEventExtras ? window.saveEventExtras(evt.id, { countdown, icon }) : null).finally(() => {
+          if (typeof window.renderWeekCalendar === "function") window.renderWeekCalendar();
           renderWeekCalendar();
           if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
         });
@@ -1305,10 +1311,11 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   // can change here (saved on the board, not in Google); the rest is shown
   // but locked, with a note saying where to change it
   {
-    const imported = !!(evt && (evt.source === "google" || evt.readOnly));
+    const holiday = !!(evt && evt.source === "holiday"); // a bank holiday (js/bank-holidays.js)
+    const imported = !!(evt && (evt.source === "google" || evt.readOnly || holiday));
     modal.classList.toggle("is-imported", imported);
     const note = document.getElementById("event-imported-note");
-    if (note) { note.hidden = !imported; note.textContent = imported ? `From ${evt.member || "someone"}'s Google Calendar. You can add a countdown or change its icon here. To change anything else, change it in Google.` : ""; }
+    if (note) { note.hidden = !imported; note.textContent = !imported ? "" : holiday ? "A bank holiday, from the government's list. You can add a countdown or change its icon here." : `From ${evt.member || "someone"}'s Google Calendar. You can add a countdown or change its icon here. To change anything else, change it in Google.`; }
     if (titleInput) titleInput.readOnly = imported;
     const lock = ["event-allday-toggle", "event-repeat-toggle", "event-date-btn", "event-end-date-btn", "event-start-time", "event-end-time", "event-span-clear"];
     lock.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = imported; });
@@ -1316,7 +1323,7 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
     const more = document.getElementById("event-more");
     if (more) more.hidden = imported;
     if (imported) {
-      if (modalTitle) modalTitle.textContent = "Event from Google";
+      if (modalTitle) modalTitle.textContent = holiday ? "Bank holiday" : "Event from Google";
       if (btnDelete) btnDelete.style.display = "none";
       const saved = window.importedEventExtras ? window.importedEventExtras(evt.id) : null;
       if (countdownToggle) countdownToggle.checked = !!(saved && saved.countdown);

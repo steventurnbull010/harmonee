@@ -61,6 +61,9 @@
     const next = {};
     Object.entries(extras()).forEach(([k, v]) => {
       if (k === id) return;
+      // A bank holiday's (bh-YYYY-MM-DD): kept until a month after its day
+      const holidayDay = /^bh-(\d{4}-\d{2}-\d{2})$/.exec(k);
+      if (holidayDay) { if (new Date(`${holidayDay[1]}T00:00:00`).getTime() + EXTRAS_KEPT_MS > now) next[k] = v; return; }
       if (shown.has(k) || (v && now - (v.savedAt || 0) < EXTRAS_KEPT_MS)) next[k] = v;
     });
     const mine = {};

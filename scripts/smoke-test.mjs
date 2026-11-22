@@ -1334,6 +1334,38 @@ const PAGES = [
       window.renderListsView();
     });
   }],
+  // Bank holiday chips open (22 Nov): Christmas Day is harmonee's own chip,
+  // not an event; tapping it opens the panel for a countdown and an icon
+  ["holiday-countdown", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); window.setCalendarView("week", new Date(2026, 11, 21)); });
+    await p.waitForTimeout(500);
+    const chip = p.locator('[data-holiday-date="2026-12-25"]').first();
+    if (!(await chip.count())) throw new Error("no Christmas Day chip in the week of 21 December");
+    await chip.scrollIntoViewIfNeeded();
+    await chip.click();
+    await p.waitForTimeout(400);
+    const pop = await p.evaluate(() => ({ title: document.getElementById("event-pop-title").textContent, edit: getComputedStyle(document.getElementById("btn-event-pop-edit")).display !== "none", del: getComputedStyle(document.getElementById("btn-event-pop-delete")).display !== "none", addOpen: document.getElementById("event-modal").open }));
+    if (pop.addOpen || !/Christmas Day/.test(pop.title) || !pop.edit || pop.del) throw new Error(`tapping Christmas Day: ${JSON.stringify(pop)}`);
+    await p.evaluate(() => document.getElementById("btn-event-pop-edit").click());
+    await p.waitForTimeout(400);
+    const panel = await p.evaluate(() => ({ title: document.getElementById("event-modal-title").textContent, locked: document.getElementById("event-date-btn").disabled, note: document.getElementById("event-imported-note").textContent }));
+    if (panel.title !== "Bank holiday" || !panel.locked || !/bank holiday/i.test(panel.note)) throw new Error(`the bank holiday panel: ${JSON.stringify(panel)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-holiday-edit.png`) });
+    const r = await p.evaluate(async () => {
+      document.getElementById("event-countdown-toggle").click();
+      document.getElementById("event-icon-input").value = "🎄";
+      document.getElementById("btn-save-event").click();
+      await new Promise(res => setTimeout(res, 500));
+      return {
+        x: (window.boardSettings.eventExtras || {})["bh-2026-12-25"],
+        cd: (window.getUpcomingCountdowns() || []).some(c => c.evt.id === "bh-2026-12-25"),
+        chip: /🎄/.test((document.querySelector('[data-holiday-date="2026-12-25"]') || {}).textContent || ""),
+        own: (window.familyEvents || []).some(e => e.id === "bh-2026-12-25")
+      };
+    });
+    if (!r.x || !r.x.countdown || r.x.icon !== "🎄" || !r.cd || !r.chip || r.own) throw new Error(`the Christmas countdown: ${JSON.stringify(r)}`);
+    await p.evaluate(() => { window.boardSettings.eventExtras = {}; window.setCalendarView("week", new Date()); });
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);
