@@ -112,7 +112,7 @@
       return `<li><button type="button" class="book-tile" data-book-open="${esc(b.id)}" aria-label="${esc(b.text)}${b.author ? ` by ${esc(b.author)}` : ""}">
         <span class="book-cover${cover ? "" : " is-blank"}"${cover ? ` style="background-image:url('${esc(cover)}')"` : ""}>${cover ? "" : `<span>${esc(b.text)}</span>`}${face(b.who)}</span>
         <span class="book-title">${esc(b.text)}</span>
-        ${b.author ? `<span class="book-author">${esc(b.author)}</span>` : ""}
+        <span class="book-author">${esc(b.author || "")}</span>
         ${st === "done" && b.rating ? stars(Number(b.rating)) : ""}
       </button></li>`;
     };

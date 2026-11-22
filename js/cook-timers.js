@@ -7,6 +7,11 @@
 // next at the top. When one is done it chimes (and buzzes, where the phone
 // lets a website) until someone taps Stop.
 //
+// Each running timer has its own pastel colour (never blue: that's a Start
+// button not yet tapped). Its step's button says "Running" in that colour
+// until it ends, and its stopwatch at the bottom has the same colour, so
+// it's easy to see which is which (22 Nov).
+//
 // Timers live on the board (board.timers.<id>), so one started on a phone
 // shows and rings on the kitchen tablet too. Each keeps the time it ends, not
 // a countdown, so it's right after switching apps or locking the phone; one
@@ -97,7 +102,22 @@
     const h = Math.floor(n / 60), m = n % 60;
     return h ? `${h} hour${h === 1 ? "" : "s"}${m ? ` ${m} minute${m === 1 ? "" : "s"}` : ""}` : `${m} minute${m === 1 ? "" : "s"}`;
   }
-  // The step's words with a small Start after each time in it
+  // Which step a timer came from: the dish, the step's name and its minutes
+  const keyOf = (dish, label, minutes) => `${dish || ""}|${label || ""}|${minutes}`;
+  // Pastel colours for running timers, in order (never blue)
+  const COLOURS = [
+    { bg: "#ffedd5", edge: "#fb923c", ink: "#9a3412" },  // peach
+    { bg: "#d1fae5", edge: "#34d399", ink: "#065f46" },  // mint
+    { bg: "#ede9fe", edge: "#a78bfa", ink: "#5b21b6" },  // lavender
+    { bg: "#fce7f3", edge: "#f472b6", ink: "#9d174d" },  // pink
+    { bg: "#fef9c3", edge: "#facc15", ink: "#854d0e" },  // butter
+    { bg: "#ffe4e6", edge: "#fb7185", ink: "#9f1239" }   // coral
+  ];
+  const colourStyle = (i) => { const c = COLOURS[((i || 0) % COLOURS.length + COLOURS.length) % COLOURS.length]; return `--ct-bg:${c.bg};--ct-edge:${c.edge};--ct-ink:${c.ink};`; };
+  let runningFor = () => null; // key -> the running timer (set once the timers below exist)
+
+  // The step's words with a small Start after each time in it (Running, in
+  // its timer's colour, while that timer runs)
   function stepHtml(text, opts = {}) {
     const s = String(text || "");
     const times = findTimes(s);
@@ -106,7 +126,8 @@
     times.forEach(t => {
       const label = labelFor(s, t.start) || (opts.step ? `Step ${opts.step}` : "Timer");
       html += escText(s.slice(last, t.end));
-      html += `<button type="button" class="ct-start" data-ct-start data-ct-min="${t.minutes}" data-ct-extra="${t.extra}" data-ct-label="${escText(label)}" data-ct-dish="${escText(opts.dish || "")}" aria-label="Start a timer for ${minutesWords(t.minutes)}: ${escText(label)}"><span aria-hidden="true">⏱️</span> Start</button>`;
+      const run = runningFor(keyOf(opts.dish, label, t.minutes));
+      html += `<button type="button" class="ct-start${run ? " is-running" : ""}" data-ct-start data-ct-key="${escText(keyOf(opts.dish, label, t.minutes))}" data-ct-min="${t.minutes}" data-ct-extra="${t.extra}" data-ct-label="${escText(label)}" data-ct-dish="${escText(opts.dish || "")}" aria-label="${run ? "Running" : "Start"} a timer for ${minutesWords(t.minutes)}: ${escText(label)}"${run ? ` style="${colourStyle(run.colour)}"` : ""}>${run ? `<span aria-hidden="true">⏳</span> Running` : `<span aria-hidden="true">⏱️</span> Start`}</button>`;
       last = t.end;
     });
     return html + escText(s.slice(last));
@@ -166,10 +187,16 @@
     return Object.values(timers).sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? b.endsAt - a.endsAt : leftMs(a, now) - leftMs(b, now)) || String(a.id).localeCompare(String(b.id)));
   }
 
-  function start({ label, dish = "", minutes, extra = 0 }) {
+  // A colour no other timer is using (the first free one)
+  function freeColour() {
+    const used = new Set(Object.values(timers).filter(t => !isDone(t)).map(t => t.colour));
+    for (let i = 0; i < COLOURS.length; i++) if (!used.has(i)) return i;
+    return Object.keys(timers).length % COLOURS.length;
+  }
+  function start({ label, dish = "", minutes, extra = 0, key = "" }) {
     const id = `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const total = Math.round(minutes * 60);
-    timers[id] = { id, label: String(label || "Timer").slice(0, 40), dish: String(dish || "").slice(0, 60), total, endsAt: Date.now() + total * 1000, left: null, extra: Math.round(extra * 60), at: Date.now() };
+    timers[id] = { id, label: String(label || "Timer").slice(0, 40), dish: String(dish || "").slice(0, 60), total, endsAt: Date.now() + total * 1000, left: null, extra: Math.round(extra * 60), at: Date.now(), colour: freeColour(), key: String(key || "").slice(0, 140) };
     sync(id);
     unlockSound();
     render();
@@ -310,7 +337,7 @@
     h.innerHTML = list.map(t => {
       const done = isDone(t, now), paused = !t.endsAt;
       const more = t.extra ? Math.round(t.extra / 60) : 1;
-      return `<div class="ct-timer${done ? " is-done" : ""}${paused ? " is-paused" : ""}${ringing.has(t.id) ? " is-ringing" : ""}" data-ct-id="${esc(t.id)}" role="group" aria-label="${esc(t.label)} timer">
+      return `<div class="ct-timer has-colour${done ? " is-done" : ""}${paused ? " is-paused" : ""}${ringing.has(t.id) ? " is-ringing" : ""}" data-ct-id="${esc(t.id)}" role="group" aria-label="${esc(t.label)} timer" style="${colourStyle(t.colour)}">
         <button type="button" class="ct-name" data-ct-rename title="Rename" aria-label="Rename ${esc(t.label)}"><strong>${esc(t.label)}</strong>${t.dish ? `<small>${esc(t.dish)}</small>` : ""}</button>
         ${done
           ? `<span class="ct-time ct-done-words" role="status">Done</span>
@@ -324,6 +351,22 @@
     }).join("");
     schedule();
     place();
+    syncStartButtons();
+  }
+
+  // The steps' Start buttons: Running (in its timer's colour) while their
+  // timer runs, Start again once it's done or stopped
+  function syncStartButtons() {
+    document.querySelectorAll("[data-ct-start][data-ct-key]").forEach(b => {
+      const run = runningFor(b.getAttribute("data-ct-key"));
+      const was = b.classList.contains("is-running");
+      if (!!run === was && (!run || b.style.getPropertyValue("--ct-bg") === COLOURS[run.colour % COLOURS.length].bg)) return;
+      b.classList.toggle("is-running", !!run);
+      b.setAttribute("style", run ? colourStyle(run.colour) : "");
+      b.innerHTML = run ? `<span aria-hidden="true">⏳</span> Running` : `<span aria-hidden="true">⏱️</span> Start`;
+      const label = b.getAttribute("data-ct-label") || "";
+      b.setAttribute("aria-label", `${run ? "Running" : "Start"} a timer: ${label}`);
+    });
   }
 
   function onClick(e) {
@@ -364,11 +407,10 @@
     if (!b) return;
     e.preventDefault();
     e.stopPropagation();
-    start({ label: b.getAttribute("data-ct-label"), dish: b.getAttribute("data-ct-dish"), minutes: parseInt(b.getAttribute("data-ct-min"), 10) || 1, extra: parseInt(b.getAttribute("data-ct-extra"), 10) || 0 });
+    // Already running: it stays as it is (no second timer for the same step)
+    if (runningFor(b.getAttribute("data-ct-key"))) return;
+    start({ label: b.getAttribute("data-ct-label"), dish: b.getAttribute("data-ct-dish"), minutes: parseInt(b.getAttribute("data-ct-min"), 10) || 1, extra: parseInt(b.getAttribute("data-ct-extra"), 10) || 0, key: b.getAttribute("data-ct-key") || "" });
     if (typeof sfx !== "undefined" && sfx && sfx.playClick) { try { sfx.playClick(); } catch (err) {} }
-    b.classList.add("is-started");
-    b.innerHTML = `<span aria-hidden="true">✓</span> Started`;
-    setTimeout(() => { if (b.isConnected) { b.classList.remove("is-started"); b.innerHTML = `<span aria-hidden="true">⏱️</span> Start`; } }, 2500);
   }, true);
 
   // Follow pop-ups opening and closing (and pages redrawing them)
@@ -386,6 +428,9 @@
   }).observe(document.documentElement, { attributes: true, attributeFilter: ["open"], subtree: true, childList: true });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { tick(); wakeLock(Object.values(timers).some(t => t.endsAt && !isDone(t))); } });
   addEventListener("resize", queuePlace);
+
+  // A step's timer that's still going (running or paused, not done)
+  runningFor = (key) => { if (!key) return null; const now = Date.now(); return Object.values(timers).find(t => t.key === key && !isDone(t, now)) || null; };
 
   load();
   const ready = () => render();

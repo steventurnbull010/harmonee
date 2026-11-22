@@ -1763,6 +1763,17 @@ const PAGES = [
     if (first.names.join() !== "Boil the spuds,Bake the sausages") throw new Error(`timers in the wrong order: ${JSON.stringify(first)}`);
     if (first.inDialog !== "meal-view" || !first.tappable) throw new Error(`the timers can't be tapped over the meal screen: ${JSON.stringify(first)}`);
     if (first.extra !== "+5") throw new Error(`a 20-25 minute timer offers ${first.extra}, not +5`);
+    // Each one Running in its own pastel colour (not blue), the same as its stopwatch (22 Nov)
+    const colours = await p.evaluate(() => {
+      const btns = [...document.querySelectorAll("#meal-view .ct-start")].slice(0, 2);
+      const rows = [...document.querySelectorAll("#cook-timers .ct-timer")];
+      const rowFor = (label) => rows.find(r => r.querySelector(".ct-name strong").textContent === label);
+      return btns.map(b => ({ text: b.textContent.trim(), running: b.classList.contains("is-running"), bg: b.style.getPropertyValue("--ct-bg"), row: (rowFor(b.getAttribute("data-ct-label")) || { style: { getPropertyValue: () => "" } }).style.getPropertyValue("--ct-bg") }));
+    });
+    if (colours.some(c => !c.running || !/Running/.test(c.text) || !c.bg || c.bg !== c.row) || colours[0].bg === colours[1].bg || colours.some(c => /e0f2fe|f0f9ff|bae6fd/i.test(c.bg))) throw new Error(`Running buttons and their stopwatches: ${JSON.stringify(colours)}`);
+    await p.waitForTimeout(2600); // the old button went back to Start after 2.5s
+    const still = await p.$eval("#meal-view .ct-start", b => b.textContent.trim());
+    if (!/Running/.test(still)) throw new Error(`a running timer's button says "${still}"`);
     // The 1 minute one goes off first, so it goes to the top
     await tapStart(2);
     await p.waitForTimeout(100);
@@ -1791,6 +1802,9 @@ const PAGES = [
     await p.waitForTimeout(300);
     const left = await p.evaluate(() => ({ shown: document.querySelectorAll("#cook-timers .ct-timer").length, board: Object.keys(window.__SMOKE_STORE["boards/sidepanel-test-x7q2"].timers || {}).length }));
     if (left.shown !== 2 || left.board !== 2) throw new Error(`Stop didn't take it off: ${JSON.stringify(left)}`);
+    // Its step's button is Start again
+    const again = await p.evaluate(() => { const b = [...document.querySelectorAll("#meal-view .ct-start")].find(x => x.getAttribute("data-ct-label") === "Bake the sausages"); return b ? b.textContent.trim() : ""; });
+    if (!/Start/.test(again)) throw new Error(`a stopped timer's button says "${again}"`);
     // Close the meal: the timers stay, on the page, clear of the phone's tab bar
     await p.click("#btn-popover-close");
     await p.waitForTimeout(400);

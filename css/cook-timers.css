@@ -12,9 +12,12 @@
 }
 .ct-start:hover { border-color: #0284c7; }
 .ct-start:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
-.ct-start.is-started { border-color: #86efac; background: #f0fdf4; color: #15803d; }
+/* Running: its timer's own pastel colour (js/cook-timers.js COLOURS), the
+   same as its stopwatch at the bottom, until the timer ends */
+.ct-start.is-running { border: 1.5px solid var(--ct-edge); background: var(--ct-bg); color: var(--ct-ink); cursor: default; }
+.ct-start.is-running:hover { border-color: var(--ct-edge); }
 body.theme-dark .ct-start { border-color: rgba(56, 189, 248, 0.35); background: rgba(2, 132, 199, 0.15); color: #7dd3fc; }
-body.theme-dark .ct-start.is-started { border-color: rgba(74, 222, 128, 0.4); background: rgba(22, 163, 74, 0.15); color: #4ade80; }
+body.theme-dark .ct-start.is-running { border-color: var(--ct-edge); background: var(--ct-bg); color: var(--ct-ink); }
 
 /* ---- The pinned stack ----------------------------------------------------------- */
 #cook-timers {
@@ -54,6 +57,10 @@ body.theme-dark .ct-start.is-started { border-color: rgba(74, 222, 128, 0.4); ba
 .ct-x { color: var(--text-muted, #64748b); }
 .ct-name:focus-visible, .ct-btn:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
 .ct-timer.is-paused .ct-time { color: var(--text-muted, #64748b); }
+/* Its colour: the same as its step's Running button */
+.ct-timer.has-colour:not(.is-done) { background: var(--ct-bg); border: 1.5px solid var(--ct-edge); color: var(--ct-ink); }
+.ct-timer.has-colour:not(.is-done) .ct-name small, .ct-timer.has-colour:not(.is-done) .ct-x { color: var(--ct-ink); opacity: 0.8; }
+.ct-timer.has-colour:not(.is-done) .ct-btn { background: rgba(255, 255, 255, 0.7); border-color: var(--ct-edge); color: var(--ct-ink); }
 
 /* Done: red until someone stops it, pulsing while it rings */
 .ct-timer.is-done { border-color: #e11d48; background: #e11d48; color: #fff; }
@@ -67,6 +74,7 @@ body.theme-dark .ct-start.is-started { border-color: rgba(74, 222, 128, 0.4); ba
 body.theme-dark .ct-timer { background: #1e293b; border-color: #334155; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
 body.theme-dark .ct-btn { background: #0f172a; border-color: #334155; }
 body.theme-dark .ct-timer.is-done { background: #be123c; border-color: #be123c; }
+body.theme-dark .ct-timer.has-colour:not(.is-done) { background: var(--ct-bg); border-color: var(--ct-edge); color: var(--ct-ink); }
 
 /* Room under a recipe's method for the timers, so its last steps scroll clear */
 .mv-body, #cooking-recipe-modal .cooking-modal-body { padding-bottom: calc(40px + var(--ct-stack-h, 0px)) !important; }
