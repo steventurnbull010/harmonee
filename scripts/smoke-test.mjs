@@ -1128,6 +1128,61 @@ const PAGES = [
     const genie = await p.evaluate(() => { window.MealGenie.open("dinner"); const b = !!document.querySelector('#meal-genie [data-genie="fridge"]'); document.getElementById("meal-genie").close(); return b; });
     if (!genie) throw new Error("no 'Or use what's in the fridge' in Magic Mealtime");
   }],
+  // Imported events (22 Nov): Edit opens the panel with everything locked but
+  // the countdown and icon, saved on the board (not into the family's events)
+  ["imported-countdown", async (p) => {
+    await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("calendar"); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(async () => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      const d = new Date(); d.setDate(d.getDate() + 10);
+      const date = window.getLocalDateKey(d);
+      window.googleEvents = [{ id: "g-xmas", title: "Christmas Day", date, time: "", duration: "All day", repeat: "none", source: "google", member: "Sam", icon: "📅" }];
+      const ownBefore = (window.familyEvents || []).length;
+      window.openEventQuickView(window.shownEvents().find(e => e.id === "g-xmas"), date);
+      await wait(200);
+      const pop = { edit: getComputedStyle(document.getElementById("btn-event-pop-edit")).display !== "none", del: getComputedStyle(document.getElementById("btn-event-pop-delete")).display !== "none" };
+      document.getElementById("btn-event-pop-edit").click();
+      await wait(400);
+      const m = document.getElementById("event-modal");
+      const panel = {
+        imported: m.classList.contains("is-imported"),
+        title: document.getElementById("event-modal-title").textContent,
+        readOnly: document.getElementById("event-title-input").readOnly,
+        dateLocked: document.getElementById("event-date-btn").disabled,
+        repeatLocked: document.getElementById("event-repeat-toggle").disabled,
+        countdownFree: !document.getElementById("event-countdown-toggle").disabled,
+        allDay: document.getElementById("event-allday-toggle").checked,
+        note: !document.getElementById("event-imported-note").hidden,
+        del: getComputedStyle(document.getElementById("btn-delete-event")).display !== "none"
+      };
+      return { pop, panel, ownBefore };
+    });
+    if (!r.pop.edit || r.pop.del) throw new Error(`the quick view for an imported event: ${JSON.stringify(r.pop)}`);
+    const pn = r.panel;
+    if (!pn.imported || pn.title !== "Event from Google" || !pn.readOnly || !pn.dateLocked || !pn.repeatLocked || !pn.countdownFree || !pn.allDay || !pn.note || pn.del) throw new Error(`the panel for an imported event: ${JSON.stringify(pn)}`);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-imported-edit.png`) });
+    const saved = await p.evaluate(async (ownBefore) => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      document.getElementById("event-countdown-toggle").click();
+      document.getElementById("event-icon-input").value = "🎄";
+      document.getElementById("btn-save-event").click();
+      await wait(500);
+      const x = (window.boardSettings.eventExtras || {})["g-xmas"] || null;
+      const shown = window.shownEvents().find(e => e.id === "g-xmas");
+      const cd = (window.getUpcomingCountdowns() || []).some(c => c.evt.id === "g-xmas");
+      return { x, icon: shown.icon, countdown: !!shown.countdown, cd, own: (window.familyEvents || []).length === ownBefore && !(window.familyEvents || []).some(e => e.id === "g-xmas"), raw: window.googleEvents[0].countdown };
+    }, r.ownBefore);
+    if (!saved.x || !saved.x.countdown || saved.x.icon !== "🎄") throw new Error(`the extras weren't saved: ${JSON.stringify(saved)}`);
+    if (saved.icon !== "🎄" || !saved.countdown || !saved.cd) throw new Error(`the countdown and icon don't show: ${JSON.stringify(saved)}`);
+    if (!saved.own || saved.raw) throw new Error(`the imported event leaked into the family's events: ${JSON.stringify(saved)}`);
+    await p.evaluate(() => window.refreshCountdowns && window.refreshCountdowns());
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: path.join(SHOTS, `${p.__size}-imported-countdown.png`) });
+    // A new event afterwards is fully editable again
+    const fresh = await p.evaluate(async () => { window.openEventModal(); await new Promise(res => setTimeout(res, 300)); const out = { imported: document.getElementById("event-modal").classList.contains("is-imported"), readOnly: document.getElementById("event-title-input").readOnly, dateLocked: document.getElementById("event-date-btn").disabled }; document.getElementById("btn-close-event-modal").click(); window.googleEvents = []; window.boardSettings.eventExtras = {}; return out; });
+    if (fresh.imported || fresh.readOnly || fresh.dateLocked) throw new Error(`a new event after an imported one is still locked: ${JSON.stringify(fresh)}`);
+  }],
   ["list-plus", async (p) => {
     await p.evaluate(() => { document.querySelectorAll("dialog[open]").forEach(d => d.close()); window.switchSkylightView("lists"); });
     await p.waitForTimeout(300);
@@ -2715,7 +2770,8 @@ const PAGES = [
       document.getElementById("btn-event-pop-close").click();
       return r;
     });
-    if (pop.edit !== "none" || pop.del !== "none" || !/Google Calendar/.test(pop.note)) throw new Error(`a Google event can be edited or deleted here: ${JSON.stringify(pop)}`);
+    // Edit is there for a countdown and icon (22 Nov, see imported-countdown); Delete never
+    if (pop.edit === "none" || pop.del !== "none" || !/Google Calendar/.test(pop.note)) throw new Error(`a Google event's quick view: ${JSON.stringify(pop)}`);
     // ↻ asks the server
     const calls = await p.evaluate(async () => { window.__SMOKE_CAL_CALLS = []; await new Promise(res => setTimeout(res, 50)); return window.__SMOKE_CAL_CALLS.length; });
     // Unlink

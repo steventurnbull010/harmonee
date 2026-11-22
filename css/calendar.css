@@ -5945,3 +5945,18 @@ body.theme-dark .today-holiday { background: rgba(16, 185, 129, 0.15); color: #a
 .event-chime-text small { font-size: 0.9rem; color: #cbd5e1; }
 .event-chime-close { flex: none; width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.12); color: #f8fafc; font-size: 1rem; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .event-chime-banner { transition: opacity 0.2s ease; } }
+
+/* ---- An event from Google (22 Nov): only its countdown and icon change here.
+   The rest shows, locked and greyed, with a note saying where to change it. */
+#event-modal .event-imported-note { margin: 0 0 16px; padding: 8px 16px; border-radius: 12px; background: #e0f2fe; color: #075985; font-size: 0.9rem; font-weight: 600; line-height: 1.4; }
+#event-modal.is-imported #event-title-input,
+#event-modal.is-imported #event-when-grid,
+#event-modal.is-imported .ev-list-row:has(#event-allday-toggle),
+#event-modal.is-imported .ev-list-row:has(#event-repeat-toggle),
+#event-modal.is-imported #event-repeat-more,
+#event-modal.is-imported #event-who-row { opacity: 0.55; }
+#event-modal.is-imported .ev-list-row:has(#event-allday-toggle),
+#event-modal.is-imported .ev-list-row:has(#event-repeat-toggle) { cursor: default; }
+#event-modal.is-imported .voice-mini { display: none; }
+#event-modal.is-imported button:disabled, #event-modal.is-imported input:disabled { cursor: default; }
+body.theme-dark #event-modal .event-imported-note { background: rgba(2, 132, 199, 0.18); color: #bae6fd; }

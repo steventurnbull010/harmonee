@@ -30,7 +30,8 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const list = [];
-    (window.familyEvents || []).forEach(evt => {
+    // The family's own events and imported ones with a countdown switched on
+    (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).forEach(evt => {
       if (!evt || typeof evt !== "object" || !(evt.countdown || evt.birthday)) return;
       const next = nextOccurrence(evt, today, evt.countdown ? COUNTDOWN_DAYS : BIRTHDAY_DAYS);
       if (next) list.push({ evt, ...next });
@@ -185,7 +186,7 @@
   }
 
   function openEvent(el) {
-    const evt = (window.familyEvents || []).find(x => x && String(x.id) === el.dataset.eventId);
+    const evt = (window.shownEvents ? window.shownEvents() : (window.familyEvents || [])).find(x => x && String(x.id) === el.dataset.eventId);
     if (evt && typeof window.openEventQuickView === "function") window.openEventQuickView(evt, el.dataset.date);
   }
 

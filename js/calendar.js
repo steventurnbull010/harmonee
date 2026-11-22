@@ -429,12 +429,13 @@ function openEventQuickView(evt, dateStr = null) {
   $("event-pop-notes").textContent = notes;
 
   // From someone's Google Calendar (js/google-calendar.js): read-only here
+  // Edit opens the panel for a countdown and an icon only (22 Nov)
   const fromGoogle = evt.source === "google" || evt.readOnly;
-  $("btn-event-pop-edit").style.display = fromGoogle ? "none" : "";
+  $("btn-event-pop-edit").style.display = "";
   $("btn-event-pop-delete").style.display = fromGoogle ? "none" : "";
   if (fromGoogle) {
     $("event-pop-notes-row").style.display = "";
-    $("event-pop-notes").textContent = `From ${evt.member || "someone"}'s Google Calendar. To change it, change it in Google.`;
+    $("event-pop-notes").textContent = `${notes ? `${notes}\n\n` : ""}From ${evt.member || "someone"}'s Google Calendar. Edit to add a countdown or change its icon; anything else, change in Google.`;
   }
 
   const close = () => {
@@ -484,7 +485,8 @@ window.formatEventDuration = formatEventDuration;
 // option, so the panel can show and save them
 function setEventDurationValue(select, value) {
   if (!select) return;
-  const v = value || "1 hour";
+  // "All day" (Google's spelling) is All Day
+  const v = /^\s*all\s*day\s*$/i.test(String(value || "")) ? "All Day" : (value || "1 hour");
   select.querySelectorAll("option[data-custom]").forEach(o => o.remove());
   if (![...select.options].some(o => o.value === v)) {
     const opt = document.createElement("option");
@@ -1209,6 +1211,21 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
   if (form) {
     form.onsubmit = (e) => {
       e.preventDefault();
+      // An imported event: just its countdown and icon, kept on the board
+      if (modal.classList.contains("is-imported") && evt) {
+        const google = (window.googleEvents || []).find(x => x.id === evt.id) || evt;
+        const icon = iconInput.value && iconInput.value !== (google.icon || "📅") ? iconInput.value : "";
+        const countdown = !!(countdownToggle && countdownToggle.checked);
+        Promise.resolve(window.saveEventExtras ? window.saveEventExtras(evt.id, { countdown, icon }) : null).finally(() => {
+          renderWeekCalendar();
+          if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
+        });
+        renderWeekCalendar();
+        if (typeof window.refreshCountdowns === "function") window.refreshCountdowns();
+        closeEventModal();
+        if (typeof window.showActionToast === "function") window.showActionToast({ icon: icon || google.icon || "📅", title: evt.title, text: countdown ? "Counting down to it" : "Updated" });
+        return;
+      }
       const eventId = idInput.value || `evt_${Date.now()}`;
       const title = titleInput.value.trim();
       if (!title) return;
@@ -1282,6 +1299,28 @@ function openEventModal(evt = null, defaultDay = null, defaultDate = null, slot 
         });
       }
     };
+  }
+
+  // From someone's Google Calendar (22 Nov): only the countdown and the icon
+  // can change here (saved on the board, not in Google); the rest is shown
+  // but locked, with a note saying where to change it
+  {
+    const imported = !!(evt && (evt.source === "google" || evt.readOnly));
+    modal.classList.toggle("is-imported", imported);
+    const note = document.getElementById("event-imported-note");
+    if (note) { note.hidden = !imported; note.textContent = imported ? `From ${evt.member || "someone"}'s Google Calendar. You can add a countdown or change its icon here. To change anything else, change it in Google.` : ""; }
+    if (titleInput) titleInput.readOnly = imported;
+    const lock = ["event-allday-toggle", "event-repeat-toggle", "event-date-btn", "event-end-date-btn", "event-start-time", "event-end-time", "event-span-clear"];
+    lock.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = imported; });
+    document.querySelectorAll("#event-who-row button, #event-repeat-pills button, #event-weekdays button").forEach(b => { b.disabled = imported; });
+    const more = document.getElementById("event-more");
+    if (more) more.hidden = imported;
+    if (imported) {
+      if (modalTitle) modalTitle.textContent = "Event from Google";
+      if (btnDelete) btnDelete.style.display = "none";
+      const saved = window.importedEventExtras ? window.importedEventExtras(evt.id) : null;
+      if (countdownToggle) countdownToggle.checked = !!(saved && saved.countdown);
+    }
   }
 
   if (!modal.open) {

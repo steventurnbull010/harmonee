@@ -1,5 +1,6 @@
 // ============================================================================
 // GOOGLE CALENDAR INTO HARMONEE (js/google-calendar.js) · read-only, 11 Nov
+// (a countdown and an icon can be added to an imported event, 22 Nov)
 //
 // Each person can link their Google Calendar (or Outlook / iCloud) in
 // Settings → Calendars, with a step-by-step guide written for people who
@@ -38,9 +39,41 @@
       if (c && Array.isArray(c.events)) { window.googleEvents = c.events; people = c.people || {}; }
     } catch (e) {}
   })();
-  // Everything the calendar, Today and the chime show: the family's own
-  // events and everyone's linked calendars
-  window.shownEvents = () => [...(window.familyEvents || []), ...(window.googleEvents || [])];
+  // The family's own touches on an imported event (22 Nov): a countdown and
+  // an icon, kept on the board (settings.eventExtras, by the event's id) and
+  // never sent to Google. Everything else about it stays as Google says.
+  //   eventExtras: { "g-abc123": { countdown: true, icon: "🎄", savedAt: ms } }
+  const EXTRAS_KEPT_MS = 30 * 24 * 60 * 60 * 1000; // a gone event's extras are tidied after a month
+  const extras = () => (((window.boardSettings || {}).eventExtras) || {});
+  function withExtras(e) {
+    const x = e && extras()[e.id];
+    if (!x) return e;
+    const out = { ...e };
+    if (x.countdown) out.countdown = true;
+    if (typeof x.icon === "string" && x.icon) out.icon = x.icon;
+    return out;
+  }
+  // id, { countdown, icon } (icon only when it's not Google's own)
+  window.saveEventExtras = function (id, { countdown = false, icon = "" } = {}) {
+    if (!id) return Promise.resolve();
+    const now = Date.now();
+    const shown = new Set((window.googleEvents || []).map(e => e.id));
+    const next = {};
+    Object.entries(extras()).forEach(([k, v]) => {
+      if (k === id) return;
+      if (shown.has(k) || (v && now - (v.savedAt || 0) < EXTRAS_KEPT_MS)) next[k] = v;
+    });
+    const mine = {};
+    if (countdown) mine.countdown = true;
+    if (icon) mine.icon = String(icon).slice(0, 8);
+    if (Object.keys(mine).length) next[id] = { ...mine, savedAt: now };
+    return typeof window.saveBoardSettingsNow === "function" ? window.saveBoardSettingsNow({ eventExtras: next }) : Promise.resolve();
+  };
+  window.importedEventExtras = (id) => extras()[id] || null;
+
+  // Everything the calendar, Today, countdowns and the chime show: the
+  // family's own events and everyone's linked calendars (with any extras)
+  window.shownEvents = () => [...(window.familyEvents || []), ...(window.googleEvents || []).map(withExtras)];
 
   const connected = () => Object.keys(people).length > 0;
   const lastChecked = () => Object.values(people).reduce((m, p) => Math.max(m, p.checkedAt || 0), 0);
