@@ -1204,6 +1204,7 @@ async function initializeDataSource() {
       // with its family code (see firestore.rules). initApp has already
       // rendered the local cache, so this waits behind cached data.
       await ensureBoardAccess(app);
+      startLastSeen();
 
       if (statusDot) {
         statusDot.classList.add("connected");
@@ -1333,6 +1334,38 @@ async function createBoardWithAccess() {
     joinedAt: serverTimestamp()
   });
   await batch.commit();
+}
+
+// Last opened: once a day each joined device notes the date it was used, what
+// it is (iPhone, iPad…), whether it's installed on the home screen, and the
+// build. Kept on the board's own device record (no analytics, no cookies), so
+// the family sees it in Settings → Family access and we can see who's using
+// harmonee. An always-on tablet is checked every hour, so it's counted daily too.
+let lastSeenTimer = null;
+async function markDeviceSeen() {
+  if (!db || !boardDeviceUid || !currentBoardId) return;
+  const today = getLocalDateKey(new Date());
+  const key = `harmonee_seen_${currentBoardId}`;
+  try { if (localStorage.getItem(key) === today) return; } catch (e) {}
+  let installed = false;
+  try { installed = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch (e) {}
+  try {
+    await updateDoc(doc(db, "boards", currentBoardId, "devices", boardDeviceUid), {
+      lastSeen: today,
+      label: describeThisDevice(),
+      installed,
+      build: (window.HARMONEE_BUILD && window.HARMONEE_BUILD.id) || ""
+    });
+    try { localStorage.setItem(key, today); } catch (e) {}
+  } catch (err) {
+    console.warn("Couldn't note when this device was last used:", err && err.code);
+  }
+}
+function startLastSeen() {
+  markDeviceSeen();
+  if (lastSeenTimer) return;
+  lastSeenTimer = setInterval(markDeviceSeen, 60 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") markDeviceSeen(); });
 }
 
 async function ensureBoardAccess(app) {
@@ -4647,9 +4680,18 @@ function setupEventListeners() {
       const joined = d.joinedAt && d.joinedAt.seconds
         ? new Date(d.joinedAt.seconds * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" })
         : "";
+      // "used today", "used yesterday", "used 3 days ago", "used 12 Nov"
+      let used = "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d.lastSeen || "")) {
+        const [y, m, dd] = d.lastSeen.split("-").map(Number);
+        const t = new Date(); t.setHours(0, 0, 0, 0);
+        const days = Math.round((t - new Date(y, m - 1, dd)) / 86400000);
+        used = days <= 0 ? "used today" : days === 1 ? "used yesterday" : days < 7 ? `used ${days} days ago`
+          : `used ${new Date(y, m - 1, dd).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+      }
       return `
         <li>
-          <span>${escapeHtml(d.label || "Device")}${d.isThisDevice ? " <strong>(this device)</strong>" : ""}${joined ? ` · joined ${escapeHtml(joined)}` : ""}</span>
+          <span>${escapeHtml(d.label || "Device")}${d.isThisDevice ? " <strong>(this device)</strong>" : ""}${used ? ` · ${escapeHtml(used)}` : joined ? ` · joined ${escapeHtml(joined)}` : ""}</span>
           ${d.isThisDevice ? "" : `<button type="button" class="family-access-small-btn" data-remove-device="${escapeHtml(d.id)}">Remove</button>`}
         </li>`;
     }).join("");

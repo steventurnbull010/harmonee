@@ -1950,6 +1950,23 @@ const PAGES = [
     }, added.ids);
     if (problems.length) throw new Error(problems.join("; "));
   }],
+  // Last opened (28 Nov): each device notes the day it was used, once a day,
+  // and Settings → Family access says "used today"
+  ["last-seen", async (p) => {
+    const today = await p.evaluate(() => window.getLocalDateKey(new Date()));
+    const rec = await p.evaluate(() => Object.entries(window.__SMOKE_STORE).filter(([k]) => /^boards\/sidepanel-test-x7q2\/devices\//.test(k)).map(([, v]) => v));
+    const me = rec.find(d => d.lastSeen);
+    if (!me || me.lastSeen !== today || !me.label || typeof me.installed !== "boolean" || !("build" in me)) throw new Error(`this device's record: ${JSON.stringify(rec)}`);
+    if ("code" in me && !me.code) throw new Error("noting the day lost the device's code");
+    // The fake board has no family code yet: give it one, so Family access lists the devices
+    const hadCode = await p.evaluate(() => { const k = "boards/sidepanel-test-x7q2/private/access"; const had = !!window.__SMOKE_STORE[k]; if (!had) window.__SMOKE_STORE[k] = { code: "ABCDEFGH" }; return had; });
+    await p.evaluate(() => window.openSettingsModal("access"));
+    await p.waitForTimeout(800);
+    const line = await p.evaluate(() => [...document.querySelectorAll(".family-access-devices li")].map(li => li.textContent.replace(/\s+/g, " ").trim()).join(" | "));
+    await p.evaluate(() => document.querySelectorAll("dialog[open]").forEach(d => d.close()));
+    if (!hadCode) await p.evaluate(() => { delete window.__SMOKE_STORE["boards/sidepanel-test-x7q2/private/access"]; });
+    if (!/used today/.test(line)) throw new Error(`Family access says "${line}"`);
+  }],
   // Right-click: the page menu (and Inspect) on a laptop; switched off on a
   // touch screen so a press-and-hold drag isn't interrupted
   ["right-click", async (p) => {
